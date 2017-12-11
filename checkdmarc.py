@@ -474,12 +474,13 @@ def _get_txt_records(domain, nameservers=None, timeout=2):
     return records
 
 
-def parse_spf_record(record, domain, nameservers=None, timeout=2):
+def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2):
     """
     Parses a SPF record, including resolving a, mx, and include mechanisms
     
     Args:
-        record (str): An SPF record 
+        record (str): An SPF record
+        seen (list): A list of domains seen in past loops
         domain (str): The domain that the SPF record came from
         nameservers (list): A list of nameservers to query
         timeout (int): number of seconds to wait for an answer from DNS
@@ -487,6 +488,8 @@ def parse_spf_record(record, domain, nameservers=None, timeout=2):
     Returns:
         OrderedDict: A OrderedDictionary containing a parsed SPF record and warinings 
     """
+    if seen is None:
+        seen = [domain]
     record = record.replace(' "', '').replace('"', '')
     warnings = []
     spf_syntax_checker = _SPFGrammar()
@@ -532,7 +535,10 @@ def parse_spf_record(record, domain, nameservers=None, timeout=2):
             elif mechanism == "all":
                 results["all"] = result
             elif mechanism == "include":
-                results["include"][value] = get_spf_record(value, nameservers=nameservers, timeout=timeout)
+                if value in seen:
+                    raise SPFRecordInvalid("Include loop detected: {0}".format(value))
+                seen.append(value)
+                results["include"][value] = get_spf_record(value, seen=seen, nameservers=nameservers, timeout=timeout)
             elif mechanism == "ptr":
                 warnings.append("ptr mechanism should not be used "
                                 "https://tools.ietf.org/html/rfc7208#section-5.5")
