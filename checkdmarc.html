@@ -1,0 +1,463 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>checkdmarc module &mdash; checkdmarc 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="checkdmarc 1.0.0 documentation" href="index.html"/>
+        <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> checkdmarc
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">checkdmarc module</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">checkdmarc</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>checkdmarc module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/checkdmarc.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-checkdmarc">
+<span id="checkdmarc-module"></span><h1>checkdmarc module<a class="headerlink" href="#module-checkdmarc" title="Permalink to this headline">¶</a></h1>
+<p>Validates and parses SPF amd DMARC DNS records</p>
+<dl class="exception">
+<dt id="checkdmarc.DMARCException">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCException</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">Exception</span></code></p>
+<p>Raised when an error occurs when retrieving or parsing a DMARC record</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.DMARCRecordInvalid">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCRecordInvalid</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordInvalid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordInvalid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCException" title="checkdmarc.DMARCException"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCException</span></code></a></p>
+<p>Raised when a DMARC record is found but is not valid</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.DMARCRecordNotFound">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCRecordNotFound</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCException" title="checkdmarc.DMARCException"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCException</span></code></a></p>
+<p>Raised when a SPF record could not be found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFException">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFException</code><a class="reference internal" href="_modules/checkdmarc.html#SPFException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">Exception</span></code></p>
+<p>Raised when an error occurs when retrieving or parsing a SPF record</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFRecordInvalid">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordInvalid</code><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordInvalid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordInvalid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFException" title="checkdmarc.SPFException"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFException</span></code></a></p>
+<p>Raised when a SPF record is found but is not valid</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFRecordNotFound">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordNotFound</code><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFException" title="checkdmarc.SPFException"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFException</span></code></a></p>
+<p>Raised when a SPF record could not be found</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.check_domains">
+<code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>output_format='json'</em>, <em>output_path=None</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the given domains for SPF and DMARC records, parse them, and return them</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>domains</strong> (<em>list</em>) – A list of domains to check</li>
+<li><strong>output_format</strong> (<em>str</em>) – <code class="docutils literal"><span class="pre">json</span></code> or <code class="docutils literal"><span class="pre">csv</span></code></li>
+<li><strong>output_path</strong> (<em>str</em>) – Save output to the given file path</li>
+<li><strong>include_dmarc_tag_descriptions</strong> (<em>bool</em>) – Include descriptions of DMARC tags and/or tag values in the results</li>
+<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Parsed SPF and DMARC records</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.get_dmarc_record">
+<code class="descclassname">checkdmarc.</code><code class="descname">get_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>include_tag_descriptions=False</em>, <em>nameservers=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves a DMARC record for a domain and parses it</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>domain</strong> (<em>str</em>) – A top-level domain (TLD)</li>
+<li><strong>include_tag_descriptions</strong> (<em>bool</em>) – Include descriptions in parsed results</li>
+<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The DMARC record parsed by key</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.get_dmarc_tag_description">
+<code class="descclassname">checkdmarc.</code><code class="descname">get_dmarc_tag_description</code><span class="sig-paren">(</span><em>tag</em>, <em>value=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_tag_description"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_tag_description" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the name, default value, and description for a DMARC tag, amd/or a description for a tag value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tag</strong> (<em>str</em>) – A DMARC tag</li>
+<li><strong>value</strong> (<em>str</em>) – An optional value</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A dictionary containing the tag’s <code class="docutils literal"><span class="pre">name</span></code>, <code class="docutils literal"><span class="pre">default</span></code> value, and a <code class="docutils literal"><span class="pre">description</span></code> of the tag or value</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.get_spf_record">
+<code class="descclassname">checkdmarc.</code><code class="descname">get_spf_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_spf_record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves and parses an SPF record</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
+<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An SPF record parsed by result</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.parse_dmarc_record">
+<code class="descclassname">checkdmarc.</code><code class="descname">parse_dmarc_record</code><span class="sig-paren">(</span><em>record</em>, <em>include_tag_descriptions=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a DMARC record</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>record</strong> (<em>str</em>) – A DMARC record</li>
+<li><strong>include_tag_descriptions</strong> (<em>bool</em>) – Include descriptions in parsed results</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The DMARC record parsed by key</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.parse_spf_record">
+<code class="descclassname">checkdmarc.</code><code class="descname">parse_spf_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>nameservers=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a SPF record, including resolving a, mx, and include mechanisms</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>record</strong> (<em>str</em>) – An SPF record</li>
+<li><strong>domain</strong> (<em>str</em>) – The domain that the SPF record came from</li>
+<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A dictionary containing a parsed SPF record and warinings</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.query_dmarc_record">
+<code class="descclassname">checkdmarc.</code><code class="descname">query_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queries DNS for a DMARC record
+:param domain: A top-level domain (TLD)
+:type domain: str
+:param nameservers: A list of nameservers to query
+:type nameservers: list</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An unparsed DMARC string</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.query_spf_record">
+<code class="descclassname">checkdmarc.</code><code class="descname">query_spf_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_spf_record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queries DNS for a SPF record
+:param domain: A domain name
+:type domain: str
+:param nameservers: A list of nameservers to query
+:type nameservers: list</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An unparsed SPF string</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Welcome to checkdmarc’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Sean Whalen.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
