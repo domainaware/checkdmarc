@@ -366,6 +366,8 @@ def query_spf_record(domain, nameservers=None, timeout=2):
                 break
         if spf_record is None:
             raise SPFRecordNotFound("{0} does not have a SPF record".format(domain))
+        if not spf_record.startswith("v=spf1 "):
+            raise SPFRecordInvalid("{0} is not a valid SPF record".format(spf_record))
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound("{0} does not have a SPF record".format(domain))
     except dns.resolver.NXDOMAIN:
