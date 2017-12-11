@@ -102,44 +102,44 @@ spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr
 
 
 tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
-                             default="r",
-                             description='In relaxed mode, the Organizational Domains of both the DKIM-'
-                                         'authenticated signing domain (taken from the value of the "d=" tag in'
-                                         'the signature) and that of the RFC5322.From domain must be equal if'
-                                         'the identifiers are to be considered aligned.'),
-                  aspf=OrderedDict(name="SPF alignment mode",
-                            default="r",
-                            description='In relaxed mode, the [SPF]-authenticated domain and RFC5322 From '
-                                        'domain must have the same Organizational Domain. In strict mode,'
-                                        'only an exact DNS domain match is considered to produce Identifier'
-                                        'Alignment.'),
-                  fo=OrderedDict(name="Failure Reporting Options",
-                          default="0",
-                          description='Provides requested options for generation of failure reports. '
-                                      'Report generators MAY choose to adhere to the requested options. '
-                                      'This tag\'s content MUST be ignored if a "ruf" tag (below) is not '
-                                      'also specified. The value of this tag is a colon-separated list '
-                                      'of characters that indicate failure reporting options.',
-                          values={"0": 'Generate a DMARC failure report if all underlying '
-                                       'authentication mechanisms fail to produce an aligned "pass" '
-                                       'result.',
-                                  "1": 'Generate a DMARC failure report if any underlying '
-                                       'authentication mechanism produced something other than an '
-                                       'aligned "pass" result.',
-                                  "d": 'Generate a DKIM failure report if the message had a signature '
-                                       'that failed evaluation, regardless of its alignment. DKIM-'
-                                       'specific reporting is described in AFRF-DKIM.',
-                                  "s": 'Generate an SPF failure report if the message failed SPF '
-                                       'evaluation, regardless of its alignment. SPF-specific '
-                                       'reporting is described in AFRF-SPF'
-                                  }
+                                           default="r",
+                                           description='In relaxed mode, the Organizational Domains of both the DKIM- '
+                                                       'authenticated signing domain (taken from the value of the "d=" '
+                                                       'tag in the signature) and that of the RFC5322.From domain must '
+                                                       'be equal if the identifiers are to be considered aligned.'),
+                         aspf=OrderedDict(name="SPF alignment mode",
+                                          default="r",
+                                          description='In relaxed mode, the SPF-authenticated domain and RFC5322 '
+                                                      'From domain must have the same Organizational Domain. '
+                                                      'In strict mode, only an exact DNS domain match is considered to '
+                                                      'produce Identifier Alignment.'),
+                         fo=OrderedDict(name="Failure Reporting Options",
+                                        default="0",
+                                        description='Provides requested options for generation of failure reports. '
+                                                    'Report generators MAY choose to adhere to the requested options. '
+                                                    'This tag\'s content MUST be ignored if a "ruf" tag (below) is not '
+                                                    'also specified. The value of this tag is a colon-separated list '
+                                                    'of characters that indicate failure reporting options.',
+                         values={"0": 'Generate a DMARC failure report if all underlying '
+                                      'authentication mechanisms fail to produce an aligned "pass" '
+                                      'result.',
+                                 "1": 'Generate a DMARC failure report if any underlying '
+                                      'authentication mechanism produced something other than an '
+                                      'aligned "pass" result.',
+                                 "d": 'Generate a DKIM failure report if the message had a signature '
+                                      'that failed evaluation, regardless of its alignment. DKIM-'
+                                      'specific reporting is described in AFRF-DKIM.',
+                                 "s": 'Generate an SPF failure report if the message failed SPF '
+                                      'evaluation, regardless of its alignment. SPF-specific '
+                                      'reporting is described in AFRF-SPF'
+                                 }
                           ),
-                  p=OrderedDict(name="Requested Mail Receiver Policy",
-                         default="none",
-                         description='Indicates the policy to be enacted by the Receiver at '
-                                     'the request of the Domain Owner. Policy applies to the domain '
-                                     'queried and to subdomains, unless subdomain policy is explicitly '
-                                     'described using the "sp" tag.',
+                         p=OrderedDict(name="Requested Mail Receiver Policy",
+                                       default="none",
+                                       description='Indicates the policy to be enacted by the Receiver at '
+                                                   'the request of the Domain Owner. Policy applies to the domain '
+                                                   'queried and to subdomains, unless subdomain policy is explicitly '
+                                                   'described using the "sp" tag.',
                          values={"none": 'The Domain Owner requests no specific action be taken '
                                          'regarding delivery of messages.',
                                  "quarantine": 'The Domain Owner wishes to have email that fails the '
@@ -152,50 +152,54 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                          'occur during the SMTP transaction.'
                                  }
                          ),
-                  pct=OrderedDict(name="Percentage",
-                           default=100,
-                           description='Integer percentage of messages from the Domain Owner\'s '
-                                       'mail stream to which the DMARC policy is to be applied. However, '
-                                       'this MUST NOT be applied to the DMARC-generated reports, all of'
-                                       'which must be sent and received unhindered.  The purpose of the'
-                                       '"pct" tag is to allow Domain Owners to enact a slow rollout'
-                                       'enforcement of the DMARC mechanism.'
-                           ),
-                  rf=OrderedDict(name="Report Format",
-                          default="afrf",
-                          description='A list seperated by colons of one or more report formats as'
-                                      'requested by the Domain Owner to be used when a message fails both'
-                                      'SPF and DKIM tests to report details of the individual failure. '
-                                      'only "afrf" (the auth-failure report type) is currently supported'
-                                      'in the DMARC standard.'
-                          ),
-                  ri=OrderedDict(name="Report Interval",
-                          default=86400,
-                          description='Indicates a request to Receivers to generate aggregate reports separated by no '
-                                      'more than the requested number of seconds. DMARC implementations '
-                                      'MUST be able to provide daily reports and SHOULD be able to '
-                                      'provide hourly reports when requested. However, anything other '
-                                      'than a daily report is understood to be accommodated on a best-effort basis.'
-                          ),
-                  rua=OrderedDict(name="Aggregate Feedback Addresses",
-                           description=' A comma-separated list DMARC URIs to which aggregate feedback is to be sent.'
-                           ),
-                  ruf=OrderedDict(name="Forensic Feedback Addresses",
-                           description=' A comma-separated list DMARC URIs to which forensic feedback is to be sent.'),
-                  sp=OrderedDict(name="Subdomain Policy",
-                          description='Indicates the policy to be enacted by the Receiver at '
-                                      'the request of the Domain Owner. It applies only to subdomains of '
-                                      'the domain queried and not to the domain itself. Its syntax is '
-                                      'identical to that of the "p" tag defined above. If absent, the '
-                                      'policy specified by the "p" tag MUST be applied for subdomains.'
-                          ),
-                  v=OrderedDict(name="Version",
-                         default="DMARC1",
-                         description='Identifies the record retrieved '
-                                     'as a DMARC record. It MUST have the value of "DMARC1". The value'
-                                     'of this tag MUST match precisely; if it does not or it is absent, '
-                                     'the entire retrieved record MUST be ignored. It MUST be the first'
-                                     'tag in the list.')
+                         pct=OrderedDict(name="Percentage",
+                                         default=100,
+                                         description='Integer percentage of messages from the Domain Owner\'s '
+                                                     'mail stream to which the DMARC policy is to be applied. '
+                                                     'However, this MUST NOT be applied to the DMARC-generated '
+                                                     'reports, all of which must be sent and received unhindered. '
+                                                     'The purpose of the "pct" tag is to allow Domain Owners to enact '
+                                                     'a slow rollout of enforcement of the DMARC mechanism.'
+                                         ),
+                         rf=OrderedDict(name="Report Format",
+                                        default="afrf",
+                                        description='A list seperated by colons of one or more report formats as '
+                                                    'requested by the Domain Owner to be used when a message fails '
+                                                    'both SPF and DKIM tests to report details of the individual '
+                                                    'failure. Only "afrf" (the auth-failure report type) is '
+                                                    'currently supported in the DMARC standard.'
+                                        ),
+                         ri=OrderedDict(name="Report Interval",
+                                        default=86400,
+                                        description='Indicates a request to Receivers to generate aggregate reports'
+                                                    'separated by no more than the requested number of seconds. '
+                                                    'DMARC implementations MUST be able to provide daily reports '
+                                                    'and SHOULD be able to provide hourly reports when requested. '
+                                                    'However, anything other than a daily report is understood to '
+                                                    'be accommodated on a best-effort basis.'
+                                        ),
+                         rua=OrderedDict(name="Aggregate Feedback Addresses",
+                                         description=' A comma-separated list DMARC URIs to which aggregate feedback '
+                                                     'is to be sent.'
+                                         ),
+                         ruf=OrderedDict(name="Forensic Feedback Addresses",
+                                         description=' A comma-separated list DMARC URIs to which forensic feedback '
+                                                     'is to be sent.'
+                                         ),
+                         sp=OrderedDict(name="Subdomain Policy",
+                                        description='Indicates the policy to be enacted by the Receiver at '
+                                        'the request of the Domain Owner. It applies only to subdomains of '
+                                        'the domain queried and not to the domain itself. Its syntax is '
+                                        'identical to that of the "p" tag defined above. If absent, the '
+                                        'policy specified by the "p" tag MUST be applied for subdomains.'
+                                        ),
+                         v=OrderedDict(name="Version",
+                                       default="DMARC1",
+                                       description='Identifies the record retrieved '
+                                                   'as a DMARC record. It MUST have the value of "DMARC1". The value '
+                                                   'of this tag MUST match precisely; if it does not or it is absent, '
+                                                   'the entire retrieved record MUST be ignored. It MUST be the first '
+                                                   'tag in the list.')
                   )
 
 spf_qualifiers = {
