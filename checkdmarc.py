@@ -91,13 +91,10 @@ class _SPFGrammar(Grammar):
 class _DMARCGrammar(Grammar):
     """Defines Pyleri grammar for DMARC records"""
     version_tag = Regex("v=DMARC[\d.]+;")
-    tag = Regex("[a-z]{1,5}")
-    equals = Token("=")
-    value = Regex("[\w.:@/+!,_\-]+")
-    tag_value = Sequence(tag, equals, value)
+    tag_value = Regex("([a-z]{1,5})=([\w.:@\/+!,_\-]+)")
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
 
-dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
+dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@\/+!,_\-]+)")
 spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
 
 
@@ -290,8 +287,8 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
     for tag in tag_values.keys():
         if tag not in tags and "default" in tag_values[tag]:
             tags[tag] = OrderedDict(value=tag_values[tag]["default"], explicit=False)
-        if "sp" not in tags:
-            tags["sp"] = OrderedDict(value=tags["p"]["value"], explicit=False)
+    if "sp" not in tags:
+        tags["sp"] = OrderedDict(value=tags["p"]["value"], explicit=False)
 
     # Validate tag values
     for tag in tags:
