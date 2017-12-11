@@ -99,3 +99,13 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# PyCharm Project settings
+.idea/
+
+# I/O files
+input/
+output/
+
+*.json
+*.csv

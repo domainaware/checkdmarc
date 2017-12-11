@@ -1,8 +1,22 @@
-checkdmarc
-==========
+.. checkdmarc documentation master file, created by
+   sphinx-quickstart on Sun Dec 10 20:49:29 2017.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-A Python module and command line parser for SPF and DMARC records
+Welcome to checkdmarc's documentation!
+======================================
 
+checkdmark is a Python module and command line parser for SPF and DMARC records
+
+Installation
+------------
+.. code-block:: bash
+
+    $ sudo apt-get install python3-pip
+    $ sudo pip3 install checkdmarc
+
+Command line usage
+------------------
 ::
 
     usage: checkdmarc [-h] [-f FORMAT] [-o OUTPUT] [-d]
@@ -27,15 +41,20 @@ A Python module and command line parser for SPF and DMARC records
                             Nameservers to query
       -v, --version         show program's version number and exit
 
+Module documentation
+--------------------
 
-Installation
-------------
-::
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
-    $ sudo apt-get install python3-pip
-    $ sudo pip3 install checkdmarc
+.. include::  modules.rst
 
-Documentation
--------------
+.. automodule:: checkdmarc
 
-https://domainaware.github.io/checkdmarc
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
