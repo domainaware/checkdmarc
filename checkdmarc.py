@@ -83,7 +83,7 @@ class DMARCRecordInvalid(DMARCException):
 class _SPFGrammar(Grammar):
     """Defines Pyleri grammar for SPF records"""
     version_tag = Regex("v=spf[\d.]+")
-    mechanism = Regex("([?+-~]?)(mx:?|ip4|ip6|exists|include|all|a|redirect|exp)[:=]?([\w+/_.:\-{%}]*)")
+    mechanism = Regex("([?+-~]?)(mx:?|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
     START = Sequence(version_tag, Repeat(mechanism))
 
 
@@ -97,7 +97,7 @@ class _DMARCGrammar(Grammar):
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
 
 dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
-spf_regex = compile(r"([?+-~]?)(mx:?|ip4|ip6|exists|include|all|a|redirect|exp)[:=]?([\w+/_.:\-{%}]*)")
+spf_regex = compile(r"([?+-~]?)(mx:?|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
 
 
 tag_values = dict(adkim=dict(name="DKIM Alignment Mode",
@@ -512,6 +512,9 @@ def parse_spf_record(record, domain, nameservers=None):
                 results["all"] = result
             elif mechanism == "include":
                 results["include"][value] = get_spf_record(value, nameservers=nameservers)
+            elif mechanism == "ptr":
+                warnings.append("ptr mechanism should not be used "
+                                "https://tools.ietf.org/html/rfc7208#section-5.5")
             else:
                 results[result].append(dict(mechanism=mechanism, value=value))
         except SPFException as warning:
