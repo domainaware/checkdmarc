@@ -47,7 +47,7 @@ if version_info[0] >= 3:
     unicode = str
 
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 class DMARCException(Exception):
