@@ -497,16 +497,14 @@ def parse_spf_record(record, domain, nameservers=None, timeout=2):
         raise SPFRecordInvalid("Error: Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
                                                                                     parsed_record.pos, record))
     matches = spf_regex.findall(record.lower())
-    results = {
-        "pass": [],
-        "neutral": [],
-        "softfail": [],
-        "fail": [],
-        "include": OrderedDict(),
-        "redirect": None,
-        "exp": None,
-        "all": "neutral"
-    }
+    results = OrderedDict(("pass", []),
+                          neutral=[],
+                          softfail=[],
+                          fail=[],
+                          include=OrderedDict(),
+                          redirect=None,
+                          exp=None,
+                          all="neutral")
 
     for match in matches:
         result = spf_qualifiers[match[0]]
