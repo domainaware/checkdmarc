@@ -83,7 +83,7 @@ class DMARCRecordInvalid(DMARCException):
 class _SPFGrammar(Grammar):
     """Defines Pyleri grammar for SPF records"""
     version_tag = Regex("v=spf[\d.]+")
-    mechanism = Regex("([?+-~]?)(mx:?|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
+    mechanism = Regex("([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
     START = Sequence(version_tag, Repeat(mechanism))
 
 
@@ -97,7 +97,7 @@ class _DMARCGrammar(Grammar):
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
 
 dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
-spf_regex = compile(r"([?+-~]?)(mx:?|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
+spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
 
 
 tag_values = dict(adkim=dict(name="DKIM Alignment Mode",
@@ -389,6 +389,8 @@ def _get_mx_hosts(domain, nameservers=None):
         hosts = list(map(lambda r: r.to_text().split(" ")[-1].rstrip("."), answers))
     except dns.resolver.NXDOMAIN:
         raise SPFRecordInvalid("The domain {0} does not exist".format(domain))
+    except dns.resolver.NoAnswer:
+        raise SPFRecordInvalid("{0} does not have any MX records".format(domain))
     except dns.exception.DNSException as error:
         raise SPFRecordInvalid(error)
 
@@ -407,6 +409,7 @@ def _get_a_records(domain, nameservers=None):
         list: A list of IPv4 and IPv6 addresses
 
     """
+    records = []
     try:
         resolver = dns.resolver.Resolver()
         if nameservers:
@@ -422,6 +425,9 @@ def _get_a_records(domain, nameservers=None):
         pass
     except dns.exception.DNSException as error:
         raise SPFRecordInvalid(error)
+    finally:
+        if len(records) == 0:
+            raise SPFRecordInvalid("{0} does not have any A or AAAA records".format(domain))
 
     return records
 
@@ -495,13 +501,15 @@ def parse_spf_record(record, domain, nameservers=None):
             if mechanism == "a":
                 if value == "":
                     a_records = _get_a_records(domain, nameservers=nameservers)
-                    for record in a_records:
-                        results[result].append(dict(mechanism=mechanism, value=record))
-            elif mechanism == "mx":
-                if value != "":
-                    mx_hosts = _get_mx_hosts(value, nameservers=nameservers)
                 else:
+                    a_records = _get_a_records(value, nameservers=nameservers)
+                for record in a_records:
+                    results[result].append(dict(mechanism=mechanism, value=record))
+            elif mechanism == "mx":
+                if value == "":
                     mx_hosts = _get_mx_hosts(domain, nameservers=nameservers)
+                else:
+                    mx_hosts = _get_mx_hosts(value, nameservers=nameservers)
                 for host in mx_hosts:
                     results[result].append(dict(mechanism=mechanism, value=host))
             elif mechanism == "redirect":
