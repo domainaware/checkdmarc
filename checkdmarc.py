@@ -206,12 +206,13 @@ spf_qualifiers = {
 }
 
 
-def query_dmarc_record(domain, nameservers=None):
+def query_dmarc_record(domain, nameservers=None, timeout=2):
     """
     Queries DNS for a DMARC record
     Args:
         domain (str): A top-level domain (TLD)
         nameservers (list): A list of nameservers to query
+        timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
         str: An unparsed DMARC string
@@ -221,6 +222,7 @@ def query_dmarc_record(domain, nameservers=None):
         resolver = dns.resolver.Resolver()
         if nameservers:
             resolver.nameservers = nameservers
+            resolver.lifetime = timeout
         answer = resolver.query(target, "TXT")[0].to_text().strip('"')
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         raise DMARCRecordNotFound("A TXT record does not exist at {0}".format(target))
@@ -317,7 +319,7 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
     return tags
 
 
-def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None):
+def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, timeout=2):
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -325,23 +327,25 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None):
         domain (str): A top-level domain (TLD)
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
+        timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
         dict: The DMARC record parsed by key
 
     """
-    record = query_dmarc_record(domain, nameservers=nameservers)
+    record = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
     tags = parse_dmarc_record(record, include_tag_descriptions=include_tag_descriptions)
 
     return dict(record=record, tags=tags)
 
 
-def query_spf_record(domain, nameservers=None):
+def query_spf_record(domain, nameservers=None, timeout=2):
     """
     Queries DNS for a SPF record
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
         str: An unparsed SPF string
@@ -350,6 +354,7 @@ def query_spf_record(domain, nameservers=None):
         resolver = dns.resolver.Resolver()
         if nameservers:
             resolver.nameservers = nameservers
+            resolver.lifetime = timeout
         answer = resolver.query(domain, "TXT")
         spf_record = None
         for record in answer:
@@ -369,7 +374,7 @@ def query_spf_record(domain, nameservers=None):
     return spf_record
 
 
-def _get_mx_hosts(domain, nameservers=None):
+def _get_mx_hosts(domain, nameservers=None, timeout=2):
     """
     Queries DNS for a list of Mail Exchange hosts 
     
@@ -385,6 +390,7 @@ def _get_mx_hosts(domain, nameservers=None):
         resolver = dns.resolver.Resolver()
         if nameservers:
             resolver.nameservers = nameservers
+            resolver.lifetime = timeout
         answers = resolver.query(domain, "MX")
         hosts = list(map(lambda r: r.to_text().split(" ")[-1].rstrip("."), answers))
     except dns.resolver.NXDOMAIN:
@@ -397,13 +403,14 @@ def _get_mx_hosts(domain, nameservers=None):
     return hosts
 
 
-def _get_a_records(domain, nameservers=None):
+def _get_a_records(domain, nameservers=None, timeout=2):
     """
     Queries DNS for A and AAAA records
     
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
         list: A list of IPv4 and IPv6 addresses
@@ -414,6 +421,7 @@ def _get_a_records(domain, nameservers=None):
         resolver = dns.resolver.Resolver()
         if nameservers:
             resolver.nameservers = nameservers
+            resolver.lifetime = timeout
         answers = resolver.query(domain, "A")
         records = list(map(lambda r: r.to_text().rstrip("."), answers))
         answers = resolver.query(domain, "AAAA")
@@ -432,13 +440,14 @@ def _get_a_records(domain, nameservers=None):
     return records
 
 
-def _get_txt_records(domain, nameservers=None):
+def _get_txt_records(domain, nameservers=None, timeout=2):
     """
     Queries DNS for TXT records
 
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
         list: A list of TXT records
@@ -448,6 +457,7 @@ def _get_txt_records(domain, nameservers=None):
         resolver = dns.resolver.Resolver()
         if nameservers:
             resolver.nameservers = nameservers
+            resolver.lifetime = timeout
         answers = resolver.query(domain, "TXT")
         records = list(map(lambda r: r.to_text().replace(' "', '').replace('"', ''), answers))
     except dns.resolver.NXDOMAIN:
@@ -460,7 +470,7 @@ def _get_txt_records(domain, nameservers=None):
     return records
 
 
-def parse_spf_record(record, domain, nameservers=None):
+def parse_spf_record(record, domain, nameservers=None, timeout=2):
     """
     Parses a SPF record, including resolving a, mx, and include mechanisms
     
@@ -468,6 +478,7 @@ def parse_spf_record(record, domain, nameservers=None):
         record (str): An SPF record 
         domain (str): The domain that the SPF record came from
         nameservers (list): A list of nameservers to query
+        timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
         dict: A dictionary containing a parsed SPF record and warinings 
@@ -500,16 +511,16 @@ def parse_spf_record(record, domain, nameservers=None):
         try:
             if mechanism == "a":
                 if value == "":
-                    a_records = _get_a_records(domain, nameservers=nameservers)
+                    a_records = _get_a_records(domain, nameservers=nameservers, timeout=timeout)
                 else:
-                    a_records = _get_a_records(value, nameservers=nameservers)
+                    a_records = _get_a_records(value, nameservers=nameservers, timeout=timeout)
                 for record in a_records:
                     results[result].append(dict(mechanism=mechanism, value=record))
             elif mechanism == "mx":
                 if value == "":
-                    mx_hosts = _get_mx_hosts(domain, nameservers=nameservers)
+                    mx_hosts = _get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
                 else:
-                    mx_hosts = _get_mx_hosts(value, nameservers=nameservers)
+                    mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
                 for host in mx_hosts:
                     results[result].append(dict(mechanism=mechanism, value=host))
             elif mechanism == "redirect":
@@ -519,7 +530,7 @@ def parse_spf_record(record, domain, nameservers=None):
             elif mechanism == "all":
                 results["all"] = result
             elif mechanism == "include":
-                results["include"][value] = get_spf_record(value, nameservers=nameservers)
+                results["include"][value] = get_spf_record(value, nameservers=nameservers, timeout=timeout)
             elif mechanism == "ptr":
                 warnings.append("ptr mechanism should not be used "
                                 "https://tools.ietf.org/html/rfc7208#section-5.5")
@@ -531,26 +542,27 @@ def parse_spf_record(record, domain, nameservers=None):
     return dict(results=results, warnings=warnings)
 
 
-def get_spf_record(domain, nameservers=None):
+def get_spf_record(domain, nameservers=None, timeout=2):
     """
     Retrieves and parses an SPF record 
     
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
         dict: An SPF record parsed by result
 
     """
-    record = query_spf_record(domain, nameservers=nameservers)
-    record = parse_spf_record(record, domain, nameservers=nameservers)
+    record = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
+    record = parse_spf_record(record, domain, nameservers=nameservers, timeout=timeout)
 
     return record
 
 
 def check_domains(domains, output_format="json", output_path=None, include_dmarc_tag_descriptions=False,
-                  nameservers=None):
+                  nameservers=None, timeout=2):
     """
     Check the given domains for SPF and DMARC records, parse them, and return them
     
@@ -560,6 +572,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         output_path (str): Save output to the given file path 
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC tags and/or tag values in the results
         nameservers (list): A list of nameservers to query
+        timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
         dict: Parsed SPF and DMARC records
@@ -571,8 +584,8 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
         fields = ["domain", "spf_record", "dmarc_record", "spf_valid", "dmarc_valid", "spf_error", "spf_warnings",
-                  "dmarc_error", "dmarc_adkim", "dmarc_aspf", "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
-                  "dmarc_rua", "dmarc_ruf", "dmarc_sp"]
+                  "dmarc_error", "dmarc_adkim", "dmarc_aspf", "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf",
+                  "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp"]
         sorted(list(set(map(lambda d: d.rstrip(".").rstrip(), domains))))
         if output_path:
             output_file = open(output_path, "w", newline="\n")
@@ -583,13 +596,13 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         for domain in domains:
             row = dict(domain=domain, spf_valid=True, dmarc_valid=True)
             try:
-                row["spf_record"] = query_spf_record(domain, nameservers=nameservers)
+                row["spf_record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 row["spf_warnings"] = " ".join(parse_spf_record(row["spf_record"], row["domain"])["warnings"])
             except SPFException as error:
                 row["spf_error"] = error
                 row["spf_valid"] = False
             try:
-                row["dmarc_record"] = query_dmarc_record(domain, nameservers=nameservers)
+                row["dmarc_record"] = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 dmarc = parse_dmarc_record(row["dmarc_record"])
                 row["dmarc_adkim"] = dmarc["adkim"]["value"]
                 row["dmarc_aspf"] = dmarc["aspf"]["value"]
@@ -616,7 +629,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             domain_results = dict(domain=domain)
             domain_results["spf"] = dict(record=None, valid=True)
             try:
-                domain_results["spf"]["record"] = query_spf_record(domain, nameservers=nameservers)
+                domain_results["spf"]["record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 parsed_spf = parse_spf_record(domain_results["spf"]["record"],
                                               domain_results["domain"],
                                               nameservers=nameservers)
@@ -628,7 +641,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
 
             domain_results["dmarc"] = dict(record=None, valid=True)
             try:
-                domain_results["dmarc"]["record"] = query_dmarc_record(domain, nameservers=nameservers)
+                domain_results["dmarc"]["record"] = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 domain_results["dmarc"]["keys"] = parse_dmarc_record(domain_results["dmarc"]["record"],
                                                                      include_tag_descriptions=
                                                                      include_dmarc_tag_descriptions)
@@ -656,6 +669,7 @@ def _main():
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="Include descriptions of DMARC tags in the JSON output")
     arg_parser.add_argument("-n", "--nameserver", nargs="+", help="Nameservers to query")
+    arg_parser.add_argument("-t", "--timeout", help="Number of seconds to wait for an answer from DNS", default=2)
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
     args = arg_parser.parse_args()
 
