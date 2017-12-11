@@ -6,6 +6,7 @@
 from __future__ import unicode_literals, print_function
 
 from sys import version_info
+from collections import OrderedDict
 from re import compile
 import json
 from csv import DictWriter
@@ -100,19 +101,19 @@ dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
 spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
 
 
-tag_values = dict(adkim=dict(name="DKIM Alignment Mode",
+tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                              default="r",
                              description='In relaxed mode, the Organizational Domains of both the DKIM-'
                                          'authenticated signing domain (taken from the value of the "d=" tag in'
                                          'the signature) and that of the RFC5322.From domain must be equal if'
                                          'the identifiers are to be considered aligned.'),
-                  aspf=dict(name="SPF alignment mode",
+                  aspf=OrderedDict(name="SPF alignment mode",
                             default="r",
                             description='In relaxed mode, the [SPF]-authenticated domain and RFC5322 From '
                                         'domain must have the same Organizational Domain. In strict mode,'
                                         'only an exact DNS domain match is considered to produce Identifier'
                                         'Alignment.'),
-                  fo=dict(name="Failure Reporting Options",
+                  fo=OrderedDict(name="Failure Reporting Options",
                           default="0",
                           description='Provides requested options for generation of failure reports. '
                                       'Report generators MAY choose to adhere to the requested options. '
@@ -133,7 +134,7 @@ tag_values = dict(adkim=dict(name="DKIM Alignment Mode",
                                        'reporting is described in AFRF-SPF'
                                   }
                           ),
-                  p=dict(name="Requested Mail Receiver Policy",
+                  p=OrderedDict(name="Requested Mail Receiver Policy",
                          default="none",
                          description='Indicates the policy to be enacted by the Receiver at '
                                      'the request of the Domain Owner. Policy applies to the domain '
@@ -151,7 +152,7 @@ tag_values = dict(adkim=dict(name="DKIM Alignment Mode",
                                          'occur during the SMTP transaction.'
                                  }
                          ),
-                  pct=dict(name="Percentage",
+                  pct=OrderedDict(name="Percentage",
                            default=100,
                            description='Integer percentage of messages from the Domain Owner\'s '
                                        'mail stream to which the DMARC policy is to be applied. However, '
@@ -160,7 +161,7 @@ tag_values = dict(adkim=dict(name="DKIM Alignment Mode",
                                        '"pct" tag is to allow Domain Owners to enact a slow rollout'
                                        'enforcement of the DMARC mechanism.'
                            ),
-                  rf=dict(name="Report Format",
+                  rf=OrderedDict(name="Report Format",
                           default="afrf",
                           description='A list seperated by colons of one or more report formats as'
                                       'requested by the Domain Owner to be used when a message fails both'
@@ -168,7 +169,7 @@ tag_values = dict(adkim=dict(name="DKIM Alignment Mode",
                                       'only "afrf" (the auth-failure report type) is currently supported'
                                       'in the DMARC standard.'
                           ),
-                  ri=dict(name="Report Interval",
+                  ri=OrderedDict(name="Report Interval",
                           default=86400,
                           description='Indicates a request to Receivers to generate aggregate reports separated by no '
                                       'more than the requested number of seconds. DMARC implementations '
@@ -176,19 +177,19 @@ tag_values = dict(adkim=dict(name="DKIM Alignment Mode",
                                       'provide hourly reports when requested. However, anything other '
                                       'than a daily report is understood to be accommodated on a best-effort basis.'
                           ),
-                  rua=dict(name="Aggregate Feedback Addresses",
+                  rua=OrderedDict(name="Aggregate Feedback Addresses",
                            description=' A comma-separated list DMARC URIs to which aggregate feedback is to be sent.'
                            ),
-                  ruf=dict(name="Forensic Feedback Addresses",
+                  ruf=OrderedDict(name="Forensic Feedback Addresses",
                            description=' A comma-separated list DMARC URIs to which forensic feedback is to be sent.'),
-                  sp=dict(name="Subdomain Policy",
+                  sp=OrderedDict(name="Subdomain Policy",
                           description='Indicates the policy to be enacted by the Receiver at '
                                       'the request of the Domain Owner. It applies only to subdomains of '
                                       'the domain queried and not to the domain itself. Its syntax is '
                                       'identical to that of the "p" tag defined above. If absent, the '
                                       'policy specified by the "p" tag MUST be applied for subdomains.'
                           ),
-                  v=dict(name="Version",
+                  v=OrderedDict(name="Version",
                          default="DMARC1",
                          description='Identifies the record retrieved '
                                      'as a DMARC record. It MUST have the value of "DMARC1". The value'
@@ -241,7 +242,7 @@ def get_dmarc_tag_description(tag, value=None):
         value (str): An optional value
 
     Returns:
-        dict: A dictionary containing the tag's ``name``, ``default`` value, and a ``description`` of the tag or value  
+        OrderedDict: A OrderedDictionary containing the tag's ``name``, ``default`` value, and a ``description`` of the tag or value  
     """
     name = tag_values[tag]["name"]
     description = tag_values[tag]["description"]
@@ -251,7 +252,7 @@ def get_dmarc_tag_description(tag, value=None):
     if value and "values" in tag_values[tag] and value in tag_values[tag]["values"][value]:
         description = tag_values[tag]["values"][value]
 
-    return dict(name=name, default=default, description=description)
+    return OrderedDict(name=name, default=default, description=description)
 
 
 def parse_dmarc_record(record, include_tag_descriptions=False):
@@ -263,7 +264,7 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
         include_tag_descriptions (bool): Include descriptions in parsed results 
 
     Returns:
-        dict: The DMARC record parsed by key
+        OrderedDict: The DMARC record parsed by key
 
     """
     record = record.strip('"')
@@ -275,18 +276,18 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
                                                                                       parsed_record.pos, record))
 
     pairs = dmarc_regex.findall(record)
-    tags = dict()
+    tags = OrderedDict()
 
     # Find explicit tags
     for pair in pairs:
-        tags[pair[0]] = dict(value=unicode(pair[1]), explicit=True)
+        tags[pair[0]] = OrderedDict(value=unicode(pair[1]), explicit=True)
 
     # Include implicit tags and their defaults
     for tag in tag_values.keys():
         if tag not in tags and "default" in tag_values[tag]:
-            tags[tag] = dict(value=tag_values[tag]["default"], explicit=False)
+            tags[tag] = OrderedDict(value=tag_values[tag]["default"], explicit=False)
         if "sp" not in tags:
-            tags["sp"] = dict(value=tags["p"]["value"], explicit=False)
+            tags["sp"] = OrderedDict(value=tags["p"]["value"], explicit=False)
 
     # Validate tag values
     for tag in tags:
@@ -330,13 +331,13 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
         timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
-        dict: The DMARC record parsed by key
+        OrderedDict: The DMARC record parsed by key
 
     """
     record = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
     tags = parse_dmarc_record(record, include_tag_descriptions=include_tag_descriptions)
 
-    return dict(record=record, tags=tags)
+    return OrderedDict(record=record, tags=tags)
 
 
 def query_spf_record(domain, nameservers=None, timeout=2):
@@ -481,7 +482,7 @@ def parse_spf_record(record, domain, nameservers=None, timeout=2):
         timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
-        dict: A dictionary containing a parsed SPF record and warinings 
+        OrderedDict: A OrderedDictionary containing a parsed SPF record and warinings 
     """
     record = record.replace(' "', '').replace('"', '')
     warnings = []
@@ -497,7 +498,7 @@ def parse_spf_record(record, domain, nameservers=None, timeout=2):
         "neutral": [],
         "softfail": [],
         "fail": [],
-        "include": dict(),
+        "include": OrderedDict(),
         "redirect": None,
         "exp": None,
         "all": "neutral"
@@ -515,14 +516,14 @@ def parse_spf_record(record, domain, nameservers=None, timeout=2):
                 else:
                     a_records = _get_a_records(value, nameservers=nameservers, timeout=timeout)
                 for record in a_records:
-                    results[result].append(dict(mechanism=mechanism, value=record))
+                    results[result].append(OrderedDict(mechanism=mechanism, value=record))
             elif mechanism == "mx":
                 if value == "":
                     mx_hosts = _get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
                 else:
                     mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
                 for host in mx_hosts:
-                    results[result].append(dict(mechanism=mechanism, value=host))
+                    results[result].append(OrderedDict(mechanism=mechanism, value=host))
             elif mechanism == "redirect":
                 results["redirect"] = value
             elif mechanism == "exp":
@@ -535,11 +536,11 @@ def parse_spf_record(record, domain, nameservers=None, timeout=2):
                 warnings.append("ptr mechanism should not be used "
                                 "https://tools.ietf.org/html/rfc7208#section-5.5")
             else:
-                results[result].append(dict(mechanism=mechanism, value=value))
+                results[result].append(OrderedDict(mechanism=mechanism, value=value))
         except SPFException as warning:
             warnings.append(unicode(warning))
 
-    return dict(results=results, warnings=warnings)
+    return OrderedDict(results=results, warnings=warnings)
 
 
 def get_spf_record(domain, nameservers=None, timeout=2):
@@ -552,7 +553,7 @@ def get_spf_record(domain, nameservers=None, timeout=2):
         timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
-        dict: An SPF record parsed by result
+        OrderedDict: An SPF record parsed by result
 
     """
     record = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
@@ -575,7 +576,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         timeout (int): number of seconds to wait for an answer from DNS
 
     Returns:
-        dict: Parsed SPF and DMARC records
+        OrderedDict: Parsed SPF and DMARC records
 
     """
     output_format = output_format.lower()
@@ -594,7 +595,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         writer = DictWriter(output_file, fieldnames=fields)
         writer.writeheader()
         for domain in domains:
-            row = dict(domain=domain, spf_valid=True, dmarc_valid=True)
+            row = OrderedDict(domain=domain, spf_valid=True, dmarc_valid=True)
             try:
                 row["spf_record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 row["spf_warnings"] = " ".join(parse_spf_record(row["spf_record"], row["domain"])["warnings"])
@@ -626,8 +627,8 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
     elif output_format == "json":
         results = []
         for domain in domains:
-            domain_results = dict(domain=domain)
-            domain_results["spf"] = dict(record=None, valid=True)
+            domain_results = OrderedDict(domain=domain)
+            domain_results["spf"] = OrderedDict(record=None, valid=True)
             try:
                 domain_results["spf"]["record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 parsed_spf = parse_spf_record(domain_results["spf"]["record"],
@@ -639,7 +640,8 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 domain_results["spf"]["error"] = unicode(error)
                 domain_results["spf"]["valid"] = False
 
-            domain_results["dmarc"] = dict(record=None, valid=True)
+            # DMARC
+            domain_results["dmarc"] = OrderedDict(record=None, valid=True)
             try:
                 domain_results["dmarc"]["record"] = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 domain_results["dmarc"]["keys"] = parse_dmarc_record(domain_results["dmarc"]["record"],
