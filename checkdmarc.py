@@ -585,8 +585,8 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
         fields = ["domain", "spf_record", "dmarc_record", "spf_valid", "dmarc_valid", "spf_error", "spf_warnings",
-                  "dmarc_error", "dmarc_adkim", "dmarc_aspf", "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf",
-                  "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp"]
+                  "dmarc_error", "dmarc_warning", "dmarc_adkim", "dmarc_aspf", "dmarc_fo", "dmarc_p", "dmarc_pct",
+                  "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp"]
         sorted(list(set(map(lambda d: d.rstrip(".").rstrip(), domains))))
         if output_path:
             output_file = open(output_path, "w", newline="\n")
@@ -680,7 +680,8 @@ def _main():
         with open(domains[0]) as domains_file:
             domains = list(map(lambda l: l.rstrip(".\r\n"), domains_file.readlines()))
     results = check_domains(domains, output_format=args.format, output_path=args.output,
-                            nameservers=args.nameserver)
+                            include_dmarc_tag_descriptions=args.descriptions,
+                            nameservers=args.nameserver, timeout=args.timeout)
 
     if args.output is None:
         if args.format.lower() == "json":
