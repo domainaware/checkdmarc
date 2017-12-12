@@ -96,6 +96,7 @@ class _DMARCGrammar(Grammar):
 
 dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@\/+!,_\-]+)")
 spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
+mailto_regex = compile(r"mailto:([\w\-.]+@[\w\-.]+)")
 
 
 tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
@@ -256,6 +257,26 @@ def get_dmarc_tag_description(tag, value=None):
     return OrderedDict(name=name, default=default, description=description)
 
 
+def parse_dmarc_report_uri(uri):
+    """
+    Parses a DMARC Reporting (i.e. ``rua``/``ruf)`` URI
+    
+    Notes:
+        ``mailto:`` is the only reporting URI supported in `DMARC1` 
+    
+    Args:
+        uri: A DMARC URI
+
+    Returns:
+
+    """
+    uri = uri.strip()
+    mailto_matches = mailto_regex.findall(uri)
+    if len(mailto_matches) != 1:
+        raise DMARCWarning("{0} is not a valid dmarc report URI")
+    return mailto_matches[0]
+
+
 def parse_dmarc_record(record, include_tag_descriptions=False):
     """
     Parses a DMARC record
@@ -268,6 +289,7 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
         OrderedDict: The DMARC record parsed by key
 
     """
+    warnings = []
     record = record.strip('"')
     dmarc_syntax_checker = _DMARCGrammar()
     parsed_record = dmarc_syntax_checker.parse(record)
@@ -309,6 +331,34 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
     except ValueError:
         raise DMARCError("The value of the ri tag must be an integer")
 
+    try:
+        if "rua" in tags:
+            for uri in tags["rua"]["value"].split(","):
+                email_address = parse_dmarc_report_uri(uri)
+                email_domain = email_address.split("@")[-1]
+                try:
+                    _get_mx_hosts(email_domain)
+                except SPFWarning:
+                    raise DMARCWarning("The domain for rua email address {0} has no MX records".format(email_address))
+        else:
+            raise DMARCWarning("rua tag (destination for aggregate reports) not found")
+
+    except DMARCWarning as warning:
+        warnings.append(unicode(warning))
+
+    try:
+        if "ruf" in tags.keys():
+            for uri in tags["ruf"]["value"].split(","):
+                email_address = parse_dmarc_report_uri(uri)
+                email_domain = email_address.split("@")[-1]
+                try:
+                    _get_mx_hosts(email_domain)
+                except SPFWarning:
+                    raise DMARCWarning("The domain for ruf email address {0} has no MX records".format(email_address))
+
+    except DMARCWarning as warning:
+        warnings.append(unicode(warning))
+
     # Add descriptions if requested
     if include_tag_descriptions:
         for tag in tags:
@@ -318,7 +368,7 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
                 tags[tag]["default"] = details["default"]
             tags[tag]["description"] = details["description"]
 
-    return tags
+    return OrderedDict(tags=tags, warnings=warnings)
 
 
 def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, timeout=2):
@@ -536,7 +586,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2):
                 results["all"] = result
             elif mechanism == "include":
                 if value in seen:
-                    raise SPFError("Include loop detected: {0}".format(value))
+                    raise SPFWarning("Include loop detected: {0}".format(value))
                 seen.append(value)
                 results["include"][value] = get_spf_record(value, seen=seen, nameservers=nameservers, timeout=timeout)
             elif mechanism == "ptr":
@@ -592,7 +642,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
         fields = ["domain", "spf_record", "dmarc_record", "spf_valid", "dmarc_valid", "spf_error", "spf_warnings",
-                  "dmarc_error", "dmarc_warning", "dmarc_adkim", "dmarc_aspf", "dmarc_fo", "dmarc_p", "dmarc_pct",
+                  "dmarc_error", "dmarc_warnings", "dmarc_adkim", "dmarc_aspf", "dmarc_fo", "dmarc_p", "dmarc_pct",
                   "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp"]
         sorted(list(set(map(lambda d: d.rstrip(".").rstrip(), domains))))
         if output_path:
@@ -612,18 +662,19 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             try:
                 row["dmarc_record"] = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 dmarc = parse_dmarc_record(row["dmarc_record"])
-                row["dmarc_adkim"] = dmarc["adkim"]["value"]
-                row["dmarc_aspf"] = dmarc["aspf"]["value"]
-                row["dmarc_fo"] = dmarc["fo"]["value"]
-                row["dmarc_p"] = dmarc["p"]["value"]
-                row["dmarc_pct"] = dmarc["pct"]["value"]
-                row["dmarc_rf"] = dmarc["rf"]["value"]
-                row["dmarc_ri"] = dmarc["ri"]["value"]
-                row["dmarc_sp"] = dmarc["sp"]["value"]
+                row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
+                row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
+                row["dmarc_fo"] = dmarc["tags"]["fo"]["value"]
+                row["dmarc_p"] = dmarc["tags"]["p"]["value"]
+                row["dmarc_pct"] = dmarc["tags"]["pct"]["value"]
+                row["dmarc_rf"] = dmarc["tags"]["rf"]["value"]
+                row["dmarc_ri"] = dmarc["tags"]["ri"]["value"]
+                row["dmarc_sp"] = dmarc["tags"]["sp"]["value"]
                 if "rua" in dmarc:
-                    row["dmarc_rua"] = dmarc["rua"]["value"]
+                    row["dmarc_rua"] = dmarc["tags"]["rua"]["value"]
                 if "ruf" in dmarc:
-                    row["dmarc_ruf"] = dmarc["ruf"]["value"]
+                    row["dmarc_ruf"] = dmarc["tags"]["ruf"]["value"]
+                row["dmarc_warnings"] = dmarc["warnings"]
             except DMARCError as error:
                 row["dmarc_error"] = error
                 row["dmarc_valid"] = False
@@ -651,9 +702,10 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             domain_results["dmarc"] = OrderedDict(record=None, valid=True)
             try:
                 domain_results["dmarc"]["record"] = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-                domain_results["dmarc"]["keys"] = parse_dmarc_record(domain_results["dmarc"]["record"],
-                                                                     include_tag_descriptions=
-                                                                     include_dmarc_tag_descriptions)
+                parsed_dmarc_record = parse_dmarc_record(domain_results["dmarc"]["record"],
+                                                         include_tag_descriptions=include_dmarc_tag_descriptions)
+                domain_results["dmarc"]["tsgs"] = parsed_dmarc_record["tags"]
+                domain_results["dmarc"]["warnings"] = parsed_dmarc_record["warnings"]
             except DMARCError as error:
                 domain_results["dmarc"]["error"] = unicode(error)
                 domain_results["dmarc"]["valid"] = False
