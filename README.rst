@@ -36,7 +36,7 @@ While this script should work under Python 2 and 3, using Python 3 for your OS i
 
 On Debian or Ubuntu systems, run:
 
-.. code-block:: bash
+::
 
     $ sudo apt-get install python3-pip
 
@@ -45,20 +45,22 @@ Python 3 installers for Windows and macOS can be found at https://www.python.org
 
 To install or upgrade to the latest stable release of checkdmarc on macOS or Linux, run
 
-.. code-block:: bash
+::
 
     $ sudo pip3 -U install checkdmarc
 
 Or, install the latest development release directly from GitHub:
 
-.. code-block:: bash
+::
 
     $ sudo pip3 -U install git+https://github.com/domainaware/checkdmarc.git
 
-.. note::
 
-    On Windows, ``pip3`` is ``pip``, reguardless if you installed Python 2 or 3. So on Windows, simply
-    substitute ``pip`` as an administrator in place of ``sudo pip3``, in the above commands.
+Note to Windows users
+^^^^^^^^^^^^^^^^^^^^^
+
+On Windows, ``pip3`` is ``pip``, reguardless if you installed Python 2 or 3. So on Windows, simply
+substitute ``pip`` as an administrator in place of ``sudo pip3``, in the above commands.
 
 Documentation
 -------------
