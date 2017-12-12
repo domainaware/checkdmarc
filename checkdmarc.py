@@ -61,23 +61,23 @@ class SPFException(Exception):
     pass
 
 
-class SPFRecordNotFound(SPFException):
-    """Raised when a SPF record could not be found"""
+class SPFError(SPFException):
+    """Raised when a fatal SPF error occurs"""
     pass
 
 
-class SPFRecordInvalid(SPFException):
-    """Raised when a SPF record is found but is not valid"""
+class SPFWarning(SPFException):
+    """Raised when a non-fatal SPF error occurs"""
     pass
 
 
-class DMARCRecordNotFound(DMARCException):
-    """Raised when a SPF record could not be found"""
+class DMARCError(DMARCException):
+    """Raised when a fatal DMARC error occurs"""
     pass
 
 
-class DMARCRecordInvalid(DMARCException):
-    """Raised when a DMARC record is found but is not valid"""
+class DMARCWarning(DMARCException):
+    """Raised when a non-fatal DMARC error occurs"""
     pass
 
 
@@ -227,9 +227,9 @@ def query_dmarc_record(domain, nameservers=None, timeout=2):
             resolver.lifetime = timeout
         answer = resolver.query(target, "TXT")[0].to_text().strip('"')
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-        raise DMARCRecordNotFound("A TXT record does not exist at {0}".format(target))
+        raise DMARCError("A TXT record does not exist at {0}".format(target))
     except dns.exception.DNSException as error:
-        raise DMARCRecordNotFound(error.msg)
+        raise DMARCError(error.msg)
 
     return answer
 
@@ -273,8 +273,8 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
     parsed_record = dmarc_syntax_checker.parse(record)
     if not parsed_record.is_valid:
         expecting = list(map(lambda x: unicode(x).strip('"'), list(parsed_record.expecting)))
-        raise DMARCRecordInvalid("Error: Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
-                                                                                      parsed_record.pos, record))
+        raise DMARCWarning("Error: Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
+                                                                                parsed_record.pos, record))
 
     pairs = dmarc_regex.findall(record)
     tags = OrderedDict()
@@ -293,7 +293,7 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
     # Validate tag values
     for tag in tags:
         if tag in tag_values and "values" in tag_values[tag] and tags[tag]["value"] not in tag_values[tag]["values"]:
-            raise DMARCRecordInvalid("Tag {0} must have one of the following values: {1} - not {2}".format(
+            raise DMARCWarning("Tag {0} must have one of the following values: {1} - not {2}".format(
                 tag,
                 ",".join(tag_values[tag]["values"]),
                 tags[tag]["value"]
@@ -302,12 +302,12 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
     try:
         tags["pct"]["value"] = int(tags["pct"]["value"])
     except ValueError:
-        raise DMARCRecordInvalid("The value of the pct tag must be an integer")
+        raise DMARCError("The value of the pct tag must be an integer")
 
     try:
         tags["ri"]["value"] = int(tags["ri"]["value"])
     except ValueError:
-        raise DMARCRecordInvalid("The value of the ri tag must be an integer")
+        raise DMARCError("The value of the ri tag must be an integer")
 
     # Add descriptions if requested
     if include_tag_descriptions:
@@ -365,15 +365,15 @@ def query_spf_record(domain, nameservers=None, timeout=2):
                 spf_record = record.replace(' "', '').replace('"', '')
                 break
         if spf_record is None:
-            raise SPFRecordNotFound("{0} does not have a SPF record".format(domain))
+            raise SPFError("{0} does not have a SPF record".format(domain))
         if not spf_record.startswith("v=spf1 "):
-            raise SPFRecordInvalid("{0} is not a valid SPF record".format(spf_record))
+            raise SPFError("{0} is not a valid SPF record".format(spf_record))
     except dns.resolver.NoAnswer:
-        raise SPFRecordNotFound("{0} does not have a SPF record".format(domain))
+        raise SPFError("{0} does not have a SPF record".format(domain))
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordNotFound("The domain {0} does not exist".format(domain))
+        raise SPFError("The domain {0} does not exist".format(domain))
     except dns.exception.DNSException as error:
-        raise SPFRecordInvalid(error)
+        raise SPFWarning(error)
 
     return spf_record
 
@@ -398,11 +398,11 @@ def _get_mx_hosts(domain, nameservers=None, timeout=2):
         answers = resolver.query(domain, "MX")
         hosts = list(map(lambda r: r.to_text().split(" ")[-1].rstrip("."), answers))
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordInvalid("The domain {0} does not exist".format(domain))
+        raise SPFWarning("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
-        raise SPFRecordInvalid("{0} does not have any MX records".format(domain))
+        raise SPFWarning("{0} does not have any MX records".format(domain))
     except dns.exception.DNSException as error:
-        raise SPFRecordInvalid(error)
+        raise SPFWarning(error)
 
     return hosts
 
@@ -431,15 +431,15 @@ def _get_a_records(domain, nameservers=None, timeout=2):
         answers = resolver.query(domain, "AAAA")
         records += list(map(lambda r: r.to_text().rstrip("."), answers))
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordInvalid("The domain {0} does not exist".format(domain))
+        raise SPFWarning("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         # Sometimes a domain will only have A or AAAA records, but not both, and that's ok
         pass
     except dns.exception.DNSException as error:
-        raise SPFRecordInvalid(error)
+        raise SPFWarning(error)
     finally:
         if len(records) == 0:
-            raise SPFRecordInvalid("{0} does not have any A or AAAA records".format(domain))
+            raise SPFWarning("{0} does not have any A or AAAA records".format(domain))
 
     return records
 
@@ -465,11 +465,11 @@ def _get_txt_records(domain, nameservers=None, timeout=2):
         answers = resolver.query(domain, "TXT")
         records = list(map(lambda r: r.to_text().replace(' "', '').replace('"', ''), answers))
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordInvalid("The domain {0} does not exist".format(domain))
+        raise SPFWarning("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
-        raise SPFRecordInvalid("The domain {0} does not have any TXT records".format(domain))
+        raise SPFWarning("The domain {0} does not have any TXT records".format(domain))
     except dns.exception.DNSException as error:
-        raise SPFRecordInvalid(error)
+        raise SPFWarning(error)
 
     return records
 
@@ -496,8 +496,8 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2):
     parsed_record = spf_syntax_checker.parse(record.lower())
     if not parsed_record.is_valid:
         expecting = list(map(lambda x: unicode(x).strip('"'), list(parsed_record.expecting)))
-        raise SPFRecordInvalid("Error: Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
-                                                                                    parsed_record.pos, record))
+        raise SPFWarning("Error: Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
+                                                                              parsed_record.pos, record))
     matches = spf_regex.findall(record.lower())
     results = OrderedDict([("pass", []),
                           ("neutral", []),
@@ -536,15 +536,15 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2):
                 results["all"] = result
             elif mechanism == "include":
                 if value in seen:
-                    raise SPFRecordInvalid("Include loop detected: {0}".format(value))
+                    raise SPFError("Include loop detected: {0}".format(value))
                 seen.append(value)
                 results["include"][value] = get_spf_record(value, seen=seen, nameservers=nameservers, timeout=timeout)
             elif mechanism == "ptr":
-                warnings.append("ptr mechanism should not be used "
-                                "https://tools.ietf.org/html/rfc7208#section-5.5")
+                raise SPFWarning("The ptr mechanism should not be used "
+                                 "https://tools.ietf.org/html/rfc7208#section-5.5")
             else:
                 results[result].append(OrderedDict(mechanism=mechanism, value=value))
-        except SPFException as warning:
+        except SPFWarning as warning:
             warnings.append(unicode(warning))
 
     return OrderedDict(results=results, warnings=warnings)
@@ -606,7 +606,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             try:
                 row["spf_record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 row["spf_warnings"] = " ".join(parse_spf_record(row["spf_record"], row["domain"])["warnings"])
-            except SPFException as error:
+            except SPFError as error:
                 row["spf_error"] = error
                 row["spf_valid"] = False
             try:
@@ -624,7 +624,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                     row["dmarc_rua"] = dmarc["rua"]["value"]
                 if "ruf" in dmarc:
                     row["dmarc_ruf"] = dmarc["ruf"]["value"]
-            except DMARCException as error:
+            except DMARCError as error:
                 row["dmarc_error"] = error
                 row["dmarc_valid"] = False
             writer.writerow(row)
@@ -643,7 +643,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                                               nameservers=nameservers)
                 domain_results["spf"]["results"] = parsed_spf["results"]
                 domain_results["spf"]["warnings"] = parsed_spf["warnings"]
-            except SPFException as error:
+            except SPFError as error:
                 domain_results["spf"]["error"] = unicode(error)
                 domain_results["spf"]["valid"] = False
 
@@ -654,7 +654,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 domain_results["dmarc"]["keys"] = parse_dmarc_record(domain_results["dmarc"]["record"],
                                                                      include_tag_descriptions=
                                                                      include_dmarc_tag_descriptions)
-            except DMARCException as error:
+            except DMARCError as error:
                 domain_results["dmarc"]["error"] = unicode(error)
                 domain_results["dmarc"]["valid"] = False
 
