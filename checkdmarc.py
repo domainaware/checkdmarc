@@ -208,6 +208,35 @@ spf_qualifiers = {
 }
 
 
+def _query_dmarc_record(domain, nameservers=None, timeout=2):
+    """
+    Queries DNS for a DMARC record
+    Args:
+        domain (str): A top-level domain (TLD)
+        nameservers (list): A list of nameservers to query
+        timeout (int): number of seconds to wait for an record from DNS
+
+    Returns:
+        str: A record string or None
+    """
+    target = "_dmarc.{0}".format(domain.lower().replace("_dmarc.", ""))
+    record = None
+    try:
+        resolver = dns.resolver.Resolver()
+        if nameservers:
+            resolver.nameservers = nameservers
+            resolver.lifetime = timeout
+        record = resolver.query(target, "TXT")[0].to_text().strip('"')
+
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        pass
+
+    except dns.exception.DNSException as error:
+        raise DMARCError(error.msg)
+
+    return record
+
+
 def query_dmarc_record(domain, nameservers=None, timeout=2):
     """
     Queries DNS for a DMARC record
@@ -219,21 +248,12 @@ def query_dmarc_record(domain, nameservers=None, timeout=2):
     Returns:
         dict: the ``org_domain`` and ``record``
     """
-    target = "_dmarc.{0}".format(domain.lower().replace("_dmarc.", ""))
-    try:
-        resolver = dns.resolver.Resolver()
-        if nameservers:
-            resolver.nameservers = nameservers
-            resolver.lifetime = timeout
-        record = resolver.query(target, "TXT")[0].to_text().strip('"')
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-        if len(domain.split(".")) > 1:
-            domain = ".".join(domain.split(".")[1::])
-            record = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)["record"]
-        else:
-            raise DMARCError("A DMARC record does not exist for this domain, or any of its upper domains")
-    except dns.exception.DNSException as error:
-        raise DMARCError(error.msg)
+    record = None
+    while record is None and len(domain.split(".")) > 1:
+        domain = ".".join(domain.split(".")[1::])
+        record = _query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+    if record is None:
+        raise DMARCError("A DMARC record does not exist for this domain, or any of its upper domains")
 
     return OrderedDict(org_domain=domain, record=record)
 
