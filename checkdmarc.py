@@ -21,7 +21,6 @@ except ImportError:
 import dns.resolver
 import dns.exception
 from pyleri import (Grammar,
-                    Token,
                     Regex,
                     Sequence,
                     List,
@@ -48,7 +47,7 @@ if version_info[0] >= 3:
     unicode = str
 
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 
 class DMARCException(Exception):
@@ -228,7 +227,11 @@ def query_dmarc_record(domain, nameservers=None, timeout=2):
             resolver.lifetime = timeout
         answer = resolver.query(target, "TXT")[0].to_text().strip('"')
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-        raise DMARCError("A TXT record does not exist at {0}".format(target))
+        if len(domain.split(".")) > 1:
+            domain = ".".join(domain.split(".")[1::])
+            answer = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+        else:
+            raise DMARCError("A DMARC record does not exist for this domain, or any of its upper domains")
     except dns.exception.DNSException as error:
         raise DMARCError(error.msg)
 
