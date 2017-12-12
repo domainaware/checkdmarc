@@ -48,7 +48,7 @@ if version_info[0] >= 3:
     unicode = str
 
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 
 class DMARCException(Exception):
@@ -268,6 +268,7 @@ def parse_dmarc_report_uri(uri):
         uri: A DMARC URI
 
     Returns:
+        str: An email address
 
     """
     uri = uri.strip()
@@ -277,12 +278,47 @@ def parse_dmarc_report_uri(uri):
     return mailto_matches[0]
 
 
-def parse_dmarc_record(record, include_tag_descriptions=False):
+def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=2):
+    """
+      Checks if a report sender is authorized to send a report to the destination domain, per RFC 7489, section 7.1
+      
+      Args:
+          source_domain (str): The source domain
+          destination_domain (str): The destination domain
+          nameservers (list): A list of nameservers to query
+          timeout (int): number of seconds to wait for an answer from DNS
+
+      Returns:
+          str: An unparsed DMARC string
+      """
+    target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
+    warning_message = "Unable to validate {0} as an external sender for {1}: " \
+                      "https://tools.ietf.org/html/rfc7489#section-7.1".format(source_domain,
+                                                                               destination_domain)
+    try:
+        resolver = dns.resolver.Resolver()
+        if nameservers:
+            resolver.nameservers = nameservers
+            resolver.lifetime = timeout
+        answer = resolver.query(target, "TXT")[0].to_text().strip('"')
+        if not answer.startswith("v=DMARC1"):
+            raise DMARCWarning(warning_message)
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        raise DMARCWarning(warning_message)
+    except dns.exception.DNSException as error:
+        raise DMARCWarning("Unable to validate {0} as an external sender for {1}: {2}".format(source_domain,
+                                                                                              destination_domain,
+                                                                                              error.msg))
+    return True
+
+
+def parse_dmarc_record(record, domain, include_tag_descriptions=False):
     """
     Parses a DMARC record
     
     Args:
         record (str): A DMARC record 
+        domain (str): The domain the record came from
         include_tag_descriptions (bool): Include descriptions in parsed results 
 
     Returns:
@@ -336,6 +372,8 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
             for uri in tags["rua"]["value"].split(","):
                 email_address = parse_dmarc_report_uri(uri)
                 email_domain = email_address.split("@")[-1]
+                if email_domain.lower() != domain.lower():
+                    verify_external_dmarc_destination(domain, email_domain)
                 try:
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
@@ -351,6 +389,8 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
             for uri in tags["ruf"]["value"].split(","):
                 email_address = parse_dmarc_report_uri(uri)
                 email_domain = email_address.split("@")[-1]
+                if email_domain.lower() != domain.lower():
+                    verify_external_dmarc_destination(domain, email_domain)
                 try:
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
@@ -386,7 +426,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
 
     """
     record = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-    tags = parse_dmarc_record(record, include_tag_descriptions=include_tag_descriptions)
+    tags = parse_dmarc_record(record, domain, include_tag_descriptions=include_tag_descriptions)
 
     return OrderedDict(record=record, tags=tags)
 
@@ -684,7 +724,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 row["spf_valid"] = False
             try:
                 row["dmarc_record"] = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-                dmarc = parse_dmarc_record(row["dmarc_record"])
+                dmarc = parse_dmarc_record(row["dmarc_record"], domain)
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
                 row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
                 row["dmarc_fo"] = dmarc["tags"]["fo"]["value"]
@@ -725,7 +765,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             domain_results["dmarc"] = OrderedDict(record=None, valid=True)
             try:
                 domain_results["dmarc"]["record"] = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-                parsed_dmarc_record = parse_dmarc_record(domain_results["dmarc"]["record"],
+                parsed_dmarc_record = parse_dmarc_record(domain_results["dmarc"]["record"], domain,
                                                          include_tag_descriptions=include_dmarc_tag_descriptions)
                 domain_results["dmarc"]["tsgs"] = parsed_dmarc_record["tags"]
                 domain_results["dmarc"]["warnings"] = parsed_dmarc_record["warnings"]
@@ -747,13 +787,13 @@ def _main():
     """Called when the module in executed"""
     arg_parser = ArgumentParser(description=__doc__)
     arg_parser.add_argument("domain", nargs="+",
-                            help="One or ore domains, or single a path to a file containing a list of domains")
-    arg_parser.add_argument("-f", "--format", default="json", help="Specify JSON or CSV output format")
-    arg_parser.add_argument("-o", "--output", help="Output to a file path rather than printing to the screen")
+                            help="one or ore domains, or a single path to a file containing a list of domains")
+    arg_parser.add_argument("-f", "--format", default="json", help="specify JSON or CSV output format")
+    arg_parser.add_argument("-o", "--output", help="output to a file path rather than printing to the screen")
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
-                            help="Include descriptions of DMARC tags in the JSON output")
-    arg_parser.add_argument("-n", "--nameserver", nargs="+", help="Nameservers to query")
-    arg_parser.add_argument("-t", "--timeout", help="Number of seconds to wait for an answer from DNS", default=2)
+                            help="include descriptions of DMARC tags in the JSON output")
+    arg_parser.add_argument("-n", "--nameserver", nargs="+", help="nameservers to query")
+    arg_parser.add_argument("-t", "--timeout", help="number of seconds to wait for an answer from DNS", default=2)
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
     args = arg_parser.parse_args()
 
