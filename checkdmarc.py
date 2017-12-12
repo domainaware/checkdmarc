@@ -214,10 +214,10 @@ def query_dmarc_record(domain, nameservers=None, timeout=2):
     Args:
         domain (str): A top-level domain (TLD)
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an answer from DNS
+        timeout (int): number of seconds to wait for an record from DNS
 
     Returns:
-        str: An unparsed DMARC string
+        dict: the ``org_domain`` and ``record``
     """
     target = "_dmarc.{0}".format(domain.lower().replace("_dmarc.", ""))
     try:
@@ -225,17 +225,17 @@ def query_dmarc_record(domain, nameservers=None, timeout=2):
         if nameservers:
             resolver.nameservers = nameservers
             resolver.lifetime = timeout
-        answer = resolver.query(target, "TXT")[0].to_text().strip('"')
+        record = resolver.query(target, "TXT")[0].to_text().strip('"')
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         if len(domain.split(".")) > 1:
             domain = ".".join(domain.split(".")[1::])
-            answer = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+            record = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)["record"]
         else:
             raise DMARCError("A DMARC record does not exist for this domain, or any of its upper domains")
     except dns.exception.DNSException as error:
         raise DMARCError(error.msg)
 
-    return answer
+    return OrderedDict(org_domain=domain, record=record)
 
 
 def get_dmarc_tag_description(tag, value=None):
@@ -428,7 +428,10 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
         OrderedDict: The DMARC record parsed by key
 
     """
-    record = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+    query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+    domain = query["domain"]
+    record = query["record"]
+
     tags = parse_dmarc_record(record, domain, include_tag_descriptions=include_tag_descriptions)
 
     return OrderedDict(record=record, tags=tags)
@@ -726,8 +729,9 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 row["spf_error"] = error
                 row["spf_valid"] = False
             try:
-                row["dmarc_record"] = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-                dmarc = parse_dmarc_record(row["dmarc_record"], domain)
+                query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+                row["dmarc_record"] = query["record"]
+                dmarc = parse_dmarc_record(query["record"], query["org_domain"])
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
                 row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
                 row["dmarc_fo"] = dmarc["tags"]["fo"]["value"]
@@ -767,8 +771,9 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             # DMARC
             domain_results["dmarc"] = OrderedDict(record=None, valid=True)
             try:
-                domain_results["dmarc"]["record"] = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-                parsed_dmarc_record = parse_dmarc_record(domain_results["dmarc"]["record"], domain,
+                query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+                domain_results["dmarc"]["record"] = query["record"]
+                parsed_dmarc_record = parse_dmarc_record(query["record"], query["org_domain"],
                                                          include_tag_descriptions=include_dmarc_tag_descriptions)
                 domain_results["dmarc"]["tsgs"] = parsed_dmarc_record["tags"]
                 domain_results["dmarc"]["warnings"] = parsed_dmarc_record["warnings"]
