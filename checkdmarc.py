@@ -295,8 +295,8 @@ def parse_dmarc_record(record, include_tag_descriptions=False):
     parsed_record = dmarc_syntax_checker.parse(record)
     if not parsed_record.is_valid:
         expecting = list(map(lambda x: unicode(x).strip('"'), list(parsed_record.expecting)))
-        raise DMARCWarning("Error: Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
-                                                                                parsed_record.pos, record))
+        raise DMARCError("Error: Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
+                                                                              parsed_record.pos, record))
 
     pairs = dmarc_regex.findall(record)
     tags = OrderedDict()
@@ -423,7 +423,7 @@ def query_spf_record(domain, nameservers=None, timeout=2):
     except dns.resolver.NXDOMAIN:
         raise SPFError("The domain {0} does not exist".format(domain))
     except dns.exception.DNSException as error:
-        raise SPFWarning(error)
+        raise SPFError(error)
 
     return spf_record
 
@@ -524,12 +524,13 @@ def _get_txt_records(domain, nameservers=None, timeout=2):
     return records
 
 
-def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2):
+def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None, timeout=2):
     """
     Parses a SPF record, including resolving a, mx, and include mechanisms
     
     Args:
         record (str): An SPF record
+        query_count(int): The number of DNS queries used in the last recursion - limit 10
         seen (list): A list of domains seen in past loops
         domain (str): The domain that the SPF record came from
         nameservers (list): A list of nameservers to query
@@ -538,6 +539,23 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2):
     Returns:
         OrderedDict: A OrderedDictionary containing a parsed SPF record and warinings 
     """
+    def _check_query_limit(count, requests):
+        """
+        Check if the SPF parser is within the RFC limit of 10 queries  
+        Args:
+            count (int): The current ``query_count`` total 
+            requests (int): The number of DNS queries needed for a task
+
+        Returns:
+            int: The new ``query_count`` total 
+
+        """
+        count += requests
+        if count > 10:
+            raise SPFError("Parsing the SPF record requires more than the 10 maximum DNS queries: "
+                           "https://tools.ietf.org/html/rfc7208#section-4.6.4")
+        return count
+
     if seen is None:
         seen = [domain]
     record = record.replace(' "', '').replace('"', '')
@@ -565,6 +583,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2):
 
         try:
             if mechanism == "a":
+                query_count = _check_query_limit(query_count, 2)
                 if value == "":
                     a_records = _get_a_records(domain, nameservers=nameservers, timeout=timeout)
                 else:
@@ -572,23 +591,27 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2):
                 for record in a_records:
                     results[result].append(OrderedDict(mechanism=mechanism, value=record))
             elif mechanism == "mx":
+                query_count = _check_query_limit(query_count, 1)
                 if value == "":
                     mx_hosts = _get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
                 else:
                     mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
                 for host in mx_hosts:
+                    query_count = _check_query_limit(query_count, 1)
                     results[result].append(OrderedDict(mechanism=mechanism, value=host))
             elif mechanism == "redirect":
+                query_count = _check_query_limit(query_count, 1)
                 results["redirect"] = value
             elif mechanism == "exp":
                 results["exp"] = _get_txt_records(value)[0]
             elif mechanism == "all":
                 results["all"] = result
             elif mechanism == "include":
+                query_count = _check_query_limit(query_count, 1)
                 if value in seen:
                     raise SPFWarning("Include loop detected: {0}".format(value))
                 seen.append(value)
-                results["include"][value] = get_spf_record(value, seen=seen, nameservers=nameservers, timeout=timeout)
+                results["include"][value] = get_spf_record(value, nameservers=nameservers, timeout=timeout)
             elif mechanism == "ptr":
                 raise SPFWarning("The ptr mechanism should not be used "
                                  "https://tools.ietf.org/html/rfc7208#section-5.5")
