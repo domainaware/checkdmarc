@@ -4,7 +4,7 @@ Changelog
 1.0.6
 -----
 - Make SPF loops errors instead of warnings
-- Check SPF `redirect`lops
+- Check SPF records for `redirect`lops
 
 1.0.5
 ------
