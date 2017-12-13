@@ -754,9 +754,9 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             output_file = StringIO()
         writer = DictWriter(output_file, fieldnames=fields)
         writer.writeheader()
+        while "" in domains:
+            domains.remove("")
         for domain in domains:
-            if domain == "":
-                continue
             row = dict(domain=domain, spf_valid=True, dmarc_valid=True)
             try:
                 row["spf_record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
@@ -848,6 +848,8 @@ def _main():
     if len(domains) == 1 and path.exists(domains[0]):
         with open(domains[0]) as domains_file:
             domains = list(map(lambda l: l.rstrip(".\r\n"), domains_file.readlines()))
+            while "" in domains:
+                domains.remove("")
     results = check_domains(domains, output_format=args.format, output_path=args.output,
                             include_dmarc_tag_descriptions=args.descriptions,
                             nameservers=args.nameserver, timeout=args.timeout)
