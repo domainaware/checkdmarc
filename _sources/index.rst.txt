@@ -43,9 +43,9 @@ Command line usage
 ------------------
 ::
 
-    usage: checkdmarc.py [-h] [-f FORMAT] [-o OUTPUT] [-d]
-                             [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
-                             domain [domain ...]
+    usage: checkdmarc [-h] [-f FORMAT] [-o OUTPUT] [-d]
+                      [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
+                      domain [domain ...]
 
         Validates and parses SPF amd DMARC DNS records
 
