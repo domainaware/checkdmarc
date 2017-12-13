@@ -9,7 +9,7 @@ Changelog
 1.0.5
 ------
 
-- Ignore plank lines/domains in input
+- Ignore blank lines/domains in input
 
 1.0.4
 -----
