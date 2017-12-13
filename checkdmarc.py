@@ -226,7 +226,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=1.0):
         timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-        resolver.lifetime = timeout
+        #resolver.lifetime = timeout
         resolver.timeout = timeout
         record = resolver.query(target, "TXT")[0].to_text().strip('"')
 
@@ -325,7 +325,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
         timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-        resolver.lifetime = timeout
+        #resolver.lifetime = timeout
         resolver.timeout = timeout
         answer = resolver.query(target, "TXT")[0].to_text().strip('"')
         if not answer.startswith("v=DMARC1"):
@@ -477,8 +477,8 @@ def query_spf_record(domain, nameservers=None, timeout=1.0):
         timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        resolver.timeout = timeout
+        #resolver.lifetime = timeout
+        #resolver.timeout = timeout
         answer = resolver.query(domain, "TXT")
         spf_record = None
         for record in answer:
@@ -517,7 +517,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=1.0):
         timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-        resolver.lifetime = timeout
+        #resolver.lifetime = timeout
         resolver.timeout = timeout
         answers = resolver.query(domain, "MX")
         hosts = list(map(lambda r: r.to_text().split(" ")[-1].rstrip("."), answers))
@@ -550,7 +550,7 @@ def _get_a_records(domain, nameservers=None, timeout=1.0):
         timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-        resolver.lifetime = timeout
+        #resolver.lifetime = timeout
         resolver.timeout = timeout
         answers = resolver.query(domain, "A")
         records = list(map(lambda r: r.to_text().rstrip("."), answers))
@@ -588,7 +588,7 @@ def _get_txt_records(domain, nameservers=None, timeout=1.0):
         timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-        resolver.lifetime = timeout
+        #resolver.lifetime = timeout
         resolver.timeout = timeout
         answers = resolver.query(domain, "TXT")
         records = list(map(lambda r: r.to_text().replace(' "', '').replace('"', ''), answers))
