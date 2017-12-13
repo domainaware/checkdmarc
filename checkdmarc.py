@@ -29,11 +29,11 @@ from pyleri import (Grammar,
 
 """Copyright 2017 Sean Whalen
 
-Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, Version 1.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+   http://www.apache.org/licenses/LICENSE-1.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -208,7 +208,7 @@ spf_qualifiers = {
 }
 
 
-def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
+def _query_dmarc_record(domain, nameservers=None, timeout=1.0):
     """
     Queries DNS for a DMARC record
     Args:
@@ -239,7 +239,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
     return record
 
 
-def query_dmarc_record(domain, nameservers=None, timeout=2.0):
+def query_dmarc_record(domain, nameservers=None, timeout=1.0):
     """
     Queries DNS for a DMARC record
     Args:
@@ -303,7 +303,7 @@ def parse_dmarc_report_uri(uri):
     return mailto_matches[0]
 
 
-def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=2.0):
+def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=1.0):
     """
       Checks if a report sender is authorized to send a report to the destination domain, per RFC 7489, section 7.1
       
@@ -438,7 +438,7 @@ def parse_dmarc_record(record, organisational_domain, include_tag_descriptions=F
     return OrderedDict([("tags", tags), ("warnings", warnings)])
 
 
-def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, timeout=2.0):
+def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, timeout=1.0):
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -461,7 +461,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
     return OrderedDict([("record", record), ("organisational_domain", organisational_domain), ("tags", tags)])
 
 
-def query_spf_record(domain, nameservers=None, timeout=2.0):
+def query_spf_record(domain, nameservers=None, timeout=1.0):
     """
     Queries DNS for a SPF record
     Args:
@@ -500,7 +500,7 @@ def query_spf_record(domain, nameservers=None, timeout=2.0):
     return spf_record
 
 
-def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
+def _get_mx_hosts(domain, nameservers=None, timeout=1.0):
     """
     Queries DNS for a list of Mail Exchange hosts 
     
@@ -531,7 +531,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
     return hosts
 
 
-def _get_a_records(domain, nameservers=None, timeout=2.0):
+def _get_a_records(domain, nameservers=None, timeout=1.0):
     """
     Queries DNS for A and AAAA records
     
@@ -570,7 +570,7 @@ def _get_a_records(domain, nameservers=None, timeout=2.0):
     return records
 
 
-def _get_txt_records(domain, nameservers=None, timeout=2.0):
+def _get_txt_records(domain, nameservers=None, timeout=1.0):
     """
     Queries DNS for TXT records
 
@@ -602,7 +602,7 @@ def _get_txt_records(domain, nameservers=None, timeout=2.0):
     return records
 
 
-def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None, timeout=2.0):
+def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None, timeout=1.0):
     """
     Parses a SPF record, including resolving a, mx, and include mechanisms
     
@@ -716,7 +716,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
     return OrderedDict([("results", results), ("warnings", warnings)])
 
 
-def get_spf_record(domain, query_count=0, nameservers=None, timeout=2.0):
+def get_spf_record(domain, query_count=0, nameservers=None, timeout=1.0):
     """
     Retrieves and parses an SPF record 
     
@@ -737,7 +737,7 @@ def get_spf_record(domain, query_count=0, nameservers=None, timeout=2.0):
 
 
 def check_domains(domains, output_format="json", output_path=None, include_dmarc_tag_descriptions=False,
-                  nameservers=None, timeout=2.0):
+                  nameservers=None, timeout=1.0):
     """
     Check the given domains for SPF and DMARC records, parse them, and return them
     
@@ -853,8 +853,8 @@ def _main():
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in the JSON output")
     arg_parser.add_argument("-n", "--nameserver", nargs="+", help="nameservers to query")
-    arg_parser.add_argument("-t", "--timeout", 
-                            help="number of seconds to wait for an answer from DNS (default 2)", default=2.0)
+    arg_parser.add_argument("-t", "--timeout",
+                            help="number of seconds to wait for an answer from DNS (default 1)", default=1.0)
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
     args = arg_parser.parse_args()
 
