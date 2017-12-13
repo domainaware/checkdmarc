@@ -208,13 +208,13 @@ spf_qualifiers = {
 }
 
 
-def _query_dmarc_record(domain, nameservers=None, timeout=2):
+def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for a DMARC record
     Args:
         domain (str): A top-level domain (TLD)
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an record from DNS
+        timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
         str: A record string or None
@@ -223,6 +223,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2):
     record = None
     try:
         resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
         resolver.lifetime = timeout
@@ -238,13 +239,13 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2):
     return record
 
 
-def query_dmarc_record(domain, nameservers=None, timeout=2):
+def query_dmarc_record(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for a DMARC record
     Args:
         domain (str): A top-level domain (TLD)
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an record from DNS
+        timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
         dict: the ``organisational_domain`` and ``record``
@@ -302,7 +303,7 @@ def parse_dmarc_report_uri(uri):
     return mailto_matches[0]
 
 
-def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=2):
+def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=2.0):
     """
       Checks if a report sender is authorized to send a report to the destination domain, per RFC 7489, section 7.1
       
@@ -310,7 +311,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
           source_domain (str): The source domain
           destination_domain (str): The destination domain
           nameservers (list): A list of nameservers to query
-          timeout (int): number of seconds to wait for an answer from DNS
+          timeout(float): number of seconds to wait for an answer from DNS
 
       Returns:
           str: An unparsed DMARC string
@@ -321,10 +322,11 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
                                                                                destination_domain)
     try:
         resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-            resolver.lifetime = timeout
-            resolver.timeout = timeout
+        resolver.lifetime = timeout
+        resolver.timeout = timeout
         answer = resolver.query(target, "TXT")[0].to_text().strip('"')
         if not answer.startswith("v=DMARC1"):
             raise DMARCWarning(warning_message)
@@ -436,7 +438,7 @@ def parse_dmarc_record(record, organisational_domain, include_tag_descriptions=F
     return OrderedDict([("tags", tags), ("warnings", warnings)])
 
 
-def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, timeout=2):
+def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, timeout=2.0):
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -444,7 +446,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
         domain (str): A top-level domain (TLD)
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an answer from DNS
+        timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: `record`: the DMARC record, ``tag``: The DMARC record parsed by tag
@@ -459,23 +461,24 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
     return OrderedDict([("record", record), ("organisational_domain", organisational_domain), ("tags", tags)])
 
 
-def query_spf_record(domain, nameservers=None, timeout=2):
+def query_spf_record(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for a SPF record
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an answer from DNS
+        timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
         str: An unparsed SPF string
     """
     try:
         resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-            resolver.lifetime = timeout
-            resolver.timeout = timeout
+        resolver.lifetime = timeout
+        resolver.timeout = timeout
         answer = resolver.query(domain, "TXT")
         spf_record = None
         for record in answer:
@@ -497,7 +500,7 @@ def query_spf_record(domain, nameservers=None, timeout=2):
     return spf_record
 
 
-def _get_mx_hosts(domain, nameservers=None, timeout=2):
+def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for a list of Mail Exchange hosts 
     
@@ -511,10 +514,11 @@ def _get_mx_hosts(domain, nameservers=None, timeout=2):
     """
     try:
         resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-            resolver.lifetime = timeout
-            resolver.timeout = timeout
+        resolver.lifetime = timeout
+        resolver.timeout = timeout
         answers = resolver.query(domain, "MX")
         hosts = list(map(lambda r: r.to_text().split(" ")[-1].rstrip("."), answers))
     except dns.resolver.NXDOMAIN:
@@ -527,14 +531,14 @@ def _get_mx_hosts(domain, nameservers=None, timeout=2):
     return hosts
 
 
-def _get_a_records(domain, nameservers=None, timeout=2):
+def _get_a_records(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for A and AAAA records
     
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an answer from DNS
+        timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
         list: A list of IPv4 and IPv6 addresses
@@ -543,10 +547,11 @@ def _get_a_records(domain, nameservers=None, timeout=2):
     records = []
     try:
         resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-            resolver.lifetime = timeout
-            resolver.timeout = timeout
+        resolver.lifetime = timeout
+        resolver.timeout = timeout
         answers = resolver.query(domain, "A")
         records = list(map(lambda r: r.to_text().rstrip("."), answers))
         answers = resolver.query(domain, "AAAA")
@@ -565,14 +570,14 @@ def _get_a_records(domain, nameservers=None, timeout=2):
     return records
 
 
-def _get_txt_records(domain, nameservers=None, timeout=2):
+def _get_txt_records(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for TXT records
 
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an answer from DNS
+        timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
         list: A list of TXT records
@@ -580,10 +585,11 @@ def _get_txt_records(domain, nameservers=None, timeout=2):
     """
     try:
         resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
         if nameservers:
             resolver.nameservers = nameservers
-            resolver.lifetime = timeout
-            resolver.timeout = timeout
+        resolver.lifetime = timeout
+        resolver.timeout = timeout
         answers = resolver.query(domain, "TXT")
         records = list(map(lambda r: r.to_text().replace(' "', '').replace('"', ''), answers))
     except dns.resolver.NXDOMAIN:
@@ -596,7 +602,7 @@ def _get_txt_records(domain, nameservers=None, timeout=2):
     return records
 
 
-def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None, timeout=2):
+def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None, timeout=2.0):
     """
     Parses a SPF record, including resolving a, mx, and include mechanisms
     
@@ -606,7 +612,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
         seen (list): A list of domains seen in past loops
         domain (str): The domain that the SPF record came from
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an answer from DNS
+        timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: A OrderedDictionary containing a parsed SPF record and warinings 
@@ -710,7 +716,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
     return OrderedDict([("results", results), ("warnings", warnings)])
 
 
-def get_spf_record(domain, query_count=0, nameservers=None, timeout=2):
+def get_spf_record(domain, query_count=0, nameservers=None, timeout=2.0):
     """
     Retrieves and parses an SPF record 
     
@@ -718,7 +724,7 @@ def get_spf_record(domain, query_count=0, nameservers=None, timeout=2):
         domain (str): A domain name
         query_count (int): The number of queries used in the last iteration
         nameservers (list): A list of nameservers to query
-        timeout (int): Number of seconds to wait for an answer from DNS
+        timeout(float): Number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: An SPF record parsed by result
@@ -731,7 +737,7 @@ def get_spf_record(domain, query_count=0, nameservers=None, timeout=2):
 
 
 def check_domains(domains, output_format="json", output_path=None, include_dmarc_tag_descriptions=False,
-                  nameservers=None, timeout=2):
+                  nameservers=None, timeout=2.0):
     """
     Check the given domains for SPF and DMARC records, parse them, and return them
     
@@ -741,7 +747,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         output_path (str): Save output to the given file path 
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC tags and/or tag values in the results
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an answer from DNS
+        timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: Parsed SPF and DMARC records
@@ -847,8 +853,8 @@ def _main():
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in the JSON output")
     arg_parser.add_argument("-n", "--nameserver", nargs="+", help="nameservers to query")
-    arg_parser.add_argument("-t", "--timeout", help="number of seconds to wait for an answer from DNS (default 2)",
-                            default=2)
+    arg_parser.add_argument("-t", "--timeout", _type=float,
+                            help="number of seconds to wait for an answer from DNS (default 2)", default=2.0)
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
     args = arg_parser.parse_args()
 
