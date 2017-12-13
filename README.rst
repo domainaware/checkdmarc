@@ -59,7 +59,7 @@ Or, install the latest development release directly from GitHub:
 Note to Windows users
 ^^^^^^^^^^^^^^^^^^^^^
 
-On Windows, ``pip3`` is ``pip``, reguardless if you installed Python 2 or 3. So on Windows, simply
+On Windows, ``pip3`` is ``pip``, regardless if you installed Python 2 or 3. So on Windows, simply
 substitute ``pip`` as an administrator in place of ``sudo pip3``, in the above commands.
 
 Documentation

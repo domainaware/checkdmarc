@@ -667,7 +667,10 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                     results[result].append(OrderedDict(mechanism=mechanism, value=host))
             elif mechanism == "redirect":
                 query_count = _check_query_limit(query_count, 1)
-                results["redirect"] = value
+                results["redirect"] = OrderedDict(domain=value, results=get_spf_record(value,
+                                                                                       query_count=query_count,
+                                                                                       nameservers=nameservers,
+                                                                                       timeout=timeout))
             elif mechanism == "exp":
                 results["exp"] = _get_txt_records(value)[0]
             elif mechanism == "all":
@@ -677,7 +680,10 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                 if value in seen:
                     raise SPFWarning("Include loop detected: {0}".format(value))
                 seen.append(value)
-                results["include"][value] = get_spf_record(value, nameservers=nameservers, timeout=timeout)
+                results["include"][value] = get_spf_record(value,
+                                                           query_count=query_count,
+                                                           nameservers=nameservers,
+                                                           timeout=timeout)
             elif mechanism == "ptr":
                 raise SPFWarning("The ptr mechanism should not be used "
                                  "https://tools.ietf.org/html/rfc7208#section-5.5")
@@ -689,21 +695,22 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
     return OrderedDict(results=results, warnings=warnings)
 
 
-def get_spf_record(domain, nameservers=None, timeout=2):
+def get_spf_record(domain, query_count=0, nameservers=None, timeout=2):
     """
     Retrieves and parses an SPF record 
     
     Args:
         domain (str): A domain name
+        query_count (int): The number of queries used in the last iteration
         nameservers (list): A list of nameservers to query
-        timeout (int): number of seconds to wait for an answer from DNS
+        timeout (int): Number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: An SPF record parsed by result
 
     """
     record = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
-    record = parse_spf_record(record, domain, nameservers=nameservers, timeout=timeout)
+    record = parse_spf_record(record, domain, query_count=query_count, nameservers=nameservers, timeout=timeout)
 
     return record
 
