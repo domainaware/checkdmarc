@@ -47,7 +47,7 @@ if version_info[0] >= 3:
     unicode = str
 
 
-__version__ = "1.0.6"
+__version__ = "1.0.7"
 
 
 class DMARCException(Exception):
@@ -226,6 +226,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2):
         if nameservers:
             resolver.nameservers = nameservers
             resolver.lifetime = timeout
+            resolver.timeout = timeout
         record = resolver.query(target, "TXT")[0].to_text().strip('"')
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
@@ -323,6 +324,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
         if nameservers:
             resolver.nameservers = nameservers
             resolver.lifetime = timeout
+            resolver.timeout = timeout
         answer = resolver.query(target, "TXT")[0].to_text().strip('"')
         if not answer.startswith("v=DMARC1"):
             raise DMARCWarning(warning_message)
@@ -473,6 +475,7 @@ def query_spf_record(domain, nameservers=None, timeout=2):
         if nameservers:
             resolver.nameservers = nameservers
             resolver.lifetime = timeout
+            resolver.timeout = timeout
         answer = resolver.query(domain, "TXT")
         spf_record = None
         for record in answer:
@@ -511,6 +514,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=2):
         if nameservers:
             resolver.nameservers = nameservers
             resolver.lifetime = timeout
+            resolver.timeout = timeout
         answers = resolver.query(domain, "MX")
         hosts = list(map(lambda r: r.to_text().split(" ")[-1].rstrip("."), answers))
     except dns.resolver.NXDOMAIN:
@@ -542,6 +546,7 @@ def _get_a_records(domain, nameservers=None, timeout=2):
         if nameservers:
             resolver.nameservers = nameservers
             resolver.lifetime = timeout
+            resolver.timeout = timeout
         answers = resolver.query(domain, "A")
         records = list(map(lambda r: r.to_text().rstrip("."), answers))
         answers = resolver.query(domain, "AAAA")
@@ -578,6 +583,7 @@ def _get_txt_records(domain, nameservers=None, timeout=2):
         if nameservers:
             resolver.nameservers = nameservers
             resolver.lifetime = timeout
+            resolver.timeout = timeout
         answers = resolver.query(domain, "TXT")
         records = list(map(lambda r: r.to_text().replace(' "', '').replace('"', ''), answers))
     except dns.resolver.NXDOMAIN:

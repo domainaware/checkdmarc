@@ -68,6 +68,14 @@ Command line usage
                                 (default 2)
           -v, --version         show program's version number and exit
 
+
+Bug reports
+-----------
+
+Please report bugs on the GitHub issue tracker
+
+https://github.com/domainaware/checkdmarc/issues
+
 Module documentation
 --------------------
 

@@ -1,10 +1,14 @@
 Changelog
 =========
 
+1.0.7
+-----
+- Fix timeout option
+
 1.0.6
 -----
 - Make SPF loops errors instead of warnings
-- Check SPF records for `redirect`lops
+- Check SPF records for `redirect` loops
 
 1.0.5
 ------
