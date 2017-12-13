@@ -47,7 +47,7 @@ if version_info[0] >= 3:
     unicode = str
 
 
-__version__ = "1.0.5"
+__version__ = "1.0.6"
 
 
 class DMARCException(Exception):
@@ -667,6 +667,8 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                     results[result].append(OrderedDict([("value", host), ("mechanism", mechanism)]))
             elif mechanism == "redirect":
                 query_count = _check_query_limit(query_count, 1)
+                if value in seen:
+                    raise SPFError("Redirect loop detected: {0}".format(value))
                 redirect = get_spf_record(value,
                                           query_count=query_count,
                                           nameservers=nameservers,
@@ -684,7 +686,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
             elif mechanism == "include":
                 query_count = _check_query_limit(query_count, 1)
                 if value in seen:
-                    raise SPFWarning("Include loop detected: {0}".format(value))
+                    raise SPFError("Include loop detected: {0}".format(value))
                 seen.append(value)
                 include = get_spf_record(value,
                                          query_count=query_count,
