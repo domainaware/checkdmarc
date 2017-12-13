@@ -740,7 +740,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
 
     """
     output_format = output_format.lower()
-    domains = sorted(list(set(map(lambda d: d.rstrip(".\r\n").lower(), domains))))
+    domains = sorted(list(set(map(lambda d: d.rstrip(".\r\n").strip().lower(), domains))))
     if output_format not in ["json", "csv"]:
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
@@ -755,6 +755,8 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         writer = DictWriter(output_file, fieldnames=fields)
         writer.writeheader()
         for domain in domains:
+            if domain == "":
+                continue
             row = dict(domain=domain, spf_valid=True, dmarc_valid=True)
             try:
                 row["spf_record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
