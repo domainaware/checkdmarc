@@ -43,29 +43,30 @@ Command line usage
 ------------------
 ::
 
-    usage: checkdmarc [-h] [-f FORMAT] [-o OUTPUT] [-d]
-                      [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
-                      domain [domain ...]
+    usage: checkdmarc.py [-h] [-f FORMAT] [-o OUTPUT] [-d]
+                             [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
+                             domain [domain ...]
 
-    Validates and parses SPF amd DMARC DNS records
+        Validates and parses SPF amd DMARC DNS records
 
-    positional arguments:
-      domain                one or ore domains, or a single path to a file
-                            containing a list of domains
+        positional arguments:
+          domain                one or ore domains, or a single path to a file
+                                containing a list of domains
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -f FORMAT, --format FORMAT
-                            specify JSON or CSV output format
-      -o OUTPUT, --output OUTPUT
-                            output to a file path rather than printing to the
-                            screen
-      -d, --descriptions    include descriptions of DMARC tags in the JSON output
-      -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
-                            nameservers to query
-      -t TIMEOUT, --timeout TIMEOUT
-                            number of seconds to wait for an answer from DNS
-      -v, --version         show program's version number and exit
+        optional arguments:
+          -h, --help            show this help message and exit
+          -f FORMAT, --format FORMAT
+                                specify JSON or CSV output format
+          -o OUTPUT, --output OUTPUT
+                                output to a file path rather than printing to the
+                                screen
+          -d, --descriptions    include descriptions of DMARC tags in the JSON output
+          -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
+                                nameservers to query
+          -t TIMEOUT, --timeout TIMEOUT
+                                number of seconds to wait for an answer from DNS
+                                (default 2)
+          -v, --version         show program's version number and exit
 
 Module documentation
 --------------------

@@ -5,9 +5,9 @@ A Python module and command line parser for SPF and DMARC records
 
 ::
 
-    usage: checkdmarc [-h] [-f FORMAT] [-o OUTPUT] [-d]
-                      [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
-                      domain [domain ...]
+    usage: checkdmarc.py [-h] [-f FORMAT] [-o OUTPUT] [-d]
+                         [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
+                         domain [domain ...]
 
     Validates and parses SPF amd DMARC DNS records
 
@@ -27,7 +27,9 @@ A Python module and command line parser for SPF and DMARC records
                             nameservers to query
       -t TIMEOUT, --timeout TIMEOUT
                             number of seconds to wait for an answer from DNS
+                            (default 2)
       -v, --version         show program's version number and exit
+
 
 Installation
 ------------
