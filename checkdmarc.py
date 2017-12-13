@@ -637,7 +637,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                           ("neutral", []),
                           ("softfail", []),
                           ("fail", []),
-                          ("include", OrderedDict()),
+                          ("include", []),
                           ("redirect", None),
                           ("exp", None),
                           ("all", "neutral")])
@@ -680,10 +680,11 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                 if value in seen:
                     raise SPFWarning("Include loop detected: {0}".format(value))
                 seen.append(value)
-                results["include"][value] = get_spf_record(value,
-                                                           query_count=query_count,
-                                                           nameservers=nameservers,
-                                                           timeout=timeout)
+                include = get_spf_record(value,
+                                         query_count=query_count,
+                                         nameservers=nameservers,
+                                         timeout=timeout)
+                results["include"].append(OrderedDict(domain=value, results=include))
             elif mechanism == "ptr":
                 raise SPFWarning("The ptr mechanism should not be used "
                                  "https://tools.ietf.org/html/rfc7208#section-5.5")
