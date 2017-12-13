@@ -47,7 +47,7 @@ if version_info[0] >= 3:
     unicode = str
 
 
-__version__ = "1.0.3"
+__version__ = "1.0.5"
 
 
 class DMARCException(Exception):
@@ -847,7 +847,7 @@ def _main():
     domains = args.domain
     if len(domains) == 1 and path.exists(domains[0]):
         with open(domains[0]) as domains_file:
-            domains = list(map(lambda l: l.rstrip(".\r\n"), domains_file.readlines()))
+            domains = sorted(list(set(map(lambda d: d.rstrip(".\r\n").strip().lower(), domains_file.readlines()))))
             while "" in domains:
                 domains.remove("")
     results = check_domains(domains, output_format=args.format, output_path=args.output,

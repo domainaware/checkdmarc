@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0.5
+------
+
+- Ignore plank lines/domains in input
+
 1.0.4
 -----
 - Include the DMARC organisational domain in JSON and CSV output
