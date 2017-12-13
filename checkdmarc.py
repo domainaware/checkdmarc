@@ -853,7 +853,7 @@ def _main():
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in the JSON output")
     arg_parser.add_argument("-n", "--nameserver", nargs="+", help="nameservers to query")
-    arg_parser.add_argument("-t", "--timeout", _type=float,
+    arg_parser.add_argument("-t", "--timeout", 
                             help="number of seconds to wait for an answer from DNS (default 2)", default=2.0)
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
     args = arg_parser.parse_args()
