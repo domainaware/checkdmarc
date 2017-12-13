@@ -225,8 +225,8 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2):
         resolver = dns.resolver.Resolver()
         if nameservers:
             resolver.nameservers = nameservers
-            resolver.lifetime = timeout
-            resolver.timeout = timeout
+        resolver.lifetime = timeout
+        resolver.timeout = timeout
         record = resolver.query(target, "TXT")[0].to_text().strip('"')
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
