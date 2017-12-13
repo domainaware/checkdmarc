@@ -8,7 +8,6 @@ Changelog
 
 1.0.5
 ------
-
 - Ignore blank lines/domains in input
 
 1.0.4
@@ -41,12 +40,9 @@ Changelog
 - Validate `rua` and `ruf` URIs
 - Fail SPF validation if query limit reached [RFC 7208, Section 4.6.4][1]
 
-
-
 1.0.1
 -----
 - First release on PyPi (since removed due to bugs)
-
 
 1.0.0
 -----
