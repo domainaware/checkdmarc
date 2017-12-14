@@ -3,7 +3,8 @@ Changelog
 
 1.0.7
 -----
-- Fix timeout option
+- Fix `--timeout/-t` option
+- Add `--wait/-w` oprion
 
 1.0.6
 -----

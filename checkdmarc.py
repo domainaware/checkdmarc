@@ -12,6 +12,7 @@ import json
 from csv import DictWriter
 from argparse import ArgumentParser
 from os import path
+from time import sleep
 
 try:
     from cStringIO import StringIO
@@ -672,16 +673,18 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                     query_count = _check_query_limit(query_count, 1)
                     results[result].append(OrderedDict([("value", host), ("mechanism", mechanism)]))
             elif mechanism == "redirect":
-                query_count = _check_query_limit(query_count, 1)
                 if value in seen:
                     raise SPFError("Redirect loop detected: {0}".format(value))
-                redirect = get_spf_record(value,
-                                          query_count=query_count,
-                                          nameservers=nameservers,
-                                          timeout=timeout)
-
-                results["include"].append(OrderedDict([("domain", value), ("results", redirect)]))
-
+                query_count = _check_query_limit(query_count, 1)
+                seen.append(value)
+                try:
+                    redirect = get_spf_record(value,
+                                              query_count=query_count,
+                                              nameservers=nameservers,
+                                              timeout=timeout)
+                    results["redirect"] = OrderedDict([("domain", value), ("results", redirect)])
+                except SPFError as error:
+                    raise SPFWarning(unicode(error))
             elif mechanism == "exists":
                 query_count = _check_query_limit(query_count, 1)
                 results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
@@ -690,15 +693,18 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
             elif mechanism == "all":
                 results["all"] = result
             elif mechanism == "include":
-                query_count = _check_query_limit(query_count, 1)
                 if value in seen:
                     raise SPFError("Include loop detected: {0}".format(value))
+                query_count = _check_query_limit(query_count, 1)
                 seen.append(value)
-                include = get_spf_record(value,
-                                         query_count=query_count,
-                                         nameservers=nameservers,
-                                         timeout=timeout)
-                results["include"].append(OrderedDict([("domain", value), ("results", include)]))
+                try:
+                    include = get_spf_record(value,
+                                             query_count=query_count,
+                                             nameservers=nameservers,
+                                             timeout=timeout)
+                    results["include"].append(OrderedDict([("domain", value), ("results", include)]))
+                except SPFError as error:
+                    raise SPFWarning(unicode(error))
             elif mechanism == "ptr":
                 raise SPFWarning("The ptr mechanism should not be used "
                                  "https://tools.ietf.org/html/rfc7208#section-5.5")
@@ -731,7 +737,7 @@ def get_spf_record(domain, query_count=0, nameservers=None, timeout=2.0):
 
 
 def check_domains(domains, output_format="json", output_path=None, include_dmarc_tag_descriptions=False,
-                  nameservers=None, timeout=2.0):
+                  nameservers=None, timeout=2.0, wait=0.0):
     """
     Check the given domains for SPF and DMARC records, parse them, and return them
     
@@ -742,6 +748,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC tags and/or tag values in the results
         nameservers (list): A list of nameservers to query
         timeout(float): number of seconds to wait for an answer from DNS
+        wait (float): number of seconds to wait between processing domains - useful for avoiding anti-DoS
 
     Returns:
         OrderedDict: Parsed SPF and DMARC records
@@ -795,6 +802,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 row["dmarc_valid"] = False
             writer.writerow(row)
             output_file.flush()
+            sleep(wait)
         if output_path is None:
             return output_file.getvalue()
     elif output_format == "json":
@@ -828,6 +836,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 domain_results["dmarc"]["valid"] = False
 
             results.append(domain_results)
+            sleep(wait)
         if len(results) == 1:
             results = results[0]
         if output_path:
@@ -842,14 +851,19 @@ def _main():
     arg_parser = ArgumentParser(description=__doc__)
     arg_parser.add_argument("domain", nargs="+",
                             help="one or ore domains, or a single path to a file containing a list of domains")
-    arg_parser.add_argument("-f", "--format", default="json", help="specify JSON or CSV output format")
-    arg_parser.add_argument("-o", "--output", help="output to a file path rather than printing to the screen")
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in the JSON output")
+    arg_parser.add_argument("-f", "--format", default="json", help="specify JSON or CSV output format")
+    arg_parser.add_argument("-o", "--output", help="output to a file path rather than printing to the screen")
     arg_parser.add_argument("-n", "--nameserver", nargs="+", help="nameservers to query")
     arg_parser.add_argument("-t", "--timeout",
-                            help="number of seconds to wait for an answer from DNS (default 2)", default=2.0)
+                            help="number of seconds to wait for an answer from DNS (default 2.0)", type=float,
+                            default=2.0)
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
+    arg_parser.add_argument("-w", "--wait", type=float,
+                            help="number os seconds to wait between processing domains (default 0.0)",
+                            default=0.0)
+
     args = arg_parser.parse_args()
 
     domains = args.domain

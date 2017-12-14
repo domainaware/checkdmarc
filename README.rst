@@ -1,12 +1,13 @@
 checkdmarc
 ==========
 
-A Python module and command line parser for SPF and DMARC records
+A Python module and command line parser for SPF and DMARC DNS records
 
 ::
 
-    usage: checkdmarc [-h] [-f FORMAT] [-o OUTPUT] [-d]
+    usage: checkdmarc [-h] [-d] [-f FORMAT] [-o OUTPUT]
                       [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
+                      [-w WAIT]
                       domain [domain ...]
 
     Validates and parses SPF amd DMARC DNS records
@@ -17,19 +18,20 @@ A Python module and command line parser for SPF and DMARC records
 
     optional arguments:
       -h, --help            show this help message and exit
+      -d, --descriptions    include descriptions of DMARC tags in the JSON output
       -f FORMAT, --format FORMAT
                             specify JSON or CSV output format
       -o OUTPUT, --output OUTPUT
                             output to a file path rather than printing to the
                             screen
-      -d, --descriptions    include descriptions of DMARC tags in the JSON output
       -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
                             nameservers to query
       -t TIMEOUT, --timeout TIMEOUT
                             number of seconds to wait for an answer from DNS
-                            (default 2)
+                            (default 2.0)
       -v, --version         show program's version number and exit
-
+      -w WAIT, --wait WAIT  number os seconds to wait between processing domains
+                            (default 0.0)
 
 Installation
 ------------
