@@ -780,6 +780,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 row["spf_error"] = error
                 row["spf_valid"] = False
             try:
+                sleep(wait)
                 query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 row["dmarc_record"] = query["record"]
                 dmarc = parse_dmarc_record(query["record"], query["organisational_domain"])
@@ -822,6 +823,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 domain_results["spf"]["valid"] = False
 
             # DMARC
+            sleep(wait)
             domain_results["dmarc"] = OrderedDict([("record", None), ("valid", True), ("organisational_domain", None)])
             try:
                 query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
