@@ -14,10 +14,7 @@ from argparse import ArgumentParser
 from os import path
 from time import sleep
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 
 import dns.resolver
 import dns.exception
@@ -84,7 +81,7 @@ class DMARCWarning(DMARCException):
 class _SPFGrammar(Grammar):
     """Defines Pyleri grammar for SPF records"""
     version_tag = Regex("v=spf[\d.]+")
-    mechanism = Regex("([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
+    mechanism = Regex("([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
     START = Sequence(version_tag, Repeat(mechanism))
 
 
@@ -94,8 +91,9 @@ class _DMARCGrammar(Grammar):
     tag_value = Regex("([a-z]{1,5})=([\w.:@\/+!,_\-]+)")
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
 
-dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@\/+!,_\-]+)")
-spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
+
+dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
+spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
 mailto_regex = compile(r"mailto:([\w\-.]+@[\w\-.]+)")
 
 
@@ -161,7 +159,7 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                          ),
                          rf=OrderedDict(name="Report Format",
                                         default="afrf",
-                                        description='A list seperated by colons of one or more report formats as '
+                                        description='A list separated by colons of one or more report formats as '
                                                     'requested by the Domain Owner to be used when a message fails '
                                                     'both SPF and DKIM tests to report details of the individual '
                                                     'failure. Only "afrf" (the auth-failure report type) is '
@@ -198,7 +196,7 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                    'of this tag MUST match precisely; if it does not or it is absent, '
                                                    'the entire retrieved record MUST be ignored. It MUST be the first '
                                                    'tag in the list.')
-                  )
+                         )
 
 spf_qualifiers = {
     "": "pass",
@@ -269,7 +267,8 @@ def get_dmarc_tag_description(tag, value=None):
         value (str): An optional value
 
     Returns:
-        OrderedDict: A OrderedDictionary containing the tag's ``name``, ``default`` value, and a ``description`` of the tag or value  
+        OrderedDict: A OrderedDictionary containing the tag's ``name``, ``default`` value, and a ``description`` of the
+        tag or value
     """
     name = tag_values[tag]["name"]
     description = tag_values[tag]["description"]
@@ -599,7 +598,7 @@ def _get_txt_records(domain, nameservers=None, timeout=1.0):
 
 def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None, timeout=1.0):
     """
-    Parses a SPF record, including resolving a, mx, and include mechanisms
+    Parses a SPF record, including resolving ``a``, ``mx``, and ``include`` mechanisms
     
     Args:
         record (str): An SPF record
@@ -610,7 +609,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
-        OrderedDict: A OrderedDictionary containing a parsed SPF record and warinings 
+        OrderedDict: A OrderedDictionary containing a parsed SPF record and warnings
     """
     def _check_query_limit(count, requests):
         """
@@ -706,6 +705,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                 except SPFError as error:
                     raise SPFWarning(unicode(error))
             elif mechanism == "ptr":
+                results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
                 raise SPFWarning("The ptr mechanism should not be used "
                                  "https://tools.ietf.org/html/rfc7208#section-5.5")
             else:
@@ -783,7 +783,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 row["dmarc_record"] = query["record"]
                 dmarc = parse_dmarc_record(query["record"], query["organisational_domain"])
-                row["dmarg_org_domain"] = dmarc["organisational_domain"]
+                row["dmarc_org_domain"] = dmarc["organisational_domain"]
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
                 row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
                 row["dmarc_fo"] = dmarc["tags"]["fo"]["value"]
@@ -829,7 +829,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 parsed_dmarc_record = parse_dmarc_record(query["record"], query["organisational_domain"],
                                                          include_tag_descriptions=include_dmarc_tag_descriptions)
                 domain_results["dmarc"]["organisational_domain"] = query["organisational_domain"]
-                domain_results["dmarc"]["tsgs"] = parsed_dmarc_record["tags"]
+                domain_results["dmarc"]["tags"] = parsed_dmarc_record["tags"]
                 domain_results["dmarc"]["warnings"] = parsed_dmarc_record["warnings"]
             except DMARCError as error:
                 domain_results["dmarc"]["error"] = unicode(error)
@@ -881,6 +881,7 @@ def _main():
             results = json.dumps(results, ensure_ascii=False, indent=2)
 
         print(results)
+
 
 if __name__ == "__main__":
     _main()
