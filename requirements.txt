@@ -3,3 +3,4 @@ pyleri
 sphinx
 sphinx_rtd_theme
 collective.checkdocs
+wheel
