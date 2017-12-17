@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0.8
+-----
+- Fix typos
+- Add MX records to out
+
 1.0.7
 -----
 - Fix `--timeout/-t` option

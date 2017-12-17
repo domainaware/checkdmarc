@@ -45,7 +45,11 @@ if version_info[0] >= 3:
     unicode = str
 
 
-__version__ = "1.0.7"
+__version__ = "1.0.8"
+
+
+class DNSException(Exception):
+    """Raised when a general DNS error occurs"""
 
 
 class DMARCException(Exception):
@@ -207,11 +211,111 @@ spf_qualifiers = {
 }
 
 
+def _get_mx_hosts(domain, nameservers=None, timeout=1.0):
+    """
+    Queries DNS for a list of Mail Exchange hosts
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+
+    Returns:
+        list: A list of Mail Exchange hosts
+
+    """
+    try:
+        resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
+        if nameservers:
+            resolver.nameservers = nameservers
+        resolver.lifetime = timeout
+        answers = resolver.query(domain, "MX")
+        hosts = list(map(lambda r: r.to_text().split(" ")[-1].rstrip("."), answers))
+    except dns.resolver.NXDOMAIN:
+        raise DNSException("The domain {0} does not exist".format(domain))
+    except dns.resolver.NoAnswer:
+        raise DNSException("{0} does not have any MX records".format(domain))
+    except dns.exception.DNSException as error:
+        raise DNSException(error)
+
+    return hosts
+
+
+def _get_a_records(domain, nameservers=None, timeout=1.0):
+    """
+    Queries DNS for A and AAAA records
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        timeout(float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        list: A list of IPv4 and IPv6 addresses
+
+    """
+    records = []
+    try:
+        resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
+        if nameservers:
+            resolver.nameservers = nameservers
+        resolver.lifetime = timeout
+        answers = resolver.query(domain, "A")
+        records = list(map(lambda r: r.to_text().rstrip("."), answers))
+        answers = resolver.query(domain, "AAAA")
+        records += list(map(lambda r: r.to_text().rstrip("."), answers))
+    except dns.resolver.NXDOMAIN:
+        raise DNSException("The domain {0} does not exist".format(domain))
+    except dns.resolver.NoAnswer:
+        # Sometimes a domain will only have A or AAAA records, but not both, and that's ok
+        pass
+    except dns.exception.DNSException as error:
+        raise DNSException(error)
+    finally:
+        if len(records) == 0:
+            raise DNSException("{0} does not have any A or AAAA records".format(domain))
+
+    return records
+
+
+def _get_txt_records(domain, nameservers=None, timeout=1.0):
+    """
+    Queries DNS for TXT records
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        timeout(float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        list: A list of TXT records
+
+    """
+    try:
+        resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
+        if nameservers:
+            resolver.nameservers = nameservers
+        resolver.lifetime = timeout
+        answers = resolver.query(domain, "TXT")
+        records = list(map(lambda r: r.to_text().replace(' "', '').replace('"', ''), answers))
+    except dns.resolver.NXDOMAIN:
+        raise DNSException("The domain {0} does not exist".format(domain))
+    except dns.resolver.NoAnswer:
+        raise DNSException("The domain {0} does not have any TXT records".format(domain))
+    except dns.exception.DNSException as error:
+        raise DNSException(error)
+
+    return records
+
+
 def _query_dmarc_record(domain, nameservers=None, timeout=1.0):
     """
     Queries DNS for a DMARC record
+
     Args:
-        domain (str): A top-level domain (TLD)
+        domain (str): A domain name
         nameservers (list): A list of nameservers to query
         timeout(float): number of seconds to wait for an record from DNS
 
@@ -237,11 +341,34 @@ def _query_dmarc_record(domain, nameservers=None, timeout=1.0):
     return record
 
 
+def get_mx(domain, nameservers=None, timeout=1.0):
+    """
+    Returns a list of OrderedDicts with keys of ``hostname`` and ``addresses``
+    
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        timeout(float): number of seconds to wait for an record from DNS
+
+    Returns:
+        list: A list of OrderedDicts with keys of ``hostname`` and ``addresses``
+
+    """
+    mx = []
+    mx_records = _get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
+    for record in mx_records:
+        record = record.lower().strip()
+        mx.append(OrderedDict([("domain", record),
+                               ("addresses", _get_a_records(record, nameservers=nameservers, timeout=timeout))]))
+
+    return mx
+
+
 def query_dmarc_record(domain, nameservers=None, timeout=1.0):
     """
     Queries DNS for a DMARC record
     Args:
-        domain (str): A top-level domain (TLD)
+        domain (str): A domain name
         nameservers (list): A list of nameservers to query
         timeout(float): number of seconds to wait for an record from DNS
 
@@ -441,7 +568,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
     Retrieves a DMARC record for a domain and parses it
 
     Args:
-        domain (str): A top-level domain (TLD)
+        domain (str): A domain name
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
         timeout(float): number of seconds to wait for an answer from DNS
@@ -495,105 +622,6 @@ def query_spf_record(domain, nameservers=None, timeout=1.0):
         raise SPFError(error)
 
     return spf_record
-
-
-def _get_mx_hosts(domain, nameservers=None, timeout=1.0):
-    """
-    Queries DNS for a list of Mail Exchange hosts 
-    
-    Args:
-        domain (str): A domain name
-        nameservers (list): A list of nameservers to query
-
-    Returns:
-        list: A list of Mail Exchange hosts
-
-    """
-    try:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers:
-            resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        answers = resolver.query(domain, "MX")
-        hosts = list(map(lambda r: r.to_text().split(" ")[-1].rstrip("."), answers))
-    except dns.resolver.NXDOMAIN:
-        raise SPFWarning("The domain {0} does not exist".format(domain))
-    except dns.resolver.NoAnswer:
-        raise SPFWarning("{0} does not have any MX records".format(domain))
-    except dns.exception.DNSException as error:
-        raise SPFWarning(error)
-
-    return hosts
-
-
-def _get_a_records(domain, nameservers=None, timeout=1.0):
-    """
-    Queries DNS for A and AAAA records
-    
-    Args:
-        domain (str): A domain name
-        nameservers (list): A list of nameservers to query
-        timeout(float): number of seconds to wait for an answer from DNS
-
-    Returns:
-        list: A list of IPv4 and IPv6 addresses
-
-    """
-    records = []
-    try:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers:
-            resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        answers = resolver.query(domain, "A")
-        records = list(map(lambda r: r.to_text().rstrip("."), answers))
-        answers = resolver.query(domain, "AAAA")
-        records += list(map(lambda r: r.to_text().rstrip("."), answers))
-    except dns.resolver.NXDOMAIN:
-        raise SPFWarning("The domain {0} does not exist".format(domain))
-    except dns.resolver.NoAnswer:
-        # Sometimes a domain will only have A or AAAA records, but not both, and that's ok
-        pass
-    except dns.exception.DNSException as error:
-        raise SPFWarning(error)
-    finally:
-        if len(records) == 0:
-            raise SPFWarning("{0} does not have any A or AAAA records".format(domain))
-
-    return records
-
-
-def _get_txt_records(domain, nameservers=None, timeout=1.0):
-    """
-    Queries DNS for TXT records
-
-    Args:
-        domain (str): A domain name
-        nameservers (list): A list of nameservers to query
-        timeout(float): number of seconds to wait for an answer from DNS
-
-    Returns:
-        list: A list of TXT records
-
-    """
-    try:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers:
-            resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        answers = resolver.query(domain, "TXT")
-        records = list(map(lambda r: r.to_text().replace(' "', '').replace('"', ''), answers))
-    except dns.resolver.NXDOMAIN:
-        raise SPFWarning("The domain {0} does not exist".format(domain))
-    except dns.resolver.NoAnswer:
-        raise SPFWarning("The domain {0} does not have any TXT records".format(domain))
-    except dns.exception.DNSException as error:
-        raise SPFWarning(error)
-
-    return records
 
 
 def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None, timeout=1.0):
@@ -682,7 +710,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                                               nameservers=nameservers,
                                               timeout=timeout)
                     results["redirect"] = OrderedDict([("domain", value), ("results", redirect)])
-                except SPFError as error:
+                except DNSException as error:
                     raise SPFWarning(unicode(error))
             elif mechanism == "exists":
                 query_count = _check_query_limit(query_count, 1)
@@ -702,7 +730,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                                              nameservers=nameservers,
                                              timeout=timeout)
                     results["include"].append(OrderedDict([("domain", value), ("results", include)]))
-                except SPFError as error:
+                except DNSException as error:
                     raise SPFWarning(unicode(error))
             elif mechanism == "ptr":
                 results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
@@ -759,9 +787,9 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
     if output_format not in ["json", "csv"]:
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
-        fields = ["domain", "spf_record", "dmarc_record", "spf_valid", "dmarc_valid", "spf_error", "spf_warnings",
-                  "dmarc_error", "dmarc_warnings", "dmarc_org_domain", "dmarc_adkim", "dmarc_aspf", "dmarc_fo",
-                  "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp"]
+        fields = ["domain",  "mx", "spf_record", "dmarc_record", "spf_valid", "dmarc_valid", "spf_error",
+                  "spf_warnings", "dmarc_error", "dmarc_warnings", "dmarc_org_domain", "dmarc_adkim", "dmarc_aspf",
+                  "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp"]
         sorted(list(set(map(lambda d: d.rstrip(".").rstrip(), domains))))
         if output_path:
             output_file = open(output_path, "w", newline="\n")
@@ -772,7 +800,12 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         while "" in domains:
             domains.remove("")
         for domain in domains:
-            row = dict(domain=domain, spf_valid=True, dmarc_valid=True)
+            row = dict(domain=domain, mx="", spf_valid=True, dmarc_valid=True)
+            try:
+                mx = list(map(lambda r: r["hostname"], get_mx(domain, nameservers=nameservers, timeout=timeout)))
+                row["mx"] = " ".join(mx)
+            except DNSException:
+                pass
             try:
                 row["spf_record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 row["spf_warnings"] = " ".join(parse_spf_record(row["spf_record"], row["domain"])["warnings"])
@@ -808,8 +841,12 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
     elif output_format == "json":
         results = []
         for domain in domains:
-            domain_results = OrderedDict([("domain", domain)])
+            domain_results = OrderedDict([("domain", domain), ("mx", [])])
             domain_results["spf"] = OrderedDict([("record", None), ("valid", True)])
+            try:
+                domain_results["mx"] = get_mx(domain, nameservers=nameservers, timeout=timeout)
+            except DNSException:
+                pass
             try:
                 domain_results["spf"]["record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 parsed_spf = parse_spf_record(domain_results["spf"]["record"],
