@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 1.0.7 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 1.0.8 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 1.0.7 documentation" href="index.html"/>
+    <link rel="top" title="checkdmarc 1.0.8 documentation" href="index.html"/>
         <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.0.7
+                1.0.8
               </div>
             
           
@@ -179,6 +179,13 @@
 </dd></dl>
 
 <dl class="exception">
+<dt id="checkdmarc.DNSException">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DNSException</code><a class="reference internal" href="_modules/checkdmarc.html#DNSException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DNSException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">Exception</span></code></p>
+<p>Raised when a general DNS error occurs</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="checkdmarc.SPFError">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFError</code><a class="reference internal" href="_modules/checkdmarc.html#SPFError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFException" title="checkdmarc.SPFException"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFException</span></code></a></p>
@@ -237,7 +244,7 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domain</strong> (<em>str</em>) – A top-level domain (TLD)</li>
+<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
 <li><strong>include_tag_descriptions</strong> (<em>bool</em>) – Include descriptions in parsed results</li>
 <li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
 <li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</li>
@@ -268,10 +275,36 @@
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A OrderedDictionary containing the tag’s <code class="docutils literal"><span class="pre">name</span></code>, <code class="docutils literal"><span class="pre">default</span></code> value, and a <code class="docutils literal"><span class="pre">description</span></code> of the tag or value</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A OrderedDictionary containing the tag’s <code class="docutils literal"><span class="pre">name</span></code>, <code class="docutils literal"><span class="pre">default</span></code> value, and a <code class="docutils literal"><span class="pre">description</span></code> of the
+tag or value</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">OrderedDict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.get_mx">
+<code class="descclassname">checkdmarc.</code><code class="descname">get_mx</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of OrderedDicts with keys of <code class="docutils literal"><span class="pre">hostname</span></code> and <code class="docutils literal"><span class="pre">addresses</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
+<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
+<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of OrderedDicts with keys of <code class="docutils literal"><span class="pre">hostname</span></code> and <code class="docutils literal"><span class="pre">addresses</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
 </td>
 </tr>
 </tbody>
@@ -352,7 +385,7 @@
 <dl class="function">
 <dt id="checkdmarc.parse_spf_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">parse_spf_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>seen=None</em>, <em>query_count=0</em>, <em>nameservers=None</em>, <em>timeout=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parses a SPF record, including resolving a, mx, and include mechanisms</p>
+<dd><p>Parses a SPF record, including resolving <code class="docutils literal"><span class="pre">a</span></code>, <code class="docutils literal"><span class="pre">mx</span></code>, and <code class="docutils literal"><span class="pre">include</span></code> mechanisms</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -367,7 +400,7 @@
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A OrderedDictionary containing a parsed SPF record and warinings</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A OrderedDictionary containing a parsed SPF record and warnings</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">OrderedDict</p>
@@ -381,7 +414,7 @@
 <dt id="checkdmarc.query_dmarc_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">query_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a DMARC record
-:param domain: A top-level domain (TLD)
+:param domain: A domain name
 :type domain: str
 :param nameservers: A list of nameservers to query
 :type nameservers: list
@@ -491,7 +524,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.0.7',
+            VERSION:'1.0.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
