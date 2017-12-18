@@ -1,10 +1,14 @@
 Changelog
 =========
 
+1.0.9
+-----
+- Fix PyPI readme display
+
 1.0.8
 -----
 - Fix typos
-- Add MX records to out
+- Add MX records to output
 
 1.0.7
 -----

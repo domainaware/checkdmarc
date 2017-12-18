@@ -40,12 +40,11 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
+__version__ = "1.0.9"
+
 # Python 2 comparability hack
 if version_info[0] >= 3:
     unicode = str
-
-
-__version__ = "1.0.8"
 
 
 class DNSException(Exception):

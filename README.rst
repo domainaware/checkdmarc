@@ -1,6 +1,3 @@
-checkdmarc
-==========
-
 A Python module and command line parser for SPF and DMARC DNS records
 
 ::
