@@ -830,7 +830,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                     row["dmarc_rua"] = dmarc["tags"]["rua"]["value"]
                 if "ruf" in dmarc:
                     row["dmarc_ruf"] = dmarc["tags"]["ruf"]["value"]
-                row["dmarc_warnings"] = " ".split(dmarc["warnings"])
+                row["dmarc_warnings"] = " ".join(dmarc["warnings"])
             except DMARCError as error:
                 row["dmarc_error"] = error
                 row["dmarc_valid"] = False
