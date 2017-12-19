@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 1.0.12 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 1.1.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 1.0.12 documentation" href="index.html"/>
+    <link rel="top" title="checkdmarc 1.1.0 documentation" href="index.html"/>
         <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.0.12
+                1.1.0
               </div>
             
           
@@ -384,7 +384,7 @@ tag or value</p>
 
 <dl class="function">
 <dt id="checkdmarc.parse_spf_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">parse_spf_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>seen=None</em>, <em>query_count=0</em>, <em>nameservers=None</em>, <em>timeout=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">parse_spf_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>seen=None</em>, <em>query_mechanism_count=0</em>, <em>nameservers=None</em>, <em>timeout=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a SPF record, including resolving <code class="docutils literal"><span class="pre">a</span></code>, <code class="docutils literal"><span class="pre">mx</span></code>, and <code class="docutils literal"><span class="pre">include</span></code> mechanisms</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -392,7 +392,7 @@ tag or value</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>record</strong> (<em>str</em>) – An SPF record</li>
-<li><strong>query_count</strong> (<em>int</em>) – The number of DNS queries used in the last recursion - limit 10</li>
+<li><strong>query_mechanism_count</strong> (<em>int</em>) – The number of mechanisms that make DNS queries used in the last recursion - limit 10</li>
 <li><strong>seen</strong> (<em>list</em>) – A list of domains seen in past loops</li>
 <li><strong>domain</strong> (<em>str</em>) – The domain that the SPF record came from</li>
 <li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
@@ -524,7 +524,7 @@ tag or value</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.0.12',
+            VERSION:'1.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
