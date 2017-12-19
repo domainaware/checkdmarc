@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0.11
+------
+
+- Fix SPF exceptions
+
 1.0.10
 ------
 - Fix DMARC record discovery

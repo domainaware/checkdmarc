@@ -40,7 +40,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.0.9"
+__version__ = "1.0.11"
 
 # Python 2 comparability hack
 if version_info[0] >= 3:
@@ -737,7 +737,8 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                                  "https://tools.ietf.org/html/rfc7208#section-5.5")
             else:
                 results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
-        except SPFWarning as warning:
+
+        except (SPFWarning, DNSException) as warning:
             warnings.append(unicode(warning))
 
     return OrderedDict([("results", results), ("warnings", warnings)])
