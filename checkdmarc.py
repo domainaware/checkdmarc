@@ -40,7 +40,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.0.12"
+__version__ = "1.1.0"
 
 # Python 2 comparability hack
 if version_info[0] >= 3:
@@ -623,13 +623,13 @@ def query_spf_record(domain, nameservers=None, timeout=1.0):
     return spf_record
 
 
-def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None, timeout=1.0):
+def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameservers=None, timeout=1.0):
     """
     Parses a SPF record, including resolving ``a``, ``mx``, and ``include`` mechanisms
     
     Args:
         record (str): An SPF record
-        query_count(int): The number of DNS queries used in the last recursion - limit 10
+        query_mechanism_count(int): The number of mechanisms that make DNS queries used in the last recursion - limit 10
         seen (list): A list of domains seen in past loops
         domain (str): The domain that the SPF record came from
         nameservers (list): A list of nameservers to query
@@ -682,7 +682,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
 
         try:
             if mechanism == "a":
-                query_count = _check_query_limit(query_count, 1)
+                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 if value == "":
                     a_records = _get_a_records(domain, nameservers=nameservers, timeout=timeout)
                 else:
@@ -690,29 +690,30 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
                 for record in a_records:
                     results[result].append(OrderedDict([("value", record), ("mechanism", mechanism)]))
             elif mechanism == "mx":
-                query_count = _check_query_limit(query_count, 1)
+                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 if value == "":
                     mx_hosts = _get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
                 else:
                     mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
+                    if len(mx_hosts) > 5:
+                        raise SPFError("{0} has more than 5 MX resource records, (maximum of 10 DNS A/AAAA queries)")
                 for host in mx_hosts:
-                    query_count = _check_query_limit(query_count, 1)
                     results[result].append(OrderedDict([("value", host), ("mechanism", mechanism)]))
             elif mechanism == "redirect":
                 if value in seen:
                     raise SPFError("Redirect loop detected: {0}".format(value))
-                query_count = _check_query_limit(query_count, 1)
+                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 seen.append(value)
                 try:
                     redirect = get_spf_record(value,
-                                              query_count=query_count,
+                                              query_count=query_mechanism_count,
                                               nameservers=nameservers,
                                               timeout=timeout)
                     results["redirect"] = OrderedDict([("domain", value), ("results", redirect)])
                 except DNSException as error:
                     raise SPFWarning(unicode(error))
             elif mechanism == "exists":
-                query_count = _check_query_limit(query_count, 1)
+                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
             elif mechanism == "exp":
                 results["exp"] = _get_txt_records(value)[0]
@@ -721,11 +722,11 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
             elif mechanism == "include":
                 if value in seen:
                     raise SPFError("Include loop detected: {0}".format(value))
-                query_count = _check_query_limit(query_count, 1)
+                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 seen.append(value)
                 try:
                     include = get_spf_record(value,
-                                             query_count=query_count,
+                                             query_count=query_mechanism_count,
                                              nameservers=nameservers,
                                              timeout=timeout)
                     results["include"].append(OrderedDict([("domain", value), ("results", include)]))
@@ -759,7 +760,7 @@ def get_spf_record(domain, query_count=0, nameservers=None, timeout=1.0):
 
     """
     record = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
-    record = parse_spf_record(record, domain, query_count=query_count, nameservers=nameservers, timeout=timeout)
+    record = parse_spf_record(record, domain, query_mechanism_count=query_count, nameservers=nameservers, timeout=timeout)
 
     return record
 
@@ -816,7 +817,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 row["dmarc_record"] = query["record"]
                 dmarc = parse_dmarc_record(query["record"], query["organisational_domain"])
-                row["dmarc_org_domain"] = dmarc["organisational_domain"]
+                row["dmarc_org_domain"] = query["organisational_domain"]
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
                 row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
                 row["dmarc_fo"] = dmarc["tags"]["fo"]["value"]

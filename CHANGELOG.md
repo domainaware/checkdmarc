@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.1.0
+------
+
+- Separate SPF MX record limit from SPF DNS mechanism limit 
+- Fix DMARC CSV output
+
 1.0.12
 ------
 
