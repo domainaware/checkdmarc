@@ -40,7 +40,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 # Python 2 comparability hack
 if version_info[0] >= 3:
@@ -830,7 +830,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                     row["dmarc_rua"] = dmarc["tags"]["rua"]["value"]
                 if "ruf" in dmarc:
                     row["dmarc_ruf"] = dmarc["tags"]["ruf"]["value"]
-                row["dmarc_warnings"] = dmarc["warnings"]
+                row["dmarc_warnings"] = " ".split(dmarc["warnings"])
             except DMARCError as error:
                 row["dmarc_error"] = error
                 row["dmarc_valid"] = False

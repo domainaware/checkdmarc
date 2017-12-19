@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.1.1
+------
+
+- Fix DMARC warning CSV output
+
 1.1.0
 ------
 
