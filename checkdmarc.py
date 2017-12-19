@@ -357,7 +357,7 @@ def get_mx(domain, nameservers=None, timeout=1.0):
     mx_records = _get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
     for record in mx_records:
         record = record.lower().strip()
-        mx.append(OrderedDict([("domain", record),
+        mx.append(OrderedDict([("hostname", record),
                                ("addresses", _get_a_records(record, nameservers=nameservers, timeout=timeout))]))
 
     return mx
@@ -374,7 +374,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=1.0):
     Returns:
         dict: the ``organisational_domain`` and ``record``
     """
-    record = None
+    record = _query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
     while record is None and len(domain.split(".")) > 1:
         domain = ".".join(domain.split(".")[1::])
         record = _query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)

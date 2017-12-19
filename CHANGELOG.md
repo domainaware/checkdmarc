@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.0.10
+------
+- Fix DMARC record discovery
+- Rename mx domain key to hostname
+- Add example output to README
+
 1.0.9
 -----
 - Fix PyPI readme display

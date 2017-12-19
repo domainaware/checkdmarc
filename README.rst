@@ -30,6 +30,99 @@ A Python module and command line parser for SPF and DMARC DNS records
       -w WAIT, --wait WAIT  number os seconds to wait between processing domains
                             (default 0.0)
 
+::
+
+    $ checkdmarc fbi.gov
+    {
+      "domain": "fbi.gov",
+      "mx": [
+        {
+          "hostname": "mx-east.fbi.gov",
+          "addresses": [
+            "153.31.160.5"
+          ]
+        }
+      ],
+      "spf": {
+        "record": "v=spf1 +mx ip4:153.31.0.0/16 -all",
+        "valid": true,
+        "results": {
+          "pass": [
+            {
+              "value": "mx-east.fbi.gov",
+              "mechanism": "mx"
+            },
+            {
+              "value": "153.31.0.0/16",
+              "mechanism": "ip4"
+            }
+          ],
+          "neutral": [],
+          "softfail": [],
+          "fail": [],
+          "include": [],
+          "redirect": null,
+          "exp": null,
+          "all": "fail"
+        },
+        "warnings": []
+      },
+      "dmarc": {
+        "record": "v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100",
+        "valid": true,
+        "organisational_domain": "fbi.gov",
+        "tags": {
+          "v": {
+            "value": "DMARC1",
+            "explicit": true
+          },
+          "p": {
+            "value": "reject",
+            "explicit": true
+          },
+          "adkim": {
+            "value": "r",
+            "explicit": true
+          },
+          "aspf": {
+            "value": "r",
+            "explicit": true
+          },
+          "rua": {
+            "value": "mailto:dmarc-feedback@fbi.gov",
+            "explicit": true
+          },
+          "ruf": {
+            "value": "mailto:dmarc-feedback@fbi.gov",
+            "explicit": true
+          },
+          "pct": {
+            "value": 100,
+            "explicit": true
+          },
+          "fo": {
+            "value": "0",
+            "explicit": false
+          },
+          "rf": {
+            "value": "afrf",
+            "explicit": false
+          },
+          "ri": {
+            "value": 86400,
+            "explicit": false
+          },
+          "sp": {
+            "value": "reject",
+            "explicit": false
+          }
+        },
+        "warnings": []
+      }
+    }
+
+
+
 Installation
 ------------
 
