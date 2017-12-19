@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0.12
+------
+
+- Fix more SPF exceptions
+
 1.0.11
 ------
 

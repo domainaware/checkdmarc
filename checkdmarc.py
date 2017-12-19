@@ -40,7 +40,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.0.11"
+__version__ = "1.0.12"
 
 # Python 2 comparability hack
 if version_info[0] >= 3:
@@ -663,7 +663,7 @@ def parse_spf_record(record, domain, seen=None, query_count=0, nameservers=None,
     parsed_record = spf_syntax_checker.parse(record.lower())
     if not parsed_record.is_valid:
         expecting = list(map(lambda x: unicode(x).strip('"'), list(parsed_record.expecting)))
-        raise SPFWarning("Error: Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
+        raise SPFError("Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
                                                                               parsed_record.pos, record))
     matches = spf_regex.findall(record.lower())
     results = OrderedDict([("pass", []),
