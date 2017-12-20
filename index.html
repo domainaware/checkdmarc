@@ -210,98 +210,100 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
                         <span class="p">(</span><span class="n">default</span> <span class="mf">0.0</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov
-{
-  &quot;domain&quot;: &quot;fbi.gov&quot;,
-  &quot;mx&quot;: {
-    &quot;hosts&quot;: [
-      {
-        &quot;preference&quot;: 10,
-        &quot;hostname&quot;: &quot;mx-east.fbi.gov&quot;,
-        &quot;addresses&quot;: [
-          &quot;153.31.160.5&quot;
-        ]
-      }
-    ],
-    &quot;warnings&quot;: []
-  },
-  &quot;spf&quot;: {
-    &quot;record&quot;: &quot;v=spf1 +mx ip4:153.31.0.0/16 -all&quot;,
-    &quot;valid&quot;: true,
-    &quot;results&quot;: {
-      &quot;pass&quot;: [
-        {
-          &quot;value&quot;: &quot;mx-east.fbi.gov&quot;,
-          &quot;mechanism&quot;: &quot;mx&quot;
-        },
-        {
-          &quot;value&quot;: &quot;153.31.0.0/16&quot;,
-          &quot;mechanism&quot;: &quot;ip4&quot;
-        }
-      ],
-      &quot;neutral&quot;: [],
-      &quot;softfail&quot;: [],
-      &quot;fail&quot;: [],
-      &quot;include&quot;: [],
-      &quot;redirect&quot;: null,
-      &quot;exp&quot;: null,
-      &quot;all&quot;: &quot;fail&quot;
-    },
-    &quot;warnings&quot;: []
-  },
-  &quot;dmarc&quot;: {
-    &quot;record&quot;: &quot;v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100&quot;,
-    &quot;valid&quot;: true,
-    &quot;organisational_domain&quot;: &quot;fbi.gov&quot;,
-    &quot;tags&quot;: {
-      &quot;v&quot;: {
-        &quot;value&quot;: &quot;DMARC1&quot;,
-        &quot;explicit&quot;: true
-      },
-      &quot;p&quot;: {
-        &quot;value&quot;: &quot;reject&quot;,
-        &quot;explicit&quot;: true
-      },
-      &quot;adkim&quot;: {
-        &quot;value&quot;: &quot;r&quot;,
-        &quot;explicit&quot;: true
-      },
-      &quot;aspf&quot;: {
-        &quot;value&quot;: &quot;r&quot;,
-        &quot;explicit&quot;: true
-      },
-      &quot;rua&quot;: {
-        &quot;value&quot;: &quot;mailto:dmarc-feedback@fbi.gov&quot;,
-        &quot;explicit&quot;: true
-      },
-      &quot;ruf&quot;: {
-        &quot;value&quot;: &quot;mailto:dmarc-feedback@fbi.gov&quot;,
-        &quot;explicit&quot;: true
-      },
-      &quot;pct&quot;: {
-        &quot;value&quot;: 100,
-        &quot;explicit&quot;: true
-      },
-      &quot;fo&quot;: {
-        &quot;value&quot;: &quot;0&quot;,
-        &quot;explicit&quot;: false
-      },
-      &quot;rf&quot;: {
-        &quot;value&quot;: &quot;afrf&quot;,
-        &quot;explicit&quot;: false
-      },
-      &quot;ri&quot;: {
-        &quot;value&quot;: 86400,
-        &quot;explicit&quot;: false
-      },
-      &quot;sp&quot;: {
-        &quot;value&quot;: &quot;reject&quot;,
-        &quot;explicit&quot;: false
-      }
-    },
-    &quot;warnings&quot;: []
-  }
-}
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov
+</pre></div>
+</div>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;mx&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;hosts&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;preference&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="nt">&quot;hostname&quot;</span><span class="p">:</span> <span class="s2">&quot;mx-east.fbi.gov&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;addresses&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="s2">&quot;153.31.160.5&quot;</span>
+        <span class="p">]</span>
+      <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;spf&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=spf1 +mx ip4:153.31.0.0/16 -all&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;pass&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;mx-east.fbi.gov&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;mx&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;153.31.0.0/16&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">}</span>
+      <span class="p">],</span>
+      <span class="nt">&quot;neutral&quot;</span><span class="p">:</span> <span class="p">[],</span>
+      <span class="nt">&quot;softfail&quot;</span><span class="p">:</span> <span class="p">[],</span>
+      <span class="nt">&quot;fail&quot;</span><span class="p">:</span> <span class="p">[],</span>
+      <span class="nt">&quot;include&quot;</span><span class="p">:</span> <span class="p">[],</span>
+      <span class="nt">&quot;redirect&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+      <span class="nt">&quot;exp&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+      <span class="nt">&quot;all&quot;</span><span class="p">:</span> <span class="s2">&quot;fail&quot;</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;dmarc&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">&quot;organisational_domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;tags&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;v&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;DMARC1&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;p&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;reject&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;adkim&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;aspf&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;rua&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;mailto:dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;ruf&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;mailto:dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;pct&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;fo&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;rf&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;afrf&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;ri&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="mi">86400</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;sp&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;reject&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </div>
