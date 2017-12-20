@@ -41,7 +41,7 @@ Or, install the latest development release directly from GitHub:
 
 Command line usage
 ------------------
-::
+.. code-block:: bash
 
     usage: checkdmarc [-h] [-d] [-f FORMAT] [-o OUTPUT]
                   [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
@@ -72,7 +72,7 @@ Command line usage
                             (default 0.0)
 
 
-::
+.. code-block:: json
 
     $ checkdmarc fbi.gov
     {
