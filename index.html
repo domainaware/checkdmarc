@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 1.2.1 documentation</title>
+  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 1.2.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 1.2.1 documentation" href="#"/>
+    <link rel="top" title="checkdmarc 1.2.0 documentation" href="#"/>
         <link rel="next" title="checkdmarc module" href="checkdmarc.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.2.1
+                1.3.0
               </div>
             
           
@@ -156,10 +156,10 @@
             
   <div class="section" id="welcome-to-checkdmarc-s-documentation">
 <h1>Welcome to checkdmarc’s documentation!<a class="headerlink" href="#welcome-to-checkdmarc-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>checkdmarc is a Python module and command line parser for SPF and DMARC DNS records</p>
+<p><code class="docutils literal"><span class="pre">checkdmarc</span></code> is a Python module and command line parser for SPF and DMARC DNS records</p>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>While this script should work under Python 2 and 3, using Python 3 for your OS is strongly recommended.</p>
+<p><cite>checkdmarc`</cite> requires Python 3.</p>
 <p>On Debian or Ubuntu systems, run:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ sudo apt-get install python3-pip
 </pre></div>
@@ -208,6 +208,103 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
   <span class="o">-</span><span class="n">v</span><span class="p">,</span> <span class="o">--</span><span class="n">version</span>         <span class="n">show</span> <span class="n">program</span><span class="s1">&#39;s version number and exit</span>
   <span class="o">-</span><span class="n">w</span> <span class="n">WAIT</span><span class="p">,</span> <span class="o">--</span><span class="n">wait</span> <span class="n">WAIT</span>  <span class="n">number</span> <span class="n">os</span> <span class="n">seconds</span> <span class="n">to</span> <span class="n">wait</span> <span class="n">between</span> <span class="n">processing</span> <span class="n">domains</span>
                         <span class="p">(</span><span class="n">default</span> <span class="mf">0.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov
+{
+  &quot;domain&quot;: &quot;fbi.gov&quot;,
+  &quot;mx&quot;: {
+    &quot;hosts&quot;: [
+      {
+        &quot;preference&quot;: 10,
+        &quot;hostname&quot;: &quot;mx-east.fbi.gov&quot;,
+        &quot;addresses&quot;: [
+          &quot;153.31.160.5&quot;
+        ]
+      }
+    ],
+    &quot;warnings&quot;: []
+  },
+  &quot;spf&quot;: {
+    &quot;record&quot;: &quot;v=spf1 +mx ip4:153.31.0.0/16 -all&quot;,
+    &quot;valid&quot;: true,
+    &quot;results&quot;: {
+      &quot;pass&quot;: [
+        {
+          &quot;value&quot;: {
+            &quot;preference&quot;: 10,
+            &quot;hostname&quot;: &quot;mx-east.fbi.gov&quot;
+          },
+          &quot;mechanism&quot;: &quot;mx&quot;
+        },
+        {
+          &quot;value&quot;: &quot;153.31.0.0/16&quot;,
+          &quot;mechanism&quot;: &quot;ip4&quot;
+        }
+      ],
+      &quot;neutral&quot;: [],
+      &quot;softfail&quot;: [],
+      &quot;fail&quot;: [],
+      &quot;include&quot;: [],
+      &quot;redirect&quot;: null,
+      &quot;exp&quot;: null,
+      &quot;all&quot;: &quot;fail&quot;
+    },
+    &quot;warnings&quot;: []
+  },
+  &quot;dmarc&quot;: {
+    &quot;record&quot;: &quot;v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100&quot;,
+    &quot;valid&quot;: true,
+    &quot;organisational_domain&quot;: &quot;fbi.gov&quot;,
+    &quot;tags&quot;: {
+      &quot;v&quot;: {
+        &quot;value&quot;: &quot;DMARC1&quot;,
+        &quot;explicit&quot;: true
+      },
+      &quot;p&quot;: {
+        &quot;value&quot;: &quot;reject&quot;,
+        &quot;explicit&quot;: true
+      },
+      &quot;adkim&quot;: {
+        &quot;value&quot;: &quot;r&quot;,
+        &quot;explicit&quot;: true
+      },
+      &quot;aspf&quot;: {
+        &quot;value&quot;: &quot;r&quot;,
+        &quot;explicit&quot;: true
+      },
+      &quot;rua&quot;: {
+        &quot;value&quot;: &quot;mailto:dmarc-feedback@fbi.gov&quot;,
+        &quot;explicit&quot;: true
+      },
+      &quot;ruf&quot;: {
+        &quot;value&quot;: &quot;mailto:dmarc-feedback@fbi.gov&quot;,
+        &quot;explicit&quot;: true
+      },
+      &quot;pct&quot;: {
+        &quot;value&quot;: 100,
+        &quot;explicit&quot;: true
+      },
+      &quot;fo&quot;: {
+        &quot;value&quot;: &quot;0&quot;,
+        &quot;explicit&quot;: false
+      },
+      &quot;rf&quot;: {
+        &quot;value&quot;: &quot;afrf&quot;,
+        &quot;explicit&quot;: false
+      },
+      &quot;ri&quot;: {
+        &quot;value&quot;: 86400,
+        &quot;explicit&quot;: false
+      },
+      &quot;sp&quot;: {
+        &quot;value&quot;: &quot;reject&quot;,
+        &quot;explicit&quot;: false
+      }
+    },
+    &quot;warnings&quot;: []
+  }
+}
 </pre></div>
 </div>
 </div>
@@ -282,7 +379,7 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.2.1',
+            VERSION:'1.2.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
