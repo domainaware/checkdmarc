@@ -72,9 +72,11 @@ Command line usage
                             (default 0.0)
 
 
-.. code-block:: json
+.. code-block:: bash
 
     $ checkdmarc fbi.gov
+
+.. code-block:: json
     {
       "domain": "fbi.gov",
       "mx": {
