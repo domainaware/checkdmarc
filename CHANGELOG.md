@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.2.1
+-----
+
+- Change default timeout to 4 seconds
+- Use ; to delimit warnings and MX records in CSV format
+
 1.2.0
 -----
 - Add MX warnings to output
