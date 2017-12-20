@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.3.0
+-----
+- Show MX preference in output
+- Sort MX records by preference
+- Mark package as supporting Python 3 only (Python 2 was never actually supported because Pyleri does not support it)
+- Removed all previous versions from PyPI so someone dosen't think Python 2 was supported when it never was
+
 1.2.1
 -----
 

@@ -38,6 +38,7 @@ A Python module and command line parser for SPF and DMARC DNS records
       "mx": {
         "hosts": [
           {
+            "preference": 10,
             "hostname": "mx-east.fbi.gov",
             "addresses": [
               "153.31.160.5"
@@ -52,7 +53,10 @@ A Python module and command line parser for SPF and DMARC DNS records
         "results": {
           "pass": [
             {
-              "value": "mx-east.fbi.gov",
+              "value": {
+                "preference": 10,
+                "hostname": "mx-east.fbi.gov"
+              },
               "mechanism": "mx"
             },
             {
@@ -125,10 +129,11 @@ A Python module and command line parser for SPF and DMARC DNS records
     }
 
 
+
 Installation
 ------------
 
-While this script should work under Python 2 and 3, using Python 3 for your OS is strongly recommended.
+``checkdmarc`` requires Python 3.
 
 On Debian or Ubuntu systems, run:
 
@@ -139,7 +144,7 @@ On Debian or Ubuntu systems, run:
 
 Python 3 installers for Windows and macOS can be found at https://www.python.org/downloads/
 
-To install or upgrade to the latest stable release of checkdmarc on macOS or Linux, run
+To install or upgrade to the latest stable release of ``checkdmarc`` on macOS or Linux, run
 
 ::
 
