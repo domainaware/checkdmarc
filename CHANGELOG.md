@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.3.1
+-----
+
+- Only include hostname in mx spf mechanism results
+
 1.3.0
 -----
 - Show MX preference in output

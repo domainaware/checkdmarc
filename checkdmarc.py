@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 
 
 class DNSException(Exception):
@@ -707,7 +707,7 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
                     if len(mx_hosts) > 5:
                         raise SPFError("{0} has more than 5 MX resource records, (maximum of 10 DNS A/AAAA queries)")
                 for host in mx_hosts:
-                    results[result].append(OrderedDict([("value", host), ("mechanism", mechanism)]))
+                    results[result].append(OrderedDict([("value", host["hostname"]), ("mechanism", mechanism)]))
             elif mechanism == "redirect":
                 if value in seen:
                     raise SPFError("Redirect loop detected: {0}".format(value))

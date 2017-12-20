@@ -53,10 +53,7 @@ A Python module and command line parser for SPF and DMARC DNS records
         "results": {
           "pass": [
             {
-              "value": {
-                "preference": 10,
-                "hostname": "mx-east.fbi.gov"
-              },
+              "value": "mx-east.fbi.gov",
               "mechanism": "mx"
             },
             {
