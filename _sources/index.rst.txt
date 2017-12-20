@@ -95,10 +95,7 @@ Command line usage
         "results": {
           "pass": [
             {
-              "value": {
-                "preference": 10,
-                "hostname": "mx-east.fbi.gov"
-              },
+              "value": "mx-east.fbi.gov",
               "mechanism": "mx"
             },
             {
