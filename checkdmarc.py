@@ -40,7 +40,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.1.1"
+__version__ = "1.2.0"
 
 # Python 2 comparability hack
 if version_info[0] >= 3:
@@ -350,17 +350,27 @@ def get_mx(domain, nameservers=None, timeout=1.0):
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        list: A list of OrderedDicts with keys of ``hostname`` and ``addresses``
+        OrderedDict: ``hosts``: A list of OrderedDicts with keys of ``hostname`` and ``addresses``,
+                     ``warnings``: A list of MX resolution warnings
 
     """
-    mx = []
-    mx_records = _get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
+    mx_records = []
+    hosts = []
+    warnings = []
+    try:
+        mx_records = _get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
+    except DNSException as warning:
+        warnings.append(unicode(warning))
     for record in mx_records:
         record = record.lower().strip()
-        mx.append(OrderedDict([("hostname", record),
-                               ("addresses", _get_a_records(record, nameservers=nameservers, timeout=timeout))]))
+        hosts.append(OrderedDict([("hostname", record), ("addresses", [])]))
+    for host in hosts:
+        try:
+            host["addresses"] = _get_a_records(host["hostname"], nameservers=nameservers, timeout=timeout)
+        except DNSException as warning:
+            warnings.append(unicode(warning))
 
-    return mx
+    return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
 
 def query_dmarc_record(domain, nameservers=None, timeout=1.0):
@@ -788,7 +798,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
     if output_format not in ["json", "csv"]:
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
-        fields = ["domain",  "mx", "spf_record", "dmarc_record", "spf_valid", "dmarc_valid", "spf_error",
+        fields = ["domain", "mx", "mx_warnings", "spf_record", "dmarc_record", "spf_valid", "dmarc_valid", "spf_error",
                   "spf_warnings", "dmarc_error", "dmarc_warnings", "dmarc_org_domain", "dmarc_adkim", "dmarc_aspf",
                   "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp"]
         sorted(list(set(map(lambda d: d.rstrip(".").rstrip(), domains))))
@@ -802,11 +812,9 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             domains.remove("")
         for domain in domains:
             row = dict(domain=domain, mx="", spf_valid=True, dmarc_valid=True)
-            try:
-                mx = list(map(lambda r: r["hostname"], get_mx(domain, nameservers=nameservers, timeout=timeout)))
-                row["mx"] = " ".join(mx)
-            except DNSException:
-                pass
+            mx = get_mx(domain, nameservers=nameservers, timeout=timeout)
+            row["mx"] = " ".join(list(map(lambda r: r["hostname"], mx["hosts"])))
+            row["mx_warnings"] = " ".join(mx["warnings"])
             try:
                 row["spf_record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 row["spf_warnings"] = " ".join(parse_spf_record(row["spf_record"], row["domain"])["warnings"])
@@ -844,10 +852,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         for domain in domains:
             domain_results = OrderedDict([("domain", domain), ("mx", [])])
             domain_results["spf"] = OrderedDict([("record", None), ("valid", True)])
-            try:
-                domain_results["mx"] = get_mx(domain, nameservers=nameservers, timeout=timeout)
-            except DNSException:
-                pass
+            domain_results["mx"] = get_mx(domain, nameservers=nameservers, timeout=timeout)
             try:
                 domain_results["spf"]["record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 parsed_spf = parse_spf_record(domain_results["spf"]["record"],

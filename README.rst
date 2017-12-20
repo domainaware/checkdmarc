@@ -35,14 +35,17 @@ A Python module and command line parser for SPF and DMARC DNS records
     $ checkdmarc fbi.gov
     {
       "domain": "fbi.gov",
-      "mx": [
-        {
-          "hostname": "mx-east.fbi.gov",
-          "addresses": [
-            "153.31.160.5"
-          ]
-        }
-      ],
+      "mx": {
+        "hosts": [
+          {
+            "hostname": "mx-east.fbi.gov",
+            "addresses": [
+              "153.31.160.5"
+            ]
+          }
+        ],
+        "warnings": []
+      },
       "spf": {
         "record": "v=spf1 +mx ip4:153.31.0.0/16 -all",
         "valid": true,
@@ -120,7 +123,6 @@ A Python module and command line parser for SPF and DMARC DNS records
         "warnings": []
       }
     }
-
 
 
 Installation

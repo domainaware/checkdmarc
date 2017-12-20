@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.2.0
+-----
+- Add MX warnings to output
+
 1.1.1
 ------
 
