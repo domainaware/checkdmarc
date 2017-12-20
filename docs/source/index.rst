@@ -11,7 +11,7 @@ Welcome to checkdmarc's documentation!
 Installation
 ------------
 
-`checkdmarc`` requires Python 3.
+``checkdmarc`` requires Python 3.
 
 On Debian or Ubuntu systems, run:
 
@@ -36,7 +36,7 @@ Or, install the latest development release directly from GitHub:
 
 .. note::
 
-    On Windows, ``pip3`` is ``pip``, regardless if you installed Python 2 or 3. So on Windows, simply
+    On Windows, ``pip3`` is ``pip``, regardless of if you installed Python 2 or 3. So on Windows, simply
     substitute ``pip`` as an administrator in place of ``sudo pip3``, in the above commands.
 
 Command line usage
