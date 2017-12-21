@@ -433,7 +433,7 @@ def parse_dmarc_report_uri(uri):
     uri = uri.strip()
     mailto_matches = mailto_regex.findall(uri)
     if len(mailto_matches) != 1:
-        raise DMARCWarning("{0} is not a valid dmarc report URI")
+        raise DMARCWarning("{0} is not a valid dmarc report URI".format(uri))
     return mailto_matches[0]
 
 
