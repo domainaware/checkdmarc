@@ -5,6 +5,7 @@ Changelog
 -----
 
 - Allow input file to be a CSV where the domain is the first field; all other fields are ignored
+- Better handling of invalid DMARC values
 
 1.3.5
 -----

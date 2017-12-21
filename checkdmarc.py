@@ -511,7 +511,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False):
     # Validate tag values
     for tag in tags:
         if tag in tag_values and "values" in tag_values[tag] and tags[tag]["value"] not in tag_values[tag]["values"]:
-            raise DMARCWarning("Tag {0} must have one of the following values: {1} - not {2}".format(
+            raise DMARCError("Tag {0} must have one of the following values: {1} - not {2}".format(
                 tag,
                 ",".join(tag_values[tag]["values"]),
                 tags[tag]["value"]
