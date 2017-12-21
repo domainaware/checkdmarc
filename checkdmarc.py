@@ -660,7 +660,7 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
         """
         count += requests
         if count > 10:
-            raise SPFError("Parsing the SPF record requires more than the 10 maximum DNS queries: "
+            raise SPFError("Parsing the SPF record requires more than the 10 maximum DNS queries "
                            "https://tools.ietf.org/html/rfc7208#section-4.6.4")
         return count
 
@@ -703,7 +703,7 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
                     value = domain
                 mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
                 if len(mx_hosts) > 10:
-                    raise SPFError("{0} has more than 10 MX records\n"
+                    raise SPFError("{0} has more than 10 MX records "
                                    "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(value))
                 for host in mx_hosts:
                     results[result].append(OrderedDict([("value", host["hostname"]), ("mechanism", mechanism)]))
