@@ -4,7 +4,9 @@ Changelog
 1.3.5
 -----
 - Rearrange the order of the CSV fields to that the longest entries are to the right
-- Documentation improvements 
+- Documentation improvements
+- Fix external report validation
+- Count each MX resource record once 
 
 1.3.3 and 1.3.4
 ---------------

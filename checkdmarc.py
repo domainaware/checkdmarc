@@ -472,14 +472,14 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
     return True
 
 
-def parse_dmarc_record(record, organisational_domain, include_tag_descriptions=False):
+def parse_dmarc_record(record, domain, include_tag_descriptions=False):
     """
     Parses a DMARC record
     
     Args:
-        record (str): A DMARC record 
-        organisational_domain (str): The organisational domain the record came from
-        include_tag_descriptions (bool): Include descriptions in parsed results 
+        record (str): A DMARC record
+        domain (str): The email domain
+        include_tag_descriptions (bool): Include descriptions in parsed results
 
     Returns:
         OrderedDict: The DMARC record parsed by key
@@ -532,8 +532,8 @@ def parse_dmarc_record(record, organisational_domain, include_tag_descriptions=F
             for uri in tags["rua"]["value"].split(","):
                 email_address = parse_dmarc_report_uri(uri)
                 email_domain = email_address.split("@")[-1]
-                if email_domain.lower() != organisational_domain.lower():
-                    verify_external_dmarc_destination(organisational_domain, email_domain)
+                if email_domain.lower() != domain.lower():
+                    verify_external_dmarc_destination(domain, email_domain)
                 try:
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
@@ -549,8 +549,8 @@ def parse_dmarc_record(record, organisational_domain, include_tag_descriptions=F
             for uri in tags["ruf"]["value"].split(","):
                 email_address = parse_dmarc_report_uri(uri)
                 email_domain = email_address.split("@")[-1]
-                if email_domain.lower() != organisational_domain.lower():
-                    verify_external_dmarc_destination(organisational_domain, email_domain)
+                if email_domain.lower() != domain.lower():
+                    verify_external_dmarc_destination(domain, email_domain)
                 try:
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
@@ -693,19 +693,18 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
             if mechanism == "a":
                 query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 if value == "":
-                    a_records = _get_a_records(domain, nameservers=nameservers, timeout=timeout)
-                else:
-                    a_records = _get_a_records(value, nameservers=nameservers, timeout=timeout)
+                    value = domain
+                a_records = _get_a_records(value, nameservers=nameservers, timeout=timeout)
                 for record in a_records:
                     results[result].append(OrderedDict([("value", record), ("mechanism", mechanism)]))
             elif mechanism == "mx":
                 query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 if value == "":
-                    mx_hosts = _get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
-                else:
-                    mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
-                    if len(mx_hosts) > 5:
-                        raise SPFError("{0} has more than 5 MX resource records, (maximum of 10 DNS A/AAAA queries)")
+                    value = domain
+                mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
+                if len(mx_hosts) > 10:
+                    raise SPFError("{0} has more than 10 MX records\n"
+                                   "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(value))
                 for host in mx_hosts:
                     results[result].append(OrderedDict([("value", host["hostname"]), ("mechanism", mechanism)]))
             elif mechanism == "redirect":
@@ -827,7 +826,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             try:
                 query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 row["dmarc_record"] = query["record"]
-                dmarc = parse_dmarc_record(query["record"], query["organisational_domain"])
+                dmarc = parse_dmarc_record(query["record"], domain)
                 row["dmarc_org_domain"] = query["organisational_domain"]
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
                 row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
@@ -873,7 +872,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             try:
                 query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 domain_results["dmarc"]["record"] = query["record"]
-                parsed_dmarc_record = parse_dmarc_record(query["record"], query["organisational_domain"],
+                parsed_dmarc_record = parse_dmarc_record(query["record"], domain,
                                                          include_tag_descriptions=include_dmarc_tag_descriptions)
                 domain_results["dmarc"]["organisational_domain"] = query["organisational_domain"]
                 domain_results["dmarc"]["tags"] = parsed_dmarc_record["tags"]
