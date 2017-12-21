@@ -156,13 +156,13 @@ To install or upgrade to the latest stable release of ``checkdmarc`` on macOS or
 
 .. code-block:: bash
 
-    $ sudo pip3 -U install checkdmarc
+    $ sudo -H pip3 install -U checkdmarc
 
 Or, install the latest development release directly from GitHub:
 
 .. code-block:: bash
 
-    $ sudo pip3 -U install git+https://github.com/domainaware/checkdmarc.git
+    $ sudo -H pip3 install -U git+https://github.com/domainaware/checkdmarc.git
 
 .. note::
 
