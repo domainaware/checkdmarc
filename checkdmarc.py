@@ -538,6 +538,9 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False):
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
                     raise DMARCWarning("The domain for rua email address {0} has no MX records".format(email_address))
+                except DNSException as warning:
+                    raise DMARCWarning("Failed to retrieve MX records for the domain of rua email address "
+                                       "{0} - {1}".format(email_address, str(warning)))
         else:
             raise DMARCWarning("rua tag (destination for aggregate reports) not found")
 
@@ -555,6 +558,9 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False):
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
                     raise DMARCWarning("The domain for ruf email address {0} has no MX records".format(email_address))
+                except DNSException as warning:
+                    raise DMARCWarning("Failed to retrieve MX records for the domain of ruf email address "
+                                       "{0} - {1}".format(email_address, str(warning)))
 
     except DMARCWarning as warning:
         warnings.append(str(warning))
