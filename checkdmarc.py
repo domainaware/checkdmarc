@@ -472,7 +472,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
     return True
 
 
-def parse_dmarc_record(record, domain, include_tag_descriptions=False):
+def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameservers=None, timeout=6.0):
     """
     Parses a DMARC record
     
@@ -480,6 +480,8 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False):
         record (str): A DMARC record
         domain (str): The email domain
         include_tag_descriptions (bool): Include descriptions in parsed results
+        nameservers (list): A list of nameservers to query
+        timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: The DMARC record parsed by key
@@ -533,7 +535,8 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False):
                 email_address = parse_dmarc_report_uri(uri)
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
-                    verify_external_dmarc_destination(domain, email_domain)
+                    verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,
+                                                      timeout=timeout)
                 try:
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
@@ -553,7 +556,8 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False):
                 email_address = parse_dmarc_report_uri(uri)
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
-                    verify_external_dmarc_destination(domain, email_domain)
+                    verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,
+                                                      timeout=timeout)
                 try:
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
@@ -595,7 +599,8 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
     organisational_domain = query["organisational_domain"]
     record = query["record"]
 
-    tags = parse_dmarc_record(record, organisational_domain, include_tag_descriptions=include_tag_descriptions)
+    tags = parse_dmarc_record(record, organisational_domain, include_tag_descriptions=include_tag_descriptions,
+                              nameservers=nameservers, timeout=timeout)
 
     return OrderedDict([("record", record), ("organisational_domain", organisational_domain), ("tags", tags)])
 
@@ -837,7 +842,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             try:
                 query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 row["dmarc_record"] = query["record"]
-                dmarc = parse_dmarc_record(query["record"], domain)
+                dmarc = parse_dmarc_record(query["record"], domain, nameservers=nameservers, timeout=timeout)
                 row["dmarc_org_domain"] = query["organisational_domain"]
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
                 row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
@@ -884,7 +889,8 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
                 domain_results["dmarc"]["record"] = query["record"]
                 parsed_dmarc_record = parse_dmarc_record(query["record"], domain,
-                                                         include_tag_descriptions=include_dmarc_tag_descriptions)
+                                                         include_tag_descriptions=include_dmarc_tag_descriptions,
+                                                         nameservers=nameservers, timeout=timeout)
                 domain_results["dmarc"]["organisational_domain"] = query["organisational_domain"]
                 domain_results["dmarc"]["tags"] = parsed_dmarc_record["tags"]
                 domain_results["dmarc"]["warnings"] = parsed_dmarc_record["warnings"]
