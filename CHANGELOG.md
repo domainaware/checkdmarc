@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.3.3
+-----
+- Clerify error messages
+
 1.3.2
 -----
 - Pass timeout in for SPF queries when outputting in CSV format

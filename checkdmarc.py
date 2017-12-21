@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.3.2"
+__version__ = "1.3.3"
 
 
 class DNSException(Exception):
@@ -439,7 +439,7 @@ def parse_dmarc_report_uri(uri):
 
 def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=6.0):
     """
-      Checks if a report sender is authorized to send a report to the destination domain, per RFC 7489, section 7.1
+      Checks if the report destination accepts reports for the source domain per RFC 7489, section 7.1
       
       Args:
           source_domain (str): The source domain
@@ -451,7 +451,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
           str: An unparsed DMARC string
       """
     target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
-    warning_message = "Unable to validate {0} as an external sender for {1}: " \
+    warning_message = "UUnable to validate that {1} accepts reports for {0}: " \
                       "https://tools.ietf.org/html/rfc7489#section-7.1".format(source_domain,
                                                                                destination_domain)
     try:
@@ -466,9 +466,9 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         raise DMARCWarning(warning_message)
     except dns.exception.DNSException as error:
-        raise DMARCWarning("Unable to validate {0} as an external sender for {1}: {2}".format(source_domain,
-                                                                                              destination_domain,
-                                                                                              error.msg))
+        raise DMARCWarning("Unable to validate that {1} accepts reports for {0}: {2}".format(source_domain,
+                                                                                             destination_domain,
+                                                                                             error.msg))
     return True
 
 
