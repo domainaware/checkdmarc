@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 
 class DNSException(Exception):
@@ -203,7 +203,7 @@ spf_qualifiers = {
 }
 
 
-def _get_mx_hosts(domain, nameservers=None, timeout=4.0):
+def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a list of Mail Exchange hosts
 
@@ -239,7 +239,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=4.0):
     return hosts
 
 
-def _get_a_records(domain, nameservers=None, timeout=4.0):
+def _get_a_records(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for A and AAAA records
 
@@ -277,7 +277,7 @@ def _get_a_records(domain, nameservers=None, timeout=4.0):
     return records
 
 
-def _get_txt_records(domain, nameservers=None, timeout=4.0):
+def _get_txt_records(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for TXT records
 
@@ -308,7 +308,7 @@ def _get_txt_records(domain, nameservers=None, timeout=4.0):
     return records
 
 
-def _query_dmarc_record(domain, nameservers=None, timeout=4.0):
+def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a DMARC record
 
@@ -339,7 +339,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=4.0):
     return record
 
 
-def get_mx_hosts(domain, nameservers=None, timeout=4.0):
+def get_mx_hosts(domain, nameservers=None, timeout=6.0):
     """
     Returns a list of OrderedDicts with keys of ``hostname`` and ``addresses``
     
@@ -372,7 +372,7 @@ def get_mx_hosts(domain, nameservers=None, timeout=4.0):
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
 
-def query_dmarc_record(domain, nameservers=None, timeout=4.0):
+def query_dmarc_record(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a DMARC record
     Args:
@@ -437,7 +437,7 @@ def parse_dmarc_report_uri(uri):
     return mailto_matches[0]
 
 
-def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=4.0):
+def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=6.0):
     """
       Checks if a report sender is authorized to send a report to the destination domain, per RFC 7489, section 7.1
       
@@ -571,7 +571,7 @@ def parse_dmarc_record(record, organisational_domain, include_tag_descriptions=F
     return OrderedDict([("tags", tags), ("warnings", warnings)])
 
 
-def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, timeout=4.0):
+def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, timeout=6.0):
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -594,7 +594,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
     return OrderedDict([("record", record), ("organisational_domain", organisational_domain), ("tags", tags)])
 
 
-def query_spf_record(domain, nameservers=None, timeout=4.0):
+def query_spf_record(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a SPF record
     Args:
@@ -632,7 +632,7 @@ def query_spf_record(domain, nameservers=None, timeout=4.0):
     return spf_record
 
 
-def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameservers=None, timeout=4.0):
+def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameservers=None, timeout=6.0):
     """
     Parses a SPF record, including resolving ``a``, ``mx``, and ``include`` mechanisms
     
@@ -754,7 +754,7 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
     return OrderedDict([("results", results), ("warnings", warnings)])
 
 
-def get_spf_record(domain, query_count=0, nameservers=None, timeout=4.0):
+def get_spf_record(domain, query_count=0, nameservers=None, timeout=6.0):
     """
     Retrieves and parses an SPF record 
     
@@ -776,7 +776,7 @@ def get_spf_record(domain, query_count=0, nameservers=None, timeout=4.0):
 
 
 def check_domains(domains, output_format="json", output_path=None, include_dmarc_tag_descriptions=False,
-                  nameservers=None, timeout=4.0, wait=0.0):
+                  nameservers=None, timeout=6.0, wait=0.0):
     """
     Check the given domains for SPF and DMARC records, parse them, and return them
     
@@ -817,7 +817,9 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
             row["mx_warnings"] = ";".join(mx["warnings"])
             try:
                 row["spf_record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
-                row["spf_warnings"] = ";".join(parse_spf_record(row["spf_record"], row["domain"])["warnings"])
+                row["spf_warnings"] = ";".join(parse_spf_record(row["spf_record"], row["domain"],
+                                                                nameservers=nameservers,
+                                                                timeout=timeout)["warnings"])
             except SPFError as error:
                 row["spf_error"] = error
                 row["spf_valid"] = False
@@ -857,7 +859,8 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 domain_results["spf"]["record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
                 parsed_spf = parse_spf_record(domain_results["spf"]["record"],
                                               domain_results["domain"],
-                                              nameservers=nameservers)
+                                              nameservers=nameservers,
+                                              timeout=timeout)
                 domain_results["spf"]["results"] = parsed_spf["results"]
                 domain_results["spf"]["warnings"] = parsed_spf["warnings"]
             except SPFError as error:
@@ -900,8 +903,8 @@ def _main():
     arg_parser.add_argument("-o", "--output", help="output to a file path rather than printing to the screen")
     arg_parser.add_argument("-n", "--nameserver", nargs="+", help="nameservers to query")
     arg_parser.add_argument("-t", "--timeout",
-                            help="number of seconds to wait for an answer from DNS (default 4.0)", type=float,
-                            default=4.0)
+                            help="number of seconds to wait for an answer from DNS (default 6.0)", type=float,
+                            default=6.0)
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
     arg_parser.add_argument("-w", "--wait", type=float,
                             help="number os seconds to wait between processing domains (default 0.0)",

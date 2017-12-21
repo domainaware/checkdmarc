@@ -66,7 +66,7 @@ Command line usage
                             nameservers to query
       -t TIMEOUT, --timeout TIMEOUT
                             number of seconds to wait for an answer from DNS
-                            (default 4.0)
+                            (default 6.0)
       -v, --version         show program's version number and exit
       -w WAIT, --wait WAIT  number os seconds to wait between processing domains
                             (default 0.0)

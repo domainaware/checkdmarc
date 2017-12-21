@@ -1,9 +1,13 @@
 Changelog
 =========
 
+1.3.2
+-----
+- Pass timeout in for SPF queries when outputting in CSV format
+- Raise default timeout to 6 seconds
+
 1.3.1
 -----
-
 - Only include hostname in mx SPF mechanism results
 
 1.3.0
