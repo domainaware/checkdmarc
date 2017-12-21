@@ -1,9 +1,9 @@
 Changelog
 =========
 
-1.3.3
------
-- Clerify error messages
+1.3.3 and 1.3.4
+---------------
+- Clarify warning messages
 
 1.3.2
 -----

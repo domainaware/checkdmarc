@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.3.3"
+__version__ = "1.3.4"
 
 
 class DNSException(Exception):
@@ -451,9 +451,9 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
           str: An unparsed DMARC string
       """
     target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
-    warning_message = "UUnable to validate that {1} accepts reports for {0}: " \
-                      "https://tools.ietf.org/html/rfc7489#section-7.1".format(source_domain,
-                                                                               destination_domain)
+    warning_message = "{0} does not indicate that it  accepts reports about {1}: " \
+                      "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
+                                                                               source_domain)
     try:
         resolver = dns.resolver.Resolver()
         timeout = float(timeout)
@@ -466,8 +466,8 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         raise DMARCWarning(warning_message)
     except dns.exception.DNSException as error:
-        raise DMARCWarning("Unable to validate that {1} accepts reports for {0}: {2}".format(source_domain,
-                                                                                             destination_domain,
+        raise DMARCWarning("Unable to validate that {0} accepts reports for {1}: {2}".format(destination_domain,
+                                                                                             source_domain,
                                                                                              error.msg))
     return True
 
