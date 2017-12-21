@@ -5,7 +5,7 @@ Changelog
 -----
 - Rearrange the order of the CSV fields to that the longest entries are to the right
 - Documentation improvements
-- Fix external report validation
+- Fix external DMARC report destination validation
 - Count each MX resource record once 
 
 1.3.3 and 1.3.4
