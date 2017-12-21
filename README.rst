@@ -1,7 +1,3 @@
-``checkdmarc`` is a Python module and command line parser for SPF and DMARC DNS records
-
-Command line usage
-------------------
 ::
 
     usage: checkdmarc [-h] [-d] [-f FORMAT] [-o OUTPUT]
@@ -146,7 +142,7 @@ On Debian or Ubuntu systems, run:
 
 Python 3 installers for Windows and macOS can be found at https://www.python.org/downloads/
 
-To install or upgrade to the latest stable release checkdmarc on macOS or Linux, run
+To install or upgrade to the latest stable release of ``checkdmarc`` on macOS or Linux, run
 
 .. code-block:: bash
 
@@ -160,7 +156,7 @@ Or, install the latest development release directly from GitHub:
 
 .. note::
 
-    On Windows, ``pip3`` is ``pip``, regardless of if you installed Python 2 or 3. So on Windows, simply
+    On Windows, ``pip3`` is ``pip``, even with Python 3. So on Windows, simply
     substitute ``pip`` as an administrator in place of ``sudo pip3``, in the above commands.
 
 

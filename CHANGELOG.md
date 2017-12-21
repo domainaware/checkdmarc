@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.3.5
+-----
+- Rearrange the order of the CSV fields to that the longest entries are to the right
+- Documentation improvements 
+
 1.3.3 and 1.3.4
 ---------------
 - Clarify warning messages

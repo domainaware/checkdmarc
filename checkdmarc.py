@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.3.4"
+__version__ = "1.3.5"
 
 
 class DNSException(Exception):
@@ -451,7 +451,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
           str: An unparsed DMARC string
       """
     target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
-    warning_message = "{0} does not indicate that it  accepts reports about {1}: " \
+    warning_message = "{0} does not indicate that it accepts reports about {1}: " \
                       "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
                                                                                source_domain)
     try:
@@ -787,7 +787,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC tags and/or tag values in the results
         nameservers (list): A list of nameservers to query
         timeout(float): number of seconds to wait for an answer from DNS
-        wait (float): number of seconds to wait between processing domains - useful for avoiding anti-DoS
+        wait (float): number of seconds to wait between processing domains
 
     Returns:
         OrderedDict: Parsed SPF and DMARC records
@@ -798,9 +798,10 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
     if output_format not in ["json", "csv"]:
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
-        fields = ["domain", "mx", "mx_warnings", "spf_record", "dmarc_record", "spf_valid", "dmarc_valid", "spf_error",
-                  "spf_warnings", "dmarc_error", "dmarc_warnings", "dmarc_org_domain", "dmarc_adkim", "dmarc_aspf",
-                  "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp"]
+        fields = ["domain", "mx", "spf_valid", "dmarc_valid",  "dmarc_org_domain", "dmarc_adkim", "dmarc_aspf",
+                  "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp",
+                  "spf_record", "dmarc_record", "mx_warnings", "spf_error", "spf_warnings", "dmarc_error",
+                  "dmarc_warnings"]
         sorted(list(set(map(lambda d: d.rstrip(".").rstrip(), domains))))
         if output_path:
             output_file = open(output_path, "w", newline="\n")
