@@ -798,9 +798,9 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
     if output_format not in ["json", "csv"]:
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
-        fields = ["domain", "mx", "spf_valid", "dmarc_valid",  "dmarc_org_domain", "dmarc_adkim", "dmarc_aspf",
+        fields = ["domain", "spf_valid", "dmarc_valid",  "dmarc_org_domain", "dmarc_adkim", "dmarc_aspf",
                   "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp",
-                  "spf_record", "dmarc_record", "mx_warnings", "spf_error", "spf_warnings", "dmarc_error",
+                  "mx", "spf_record", "dmarc_record", "mx_warnings", "spf_error", "spf_warnings", "dmarc_error",
                   "dmarc_warnings"]
         sorted(list(set(map(lambda d: d.rstrip(".").rstrip(), domains))))
         if output_path:
