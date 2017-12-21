@@ -451,7 +451,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
           str: An unparsed DMARC string
       """
     target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
-    warning_message = "{0} does not indicate that it accepts reports about {1}: " \
+    warning_message = "{0} does not indicate that it accepts reports about {1} - " \
                       "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
                                                                                source_domain)
     try:
@@ -466,9 +466,9 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         raise DMARCWarning(warning_message)
     except dns.exception.DNSException as error:
-        raise DMARCWarning("Unable to validate that {0} accepts reports for {1}: {2}".format(destination_domain,
-                                                                                             source_domain,
-                                                                                             error.msg))
+        raise DMARCWarning("Unable to validate that {0} accepts reports for {1} - {2}".format(destination_domain,
+                                                                                              source_domain,
+                                                                                              error.msg))
     return True
 
 
@@ -703,7 +703,7 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
                     value = domain
                 mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
                 if len(mx_hosts) > 10:
-                    raise SPFError("{0} has more than 10 MX records "
+                    raise SPFError("{0} has more than 10 MX records - "
                                    "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(value))
                 for host in mx_hosts:
                     results[result].append(OrderedDict([("value", host["hostname"]), ("mechanism", mechanism)]))
@@ -742,7 +742,7 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
                     raise SPFWarning(str(error))
             elif mechanism == "ptr":
                 results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
-                raise SPFWarning("The ptr mechanism should not be used "
+                raise SPFWarning("The ptr mechanism should not be used - "
                                  "https://tools.ietf.org/html/rfc7208#section-5.5")
             else:
                 results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
