@@ -1,6 +1,10 @@
 Changelog
 =========
 
+4.3.7
+----
+- Properly handle DMARC records that are made up of multiple strings 
+
 4.3.6
 -----
 

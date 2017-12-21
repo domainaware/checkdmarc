@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.3.6"
+__version__ = "1.3.7"
 
 
 class DNSException(Exception):
@@ -328,7 +328,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
         if nameservers:
             resolver.nameservers = nameservers
         resolver.lifetime = timeout
-        record = resolver.query(target, "TXT")[0].to_text().strip('"')
+        record = resolver.query(target, "TXT")[0].to_text().replace('"', '')
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         pass

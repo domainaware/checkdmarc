@@ -109,3 +109,6 @@ output/
 
 *.json
 *.csv
+
+# Any hidden files
+.*
