@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.3.6
+-----
+
+- Allow input file to be a CSV where the domain is the first field; all other fields are ignored
+
 1.3.5
 -----
 - Rearrange the order of the CSV fields to that the longest entries are to the right

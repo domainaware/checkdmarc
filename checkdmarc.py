@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.3.5"
+__version__ = "1.3.6"
 
 
 class DNSException(Exception):
@@ -793,7 +793,13 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
 
     """
     output_format = output_format.lower()
-    domains = sorted(list(set(map(lambda d: d.rstrip(".\r\n").strip().lower(), domains))))
+    domains = sorted(list(set(map(lambda d: d.rstrip(".\r\n").strip().lower().split(",")[0], domains))))
+    not_domains = []
+    for domain in domains:
+        if "." not in domain:
+            not_domains.append(domain)
+    for domain in not_domains:
+        domains.remove(domain)
     if output_format not in ["json", "csv"]:
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
@@ -801,7 +807,6 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                   "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp",
                   "mx", "spf_record", "dmarc_record", "mx_warnings", "spf_error", "spf_warnings", "dmarc_error",
                   "dmarc_warnings"]
-        sorted(list(set(map(lambda d: d.rstrip(".").rstrip(), domains))))
         if output_path:
             output_file = open(output_path, "w", newline="\n")
         else:
@@ -915,9 +920,15 @@ def _main():
     domains = args.domain
     if len(domains) == 1 and path.exists(domains[0]):
         with open(domains[0]) as domains_file:
-            domains = sorted(list(set(map(lambda d: d.rstrip(".\r\n").strip().lower(), domains_file.readlines()))))
-            while "" in domains:
-                domains.remove("")
+            domains = sorted(list(set(map(lambda d: d.rstrip(".\r\n").strip().lower().split(",")[0],
+                                          domains_file.readlines()))))
+            not_domains = []
+            for domain in domains:
+                if "." not in domain:
+                    not_domains.append(domain)
+            for domain in not_domains:
+                domains.remove(domain)
+
     results = check_domains(domains, output_format=args.format, output_path=args.output,
                             include_dmarc_tag_descriptions=args.descriptions,
                             nameservers=args.nameserver, timeout=args.timeout)
