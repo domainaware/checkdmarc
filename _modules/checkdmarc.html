@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 1.3.7 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 1.3.8 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 1.3.7 documentation" href="../index.html"/>
+    <link rel="top" title="checkdmarc 1.3.8 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.3.7
+                1.3.8
               </div>
             
           
@@ -194,7 +194,7 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.3.7&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.3.8&quot;</span>
 
 
 <div class="viewcode-block" id="DNSException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DNSException">[docs]</a><span class="k">class</span> <span class="nc">DNSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -247,7 +247,7 @@
 
 <span class="n">dmarc_regex</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;([a-z]{1,5})=([\w.:@/+!,_\-]+)&quot;</span><span class="p">)</span>
 <span class="n">spf_regex</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)&quot;</span><span class="p">)</span>
-<span class="n">mailto_regex</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;mailto:([\w\-.]+@[\w\-.]+)&quot;</span><span class="p">)</span>
+<span class="n">mailto_regex</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;mailto:([\w\-!#$%&amp;&#39;*+-/=?^_`{|}~][\w\-.!#$%&amp;&#39;*+-/=?^_`{|}~]+@[\w\-.]+)&quot;</span><span class="p">)</span>
 
 
 <span class="n">tag_values</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">adkim</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;DKIM Alignment Mode&quot;</span><span class="p">,</span>
@@ -506,8 +506,11 @@
 <span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: ``hosts``: A list of OrderedDicts with keys of ``hostname`` and ``addresses``,</span>
-<span class="sd">                     ``warnings``: A list of MX resolution warnings</span>
+<span class="sd">        OrderedDict: with The following keys:</span>
+<span class="sd">            - ``hosts``: A list of OrderedDicts with keys of</span>
+<span class="sd">              - ``hostname``</span>
+<span class="sd">              - ``addresses``,</span>
+<span class="sd">            - ``warnings`` A list of MX resolution warnings</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">mx_records</span> <span class="o">=</span> <span class="p">[]</span>
@@ -590,7 +593,7 @@
     <span class="n">uri</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     <span class="n">mailto_matches</span> <span class="o">=</span> <span class="n">mailto_regex</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mailto_matches</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCWarning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is not a valid dmarc report URI&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">uri</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="n">DMARCWarning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is not a valid DMARC report URI&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">uri</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">mailto_matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
 
 
@@ -608,7 +611,7 @@
 <span class="sd">          str: An unparsed DMARC string</span>
 <span class="sd">      &quot;&quot;&quot;</span>
     <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">._report._dmarc.</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">)</span>
-    <span class="n">warning_message</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not indicate that it accepts reports about </span><span class="si">{1}</span><span class="s2"> - &quot;</span> \
+    <span class="n">warning_message</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not indicate that it accepts DMARC reports about </span><span class="si">{1}</span><span class="s2"> - &quot;</span> \
                       <span class="s2">&quot;https://tools.ietf.org/html/rfc7489#section-7.1&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
                                                                                <span class="n">source_domain</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
@@ -623,7 +626,7 @@
     <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">DMARCWarning</span><span class="p">(</span><span class="n">warning_message</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCWarning</span><span class="p">(</span><span class="s2">&quot;Unable to validate that </span><span class="si">{0}</span><span class="s2"> accepts reports for </span><span class="si">{1}</span><span class="s2"> - </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
+        <span class="k">raise</span> <span class="n">DMARCWarning</span><span class="p">(</span><span class="s2">&quot;Unable to validate that </span><span class="si">{0}</span><span class="s2"> DMARC accepts reports for </span><span class="si">{1}</span><span class="s2"> - </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
                                                                                               <span class="n">source_domain</span><span class="p">,</span>
                                                                                               <span class="n">error</span><span class="o">.</span><span class="n">msg</span><span class="p">))</span>
     <span class="k">return</span> <span class="kc">True</span></div>
@@ -749,7 +752,7 @@
 <span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: `record`: the DMARC record, ``tag``: The DMARC record parsed by tag</span>
+<span class="sd">        OrderedDict: ``record`` - the DMARC record, ``tag`` - The DMARC record parsed by tag</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">query</span> <span class="o">=</span> <span class="n">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
@@ -1147,7 +1150,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.3.7',
+            VERSION:'1.3.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
