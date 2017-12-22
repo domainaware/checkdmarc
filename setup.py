@@ -15,13 +15,15 @@ from setuptools import setup
 from codecs import open
 from os import path
 
+from checkdmarc import __version__
+
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-__version__ = "1.3.7"
+
 description = "A Python module and command line parser for SPF and DMARC records"
 
 

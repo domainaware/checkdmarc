@@ -1,6 +1,13 @@
 Changelog
 =========
 
+4.3.8
+-----
+
+- Improve regex for the DMARC `mailto:` URI
+- `__version__` only needs to be updated in one place now
+- Fix docstring formatting
+
 4.3.7
 ----
 - Properly handle DMARC records that are made up of multiple strings 

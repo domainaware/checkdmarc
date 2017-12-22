@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.3.7"
+__version__ = "1.3.8"
 
 
 class DNSException(Exception):
@@ -90,7 +90,7 @@ class _DMARCGrammar(Grammar):
 
 dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
 spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
-mailto_regex = compile(r"mailto:([\w\-.]+@[\w\-.]+)")
+mailto_regex = compile(r"mailto:([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]+@[\w\-.]+)")
 
 
 tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
@@ -349,8 +349,11 @@ def get_mx_hosts(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        OrderedDict: ``hosts``: A list of OrderedDicts with keys of ``hostname`` and ``addresses``,
-                     ``warnings``: A list of MX resolution warnings
+        OrderedDict: with The following keys:
+            - ``hosts``: A list of OrderedDicts with keys of
+              - ``hostname``
+              - ``addresses``,
+            - ``warnings`` A list of MX resolution warnings
 
     """
     mx_records = []
@@ -433,7 +436,7 @@ def parse_dmarc_report_uri(uri):
     uri = uri.strip()
     mailto_matches = mailto_regex.findall(uri)
     if len(mailto_matches) != 1:
-        raise DMARCWarning("{0} is not a valid dmarc report URI".format(uri))
+        raise DMARCWarning("{0} is not a valid DMARC report URI".format(uri))
     return mailto_matches[0]
 
 
@@ -451,7 +454,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
           str: An unparsed DMARC string
       """
     target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
-    warning_message = "{0} does not indicate that it accepts reports about {1} - " \
+    warning_message = "{0} does not indicate that it accepts DMARC reports about {1} - " \
                       "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
                                                                                source_domain)
     try:
@@ -466,7 +469,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         raise DMARCWarning(warning_message)
     except dns.exception.DNSException as error:
-        raise DMARCWarning("Unable to validate that {0} accepts reports for {1} - {2}".format(destination_domain,
+        raise DMARCWarning("Unable to validate that {0} DMARC accepts reports for {1} - {2}".format(destination_domain,
                                                                                               source_domain,
                                                                                               error.msg))
     return True
@@ -592,7 +595,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
-        OrderedDict: `record`: the DMARC record, ``tag``: The DMARC record parsed by tag
+        OrderedDict: ``record`` - the DMARC record, ``tag`` - The DMARC record parsed by tag
 
     """
     query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
