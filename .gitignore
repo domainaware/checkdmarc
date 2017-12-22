@@ -110,5 +110,5 @@ output/
 *.json
 *.csv
 
-# Any hidden files
-.*
+# LibreOffice lock files
+.~*
