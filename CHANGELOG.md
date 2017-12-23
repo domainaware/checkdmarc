@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.5.2
+1.5.3
 -----
 - Fix another show-stopping bug :(
 
