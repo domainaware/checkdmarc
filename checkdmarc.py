@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 
 
 class DNSException(Exception):
@@ -483,8 +483,8 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
         raise DMARCWarning(warning_message)
     except dns.exception.DNSException as error:
         raise DMARCWarning("Unable to validate that {0} DMARC accepts reports for {1} - {2}".format(destination_domain,
-                                                                                              source_domain,
-                                                                                              error.msg))
+                                                                                                    source_domain,
+                                                                                                    error.msg))
     return True
 
 
@@ -527,9 +527,9 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
         tags["sp"] = OrderedDict([("value", tags["p"]["value"]), ("explicit", False)])
 
     # Validate tag values
-    if tag not in tag_values:
-        raise DMARCError("{0} is not a valid DMARC tag".format(tag))
     for tag in tags:
+        if tag not in tag_values:
+            raise DMARCError("{0} is not a valid DMARC tag".format(tag))
         if tag == "fo":
             tags[tag]["value"] = tags[tag]["value"].split(":")
             if "0" in tags[tag]["value"] and "1" in tags[tag]["value"]:
@@ -562,7 +562,8 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
 
     try:
         if "rua" in tags:
-            for uri in tags["rua"]["value"].split(","):
+            tags["rua"]["value"] = tags["rua"]["value"].split(",")
+            for uri in tags["rua"]["value"]:
                 email_address = parse_dmarc_report_uri(uri)
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
@@ -583,7 +584,8 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
 
     try:
         if "ruf" in tags.keys():
-            for uri in tags["ruf"]["value"].split(","):
+            tags["ruf"]["value"] = tags["ruf"]["value"].split(",")
+            for uri in tags["ruf"]["value"]:
                 email_address = parse_dmarc_report_uri(uri)
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
@@ -596,6 +598,13 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                 except DNSException as warning:
                     raise DMARCWarning("Failed to retrieve MX records for the domain of ruf email address "
                                        "{0} - {1}".format(email_address, str(warning)))
+                else:
+                    raise DMARCWarning("ruf tag for delivery locations of forensic reports is not specified")
+
+        if tags["pct"] < 0 or tags["pct"] > 100:
+            raise DMARCError("pct value must be an integer between 0 and 100")
+        elif tags["pct"] < 100:
+            raise DMARCWarning("pct value is less than 100")
 
     except DMARCWarning as warning:
         warnings.append(str(warning))
@@ -877,16 +886,16 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 row["dmarc_org_domain"] = query["organisational_domain"]
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
                 row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
-                row["dmarc_fo"] = dmarc["tags"]["fo"]["value"]
+                row["dmarc_fo"] = ":".join(dmarc["tags"]["fo"]["value"])
                 row["dmarc_p"] = dmarc["tags"]["p"]["value"]
                 row["dmarc_pct"] = dmarc["tags"]["pct"]["value"]
-                row["dmarc_rf"] = dmarc["tags"]["rf"]["value"]
+                row["dmarc_rf"] = ":".join(dmarc["tags"]["rf"]["value"])
                 row["dmarc_ri"] = dmarc["tags"]["ri"]["value"]
                 row["dmarc_sp"] = dmarc["tags"]["sp"]["value"]
                 if "rua" in dmarc:
-                    row["dmarc_rua"] = dmarc["tags"]["rua"]["value"]
+                    row["dmarc_rua"] = ",".join(dmarc["tags"]["rua"]["value"])
                 if "ruf" in dmarc:
-                    row["dmarc_ruf"] = dmarc["tags"]["ruf"]["value"]
+                    row["dmarc_ruf"] = ",".join(dmarc["tags"]["ruf"]["value"])
                 row["dmarc_warnings"] = ";".join(dmarc["warnings"])
             except DMARCError as error:
                 row["dmarc_error"] = error

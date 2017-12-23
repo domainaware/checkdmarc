@@ -1,22 +1,31 @@
 Changelog
 =========
 
-4.4.0
+1.5.0
+-----
+
+- Turn `rua` and `ruf` tag values in to lists
+- Fix conversion of lists to strings in CSVs
+- Raise `DMARCWarning` if optional `rua` tag is missing
+- Raise `DMARCWarning` if the value of the `pct` tag is  less than 100
+- Raise `DMARCError` if the value of the `pct` tag is less than 0 or greater than 100
+
+1.4.0
 -----
 - Proper parsing of DMARC tags `fo` and `rf`
 
-4.3.8
+1.3.8
 -----
 
 - Improve regex for the DMARC `mailto:` URI
 - `__version__` only needs to be updated in one place now
 - Fix docstring formatting
 
-4.3.7
+1.3.7
 ----
 - Properly handle DMARC records that are made up of multiple strings 
 
-4.3.6
+1.3.6
 -----
 
 - Allow input file to be a CSV where the domain is the first field; all other fields are ignored
@@ -119,7 +128,7 @@ Changelog
 - Count `exists` SPF mechanisms in the overall SPF query limit 
 - Make `a` SPF mechanisms count as one lookup instead of two
   - `checkdmarc` actually makes two queries per `a` mechanism, one for `A` records, and one for `AAAA` records. 
-  However, [RFC 7208, Section 4.6.4][1] only mentions counting the mechanisms that use lookups 
+  However, [RFC 7208, Section 1.6.4][1] only mentions counting the mechanisms that use lookups 
   (i.e. `mx`, `a`, `exists`, `include`, and `redirect`), and including each `MX` record returned in the overall count,
     (since those in turn will need to be resolved). This aligns `checkdmarc` with 3rd party SPF validators at 
     [MxToolbox][2] and [DMARC Analyzer][3]
@@ -137,7 +146,7 @@ Changelog
 - Improve DMARC record syntax validation
 - Check for SPF include loops
 - Validate `rua` and `ruf` URIs
-- Fail SPF validation if query limit reached [RFC 7208, Section 4.6.4][1]
+- Fail SPF validation if query limit reached [RFC 7208, Section 1.6.4][1]
 
 1.0.1
 -----
@@ -147,6 +156,6 @@ Changelog
 -----
 - Initial commit to GitHub
 
-[1]: https://tools.ietf.org/html/rfc7208#section-4.6.4
+[1]: https://tools.ietf.org/html/rfc7208#section-1.6.4
 [2]: https://mxtoolbox.com/spf.aspx
 [3]: https://app.dmarcanalyzer.com/dns/spf
