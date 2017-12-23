@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.5.0"
+__version__ = "1.5.1"
 
 
 class DNSException(Exception):
@@ -106,7 +106,7 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                       'In strict mode, only an exact DNS domain match is considered to '
                                                       'produce Identifier Alignment.'),
                          fo=OrderedDict(name="Failure Reporting Options",
-                                        default=["0"],
+                                        default="0",
                                         description='Provides requested options for generation of failure reports. '
                                                     'Report generators MAY choose to adhere to the requested options. '
                                                     'This tag\'s content MUST be ignored if a "ruf" tag (below) is not '
@@ -154,7 +154,7 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                      'a slow rollout of enforcement of the DMARC mechanism.'
                                          ),
                          rf=OrderedDict(name="Report Format",
-                                        default=["afrf"],
+                                        default="afrf",
                                         description='A list separated by colons of one or more report formats as '
                                                     'requested by the Domain Owner to be used when a message fails '
                                                     'both SPF and DKIM tests to report details of the individual '
@@ -869,11 +869,11 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         for domain in domains:
             row = dict(domain=domain, mx="", spf_valid=True, dmarc_valid=True)
             mx = get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
-            row["mx"] = ";".join(list(map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]), mx["hosts"])))
-            row["mx_warnings"] = ";".join(mx["warnings"])
+            row["mx"] = ",".join(list(map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]), mx["hosts"])))
+            row["mx_warnings"] = ",".join(mx["warnings"])
             try:
                 row["spf_record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
-                row["spf_warnings"] = ";".join(parse_spf_record(row["spf_record"], row["domain"],
+                row["spf_warnings"] = ",".join(parse_spf_record(row["spf_record"], row["domain"],
                                                                 nameservers=nameservers,
                                                                 timeout=timeout)["warnings"])
             except SPFError as error:
@@ -896,7 +896,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                     row["dmarc_rua"] = ",".join(dmarc["tags"]["rua"]["value"])
                 if "ruf" in dmarc:
                     row["dmarc_ruf"] = ",".join(dmarc["tags"]["ruf"]["value"])
-                row["dmarc_warnings"] = ";".join(dmarc["warnings"])
+                row["dmarc_warnings"] = ",".join(dmarc["warnings"])
             except DMARCError as error:
                 row["dmarc_error"] = error
                 row["dmarc_valid"] = False
