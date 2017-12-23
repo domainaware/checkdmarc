@@ -8,11 +8,13 @@ from re import compile
 import json
 from csv import DictWriter
 from argparse import ArgumentParser
-from os import path
+from os import path, stat
 from time import sleep
+from datetime import datetime, timedelta
 
 from io import StringIO
 
+import publicsuffix
 import dns.resolver
 import dns.exception
 from pyleri import (Grammar,
@@ -37,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.5.4"
+__version__ = "1.6.0"
 
 
 class DNSException(Exception):
@@ -95,10 +97,11 @@ mailto_regex = compile(r"mailto:([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{
 
 tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                            default="r",
-                                           description='In relaxed mode, the Organizational Domains of both the DKIM- '
+                                           description='In relaxed mode, the Organizational Domains of both the DKIM-'
                                                        'authenticated signing domain (taken from the value of the "d=" '
-                                                       'tag in the signature) and that of the RFC5322.From domain must '
-                                                       'be equal if the identifiers are to be considered aligned.'),
+                                                       'tag in the signature) and that of the RFC 5322 From domain '
+                                                       'must be equal if the identifiers are to be '
+                                                       'considered aligned.'),
                          aspf=OrderedDict(name="SPF alignment mode",
                                           default="r",
                                           description='In relaxed mode, the SPF-authenticated domain and RFC5322 '
@@ -206,6 +209,43 @@ spf_qualifiers = {
     "-": "fail",
     "~": "softfail"
 }
+
+
+def get_base_domain(domain):
+    """
+    Gets the base domain name for the given domain
+
+    Args:
+        domain (str): A domain or subdomain
+
+    Notes:
+        Results are based on a list of public domain suffixes at https://publicsuffix.org/list/public_suffix_list.dat
+        this file is saved to the Current Working Directory, where it is used as a cache file for 24 hours
+
+    Returns:
+        str: The base domain of the given domain
+
+    """
+    psl_path = "public_suffix_list.dat"
+
+    def download_psl():
+        fresh_psl = publicsuffix.fetch()
+        with open(psl_path, "w", encoding="utf-8") as fresh_psl_file:
+            fresh_psl_file.write(fresh_psl.read())
+
+        return publicsuffix.PublicSuffixList(fresh_psl)
+
+    if not path.exists(psl_path):
+        psl = download_psl()
+    else:
+        psl_age = datetime.now() - datetime.fromtimestamp(stat(psl_path).st_mtime)
+        if psl_age > timedelta(hours=24):
+            psl = download_psl()
+        else:
+            with open(psl_path, encoding="utf-8") as psl_file:
+                psl = publicsuffix.PublicSuffixList(psl_file)
+
+    return psl.get_public_suffix(domain)
 
 
 def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
@@ -389,16 +429,16 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        dict: the ``organisational_domain`` and ``record``
+        OrderedDict: ``record`` - The unparsed DMARC record string; ``location`` - the domain where the record was found
     """
+    base_domain = get_base_domain(domain)
     record = _query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-    while record is None and len(domain.split(".")) > 1:
-        domain = ".".join(domain.split(".")[1::])
-        record = _query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+    if record is None and domain != base_domain:
+        record = _query_dmarc_record(base_domain, nameservers=nameservers, timeout=timeout)
     if record is None:
-        raise DMARCError("A DMARC record does not exist for this domain, or any of its upper domains")
+        raise DMARCError("A DMARC record does not exist for this domain or its base domain")
 
-    return OrderedDict(organisational_domain=domain, record=record)
+    return OrderedDict([("record", record), ("location", domain)])
 
 
 def get_dmarc_tag_description(tag, value=None):
@@ -634,13 +674,11 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
 
     """
     query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-    organisational_domain = query["organisational_domain"]
-    record = query["record"]
 
-    tags = parse_dmarc_record(record, organisational_domain, include_tag_descriptions=include_tag_descriptions,
+    tags = parse_dmarc_record(query["record"], domain, include_tag_descriptions=include_tag_descriptions,
                               nameservers=nameservers, timeout=timeout)
 
-    return OrderedDict([("record", record), ("organisational_domain", organisational_domain), ("tags", tags)])
+    return OrderedDict([("record", query["record"]), ("location", query["location"]), ("tags", tags)])
 
 
 def query_spf_record(domain, nameservers=None, timeout=6.0):
@@ -681,13 +719,12 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
     return spf_record
 
 
-def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameservers=None, timeout=6.0):
+def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
     """
     Parses a SPF record, including resolving ``a``, ``mx``, and ``include`` mechanisms
     
     Args:
         record (str): An SPF record
-        query_mechanism_count(int): The number of mechanisms that make DNS queries used in the last recursion - limit 10
         seen (list): A list of domains seen in past loops
         domain (str): The domain that the SPF record came from
         nameservers (list): A list of nameservers to query
@@ -696,23 +733,7 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
     Returns:
         OrderedDict: A OrderedDictionary containing a parsed SPF record and warnings
     """
-    def _check_query_limit(count, requests):
-        """
-        Check if the SPF parser is within the RFC limit of 10 queries  
-        Args:
-            count (int): The current ``query_count`` total 
-            requests (int): The number of DNS queries needed for a task
-
-        Returns:
-            int: The new ``query_count`` total 
-
-        """
-        count += requests
-        if count > 10:
-            raise SPFError("Parsing the SPF record requires more than the 10 maximum DNS queries "
-                           "https://tools.ietf.org/html/rfc7208#section-4.6.4")
-        return count
-
+    lookup_mechanisms = ["a", "mx", "include", "exists", "redirect"]
     if seen is None:
         seen = [domain]
     record = record.replace(' "', '').replace('"', '')
@@ -733,6 +754,16 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
                           ("exp", None),
                           ("all", "neutral")])
 
+    lookup_mechanism_count = 0
+    for match in matches:
+        mechanism = match[1]
+        if mechanism in lookup_mechanisms:
+            lookup_mechanism_count += 1
+    if lookup_mechanism_count > 10:
+
+        raise SPFError("Parsing the SPF record requires {0}/10 maximum DNS lookups"
+                       "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(lookup_mechanism_count))
+
     for match in matches:
         result = spf_qualifiers[match[0]]
         mechanism = match[1]
@@ -740,14 +771,12 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
 
         try:
             if mechanism == "a":
-                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 if value == "":
                     value = domain
                 a_records = _get_a_records(value, nameservers=nameservers, timeout=timeout)
                 for record in a_records:
                     results[result].append(OrderedDict([("value", record), ("mechanism", mechanism)]))
             elif mechanism == "mx":
-                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 if value == "":
                     value = domain
                 mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
@@ -759,19 +788,19 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
             elif mechanism == "redirect":
                 if value in seen:
                     raise SPFError("Redirect loop detected: {0}".format(value))
-                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 seen.append(value)
                 try:
                     redirect = get_spf_record(value,
-                                              query_count=query_mechanism_count,
                                               nameservers=nameservers,
                                               timeout=timeout)
+                    lookup_mechanism_count += redirect["dns_lookups"]
+                    if lookup_mechanism_count > 10:
+                        raise SPFError("Parsing the SPF record requires {0}/10 maximum DNS lookups "
+                                       "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
+                                        lookup_mechanism_count))
                     results["redirect"] = OrderedDict([("domain", value), ("results", redirect)])
                 except DNSException as error:
                     raise SPFWarning(str(error))
-            elif mechanism == "exists":
-                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
-                results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
             elif mechanism == "exp":
                 results["exp"] = _get_txt_records(value)[0]
             elif mechanism == "all":
@@ -779,13 +808,17 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
             elif mechanism == "include":
                 if value in seen:
                     raise SPFError("Include loop detected: {0}".format(value))
-                query_mechanism_count = _check_query_limit(query_mechanism_count, 1)
                 seen.append(value)
                 try:
                     include = get_spf_record(value,
-                                             query_count=query_mechanism_count,
                                              nameservers=nameservers,
                                              timeout=timeout)
+                    lookup_mechanism_count += include["dns_lookups"]
+                    if lookup_mechanism_count > 10:
+                        raise SPFError("Parsing the SPF record requires {0}/10 maximum DNS lookups "
+                                       "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
+                                        lookup_mechanism_count))
+
                     results["include"].append(OrderedDict([("domain", value), ("results", include)]))
                 except DNSException as error:
                     raise SPFWarning(str(error))
@@ -798,17 +831,15 @@ def parse_spf_record(record, domain, seen=None, query_mechanism_count=0, nameser
 
         except (SPFWarning, DNSException) as warning:
             warnings.append(str(warning))
+    return OrderedDict([('dns_lookups', lookup_mechanism_count), ("results", results), ("warnings", warnings)])
 
-    return OrderedDict([("results", results), ("warnings", warnings)])
 
-
-def get_spf_record(domain, query_count=0, nameservers=None, timeout=6.0):
+def get_spf_record(domain, nameservers=None, timeout=6.0):
     """
     Retrieves and parses an SPF record 
     
     Args:
         domain (str): A domain name
-        query_count (int): The number of queries used in the last iteration
         nameservers (list): A list of nameservers to query
         timeout(float): Number of seconds to wait for an answer from DNS
 
@@ -817,8 +848,7 @@ def get_spf_record(domain, query_count=0, nameservers=None, timeout=6.0):
 
     """
     record = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
-    record = parse_spf_record(record, domain, query_mechanism_count=query_count, nameservers=nameservers,
-                              timeout=timeout)
+    record = parse_spf_record(record, domain, nameservers=nameservers, timeout=timeout)
 
     return record
 
@@ -852,10 +882,10 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
     if output_format not in ["json", "csv"]:
         raise ValueError("Invalid output format {0}. Valid options are json and csv.".format(output_format))
     if output_format == "csv":
-        fields = ["domain", "spf_valid", "dmarc_valid",  "dmarc_org_domain", "dmarc_adkim", "dmarc_aspf",
+        fields = ["domain", "base_domain", "spf_valid", "dmarc_valid", "dmarc_adkim", "dmarc_aspf",
                   "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri", "dmarc_rua", "dmarc_ruf", "dmarc_sp",
-                  "mx", "spf_record", "dmarc_record", "mx_warnings", "spf_error", "spf_warnings", "dmarc_error",
-                  "dmarc_warnings"]
+                  "mx", "spf_record", "dmarc_record", "dmarc_record_location", "mx_warnings", "spf_error",
+                  "spf_warnings", "dmarc_error", "dmarc_warnings"]
         if output_path:
             output_file = open(output_path, "w", newline="\n")
         else:
@@ -865,7 +895,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
         while "" in domains:
             domains.remove("")
         for domain in domains:
-            row = dict(domain=domain, mx="", spf_valid=True, dmarc_valid=True)
+            row = dict(domain=domain, base_domain=get_base_domain(domain), mx="", spf_valid=True, dmarc_valid=True)
             mx = get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
             row["mx"] = ",".join(list(map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]), mx["hosts"])))
             row["mx_warnings"] = ",".join(mx["warnings"])
@@ -878,10 +908,10 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 row["spf_error"] = error
                 row["spf_valid"] = False
             try:
-                query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-                row["dmarc_record"] = query["record"]
-                dmarc = parse_dmarc_record(query["record"], domain, nameservers=nameservers, timeout=timeout)
-                row["dmarc_org_domain"] = query["organisational_domain"]
+                dmarc_query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+                row["dmarc_record"] = dmarc_query["record"]
+                row["dmarc_record_location"] = dmarc_query["location"]
+                dmarc = parse_dmarc_record(dmarc_query["record"], domain, nameservers=nameservers, timeout=timeout)
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
                 row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
                 row["dmarc_fo"] = ":".join(dmarc["tags"]["fo"]["value"])
@@ -906,8 +936,8 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
     elif output_format == "json":
         results = []
         for domain in domains:
-            domain_results = OrderedDict([("domain", domain), ("mx", [])])
-            domain_results["spf"] = OrderedDict([("record", None), ("valid", True)])
+            domain_results = OrderedDict([("domain", domain), ("base_domain", get_base_domain(domain)), ("mx", [])])
+            domain_results["spf"] = OrderedDict([("record", None), ("valid", True), ("dns_lookups", None)])
             domain_results["mx"] = get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
             try:
                 domain_results["spf"]["record"] = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
@@ -915,6 +945,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                                               domain_results["domain"],
                                               nameservers=nameservers,
                                               timeout=timeout)
+                domain_results["spf"]["dns_lookups"] = parsed_spf["dns_lookups"]
                 domain_results["spf"]["results"] = parsed_spf["results"]
                 domain_results["spf"]["warnings"] = parsed_spf["warnings"]
             except SPFError as error:
@@ -922,14 +953,16 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 domain_results["spf"]["valid"] = False
 
             # DMARC
-            domain_results["dmarc"] = OrderedDict([("record", None), ("valid", True), ("organisational_domain", None)])
+            domain_results["dmarc"] = OrderedDict([("record", None),
+                                                   ("valid", True),
+                                                   ("location", None)])
             try:
-                query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
-                domain_results["dmarc"]["record"] = query["record"]
-                parsed_dmarc_record = parse_dmarc_record(query["record"], domain,
+                dmarc_query = query_dmarc_record(domain, nameservers=nameservers, timeout=timeout)
+                domain_results["dmarc"]["record"] = dmarc_query["record"]
+                domain_results["dmarc"]["location"] = dmarc_query["location"]
+                parsed_dmarc_record = parse_dmarc_record(dmarc_query["record"], domain,
                                                          include_tag_descriptions=include_dmarc_tag_descriptions,
                                                          nameservers=nameservers, timeout=timeout)
-                domain_results["dmarc"]["organisational_domain"] = query["organisational_domain"]
                 domain_results["dmarc"]["tags"] = parsed_dmarc_record["tags"]
                 domain_results["dmarc"]["warnings"] = parsed_dmarc_record["warnings"]
             except DMARCError as error:

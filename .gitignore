@@ -112,3 +112,6 @@ output/
 
 # LibreOffice lock files
 .~*
+
+# ignore data files
+*.dat

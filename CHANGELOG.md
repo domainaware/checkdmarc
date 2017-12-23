@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.6.0
+-----
+
+- Properly look for DMARC records in base/organisational domains
+- Properly count DNS lookups for SPF
+- Update sample output in the documentation
+
 1.5.4
 -----
 - Remove faulty `ruf` tag warning

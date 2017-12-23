@@ -41,12 +41,13 @@ Welcome to checkdmarc's documentation!
 
 .. code-block:: bash
 
-    $ checkdmarc fbi.gov
+    $ checkdmarc fbi.gov -d
 
 .. code-block:: json
 
-    {
+     {
       "domain": "fbi.gov",
+      "base_domain": "fbi.gov",
       "mx": {
         "hosts": [
           {
@@ -62,6 +63,7 @@ Welcome to checkdmarc's documentation!
       "spf": {
         "record": "v=spf1 +mx ip4:153.31.0.0/16 -all",
         "valid": true,
+        "dns_lookups": 1,
         "results": {
           "pass": [
             {
@@ -86,7 +88,7 @@ Welcome to checkdmarc's documentation!
       "dmarc": {
         "record": "v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100",
         "valid": true,
-        "organisational_domain": "fbi.gov",
+        "location": "fbi.gov",
         "tags": {
           "v": {
             "value": "DMARC1",
@@ -105,11 +107,15 @@ Welcome to checkdmarc's documentation!
             "explicit": true
           },
           "rua": {
-            "value": "mailto:dmarc-feedback@fbi.gov",
+            "value": [
+              "mailto:dmarc-feedback@fbi.gov"
+            ],
             "explicit": true
           },
           "ruf": {
-            "value": "mailto:dmarc-feedback@fbi.gov",
+            "value": [
+              "mailto:dmarc-feedback@fbi.gov"
+            ],
             "explicit": true
           },
           "pct": {
@@ -117,11 +123,15 @@ Welcome to checkdmarc's documentation!
             "explicit": true
           },
           "fo": {
-            "value": "0",
+            "value": [
+              "0"
+            ],
             "explicit": false
           },
           "rf": {
-            "value": "afrf",
+            "value": [
+              "afrf"
+            ],
             "explicit": false
           },
           "ri": {
@@ -136,6 +146,7 @@ Welcome to checkdmarc's documentation!
         "warnings": []
       }
     }
+
 
 
 Installation
