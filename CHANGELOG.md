@@ -1,6 +1,10 @@
 Changelog
 =========
 
+4.4.0
+-----
+- Proper parsing of DMARC tags `fo` and `rf`
+
 4.3.8
 -----
 

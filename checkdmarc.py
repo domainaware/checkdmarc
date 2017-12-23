@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.3.8"
+__version__ = "1.4.0"
 
 
 class DNSException(Exception):
@@ -106,26 +106,26 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                       'In strict mode, only an exact DNS domain match is considered to '
                                                       'produce Identifier Alignment.'),
                          fo=OrderedDict(name="Failure Reporting Options",
-                                        default="0",
+                                        default=["0"],
                                         description='Provides requested options for generation of failure reports. '
                                                     'Report generators MAY choose to adhere to the requested options. '
                                                     'This tag\'s content MUST be ignored if a "ruf" tag (below) is not '
                                                     'also specified. The value of this tag is a colon-separated list '
                                                     'of characters that indicate failure reporting options.',
-                         values={"0": 'Generate a DMARC failure report if all underlying '
-                                      'authentication mechanisms fail to produce an aligned "pass" '
-                                      'result.',
-                                 "1": 'Generate a DMARC failure report if any underlying '
-                                      'authentication mechanism produced something other than an '
-                                      'aligned "pass" result.',
-                                 "d": 'Generate a DKIM failure report if the message had a signature '
-                                      'that failed evaluation, regardless of its alignment. DKIM-'
-                                      'specific reporting is described in AFRF-DKIM.',
-                                 "s": 'Generate an SPF failure report if the message failed SPF '
-                                      'evaluation, regardless of its alignment. SPF-specific '
-                                      'reporting is described in AFRF-SPF'
-                                 }
-                          ),
+                                        values={"0": 'Generate a DMARC failure report if all underlying '
+                                                     'authentication mechanisms fail to produce an aligned "pass" '
+                                                     'result.',
+                                                "1": 'Generate a DMARC failure report if any underlying '
+                                                     'authentication mechanism produced something other than an '
+                                                     'aligned "pass" result.',
+                                                "d": 'Generate a DKIM failure report if the message had a signature '
+                                                     'that failed evaluation, regardless of its alignment. DKIM-'
+                                                     'specific reporting is described in AFRF-DKIM.',
+                                                "s": 'Generate an SPF failure report if the message failed SPF '
+                                                     'evaluation, regardless of its alignment. SPF-specific '
+                                                     'reporting is described in AFRF-SPF'
+                                                }
+                                        ),
                          p=OrderedDict(name="Requested Mail Receiver Policy",
                                        default="none",
                                        description='Indicates the policy to be enacted by the Receiver at '
@@ -154,16 +154,21 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                      'a slow rollout of enforcement of the DMARC mechanism.'
                                          ),
                          rf=OrderedDict(name="Report Format",
-                                        default="afrf",
+                                        default=["afrf"],
                                         description='A list separated by colons of one or more report formats as '
                                                     'requested by the Domain Owner to be used when a message fails '
                                                     'both SPF and DKIM tests to report details of the individual '
                                                     'failure. Only "afrf" (the auth-failure report type) is '
-                                                    'currently supported in the DMARC standard.'
+                                                    'currently supported in the DMARC standard.',
+                                        values={
+                                            "afrf": ' "Authentication Failure Reporting Using the '
+                                                    'Abuse Reporting Format", RFC 6591, April 2012,'
+                                                    '<http://www.rfc-editor.org/info/rfc6591>'
+                                        }
                                         ),
                          ri=OrderedDict(name="Report Interval",
                                         default=86400,
-                                        description='Indicates a request to Receivers to generate aggregate reports'
+                                        description='Indicates a request to Receivers to generate aggregate reports '
                                                     'separated by no more than the requested number of seconds. '
                                                     'DMARC implementations MUST be able to provide daily reports '
                                                     'and SHOULD be able to provide hourly reports when requested. '
@@ -413,8 +418,16 @@ def get_dmarc_tag_description(tag, value=None):
     default = None
     if "default" in tag_values[tag]:
         default = tag_values[tag]["default"]
-    if value and "values" in tag_values[tag] and value in tag_values[tag]["values"][value]:
+    if type(value) == str and "values" in tag_values[tag] and value in tag_values[tag]["values"][value]:
         description = tag_values[tag]["values"][value]
+    elif type(value) == list and "values" in tag_values[tag]:
+        new_description = ""
+        for value_value in value:
+            if value_value in tag_values[tag]["values"]:
+                new_description += "{0}: {1}\n\n".format(value_value, tag_values[tag]["values"][value_value])
+        new_description = new_description.strip()
+        if new_description != "":
+            description = new_description
 
     return OrderedDict([("name", name), ("default", default), ("description", description)])
 
@@ -514,8 +527,23 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
         tags["sp"] = OrderedDict([("value", tags["p"]["value"]), ("explicit", False)])
 
     # Validate tag values
+    if tag not in tag_values:
+        raise DMARCError("{0} is not a valid DMARC tag".format(tag))
     for tag in tags:
-        if tag in tag_values and "values" in tag_values[tag] and tags[tag]["value"] not in tag_values[tag]["values"]:
+        if tag == "fo":
+            tags[tag]["value"] = tags[tag]["value"].split(":")
+            if "0" in tags[tag]["value"] and "1" in tags[tag]["value"]:
+                raise DMARCError("fo DMARC tag options 0 and 1 are mutually exclusive")
+            for value in tags[tag]["value"]:
+                if value not in tag_values[tag]["values"]:
+                    raise DMARCError("{0} is not a valid option for the DMARC fo tag".format(value))
+        elif tag == "rf":
+            tags[tag]["value"] = tags[tag]["value"].split(":")
+            for value in tags[tag]["value"]:
+                if value not in tag_values[tag]["values"]:
+                    raise DMARCError("{0} is not a valid option for the DMARC rf tag".format(value))
+
+        elif "values" in tag_values[tag] and tags[tag]["value"] not in tag_values[tag]["values"]:
             raise DMARCError("Tag {0} must have one of the following values: {1} - not {2}".format(
                 tag,
                 ",".join(tag_values[tag]["values"]),
