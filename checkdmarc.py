@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.5.1"
+__version__ = "1.5.2"
 
 
 class DNSException(Exception):
@@ -601,9 +601,9 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                 else:
                     raise DMARCWarning("ruf tag for delivery locations of forensic reports is not specified")
 
-        if tags["pct"] < 0 or tags["pct"] > 100:
+        if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
             raise DMARCError("pct value must be an integer between 0 and 100")
-        elif tags["pct"] < 100:
+        elif tags["pct"]["value"] < 100:
             raise DMARCWarning("pct value is less than 100")
 
     except DMARCWarning as warning:
