@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 1.5.4 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 1.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 1.5.4 documentation" href="../index.html"/>
+    <link rel="top" title="checkdmarc 1.6.0 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.5.4
+                1.6.0
               </div>
             
           
@@ -165,11 +165,13 @@
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">from</span> <span class="nn">csv</span> <span class="k">import</span> <span class="n">DictWriter</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="k">import</span> <span class="n">ArgumentParser</span>
-<span class="kn">from</span> <span class="nn">os</span> <span class="k">import</span> <span class="n">path</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="k">import</span> <span class="n">path</span><span class="p">,</span> <span class="n">stat</span>
 <span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">sleep</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
 
 <span class="kn">from</span> <span class="nn">io</span> <span class="k">import</span> <span class="n">StringIO</span>
 
+<span class="kn">import</span> <span class="nn">publicsuffix</span>
 <span class="kn">import</span> <span class="nn">dns.resolver</span>
 <span class="kn">import</span> <span class="nn">dns.exception</span>
 <span class="kn">from</span> <span class="nn">pyleri</span> <span class="k">import</span> <span class="p">(</span><span class="n">Grammar</span><span class="p">,</span>
@@ -194,7 +196,7 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.5.4&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.6.0&quot;</span>
 
 
 <div class="viewcode-block" id="DNSException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DNSException">[docs]</a><span class="k">class</span> <span class="nc">DNSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -252,10 +254,11 @@
 
 <span class="n">tag_values</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">adkim</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;DKIM Alignment Mode&quot;</span><span class="p">,</span>
                                            <span class="n">default</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span>
-                                           <span class="n">description</span><span class="o">=</span><span class="s1">&#39;In relaxed mode, the Organizational Domains of both the DKIM- &#39;</span>
+                                           <span class="n">description</span><span class="o">=</span><span class="s1">&#39;In relaxed mode, the Organizational Domains of both the DKIM-&#39;</span>
                                                        <span class="s1">&#39;authenticated signing domain (taken from the value of the &quot;d=&quot; &#39;</span>
-                                                       <span class="s1">&#39;tag in the signature) and that of the RFC5322.From domain must &#39;</span>
-                                                       <span class="s1">&#39;be equal if the identifiers are to be considered aligned.&#39;</span><span class="p">),</span>
+                                                       <span class="s1">&#39;tag in the signature) and that of the RFC 5322 From domain &#39;</span>
+                                                       <span class="s1">&#39;must be equal if the identifiers are to be &#39;</span>
+                                                       <span class="s1">&#39;considered aligned.&#39;</span><span class="p">),</span>
                          <span class="n">aspf</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;SPF alignment mode&quot;</span><span class="p">,</span>
                                           <span class="n">default</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span>
                                           <span class="n">description</span><span class="o">=</span><span class="s1">&#39;In relaxed mode, the SPF-authenticated domain and RFC5322 &#39;</span>
@@ -363,6 +366,43 @@
     <span class="s2">&quot;-&quot;</span><span class="p">:</span> <span class="s2">&quot;fail&quot;</span><span class="p">,</span>
     <span class="s2">&quot;~&quot;</span><span class="p">:</span> <span class="s2">&quot;softfail&quot;</span>
 <span class="p">}</span>
+
+
+<div class="viewcode-block" id="get_base_domain"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_base_domain">[docs]</a><span class="k">def</span> <span class="nf">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets the base domain name for the given domain</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        domain (str): A domain or subdomain</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        Results are based on a list of public domain suffixes at https://publicsuffix.org/list/public_suffix_list.dat</span>
+<span class="sd">        this file is saved to the Current Working Directory, where it is used as a cache file for 24 hours</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The base domain of the given domain</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">psl_path</span> <span class="o">=</span> <span class="s2">&quot;public_suffix_list.dat&quot;</span>
+
+    <span class="k">def</span> <span class="nf">download_psl</span><span class="p">():</span>
+        <span class="n">fresh_psl</span> <span class="o">=</span> <span class="n">publicsuffix</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">psl_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fresh_psl_file</span><span class="p">:</span>
+            <span class="n">fresh_psl_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fresh_psl</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="n">publicsuffix</span><span class="o">.</span><span class="n">PublicSuffixList</span><span class="p">(</span><span class="n">fresh_psl</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">psl_path</span><span class="p">):</span>
+        <span class="n">psl</span> <span class="o">=</span> <span class="n">download_psl</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">psl_age</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="p">(</span><span class="n">psl_path</span><span class="p">)</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">psl_age</span> <span class="o">&gt;</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">24</span><span class="p">):</span>
+            <span class="n">psl</span> <span class="o">=</span> <span class="n">download_psl</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">psl_path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">psl_file</span><span class="p">:</span>
+                <span class="n">psl</span> <span class="o">=</span> <span class="n">publicsuffix</span><span class="o">.</span><span class="n">PublicSuffixList</span><span class="p">(</span><span class="n">psl_file</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">psl</span><span class="o">.</span><span class="n">get_public_suffix</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span></div>
 
 
 <span class="k">def</span> <span class="nf">_get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
@@ -546,16 +586,16 @@
 <span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        dict: the ``organisational_domain`` and ``record``</span>
+<span class="sd">        OrderedDict: ``record`` - The unparsed DMARC record string; ``location`` - the domain where the record was found</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base_domain</span> <span class="o">=</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-    <span class="k">while</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">domain</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">::])</span>
-        <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">domain</span> <span class="o">!=</span> <span class="n">base_domain</span><span class="p">:</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dmarc_record</span><span class="p">(</span><span class="n">base_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCError</span><span class="p">(</span><span class="s2">&quot;A DMARC record does not exist for this domain, or any of its upper domains&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">DMARCError</span><span class="p">(</span><span class="s2">&quot;A DMARC record does not exist for this domain or its base domain&quot;</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">organisational_domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span> <span class="n">record</span><span class="o">=</span><span class="n">record</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)])</span></div>
 
 
 <div class="viewcode-block" id="get_dmarc_tag_description"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_dmarc_tag_description">[docs]</a><span class="k">def</span> <span class="nf">get_dmarc_tag_description</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -791,13 +831,11 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">query</span> <span class="o">=</span> <span class="n">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-    <span class="n">organisational_domain</span> <span class="o">=</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;organisational_domain&quot;</span><span class="p">]</span>
-    <span class="n">record</span> <span class="o">=</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]</span>
 
-    <span class="n">tags</span> <span class="o">=</span> <span class="n">parse_dmarc_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">organisational_domain</span><span class="p">,</span> <span class="n">include_tag_descriptions</span><span class="o">=</span><span class="n">include_tag_descriptions</span><span class="p">,</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="n">parse_dmarc_record</span><span class="p">(</span><span class="n">query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">],</span> <span class="n">domain</span><span class="p">,</span> <span class="n">include_tag_descriptions</span><span class="o">=</span><span class="n">include_tag_descriptions</span><span class="p">,</span>
                               <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;organisational_domain&quot;</span><span class="p">,</span> <span class="n">organisational_domain</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;tags&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">)])</span></div>
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]),</span> <span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]),</span> <span class="p">(</span><span class="s2">&quot;tags&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">)])</span></div>
 
 
 <div class="viewcode-block" id="query_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_spf_record">[docs]</a><span class="k">def</span> <span class="nf">query_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
@@ -838,13 +876,12 @@
     <span class="k">return</span> <span class="n">spf_record</span></div>
 
 
-<div class="viewcode-block" id="parse_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.parse_spf_record">[docs]</a><span class="k">def</span> <span class="nf">parse_spf_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">seen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">query_mechanism_count</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
+<div class="viewcode-block" id="parse_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.parse_spf_record">[docs]</a><span class="k">def</span> <span class="nf">parse_spf_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">seen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parses a SPF record, including resolving ``a``, ``mx``, and ``include`` mechanisms</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        record (str): An SPF record</span>
-<span class="sd">        query_mechanism_count(int): The number of mechanisms that make DNS queries used in the last recursion - limit 10</span>
 <span class="sd">        seen (list): A list of domains seen in past loops</span>
 <span class="sd">        domain (str): The domain that the SPF record came from</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
@@ -853,23 +890,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: A OrderedDictionary containing a parsed SPF record and warnings</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">_check_query_limit</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">requests</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Check if the SPF parser is within the RFC limit of 10 queries  </span>
-<span class="sd">        Args:</span>
-<span class="sd">            count (int): The current ``query_count`` total </span>
-<span class="sd">            requests (int): The number of DNS queries needed for a task</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            int: The new ``query_count`` total </span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">count</span> <span class="o">+=</span> <span class="n">requests</span>
-        <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Parsing the SPF record requires more than the 10 maximum DNS queries &quot;</span>
-                           <span class="s2">&quot;https://tools.ietf.org/html/rfc7208#section-4.6.4&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">count</span>
-
+    <span class="n">lookup_mechanisms</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;include&quot;</span><span class="p">,</span> <span class="s2">&quot;exists&quot;</span><span class="p">,</span> <span class="s2">&quot;redirect&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">seen</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">seen</span> <span class="o">=</span> <span class="p">[</span><span class="n">domain</span><span class="p">]</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
@@ -890,6 +911,16 @@
                           <span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
                           <span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;neutral&quot;</span><span class="p">)])</span>
 
+    <span class="n">lookup_mechanism_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
+        <span class="n">mechanism</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">mechanism</span> <span class="ow">in</span> <span class="n">lookup_mechanisms</span><span class="p">:</span>
+            <span class="n">lookup_mechanism_count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+
+        <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum DNS lookups&quot;</span>
+                       <span class="s2">&quot;https://tools.ietf.org/html/rfc7208#section-4.6.4&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lookup_mechanism_count</span><span class="p">))</span>
+
     <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">spf_qualifiers</span><span class="p">[</span><span class="n">match</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
         <span class="n">mechanism</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -897,14 +928,12 @@
 
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span>
-                <span class="n">query_mechanism_count</span> <span class="o">=</span> <span class="n">_check_query_limit</span><span class="p">(</span><span class="n">query_mechanism_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
                     <span class="n">value</span> <span class="o">=</span> <span class="n">domain</span>
                 <span class="n">a_records</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">a_records</span><span class="p">:</span>
                     <span class="n">results</span><span class="p">[</span><span class="n">result</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">)]))</span>
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;mx&quot;</span><span class="p">:</span>
-                <span class="n">query_mechanism_count</span> <span class="o">=</span> <span class="n">_check_query_limit</span><span class="p">(</span><span class="n">query_mechanism_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
                     <span class="n">value</span> <span class="o">=</span> <span class="n">domain</span>
                 <span class="n">mx_hosts</span> <span class="o">=</span> <span class="n">_get_mx_hosts</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
@@ -916,19 +945,19 @@
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;redirect&quot;</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Redirect loop detected: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
-                <span class="n">query_mechanism_count</span> <span class="o">=</span> <span class="n">_check_query_limit</span><span class="p">(</span><span class="n">query_mechanism_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
                 <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">redirect</span> <span class="o">=</span> <span class="n">get_spf_record</span><span class="p">(</span><span class="n">value</span><span class="p">,</span>
-                                              <span class="n">query_count</span><span class="o">=</span><span class="n">query_mechanism_count</span><span class="p">,</span>
                                               <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                                               <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                    <span class="n">lookup_mechanism_count</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum DNS lookups &quot;</span>
+                                       <span class="s2">&quot;https://tools.ietf.org/html/rfc7208#section-4.6.4&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                        <span class="n">lookup_mechanism_count</span><span class="p">))</span>
                     <span class="n">results</span><span class="p">[</span><span class="s2">&quot;redirect&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="n">redirect</span><span class="p">)])</span>
                 <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFWarning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
-            <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;exists&quot;</span><span class="p">:</span>
-                <span class="n">query_mechanism_count</span> <span class="o">=</span> <span class="n">_check_query_limit</span><span class="p">(</span><span class="n">query_mechanism_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-                <span class="n">results</span><span class="p">[</span><span class="n">result</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">)]))</span>
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;exp&quot;</span><span class="p">:</span>
                 <span class="n">results</span><span class="p">[</span><span class="s2">&quot;exp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_txt_records</span><span class="p">(</span><span class="n">value</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
@@ -936,13 +965,17 @@
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;include&quot;</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Include loop detected: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
-                <span class="n">query_mechanism_count</span> <span class="o">=</span> <span class="n">_check_query_limit</span><span class="p">(</span><span class="n">query_mechanism_count</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
                 <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">include</span> <span class="o">=</span> <span class="n">get_spf_record</span><span class="p">(</span><span class="n">value</span><span class="p">,</span>
-                                             <span class="n">query_count</span><span class="o">=</span><span class="n">query_mechanism_count</span><span class="p">,</span>
                                              <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                                              <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                    <span class="n">lookup_mechanism_count</span> <span class="o">+=</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum DNS lookups &quot;</span>
+                                       <span class="s2">&quot;https://tools.ietf.org/html/rfc7208#section-4.6.4&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                        <span class="n">lookup_mechanism_count</span><span class="p">))</span>
+
                     <span class="n">results</span><span class="p">[</span><span class="s2">&quot;include&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="n">include</span><span class="p">)]))</span>
                 <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFWarning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
@@ -955,17 +988,15 @@
 
         <span class="k">except</span> <span class="p">(</span><span class="n">SPFWarning</span><span class="p">,</span> <span class="n">DNSException</span><span class="p">)</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s1">&#39;dns_lookups&#39;</span><span class="p">,</span> <span class="n">lookup_mechanism_count</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="n">results</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="n">results</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
-
-<div class="viewcode-block" id="get_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_spf_record">[docs]</a><span class="k">def</span> <span class="nf">get_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">query_count</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
+<div class="viewcode-block" id="get_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_spf_record">[docs]</a><span class="k">def</span> <span class="nf">get_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Retrieves and parses an SPF record </span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
-<span class="sd">        query_count (int): The number of queries used in the last iteration</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
 <span class="sd">        timeout(float): Number of seconds to wait for an answer from DNS</span>
 
@@ -974,8 +1005,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-    <span class="n">record</span> <span class="o">=</span> <span class="n">parse_spf_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">query_mechanism_count</span><span class="o">=</span><span class="n">query_count</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                              <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">parse_spf_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">record</span></div>
 
@@ -1009,10 +1039,10 @@
     <span class="k">if</span> <span class="n">output_format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="s2">&quot;csv&quot;</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid output format </span><span class="si">{0}</span><span class="s2">. Valid options are json and csv.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_format</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">output_format</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
-        <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_valid&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_valid&quot;</span><span class="p">,</span>  <span class="s2">&quot;dmarc_org_domain&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_adkim&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_aspf&quot;</span><span class="p">,</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="s2">&quot;base_domain&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_valid&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_valid&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_adkim&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_aspf&quot;</span><span class="p">,</span>
                   <span class="s2">&quot;dmarc_fo&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_p&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_pct&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_rf&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_ri&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_rua&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_ruf&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_sp&quot;</span><span class="p">,</span>
-                  <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_record&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_record&quot;</span><span class="p">,</span> <span class="s2">&quot;mx_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_error&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_error&quot;</span><span class="p">,</span>
-                  <span class="s2">&quot;dmarc_warnings&quot;</span><span class="p">]</span>
+                  <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_record&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_record&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_record_location&quot;</span><span class="p">,</span> <span class="s2">&quot;mx_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_error&quot;</span><span class="p">,</span>
+                  <span class="s2">&quot;spf_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_error&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_warnings&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
             <span class="n">output_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1022,7 +1052,7 @@
         <span class="k">while</span> <span class="s2">&quot;&quot;</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
             <span class="n">domains</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
-            <span class="n">row</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span> <span class="n">mx</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">spf_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dmarc_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span> <span class="n">base_domain</span><span class="o">=</span><span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">),</span> <span class="n">mx</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">spf_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dmarc_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">mx</span> <span class="o">=</span> <span class="n">get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;preference&quot;</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]),</span> <span class="n">mx</span><span class="p">[</span><span class="s2">&quot;hosts&quot;</span><span class="p">])))</span>
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mx_warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mx</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">])</span>
@@ -1035,10 +1065,10 @@
                 <span class="n">row</span><span class="p">[</span><span class="s2">&quot;spf_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">error</span>
                 <span class="n">row</span><span class="p">[</span><span class="s2">&quot;spf_valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">query</span> <span class="o">=</span> <span class="n">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-                <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_record&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]</span>
-                <span class="n">dmarc</span> <span class="o">=</span> <span class="n">parse_dmarc_record</span><span class="p">(</span><span class="n">query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">],</span> <span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-                <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_org_domain&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;organisational_domain&quot;</span><span class="p">]</span>
+                <span class="n">dmarc_query</span> <span class="o">=</span> <span class="n">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_record&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dmarc_query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]</span>
+                <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_record_location&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dmarc_query</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span>
+                <span class="n">dmarc</span> <span class="o">=</span> <span class="n">parse_dmarc_record</span><span class="p">(</span><span class="n">dmarc_query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">],</span> <span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                 <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_adkim&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;adkim&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
                 <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_aspf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;aspf&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
                 <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_fo&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;:&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;fo&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">])</span>
@@ -1063,8 +1093,8 @@
     <span class="k">elif</span> <span class="n">output_format</span> <span class="o">==</span> <span class="s2">&quot;json&quot;</span><span class="p">:</span>
         <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
-            <span class="n">domain_results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="p">[])])</span>
-            <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)])</span>
+            <span class="n">domain_results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;base_domain&quot;</span><span class="p">,</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)),</span> <span class="p">(</span><span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="p">[])])</span>
+            <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)])</span>
             <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">][</span><span class="s2">&quot;record&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
@@ -1072,6 +1102,7 @@
                                               <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;domain&quot;</span><span class="p">],</span>
                                               <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                                               <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">][</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_spf</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
                 <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">][</span><span class="s2">&quot;results&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_spf</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">]</span>
                 <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">][</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_spf</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
             <span class="k">except</span> <span class="n">SPFError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
@@ -1079,14 +1110,16 @@
                 <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">][</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
             <span class="c1"># DMARC</span>
-            <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;organisational_domain&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)])</span>
+            <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                                                   <span class="p">(</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+                                                   <span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)])</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">query</span> <span class="o">=</span> <span class="n">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-                <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">][</span><span class="s2">&quot;record&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]</span>
-                <span class="n">parsed_dmarc_record</span> <span class="o">=</span> <span class="n">parse_dmarc_record</span><span class="p">(</span><span class="n">query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">],</span> <span class="n">domain</span><span class="p">,</span>
+                <span class="n">dmarc_query</span> <span class="o">=</span> <span class="n">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">][</span><span class="s2">&quot;record&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dmarc_query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]</span>
+                <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">][</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dmarc_query</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span>
+                <span class="n">parsed_dmarc_record</span> <span class="o">=</span> <span class="n">parse_dmarc_record</span><span class="p">(</span><span class="n">dmarc_query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">],</span> <span class="n">domain</span><span class="p">,</span>
                                                          <span class="n">include_tag_descriptions</span><span class="o">=</span><span class="n">include_dmarc_tag_descriptions</span><span class="p">,</span>
                                                          <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-                <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">][</span><span class="s2">&quot;organisational_domain&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;organisational_domain&quot;</span><span class="p">]</span>
                 <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">][</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_dmarc_record</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span>
                 <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">][</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_dmarc_record</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
             <span class="k">except</span> <span class="n">DMARCError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
@@ -1185,7 +1218,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.5.4',
+            VERSION:'1.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

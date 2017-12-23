@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 1.5.4 documentation</title>
+  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 1.6.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 1.5.4 documentation" href="#"/>
+    <link rel="top" title="checkdmarc 1.6.0 documentation" href="#"/>
         <link rel="next" title="checkdmarc module" href="checkdmarc.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.5.4
+                1.6.0
               </div>
             
           
@@ -186,11 +186,12 @@
                         <span class="p">(</span><span class="n">default</span> <span class="mf">0.0</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov -d
 </pre></div>
 </div>
-<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+<div class="highlight-json"><div class="highlight"><pre><span></span> <span class="p">{</span>
   <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;base_domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
   <span class="nt">&quot;mx&quot;</span><span class="p">:</span> <span class="p">{</span>
     <span class="nt">&quot;hosts&quot;</span><span class="p">:</span> <span class="p">[</span>
       <span class="p">{</span>
@@ -206,6 +207,7 @@
   <span class="nt">&quot;spf&quot;</span><span class="p">:</span> <span class="p">{</span>
     <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=spf1 +mx ip4:153.31.0.0/16 -all&quot;</span><span class="p">,</span>
     <span class="nt">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
     <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{</span>
       <span class="nt">&quot;pass&quot;</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
@@ -230,7 +232,7 @@
   <span class="nt">&quot;dmarc&quot;</span><span class="p">:</span> <span class="p">{</span>
     <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100&quot;</span><span class="p">,</span>
     <span class="nt">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-    <span class="nt">&quot;organisational_domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;location&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
     <span class="nt">&quot;tags&quot;</span><span class="p">:</span> <span class="p">{</span>
       <span class="nt">&quot;v&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;DMARC1&quot;</span><span class="p">,</span>
@@ -249,11 +251,15 @@
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
       <span class="nt">&quot;rua&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;mailto:dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="s2">&quot;mailto:dmarc-feedback@fbi.gov&quot;</span>
+        <span class="p">],</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
       <span class="nt">&quot;ruf&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;mailto:dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="s2">&quot;mailto:dmarc-feedback@fbi.gov&quot;</span>
+        <span class="p">],</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
       <span class="nt">&quot;pct&quot;</span><span class="p">:</span> <span class="p">{</span>
@@ -261,11 +267,15 @@
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
       <span class="nt">&quot;fo&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="s2">&quot;0&quot;</span>
+        <span class="p">],</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
       <span class="p">},</span>
       <span class="nt">&quot;rf&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;afrf&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="s2">&quot;afrf&quot;</span>
+        <span class="p">],</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
       <span class="p">},</span>
       <span class="nt">&quot;ri&quot;</span><span class="p">:</span> <span class="p">{</span>
@@ -375,7 +385,7 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.5.4',
+            VERSION:'1.6.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
