@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.5.4
+-----
+- Remove faulty `ruf` tag warning
+
 1.5.3
 -----
 - Fix another show-stopping bug :(
@@ -14,7 +18,6 @@ Changelog
 
 - Turn `rua` and `ruf` tag values in to lists
 - Fix conversion of lists to strings in CSVs
-- Raise `DMARCWarning` if optional `rua` tag is missing
 - Raise `DMARCWarning` if the value of the `pct` tag is  less than 100
 - Raise `DMARCError` if the value of the `pct` tag is less than 0 or greater than 100
 

@@ -37,7 +37,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.5.3"
+__version__ = "1.5.4"
 
 
 class DNSException(Exception):
@@ -598,8 +598,6 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                 except DNSException as warning:
                     raise DMARCWarning("Failed to retrieve MX records for the domain of ruf email address "
                                        "{0} - {1}".format(email_address, str(warning)))
-                else:
-                    raise DMARCWarning("ruf tag for delivery locations of forensic reports is not specified")
 
         if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
             raise DMARCError("pct value must be an integer between 0 and 100")
