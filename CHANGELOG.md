@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.6.1
+-----
+
+- Refactor and simplify DNS queries
+
 1.6.0
 -----
 

@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.6.0"
+__version__ = "1.6.1"
 
 
 class DNSException(Exception):
@@ -248,6 +248,17 @@ def get_base_domain(domain):
     return psl.get_public_suffix(domain)
 
 
+def _query_dns(domain, record_type, nameservers=None, timeout=6.0):
+    resolver = dns.resolver.Resolver()
+    timeout = float(timeout)
+    if nameservers:
+        resolver.nameservers = nameservers
+    resolver.timeout = timeout
+    resolver.lifetime = timeout
+    return list(map(lambda r: r.to_text().replace(' "', '').replace('"', '').rstrip("."),
+                    resolver.query(domain, record_type, tcp=True)))
+
+
 def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a list of Mail Exchange hosts
@@ -262,14 +273,10 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     """
     hosts = []
     try:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers:
-            resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        answers = resolver.query(domain, "MX")
+
+        answers = _query_dns(domain, "MX", nameservers=nameservers, timeout=timeout)
         for record in answers:
-            record = record.to_text().split(" ")
+            record = record.split(" ")
             preference = int(record[0])
             hostname = record[1].rstrip(".").strip().lower()
             hosts.append(OrderedDict([("preference", preference), ("hostname", hostname)]))
@@ -297,17 +304,10 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
         list: A list of IPv4 and IPv6 addresses
 
     """
-    records = []
+    addresses = []
     try:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers:
-            resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        answers = resolver.query(domain, "A")
-        records = list(map(lambda r: r.to_text().rstrip("."), answers))
-        answers = resolver.query(domain, "AAAA")
-        records += list(map(lambda r: r.to_text().rstrip("."), answers))
+        addresses += _query_dns(domain, "A", nameservers=nameservers, timeout=timeout)
+        addresses += _query_dns(domain, "AAAA", nameservers=nameservers, timeout=timeout)
     except dns.resolver.NXDOMAIN:
         raise DNSException("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
@@ -316,10 +316,10 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
     except dns.exception.DNSException as error:
         raise DNSException(error)
     finally:
-        if len(records) == 0:
+        if len(addresses) == 0:
             raise DNSException("{0} does not have any A or AAAA records".format(domain))
 
-    return records
+    return addresses
 
 
 def _get_txt_records(domain, nameservers=None, timeout=6.0):
@@ -336,13 +336,7 @@ def _get_txt_records(domain, nameservers=None, timeout=6.0):
 
     """
     try:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers:
-            resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        answers = resolver.query(domain, "TXT")
-        records = list(map(lambda r: r.to_text().replace(' "', '').replace('"', ''), answers))
+        records = _query_dns(domain, "TXT", nameservers=nameservers, timeout=timeout)
     except dns.resolver.NXDOMAIN:
         raise DNSException("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
@@ -368,12 +362,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
     target = "_dmarc.{0}".format(domain.lower().replace("_dmarc.", ""))
     record = None
     try:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers:
-            resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        record = resolver.query(target, "TXT")[0].to_text().replace('"', '')
+        record = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)[0]
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         pass
@@ -511,12 +500,7 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
                       "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
                                                                                source_domain)
     try:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers:
-            resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        answer = resolver.query(target, "TXT")[0].to_text().strip('"')
+        answer = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)[0]
         if not answer.startswith("v=DMARC1"):
             raise DMARCWarning(warning_message)
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
@@ -693,17 +677,11 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
         str: An unparsed SPF string
     """
     try:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers:
-            resolver.nameservers = nameservers
-        resolver.lifetime = timeout
-        answer = resolver.query(domain, "TXT")
+        answers = _query_dns(domain, "TXT", nameservers=nameservers, timeout=timeout)
         spf_record = None
-        for record in answer:
-            record = record.to_text()
-            if record.startswith('"v=spf1'):
-                spf_record = record.replace(' "', '').replace('"', '')
+        for record in answers:
+            if record.startswith("v=spf1"):
+                spf_record = record
                 break
         if spf_record is None:
             raise SPFError("{0} does not have a SPF record".format(domain))
@@ -760,7 +738,6 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
         if mechanism in lookup_mechanisms:
             lookup_mechanism_count += 1
     if lookup_mechanism_count > 10:
-
         raise SPFError("Parsing the SPF record requires {0}/10 maximum DNS lookups"
                        "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(lookup_mechanism_count))
 
@@ -950,6 +927,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
                 domain_results["spf"]["warnings"] = parsed_spf["warnings"]
             except SPFError as error:
                 domain_results["spf"]["error"] = str(error)
+                del domain_results["spf"]["dns_lookups"]
                 domain_results["spf"]["valid"] = False
 
             # DMARC
