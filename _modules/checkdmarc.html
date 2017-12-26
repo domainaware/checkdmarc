@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 1.6.0 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 1.6.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 1.6.0 documentation" href="../index.html"/>
+    <link rel="top" title="checkdmarc 1.6.1 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.6.0
+                1.6.1
               </div>
             
           
@@ -196,7 +196,7 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.6.0&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.6.1&quot;</span>
 
 
 <div class="viewcode-block" id="DNSException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DNSException">[docs]</a><span class="k">class</span> <span class="nc">DNSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -405,6 +405,17 @@
     <span class="k">return</span> <span class="n">psl</span><span class="o">.</span><span class="n">get_public_suffix</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span></div>
 
 
+<span class="k">def</span> <span class="nf">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
+    <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
+    <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nameservers</span><span class="p">:</span>
+        <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
+    <span class="n">resolver</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+    <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
+                    <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">tcp</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
+
+
 <span class="k">def</span> <span class="nf">_get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a list of Mail Exchange hosts</span>
@@ -419,14 +430,10 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">hosts</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
-        <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">nameservers</span><span class="p">:</span>
-            <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
-        <span class="n">answers</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;MX&quot;</span><span class="p">)</span>
+
+        <span class="n">answers</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;MX&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">answers</span><span class="p">:</span>
-            <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+            <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
             <span class="n">preference</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="n">hostname</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
             <span class="n">hosts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;preference&quot;</span><span class="p">,</span> <span class="n">preference</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;hostname&quot;</span><span class="p">,</span> <span class="n">hostname</span><span class="p">)]))</span>
@@ -454,17 +461,10 @@
 <span class="sd">        list: A list of IPv4 and IPv6 addresses</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">records</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">addresses</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
-        <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">nameservers</span><span class="p">:</span>
-            <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
-        <span class="n">answers</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">)</span>
-        <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span> <span class="n">answers</span><span class="p">))</span>
-        <span class="n">answers</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;AAAA&quot;</span><span class="p">)</span>
-        <span class="n">records</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span> <span class="n">answers</span><span class="p">))</span>
+        <span class="n">addresses</span> <span class="o">+=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="n">addresses</span> <span class="o">+=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span><span class="s2">&quot;The domain </span><span class="si">{0}</span><span class="s2"> does not exist&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">))</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
@@ -473,10 +473,10 @@
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">records</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have any A or AAAA records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">))</span>
 
-    <span class="k">return</span> <span class="n">records</span>
+    <span class="k">return</span> <span class="n">addresses</span>
 
 
 <span class="k">def</span> <span class="nf">_get_txt_records</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
@@ -493,13 +493,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
-        <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">nameservers</span><span class="p">:</span>
-            <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
-        <span class="n">answers</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">)</span>
-        <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span> <span class="n">answers</span><span class="p">))</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span><span class="s2">&quot;The domain </span><span class="si">{0}</span><span class="s2"> does not exist&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">))</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
@@ -525,12 +519,7 @@
     <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;_dmarc.</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_dmarc.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
     <span class="n">record</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
-        <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">nameservers</span><span class="p">:</span>
-            <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
-        <span class="n">record</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">):</span>
         <span class="k">pass</span>
@@ -668,12 +657,7 @@
                       <span class="s2">&quot;https://tools.ietf.org/html/rfc7489#section-7.1&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
                                                                                <span class="n">source_domain</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
-        <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">nameservers</span><span class="p">:</span>
-            <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
-        <span class="n">answer</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">answer</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=DMARC1&quot;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">DMARCWarning</span><span class="p">(</span><span class="n">warning_message</span><span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">):</span>
@@ -850,17 +834,11 @@
 <span class="sd">        str: An unparsed SPF string</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
-        <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">nameservers</span><span class="p">:</span>
-            <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
-        <span class="n">answer</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">)</span>
+        <span class="n">answers</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
         <span class="n">spf_record</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">answer</span><span class="p">:</span>
-            <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&quot;v=spf1&#39;</span><span class="p">):</span>
-                <span class="n">spf_record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">answers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=spf1&quot;</span><span class="p">):</span>
+                <span class="n">spf_record</span> <span class="o">=</span> <span class="n">record</span>
                 <span class="k">break</span>
         <span class="k">if</span> <span class="n">spf_record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have a SPF record&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">))</span>
@@ -917,7 +895,6 @@
         <span class="k">if</span> <span class="n">mechanism</span> <span class="ow">in</span> <span class="n">lookup_mechanisms</span><span class="p">:</span>
             <span class="n">lookup_mechanism_count</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
-
         <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum DNS lookups&quot;</span>
                        <span class="s2">&quot;https://tools.ietf.org/html/rfc7208#section-4.6.4&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lookup_mechanism_count</span><span class="p">))</span>
 
@@ -1107,6 +1084,7 @@
                 <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">][</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_spf</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
             <span class="k">except</span> <span class="n">SPFError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
                 <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">][</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+                <span class="k">del</span> <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">][</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
                 <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">][</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
             <span class="c1"># DMARC</span>
@@ -1218,7 +1196,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.6.0',
+            VERSION:'1.6.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
