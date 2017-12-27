@@ -45,7 +45,7 @@ Welcome to checkdmarc's documentation!
 
 .. code-block:: json
 
-     {
+    {
       "domain": "fbi.gov",
       "base_domain": "fbi.gov",
       "mx": {
@@ -108,13 +108,19 @@ Welcome to checkdmarc's documentation!
           },
           "rua": {
             "value": [
-              "mailto:dmarc-feedback@fbi.gov"
+              {
+                "email_address": "dmarc-feedback@fbi.gov",
+                "size_limit": null
+              }
             ],
             "explicit": true
           },
           "ruf": {
             "value": [
-              "mailto:dmarc-feedback@fbi.gov"
+              {
+                "email_address": "dmarc-feedback@fbi.gov",
+                "size_limit": null
+              }
             ],
             "explicit": true
           },

@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.6.1"
+__version__ = "1.7.0"
 
 
 class DNSException(Exception):
@@ -76,6 +76,54 @@ class DMARCWarning(DMARCException):
     pass
 
 
+class SPFRecordNotFound(SPFError):
+    """Raised when an SPF record could not be found"""
+
+
+class SPFSyntaxError(SPFError):
+    """Raised when an SPF syntax error is found"""
+
+
+class SPFTooManyDNSLookups(SPFError):
+    """Raised when an SPF record requires too many DNS lookups (10 max)"""
+
+
+class SPFMissingRecords(SPFWarning):
+    """Raised when a mechanism in a SPF record is missing the requested A/AAAA or MX records"""
+
+
+class DMARCRecordNotFound(DMARCError):
+    """Raised when a DMARC record could not be found"""
+
+
+class DMARCSyntaxError(DMARCError):
+    """Raised when a DMARC syntax error is found"""
+
+
+class InvalidDMARCTag(DMARCSyntaxError):
+    """Raised when an invalid DMARC tag is found"""
+
+
+class InvalidDMARCTagValue(DMARCSyntaxError):
+    """Raised when ian invalid DMARC tag value is found"""
+
+
+class InvalidDMARCReportURI(DMARCSyntaxError):
+    """Raised when an invalid DMARC reporting URI is found"""
+
+
+class DMARCReportEmailAddressMissingMXRecords(DMARCError):
+    """Raised when a email address in a DMARC report URI is missing MX records"""
+
+
+class DMARCURIDestinationDoesNotAcceptReports(DMARCWarning):
+    """Raised when the destination of a DMARC report URI does not indicate that it accepts reports for the domain"""
+
+
+class DMARCBestPracticeWarning(DMARCWarning):
+    """Raised when a DMARC record does not bet a best practice"""
+
+
 class _SPFGrammar(Grammar):
     """Defines Pyleri grammar for SPF records"""
     version_tag = Regex("v=spf[\d.]+")
@@ -92,7 +140,7 @@ class _DMARCGrammar(Grammar):
 
 dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
 spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
-mailto_regex = compile(r"mailto:([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]+@[\w\-.]+)")
+mailto_regex = compile(r"mailto:([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]+@[\w\-.]+)(!\w+)?")
 
 
 tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
@@ -368,7 +416,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
         pass
 
     except dns.exception.DNSException as error:
-        raise DMARCError(error.msg)
+        raise DMARCRecordNotFound(error.msg)
 
     return record
 
@@ -383,11 +431,12 @@ def get_mx_hosts(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        OrderedDict: with The following keys:
-            - ``hosts``: A list of OrderedDicts with keys of
-              - ``hostname``
-              - ``addresses``,
-            - ``warnings`` A list of MX resolution warnings
+        list: A list of OrderedDicts with The following keys:
+
+            - ``hosts`` - A list of OrderedDicts with keys of
+                - ``hostname``
+                - ``addresses``,
+            - ``warnings`` - A list of MX resolution warnings
 
     """
     mx_records = []
@@ -412,6 +461,7 @@ def get_mx_hosts(domain, nameservers=None, timeout=6.0):
 def query_dmarc_record(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a DMARC record
+
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
@@ -425,7 +475,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
     if record is None and domain != base_domain:
         record = _query_dmarc_record(base_domain, nameservers=nameservers, timeout=timeout)
     if record is None:
-        raise DMARCError("A DMARC record does not exist for this domain or its base domain")
+        raise DMARCRecordNotFound("A DMARC record does not exist for this domain or its base domain")
 
     return OrderedDict([("record", record), ("location", domain)])
 
@@ -472,14 +522,20 @@ def parse_dmarc_report_uri(uri):
         uri: A DMARC URI
 
     Returns:
-        str: An email address
+        OrderedDict: An ``email_address`` and ``size_limit``
 
     """
     uri = uri.strip()
     mailto_matches = mailto_regex.findall(uri)
     if len(mailto_matches) != 1:
-        raise DMARCWarning("{0} is not a valid DMARC report URI".format(uri))
-    return mailto_matches[0]
+        raise InvalidDMARCReportURI("{0} is not a valid DMARC report URI".format(uri))
+    match = mailto_matches[0]
+    email_address = match[0]
+    size_limit = match[1].lstrip("!")
+    if size_limit == "":
+        size_limit = None
+
+    return OrderedDict([("email_address", email_address), ("size_limit", size_limit)])
 
 
 def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=6.0):
@@ -506,9 +562,11 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         raise DMARCWarning(warning_message)
     except dns.exception.DNSException as error:
-        raise DMARCWarning("Unable to validate that {0} DMARC accepts reports for {1} - {2}".format(destination_domain,
-                                                                                                    source_domain,
-                                                                                                    error.msg))
+        raise DMARCURIDestinationDoesNotAcceptReports(
+            "Unable to validate that {0} DMARC accepts reports for {1} - {2}".format(destination_domain,
+                                                                                     source_domain,
+                                                                                     error.msg)
+        )
     return True
 
 
@@ -553,22 +611,22 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
     # Validate tag values
     for tag in tags:
         if tag not in tag_values:
-            raise DMARCError("{0} is not a valid DMARC tag".format(tag))
+            raise InvalidDMARCTag("{0} is not a valid DMARC tag".format(tag))
         if tag == "fo":
             tags[tag]["value"] = tags[tag]["value"].split(":")
             if "0" in tags[tag]["value"] and "1" in tags[tag]["value"]:
-                raise DMARCError("fo DMARC tag options 0 and 1 are mutually exclusive")
+                raise InvalidDMARCTagValue("fo DMARC tag options 0 and 1 are mutually exclusive")
             for value in tags[tag]["value"]:
                 if value not in tag_values[tag]["values"]:
-                    raise DMARCError("{0} is not a valid option for the DMARC fo tag".format(value))
+                    raise InvalidDMARCTagValue("{0} is not a valid option for the DMARC fo tag".format(value))
         elif tag == "rf":
             tags[tag]["value"] = tags[tag]["value"].split(":")
             for value in tags[tag]["value"]:
                 if value not in tag_values[tag]["values"]:
-                    raise DMARCError("{0} is not a valid option for the DMARC rf tag".format(value))
+                    raise InvalidDMARCTagValue("{0} is not a valid option for the DMARC rf tag".format(value))
 
         elif "values" in tag_values[tag] and tags[tag]["value"] not in tag_values[tag]["values"]:
-            raise DMARCError("Tag {0} must have one of the following values: {1} - not {2}".format(
+            raise InvalidDMARCTagValue("Tag {0} must have one of the following values: {1} - not {2}".format(
                 tag,
                 ",".join(tag_values[tag]["values"]),
                 tags[tag]["value"]
@@ -577,18 +635,21 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
     try:
         tags["pct"]["value"] = int(tags["pct"]["value"])
     except ValueError:
-        raise DMARCError("The value of the pct tag must be an integer")
+        raise InvalidDMARCTagValue("The value of the pct tag must be an integer")
 
     try:
         tags["ri"]["value"] = int(tags["ri"]["value"])
     except ValueError:
-        raise DMARCError("The value of the ri tag must be an integer")
+        raise InvalidDMARCTagValue("The value of the ri tag must be an integer")
 
     try:
         if "rua" in tags:
-            tags["rua"]["value"] = tags["rua"]["value"].split(",")
-            for uri in tags["rua"]["value"]:
-                email_address = parse_dmarc_report_uri(uri)
+            parsed_uris = []
+            uris = tags["rua"]["value"].split(",")
+            for uri in uris:
+                uri = parse_dmarc_report_uri(uri)
+                parsed_uris.append(uri)
+                email_address = uri["email_address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
                     verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,
@@ -596,21 +657,29 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                 try:
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
-                    raise DMARCWarning("The domain for rua email address {0} has no MX records".format(email_address))
+                    raise DMARCReportEmailAddressMissingMXRecords(
+                        "The domain for rua email address {0} has no MX records".format(email_address)
+                    )
                 except DNSException as warning:
-                    raise DMARCWarning("Failed to retrieve MX records for the domain of rua email address "
-                                       "{0} - {1}".format(email_address, str(warning)))
+                    raise DMARCReportEmailAddressMissingMXRecords(
+                        "Failed to retrieve MX records for the domain of rua email address "
+                        "{0} - {1}".format(email_address, str(warning))
+                    )
+                tags["rua"]["value"] = parsed_uris
         else:
-            raise DMARCWarning("rua tag (destination for aggregate reports) not found")
+            raise DMARCBestPracticeWarning("rua tag (destination for aggregate reports) not found")
 
     except DMARCWarning as warning:
         warnings.append(str(warning))
 
     try:
         if "ruf" in tags.keys():
-            tags["ruf"]["value"] = tags["ruf"]["value"].split(",")
-            for uri in tags["ruf"]["value"]:
-                email_address = parse_dmarc_report_uri(uri)
+            parsed_uris = []
+            uris = tags["ruf"]["value"].split(",")
+            for uri in uris:
+                uri = parse_dmarc_report_uri(uri)
+                parsed_uris.append(uri)
+                email_address = uri["email_address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
                     verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,
@@ -618,15 +687,20 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                 try:
                     _get_mx_hosts(email_domain)
                 except SPFWarning:
-                    raise DMARCWarning("The domain for ruf email address {0} has no MX records".format(email_address))
+                    raise DMARCReportEmailAddressMissingMXRecords(
+                        "The domain for ruf email address {0} has no MX records".format(email_address)
+                    )
                 except DNSException as warning:
-                    raise DMARCWarning("Failed to retrieve MX records for the domain of ruf email address "
-                                       "{0} - {1}".format(email_address, str(warning)))
+                    raise DMARCReportEmailAddressMissingMXRecords(
+                        "Failed to retrieve MX records for the domain of ruf email address "
+                        "{0} - {1}".format(email_address, str(warning))
+                    )
+                tags["ruf"]["value"] = parsed_uris
 
         if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
-            raise DMARCError("pct value must be an integer between 0 and 100")
+            raise InvalidDMARCTagValue("pct value must be an integer between 0 and 100")
         elif tags["pct"]["value"] < 100:
-            raise DMARCWarning("pct value is less than 100")
+            raise DMARCBestPracticeWarning("pct value is less than 100")
 
     except DMARCWarning as warning:
         warnings.append(str(warning))
@@ -668,6 +742,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None, t
 def query_spf_record(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a SPF record
+
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
@@ -686,13 +761,13 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
         if spf_record is None:
             raise SPFError("{0} does not have a SPF record".format(domain))
         if not spf_record.startswith("v=spf1 "):
-            raise SPFError("{0} is not a valid SPF record".format(spf_record))
+            raise SPFSyntaxError("{0} is not a valid SPF record".format(spf_record))
     except dns.resolver.NoAnswer:
-        raise SPFError("{0} does not have a SPF record".format(domain))
+        raise SPFRecordNotFound("{0} does not have a SPF record".format(domain))
     except dns.resolver.NXDOMAIN:
-        raise SPFError("The domain {0} does not exist".format(domain))
+        raise SPFRecordNotFound("The domain {0} does not exist".format(domain))
     except dns.exception.DNSException as error:
-        raise SPFError(error)
+        raise SPFRecordNotFound(error)
 
     return spf_record
 
@@ -720,8 +795,8 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
     parsed_record = spf_syntax_checker.parse(record.lower())
     if not parsed_record.is_valid:
         expecting = list(map(lambda x: str(x).strip('"'), list(parsed_record.expecting)))
-        raise SPFError("Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
-                                                                     parsed_record.pos, record))
+        raise SPFSyntaxError("Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
+                                                                           parsed_record.pos, record))
     matches = spf_regex.findall(record.lower())
     results = OrderedDict([("pass", []),
                           ("neutral", []),
@@ -738,8 +813,8 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
         if mechanism in lookup_mechanisms:
             lookup_mechanism_count += 1
     if lookup_mechanism_count > 10:
-        raise SPFError("Parsing the SPF record requires {0}/10 maximum DNS lookups"
-                       "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(lookup_mechanism_count))
+        raise SPFTooManyDNSLookups("Parsing the SPF record requires {0}/10 maximum DNS lookups"
+                                   "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(lookup_mechanism_count))
 
     for match in matches:
         result = spf_qualifiers[match[0]]
@@ -758,8 +833,8 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     value = domain
                 mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
                 if len(mx_hosts) > 10:
-                    raise SPFError("{0} has more than 10 MX records - "
-                                   "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(value))
+                    raise SPFTooManyDNSLookups("{0} has more than 10 MX records - "
+                                               "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(value))
                 for host in mx_hosts:
                     results[result].append(OrderedDict([("value", host["hostname"]), ("mechanism", mechanism)]))
             elif mechanism == "redirect":
@@ -772,9 +847,9 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                                               timeout=timeout)
                     lookup_mechanism_count += redirect["dns_lookups"]
                     if lookup_mechanism_count > 10:
-                        raise SPFError("Parsing the SPF record requires {0}/10 maximum DNS lookups "
-                                       "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
-                                        lookup_mechanism_count))
+                        raise SPFTooManyDNSLookups("Parsing the SPF record requires {0}/10 maximum DNS lookups "
+                                                   "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
+                                                    lookup_mechanism_count))
                     results["redirect"] = OrderedDict([("domain", value), ("results", redirect)])
                 except DNSException as error:
                     raise SPFWarning(str(error))
@@ -792,9 +867,9 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                                              timeout=timeout)
                     lookup_mechanism_count += include["dns_lookups"]
                     if lookup_mechanism_count > 10:
-                        raise SPFError("Parsing the SPF record requires {0}/10 maximum DNS lookups "
-                                       "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
-                                        lookup_mechanism_count))
+                        raise SPFTooManyDNSLookups("Parsing the SPF record requires {0}/10 maximum DNS lookups "
+                                                   "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
+                                                    lookup_mechanism_count))
 
                     results["include"].append(OrderedDict([("domain", value), ("results", include)]))
                 except DNSException as error:

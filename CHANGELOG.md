@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.7.0
+-----
+- Change in JSON structure - Parse `mailto:` DMARC URIs, including size limits (if any)
+- More granular Exception classes
+- Updated documentation
+
 1.6.1
 -----
 
