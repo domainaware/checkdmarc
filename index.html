@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 1.6.1 documentation</title>
+  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 1.7.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 1.6.1 documentation" href="#"/>
+    <link rel="top" title="checkdmarc 1.7.0 documentation" href="#"/>
         <link rel="next" title="checkdmarc module" href="checkdmarc.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.6.1
+                1.7.0
               </div>
             
           
@@ -189,7 +189,7 @@
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov -d
 </pre></div>
 </div>
-<div class="highlight-json"><div class="highlight"><pre><span></span> <span class="p">{</span>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
   <span class="nt">&quot;base_domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
   <span class="nt">&quot;mx&quot;</span><span class="p">:</span> <span class="p">{</span>
@@ -252,13 +252,19 @@
       <span class="p">},</span>
       <span class="nt">&quot;rua&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
-          <span class="s2">&quot;mailto:dmarc-feedback@fbi.gov&quot;</span>
+          <span class="p">{</span>
+            <span class="nt">&quot;email_address&quot;</span><span class="p">:</span> <span class="s2">&quot;dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;size_limit&quot;</span><span class="p">:</span> <span class="kc">null</span>
+          <span class="p">}</span>
         <span class="p">],</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
       <span class="nt">&quot;ruf&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
-          <span class="s2">&quot;mailto:dmarc-feedback@fbi.gov&quot;</span>
+          <span class="p">{</span>
+            <span class="nt">&quot;email_address&quot;</span><span class="p">:</span> <span class="s2">&quot;dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;size_limit&quot;</span><span class="p">:</span> <span class="kc">null</span>
+          <span class="p">}</span>
         <span class="p">],</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
@@ -385,7 +391,7 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.6.1',
+            VERSION:'1.7.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

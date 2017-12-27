@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 1.6.1 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 1.7.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 1.6.1 documentation" href="index.html"/>
+    <link rel="top" title="checkdmarc 1.7.0 documentation" href="index.html"/>
         <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.6.1
+                1.7.0
               </div>
             
           
@@ -158,6 +158,13 @@
 <span id="checkdmarc-module"></span><h1>checkdmarc module<a class="headerlink" href="#module-checkdmarc" title="Permalink to this headline">¶</a></h1>
 <p>Validates and parses SPF amd DMARC DNS records</p>
 <dl class="exception">
+<dt id="checkdmarc.DMARCBestPracticeWarning">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCBestPracticeWarning</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCBestPracticeWarning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCBestPracticeWarning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCWarning" title="checkdmarc.DMARCWarning"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCWarning</span></code></a></p>
+<p>Raised when a DMARC record does not bet a best practice</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="checkdmarc.DMARCError">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCError</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCException" title="checkdmarc.DMARCException"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCException</span></code></a></p>
@@ -169,6 +176,34 @@
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCException</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">Exception</span></code></p>
 <p>Raised when an error occurs when retrieving or parsing a DMARC record</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.DMARCRecordNotFound">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCRecordNotFound</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
+<p>Raised when a DMARC record could not be found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.DMARCReportEmailAddressMissingMXRecords">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCReportEmailAddressMissingMXRecords</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCReportEmailAddressMissingMXRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
+<p>Raised when a email address in a DMARC report URI is missing MX records</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.DMARCSyntaxError">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCSyntaxError</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCSyntaxError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
+<p>Raised when a DMARC syntax error is found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.DMARCURIDestinationDoesNotAcceptReports">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCURIDestinationDoesNotAcceptReports</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCURIDestinationDoesNotAcceptReports"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCURIDestinationDoesNotAcceptReports" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCWarning" title="checkdmarc.DMARCWarning"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCWarning</span></code></a></p>
+<p>Raised when the destination of a DMARC report URI does not indicate that it accepts reports for the domain</p>
 </dd></dl>
 
 <dl class="exception">
@@ -186,6 +221,27 @@
 </dd></dl>
 
 <dl class="exception">
+<dt id="checkdmarc.InvalidDMARCReportURI">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCReportURI</code><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCReportURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCReportURI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCSyntaxError</span></code></a></p>
+<p>Raised when an invalid DMARC reporting URI is found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.InvalidDMARCTag">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCTag</code><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCSyntaxError</span></code></a></p>
+<p>Raised when an invalid DMARC tag is found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.InvalidDMARCTagValue">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCTagValue</code><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTagValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTagValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCSyntaxError</span></code></a></p>
+<p>Raised when ian invalid DMARC tag value is found</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="checkdmarc.SPFError">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFError</code><a class="reference internal" href="_modules/checkdmarc.html#SPFError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFException" title="checkdmarc.SPFException"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFException</span></code></a></p>
@@ -197,6 +253,34 @@
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFException</code><a class="reference internal" href="_modules/checkdmarc.html#SPFException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">Exception</span></code></p>
 <p>Raised when an error occurs when retrieving or parsing a SPF record</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFMissingRecords">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFMissingRecords</code><a class="reference internal" href="_modules/checkdmarc.html#SPFMissingRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFMissingRecords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFWarning" title="checkdmarc.SPFWarning"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFWarning</span></code></a></p>
+<p>Raised when a mechanism in a SPF record is missing the requested A/AAAA or MX records</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFRecordNotFound">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordNotFound</code><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFError</span></code></a></p>
+<p>Raised when an SPF record could not be found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFSyntaxError">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFSyntaxError</code><a class="reference internal" href="_modules/checkdmarc.html#SPFSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFSyntaxError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFError</span></code></a></p>
+<p>Raised when an SPF syntax error is found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFTooManyDNSLookups">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFTooManyDNSLookups</code><a class="reference internal" href="_modules/checkdmarc.html#SPFTooManyDNSLookups"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFTooManyDNSLookups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFError</span></code></a></p>
+<p>Raised when an SPF record requires too many DNS lookups (10 max)</p>
 </dd></dl>
 
 <dl class="exception">
@@ -328,20 +412,25 @@ tag or value</p>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>with The following keys:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal"><span class="pre">hosts</span></code>: A list of OrderedDicts with keys of
-- <code class="docutils literal"><span class="pre">hostname</span></code>
-- <code class="docutils literal"><span class="pre">addresses</span></code>,</li>
-<li><code class="docutils literal"><span class="pre">warnings</span></code> A list of MX resolution warnings</li>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>A list of OrderedDicts with The following keys:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">hosts</span></code> - A list of OrderedDicts with keys of</dt>
+<dd><ul class="first last">
+<li><code class="docutils literal"><span class="pre">hostname</span></code></li>
+<li><code class="docutils literal"><span class="pre">addresses</span></code>,</li>
 </ul>
 </dd>
 </dl>
+</li>
+<li><code class="docutils literal"><span class="pre">warnings</span></code> - A list of MX resolution warnings</li>
+</ul>
+</div></blockquote>
 </p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">OrderedDict</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
 </td>
 </tr>
 </tbody>
@@ -412,9 +501,9 @@ tag or value</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>uri</strong> – A DMARC URI</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An email address</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An <code class="docutils literal"><span class="pre">email_address</span></code> and <code class="docutils literal"><span class="pre">size_limit</span></code></td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">OrderedDict</td>
 </tr>
 </tbody>
 </table>
@@ -450,20 +539,23 @@ tag or value</p>
 <dl class="function">
 <dt id="checkdmarc.query_dmarc_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">query_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_dmarc_record" title="Permalink to this definition">¶</a></dt>
-<dd><p>Queries DNS for a DMARC record
-:param domain: A domain name
-:type domain: str
-:param nameservers: A list of nameservers to query
-:type nameservers: list
-:param timeout: number of seconds to wait for an record from DNS
-:type timeout: float</p>
+<dd><p>Queries DNS for a DMARC record</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><code class="docutils literal"><span class="pre">record</span></code> - The unparsed DMARC record string; <code class="docutils literal"><span class="pre">location</span></code> - the domain where the record was found</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
+<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
+<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">OrderedDict</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><code class="docutils literal"><span class="pre">record</span></code> - The unparsed DMARC record string; <code class="docutils literal"><span class="pre">location</span></code> - the domain where the record was found</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">OrderedDict</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -472,20 +564,23 @@ tag or value</p>
 <dl class="function">
 <dt id="checkdmarc.query_spf_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">query_spf_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_spf_record" title="Permalink to this definition">¶</a></dt>
-<dd><p>Queries DNS for a SPF record
-:param domain: A domain name
-:type domain: str
-:param nameservers: A list of nameservers to query
-:type nameservers: list
-:param timeout: number of seconds to wait for an answer from DNS
-:type timeout: float</p>
+<dd><p>Queries DNS for a SPF record</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An unparsed SPF string</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
+<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
+<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An unparsed SPF string</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">str</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -561,7 +656,7 @@ tag or value</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.6.1',
+            VERSION:'1.7.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
