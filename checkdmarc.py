@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.0"
+__version__ = "1.7.1"
 
 
 class DNSException(Exception):
@@ -535,7 +535,7 @@ def parse_dmarc_report_uri(uri):
     if size_limit == "":
         size_limit = None
 
-    return OrderedDict([("email_address", email_address), ("size_limit", size_limit)])
+    return OrderedDict([("scheme", "mailto"), ("address", email_address), ("size_limit", size_limit)])
 
 
 def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=6.0):
@@ -649,7 +649,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
             for uri in uris:
                 uri = parse_dmarc_report_uri(uri)
                 parsed_uris.append(uri)
-                email_address = uri["email_address"]
+                email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
                     verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,
@@ -679,7 +679,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
             for uri in uris:
                 uri = parse_dmarc_report_uri(uri)
                 parsed_uris.append(uri)
-                email_address = uri["email_address"]
+                email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
                     verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,

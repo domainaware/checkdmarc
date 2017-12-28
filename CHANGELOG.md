@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.7.1
+-----
+- Change in JSON structure - Separate DMARC URI scheme and address to better support potential future URI schemes
+
 1.7.0
 -----
 - Change in JSON structure - Parse `mailto:` DMARC URIs, including size limits (if any)
