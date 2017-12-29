@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.7.2
+-----
+
+- Update output sample in documentation
+
 1.7.1
 -----
 - Change in JSON structure - Separate DMARC URI scheme and address to better support potential future URI schemes

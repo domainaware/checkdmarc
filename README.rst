@@ -99,7 +99,8 @@
           "rua": {
             "value": [
               {
-                "email_address": "dmarc-feedback@fbi.gov",
+                "scheme": "mailto",
+                "address": "dmarc-feedback@fbi.gov",
                 "size_limit": null
               }
             ],
@@ -108,7 +109,8 @@
           "ruf": {
             "value": [
               {
-                "email_address": "dmarc-feedback@fbi.gov",
+                "scheme": "mailto",
+                "address": "dmarc-feedback@fbi.gov",
                 "size_limit": null
               }
             ],
@@ -142,6 +144,8 @@
         "warnings": []
       }
     }
+
+
 
 
 Installation
