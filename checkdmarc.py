@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.2"
+__version__ = "1.7.3"
 
 
 class DNSException(Exception):
@@ -112,7 +112,12 @@ class InvalidDMARCReportURI(DMARCSyntaxError):
     """Raised when an invalid DMARC reporting URI is found"""
 
 
-class DMARCReportEmailAddressMissingMXRecords(DMARCError):
+class SPFRecordFoundWhereDMARCRecordShouldBe(DMARCError):
+    """Raised when a SPF record is found where a DMARC record should should be; most likely, the ``_dmarc`` subdomain
+    record does not actually exist, and the request for TXT records was redirected to the base domain"""
+
+
+class DMARCReportEmailAddressMissingMXRecords(DMARCWarning):
     """Raised when a email address in a DMARC report URI is missing MX records"""
 
 
@@ -121,7 +126,7 @@ class DMARCURIDestinationDoesNotAcceptReports(DMARCWarning):
 
 
 class DMARCBestPracticeWarning(DMARCWarning):
-    """Raised when a DMARC record does not bet a best practice"""
+    """Raised when a DMARC record does not follow a best practice"""
 
 
 class _SPFGrammar(Grammar):
@@ -431,7 +436,7 @@ def get_mx_hosts(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        list: A list of OrderedDicts with The following keys:
+        OrderedDict: An OrderedDict with The following keys:
 
             - ``hosts`` - A list of OrderedDicts with keys of
                 - ``hostname``
@@ -585,8 +590,13 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
         OrderedDict: The DMARC record parsed by key
 
     """
+    spf_in_dmarc_error_msg = "Found a SPF record where a DMARC record should should be; most likely, the _dmarc " \
+                             "subdomain record does not actually exist, and the request for TXT records was " \
+                             "redirected to the base domain"
     warnings = []
     record = record.strip('"')
+    if record.startswith("v=spf1"):
+        raise SPFRecordFoundWhereDMARCRecordShouldBe(spf_in_dmarc_error_msg)
     dmarc_syntax_checker = _DMARCGrammar()
     parsed_record = dmarc_syntax_checker.parse(record)
     if not parsed_record.is_valid:

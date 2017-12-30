@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.7.3
+-----
+
+- Detect Requests for `_dmarc` records that actually return SPF records
+- Correct documentation for `get_mx_hosts(domain, nameservers=None, timeout=6.0)`
+
 1.7.2
 -----
 
