@@ -1,20 +1,21 @@
 Changelog
 =========
 
+1.7.5
+-----
+- Fix JSON output structure or included/redirected SPF records
+
 1.7.4
 -----
-
-Fix typo in error messagecd ..c
+- Fix typo in error message
 
 1.7.3
 -----
-
 - Detect Requests for `_dmarc` records that actually return SPF records
 - Correct documentation for `get_mx_hosts(domain, nameservers=None, timeout=6.0)`
 
 1.7.2
 -----
-
 - Update output sample in documentation
 
 1.7.1

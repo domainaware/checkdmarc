@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.4"
+__version__ = "1.7.5"
 
 
 class DNSException(Exception):
@@ -852,15 +852,20 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     raise SPFError("Redirect loop detected: {0}".format(value))
                 seen.append(value)
                 try:
-                    redirect = get_spf_record(value,
-                                              nameservers=nameservers,
-                                              timeout=timeout)
+                    redirect_record = query_spf_record(value, nameservers=nameservers, timeout=timeout)
+                    redirect = parse_spf_record(redirect_record, value, seen=seen,
+                                                nameservers=nameservers,
+                                                timeout=timeout)
                     lookup_mechanism_count += redirect["dns_lookups"]
                     if lookup_mechanism_count > 10:
                         raise SPFTooManyDNSLookups("Parsing the SPF record requires {0}/10 maximum DNS lookups "
                                                    "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
                                                     lookup_mechanism_count))
-                    results["redirect"] = OrderedDict([("domain", value), ("results", redirect)])
+                    results["redirect"] = OrderedDict([("domain", value), ("record", redirect_record),
+                                                       ("dns_lookups", redirect["dns_lookups"]),
+                                                       ("results", redirect["results"]),
+                                                       ("warnings", redirect["warnings"])])
+                    warnings += redirect["warnings"]
                 except DNSException as error:
                     raise SPFWarning(str(error))
             elif mechanism == "exp":
@@ -872,16 +877,21 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     raise SPFError("Include loop detected: {0}".format(value))
                 seen.append(value)
                 try:
-                    include = get_spf_record(value,
-                                             nameservers=nameservers,
-                                             timeout=timeout)
+                    include_record = query_spf_record(value, nameservers=nameservers, timeout=timeout)
+                    include = parse_spf_record(include_record, value, seen=seen,
+                                               nameservers=nameservers,
+                                               timeout=timeout)
                     lookup_mechanism_count += include["dns_lookups"]
                     if lookup_mechanism_count > 10:
                         raise SPFTooManyDNSLookups("Parsing the SPF record requires {0}/10 maximum DNS lookups "
                                                    "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
                                                     lookup_mechanism_count))
+                    include = OrderedDict([("domain", value), ("record", include_record),
+                                           ("dns_lookups", include["dns_lookups"]),
+                                           ("results", include["results"]), ("warnings", include["warnings"])])
+                    results["include"].append(include)
+                    warnings += include["warnings"]
 
-                    results["include"].append(OrderedDict([("domain", value), ("results", include)]))
                 except DNSException as error:
                     raise SPFWarning(str(error))
             elif mechanism == "ptr":
