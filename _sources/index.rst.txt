@@ -109,7 +109,8 @@ Welcome to checkdmarc's documentation!
           "rua": {
             "value": [
               {
-                "email_address": "dmarc-feedback@fbi.gov",
+                "scheme": "mailto",
+                "address": "dmarc-feedback@fbi.gov",
                 "size_limit": null
               }
             ],
@@ -118,7 +119,8 @@ Welcome to checkdmarc's documentation!
           "ruf": {
             "value": [
               {
-                "email_address": "dmarc-feedback@fbi.gov",
+                "scheme": "mailto",
+                "address": "dmarc-feedback@fbi.gov",
                 "size_limit": null
               }
             ],
@@ -152,6 +154,7 @@ Welcome to checkdmarc's documentation!
         "warnings": []
       }
     }
+
 
 
 

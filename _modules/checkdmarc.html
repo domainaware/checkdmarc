@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 1.7.0 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 1.7.3 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 1.7.0 documentation" href="../index.html"/>
+    <link rel="top" title="checkdmarc 1.7.3 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.7.0
+                1.7.3
               </div>
             
           
@@ -196,7 +196,7 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.7.0&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.7.3&quot;</span>
 
 
 <div class="viewcode-block" id="DNSException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DNSException">[docs]</a><span class="k">class</span> <span class="nc">DNSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -269,7 +269,12 @@
     <span class="sd">&quot;&quot;&quot;Raised when an invalid DMARC reporting URI is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="DMARCReportEmailAddressMissingMXRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCReportEmailAddressMissingMXRecords">[docs]</a><span class="k">class</span> <span class="nc">DMARCReportEmailAddressMissingMXRecords</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+<div class="viewcode-block" id="SPFRecordFoundWhereDMARCRecordShouldBe"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe">[docs]</a><span class="k">class</span> <span class="nc">SPFRecordFoundWhereDMARCRecordShouldBe</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when a SPF record is found where a DMARC record should should be; most likely, the ``_dmarc`` subdomain</span>
+<span class="sd">    record does not actually exist, and the request for TXT records was redirected to the base domain&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="DMARCReportEmailAddressMissingMXRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCReportEmailAddressMissingMXRecords">[docs]</a><span class="k">class</span> <span class="nc">DMARCReportEmailAddressMissingMXRecords</span><span class="p">(</span><span class="n">DMARCWarning</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a email address in a DMARC report URI is missing MX records&quot;&quot;&quot;</span></div>
 
 
@@ -278,7 +283,7 @@
 
 
 <div class="viewcode-block" id="DMARCBestPracticeWarning"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCBestPracticeWarning">[docs]</a><span class="k">class</span> <span class="nc">DMARCBestPracticeWarning</span><span class="p">(</span><span class="n">DMARCWarning</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when a DMARC record does not bet a best practice&quot;&quot;&quot;</span></div>
+    <span class="sd">&quot;&quot;&quot;Raised when a DMARC record does not follow a best practice&quot;&quot;&quot;</span></div>
 
 
 <span class="k">class</span> <span class="nc">_SPFGrammar</span><span class="p">(</span><span class="n">Grammar</span><span class="p">):</span>
@@ -588,7 +593,7 @@
 <span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        list: A list of OrderedDicts with The following keys:</span>
+<span class="sd">        OrderedDict: An OrderedDict with The following keys:</span>
 
 <span class="sd">            - ``hosts`` - A list of OrderedDicts with keys of</span>
 <span class="sd">                - ``hostname``</span>
@@ -692,7 +697,7 @@
     <span class="k">if</span> <span class="n">size_limit</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
         <span class="n">size_limit</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;email_address&quot;</span><span class="p">,</span> <span class="n">email_address</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;size_limit&quot;</span><span class="p">,</span> <span class="n">size_limit</span><span class="p">)])</span></div>
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;scheme&quot;</span><span class="p">,</span> <span class="s2">&quot;mailto&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;address&quot;</span><span class="p">,</span> <span class="n">email_address</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;size_limit&quot;</span><span class="p">,</span> <span class="n">size_limit</span><span class="p">)])</span></div>
 
 
 <div class="viewcode-block" id="verify_external_dmarc_destination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.verify_external_dmarc_destination">[docs]</a><span class="k">def</span> <span class="nf">verify_external_dmarc_destination</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
@@ -742,8 +747,13 @@
 <span class="sd">        OrderedDict: The DMARC record parsed by key</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">spf_in_dmarc_error_msg</span> <span class="o">=</span> <span class="s2">&quot;Found a SPF record where a DMARC record should should be; most likely, the _dmarc &quot;</span> \
+                             <span class="s2">&quot;subdomain record does not actually exist, and the request for TXT records was &quot;</span> \
+                             <span class="s2">&quot;redirected to the base domain&quot;</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=spf1&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">SPFRecordFoundWhereDMARCRecordShouldBe</span><span class="p">(</span><span class="n">spf_in_dmarc_error_msg</span><span class="p">)</span>
     <span class="n">dmarc_syntax_checker</span> <span class="o">=</span> <span class="n">_DMARCGrammar</span><span class="p">()</span>
     <span class="n">parsed_record</span> <span class="o">=</span> <span class="n">dmarc_syntax_checker</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">parsed_record</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
@@ -806,7 +816,7 @@
             <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">uris</span><span class="p">:</span>
                 <span class="n">uri</span> <span class="o">=</span> <span class="n">parse_dmarc_report_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
                 <span class="n">parsed_uris</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
-                <span class="n">email_address</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="s2">&quot;email_address&quot;</span><span class="p">]</span>
+                <span class="n">email_address</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]</span>
                 <span class="n">email_domain</span> <span class="o">=</span> <span class="n">email_address</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">email_domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
                     <span class="n">verify_external_dmarc_destination</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">email_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
@@ -836,7 +846,7 @@
             <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">uris</span><span class="p">:</span>
                 <span class="n">uri</span> <span class="o">=</span> <span class="n">parse_dmarc_report_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
                 <span class="n">parsed_uris</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
-                <span class="n">email_address</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="s2">&quot;email_address&quot;</span><span class="p">]</span>
+                <span class="n">email_address</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]</span>
                 <span class="n">email_domain</span> <span class="o">=</span> <span class="n">email_address</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">email_domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
                     <span class="n">verify_external_dmarc_destination</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">email_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
@@ -1271,7 +1281,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.7.0',
+            VERSION:'1.7.3',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
