@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 1.7.3 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 1.7.4 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 1.7.3 documentation" href="../index.html"/>
+    <link rel="top" title="checkdmarc 1.7.4 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.7.3
+                1.7.4
               </div>
             
           
@@ -196,7 +196,7 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.7.3&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.7.4&quot;</span>
 
 
 <div class="viewcode-block" id="DNSException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DNSException">[docs]</a><span class="k">class</span> <span class="nc">DNSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -270,7 +270,7 @@
 
 
 <div class="viewcode-block" id="SPFRecordFoundWhereDMARCRecordShouldBe"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe">[docs]</a><span class="k">class</span> <span class="nc">SPFRecordFoundWhereDMARCRecordShouldBe</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when a SPF record is found where a DMARC record should should be; most likely, the ``_dmarc`` subdomain</span>
+    <span class="sd">&quot;&quot;&quot;Raised when a SPF record is found where a DMARC record should be; most likely, the ``_dmarc`` subdomain</span>
 <span class="sd">    record does not actually exist, and the request for TXT records was redirected to the base domain&quot;&quot;&quot;</span></div>
 
 
@@ -747,7 +747,7 @@
 <span class="sd">        OrderedDict: The DMARC record parsed by key</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">spf_in_dmarc_error_msg</span> <span class="o">=</span> <span class="s2">&quot;Found a SPF record where a DMARC record should should be; most likely, the _dmarc &quot;</span> \
+    <span class="n">spf_in_dmarc_error_msg</span> <span class="o">=</span> <span class="s2">&quot;Found a SPF record where a DMARC record should be; most likely, the _dmarc &quot;</span> \
                              <span class="s2">&quot;subdomain record does not actually exist, and the request for TXT records was &quot;</span> \
                              <span class="s2">&quot;redirected to the base domain&quot;</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1281,7 +1281,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.7.3',
+            VERSION:'1.7.4',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
