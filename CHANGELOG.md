@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.7.4
+-----
+
+Fix typo in error messagecd ..c
+
 1.7.3
 -----
 

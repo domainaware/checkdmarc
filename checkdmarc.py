@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.3"
+__version__ = "1.7.4"
 
 
 class DNSException(Exception):
@@ -113,7 +113,7 @@ class InvalidDMARCReportURI(DMARCSyntaxError):
 
 
 class SPFRecordFoundWhereDMARCRecordShouldBe(DMARCError):
-    """Raised when a SPF record is found where a DMARC record should should be; most likely, the ``_dmarc`` subdomain
+    """Raised when a SPF record is found where a DMARC record should be; most likely, the ``_dmarc`` subdomain
     record does not actually exist, and the request for TXT records was redirected to the base domain"""
 
 
@@ -590,7 +590,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
         OrderedDict: The DMARC record parsed by key
 
     """
-    spf_in_dmarc_error_msg = "Found a SPF record where a DMARC record should should be; most likely, the _dmarc " \
+    spf_in_dmarc_error_msg = "Found a SPF record where a DMARC record should be; most likely, the _dmarc " \
                              "subdomain record does not actually exist, and the request for TXT records was " \
                              "redirected to the base domain"
     warnings = []
