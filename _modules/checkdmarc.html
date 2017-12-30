@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 1.7.4 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 1.7.5 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 1.7.4 documentation" href="../index.html"/>
+    <link rel="top" title="checkdmarc 1.7.5 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.7.4
+                1.7.5
               </div>
             
           
@@ -196,7 +196,7 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.7.4&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.7.5&quot;</span>
 
 
 <div class="viewcode-block" id="DNSException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DNSException">[docs]</a><span class="k">class</span> <span class="nc">DNSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -1009,15 +1009,20 @@
                     <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Redirect loop detected: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
                 <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="n">redirect</span> <span class="o">=</span> <span class="n">get_spf_record</span><span class="p">(</span><span class="n">value</span><span class="p">,</span>
-                                              <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                                              <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                    <span class="n">redirect_record</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                    <span class="n">redirect</span> <span class="o">=</span> <span class="n">parse_spf_record</span><span class="p">(</span><span class="n">redirect_record</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">seen</span><span class="o">=</span><span class="n">seen</span><span class="p">,</span>
+                                                <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                                                <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                     <span class="n">lookup_mechanism_count</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
                     <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="n">SPFTooManyDNSLookups</span><span class="p">(</span><span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum DNS lookups &quot;</span>
                                                    <span class="s2">&quot;https://tools.ietf.org/html/rfc7208#section-4.6.4&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                                                     <span class="n">lookup_mechanism_count</span><span class="p">))</span>
-                    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;redirect&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="n">redirect</span><span class="p">)])</span>
+                    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;redirect&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">redirect_record</span><span class="p">),</span>
+                                                       <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]),</span>
+                                                       <span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">]),</span>
+                                                       <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">])])</span>
+                    <span class="n">warnings</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
                 <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFWarning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;exp&quot;</span><span class="p">:</span>
@@ -1029,16 +1034,21 @@
                     <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Include loop detected: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
                 <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="n">include</span> <span class="o">=</span> <span class="n">get_spf_record</span><span class="p">(</span><span class="n">value</span><span class="p">,</span>
-                                             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                                             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                    <span class="n">include_record</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                    <span class="n">include</span> <span class="o">=</span> <span class="n">parse_spf_record</span><span class="p">(</span><span class="n">include_record</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">seen</span><span class="o">=</span><span class="n">seen</span><span class="p">,</span>
+                                               <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                                               <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                     <span class="n">lookup_mechanism_count</span> <span class="o">+=</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
                     <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="n">SPFTooManyDNSLookups</span><span class="p">(</span><span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum DNS lookups &quot;</span>
                                                    <span class="s2">&quot;https://tools.ietf.org/html/rfc7208#section-4.6.4&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                                                     <span class="n">lookup_mechanism_count</span><span class="p">))</span>
+                    <span class="n">include</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">include_record</span><span class="p">),</span>
+                                           <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]),</span>
+                                           <span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">]),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">])])</span>
+                    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;include&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">include</span><span class="p">)</span>
+                    <span class="n">warnings</span> <span class="o">+=</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
 
-                    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;include&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="n">include</span><span class="p">)]))</span>
                 <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFWarning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;ptr&quot;</span><span class="p">:</span>
@@ -1281,7 +1291,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.7.4',
+            VERSION:'1.7.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
