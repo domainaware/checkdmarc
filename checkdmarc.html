@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 1.7.5 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 1.7.6 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 1.7.5 documentation" href="index.html"/>
+    <link rel="top" title="checkdmarc 1.7.6 documentation" href="index.html"/>
         <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.7.5
+                1.7.6
               </div>
             
           
@@ -188,7 +188,7 @@
 <dl class="exception">
 <dt id="checkdmarc.DMARCReportEmailAddressMissingMXRecords">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCReportEmailAddressMissingMXRecords</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCReportEmailAddressMissingMXRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCWarning" title="checkdmarc.DMARCWarning"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCWarning</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a email address in a DMARC report URI is missing MX records</p>
 </dd></dl>
 
@@ -202,7 +202,7 @@
 <dl class="exception">
 <dt id="checkdmarc.DMARCURIDestinationDoesNotAcceptReports">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCURIDestinationDoesNotAcceptReports</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCURIDestinationDoesNotAcceptReports"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCURIDestinationDoesNotAcceptReports" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCWarning" title="checkdmarc.DMARCWarning"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCWarning</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when the destination of a DMARC report URI does not indicate that it accepts reports for the domain</p>
 </dd></dl>
 
@@ -664,7 +664,7 @@ tag or value</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.7.5',
+            VERSION:'1.7.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
