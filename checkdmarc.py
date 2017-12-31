@@ -440,7 +440,7 @@ def get_mx_hosts(domain, nameservers=None, timeout=6.0):
 
             - ``hosts`` - A list of OrderedDicts with keys of
                 - ``hostname``
-                - ``addresses``,
+                - ``addresses``
             - ``warnings`` - A list of MX resolution warnings
 
     """
