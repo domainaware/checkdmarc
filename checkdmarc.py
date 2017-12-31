@@ -665,7 +665,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                     verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,
                                                       timeout=timeout)
                 try:
-                    _get_mx_hosts(email_domain)
+                    _get_mx_hosts(email_domain, nameservers=nameservers, timeout=timeout)
                 except SPFWarning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "The domain for rua email address {0} has no MX records".format(email_address)
@@ -695,7 +695,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                     verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,
                                                       timeout=timeout)
                 try:
-                    _get_mx_hosts(email_domain)
+                    _get_mx_hosts(email_domain, nameservers=nameservers, timeout=timeout)
                 except SPFWarning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "The domain for ruf email address {0} has no MX records".format(email_address)
