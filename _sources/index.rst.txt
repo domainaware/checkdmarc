@@ -41,7 +41,7 @@ Welcome to checkdmarc's documentation!
 
 .. code-block:: bash
 
-    $ checkdmarc fbi.gov -d
+    $ checkdmarc fbi.gov
 
 .. code-block:: json
 
