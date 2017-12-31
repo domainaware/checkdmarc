@@ -31,7 +31,7 @@
 
 .. code-block:: bash
 
-    $ checkdmarc fbi.gov -d
+    $ checkdmarc fbi.gov
 
 .. code-block:: json
 

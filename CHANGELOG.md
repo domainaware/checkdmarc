@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.7.7
+-----
+- Fix sample command in documentation
+
 1.7.6
 -----
 - Raise an error instead of a warning when DMARC reporting URIs cannot receive reports about a domain

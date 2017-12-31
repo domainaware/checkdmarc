@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.6"
+__version__ = "1.7.7"
 
 
 class DNSException(Exception):
