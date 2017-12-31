@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.5"
+__version__ = "1.7.6"
 
 
 class DNSException(Exception):
@@ -117,16 +117,16 @@ class SPFRecordFoundWhereDMARCRecordShouldBe(DMARCError):
     record does not actually exist, and the request for TXT records was redirected to the base domain"""
 
 
-class DMARCReportEmailAddressMissingMXRecords(DMARCWarning):
+class DMARCReportEmailAddressMissingMXRecords(DMARCError):
     """Raised when a email address in a DMARC report URI is missing MX records"""
-
-
-class DMARCURIDestinationDoesNotAcceptReports(DMARCWarning):
-    """Raised when the destination of a DMARC report URI does not indicate that it accepts reports for the domain"""
 
 
 class DMARCBestPracticeWarning(DMARCWarning):
     """Raised when a DMARC record does not follow a best practice"""
+
+
+class DMARCURIDestinationDoesNotAcceptReports(DMARCError):
+    """Raised when the destination of a DMARC report URI does not indicate that it accepts reports for the domain"""
 
 
 class _SPFGrammar(Grammar):
@@ -557,15 +557,15 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
           str: An unparsed DMARC string
       """
     target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
-    warning_message = "{0} does not indicate that it accepts DMARC reports about {1} - " \
-                      "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
-                                                                               source_domain)
+    message = "{0} does not indicate that it accepts DMARC reports about {1} - " \
+              "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
+                                                                       source_domain)
     try:
         answer = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)[0]
         if not answer.startswith("v=DMARC1"):
-            raise DMARCWarning(warning_message)
+            raise DMARCURIDestinationDoesNotAcceptReports(message)
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-        raise DMARCWarning(warning_message)
+        raise DMARCURIDestinationDoesNotAcceptReports(message)
     except dns.exception.DNSException as error:
         raise DMARCURIDestinationDoesNotAcceptReports(
             "Unable to validate that {0} DMARC accepts reports for {1} - {2}".format(destination_domain,

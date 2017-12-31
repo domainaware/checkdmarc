@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.7.6
+-----
+- Raise an error instead of a warning when DMARC reporting URIs cannot receive reports about a domain
+
 1.7.5
 -----
 - Fix JSON output structure or included/redirected SPF records
