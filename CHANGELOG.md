@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.7.8
+-----
+- Update `mailto` regex to accept single char mailbox names
+- Clarify DMARC tag and value descriptions
+- Pass in nameservers and timeout when querying for `MX` records 
+
 1.7.7
 -----
 - Fix sample command in documentation

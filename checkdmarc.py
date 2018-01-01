@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.7"
+__version__ = "1.7.8"
 
 
 class DNSException(Exception):
@@ -145,7 +145,7 @@ class _DMARCGrammar(Grammar):
 
 dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
 spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
-mailto_regex = compile(r"mailto:([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]+@[\w\-.]+)(!\w+)?")
+mailto_regex = compile(r"mailto:([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?")
 
 
 tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
@@ -184,9 +184,9 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                         ),
                          p=OrderedDict(name="Requested Mail Receiver Policy",
                                        default="none",
-                                       description='Indicates the policy to be enacted by the Receiver at '
-                                                   'the request of the Domain Owner. Policy applies to the domain '
-                                                   'queried and to subdomains, unless subdomain policy is explicitly '
+                                       description='Specifies the policy to be enacted by the Receiver at '
+                                                   'the request of the Domain Owner. The policy applies to the domain '
+                                                   'and to its subdomains, unless subdomain policy is explicitly '
                                                    'described using the "sp" tag.',
                          values={"none": 'The Domain Owner requests no specific action be taken '
                                          'regarding delivery of messages.',
