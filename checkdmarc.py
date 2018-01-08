@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.8"
+__version__ = "1.7.9"
 
 
 class DNSException(Exception):
@@ -132,7 +132,7 @@ class DMARCURIDestinationDoesNotAcceptReports(DMARCError):
 class _SPFGrammar(Grammar):
     """Defines Pyleri grammar for SPF records"""
     version_tag = Regex("v=spf[\d.]+")
-    mechanism = Regex("([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
+    mechanism = Regex("(\+|-|~?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
     START = Sequence(version_tag, Repeat(mechanism))
 
 
@@ -144,8 +144,8 @@ class _DMARCGrammar(Grammar):
 
 
 dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
-spf_regex = compile(r"([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
-mailto_regex = compile(r"mailto:([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?")
+spf_regex = compile(r"(\+|-|~?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
+mailto_regex = compile(r"(mailto):([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?")
 
 
 tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
@@ -183,7 +183,6 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                 }
                                         ),
                          p=OrderedDict(name="Requested Mail Receiver Policy",
-                                       default="none",
                                        description='Specifies the policy to be enacted by the Receiver at '
                                                    'the request of the Domain Owner. The policy applies to the domain '
                                                    'and to its subdomains, unless subdomain policy is explicitly '
@@ -527,7 +526,7 @@ def parse_dmarc_report_uri(uri):
         uri: A DMARC URI
 
     Returns:
-        OrderedDict: An ``email_address`` and ``size_limit``
+        OrderedDict: Keys: ''scheme`` ``address`` and ``size_limit``
 
     """
     uri = uri.strip()
@@ -535,12 +534,13 @@ def parse_dmarc_report_uri(uri):
     if len(mailto_matches) != 1:
         raise InvalidDMARCReportURI("{0} is not a valid DMARC report URI".format(uri))
     match = mailto_matches[0]
-    email_address = match[0]
-    size_limit = match[1].lstrip("!")
+    scheme = match[0]
+    email_address = match[1]
+    size_limit = match[2].lstrip("!")
     if size_limit == "":
         size_limit = None
 
-    return OrderedDict([("scheme", "mailto"), ("address", email_address), ("size_limit", size_limit)])
+    return OrderedDict([("scheme", scheme), ("address", email_address), ("size_limit", size_limit)])
 
 
 def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=6.0):
@@ -615,6 +615,8 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
     for tag in tag_values.keys():
         if tag not in tags and "default" in tag_values[tag]:
             tags[tag] = OrderedDict([("value", tag_values[tag]["default"]), ("explicit", False)])
+    if "p" not in tags:
+        raise DMARCError('The record is missing the required policy ("p") tag')
     if "sp" not in tags:
         tags["sp"] = OrderedDict([("value", tags["p"]["value"]), ("explicit", False)])
 
@@ -805,8 +807,8 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
     parsed_record = spf_syntax_checker.parse(record.lower())
     if not parsed_record.is_valid:
         expecting = list(map(lambda x: str(x).strip('"'), list(parsed_record.expecting)))
-        raise SPFSyntaxError("Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
-                                                                           parsed_record.pos, record))
+        raise SPFSyntaxError("{0}: Expected {1} at position {2} in: {3}".format(domain, " or ".join(expecting),
+                                                                                parsed_record.pos, record))
     matches = spf_regex.findall(record.lower())
     results = OrderedDict([("pass", []),
                           ("neutral", []),

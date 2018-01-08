@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.7.9
+-----
+- Make DMARC `p` required, as specified in the RFC
+- Improve SPF regex and syntax error details
+
 1.7.8
 -----
 - Update `mailto` regex to accept single char mailbox names
