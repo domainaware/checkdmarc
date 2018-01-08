@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 1.7.8 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 1.7.9 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 1.7.8 documentation" href="../index.html"/>
+    <link rel="top" title="checkdmarc 1.7.9 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.7.8
+                1.7.9
               </div>
             
           
@@ -196,7 +196,7 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.7.8&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.7.9&quot;</span>
 
 
 <div class="viewcode-block" id="DNSException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DNSException">[docs]</a><span class="k">class</span> <span class="nc">DNSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -289,7 +289,7 @@
 <span class="k">class</span> <span class="nc">_SPFGrammar</span><span class="p">(</span><span class="n">Grammar</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Defines Pyleri grammar for SPF records&quot;&quot;&quot;</span>
     <span class="n">version_tag</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="s2">&quot;v=spf[\d.]+&quot;</span><span class="p">)</span>
-    <span class="n">mechanism</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="s2">&quot;([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)&quot;</span><span class="p">)</span>
+    <span class="n">mechanism</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="s2">&quot;(\+|-|~?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)&quot;</span><span class="p">)</span>
     <span class="n">START</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">(</span><span class="n">version_tag</span><span class="p">,</span> <span class="n">Repeat</span><span class="p">(</span><span class="n">mechanism</span><span class="p">))</span>
 
 
@@ -301,8 +301,8 @@
 
 
 <span class="n">dmarc_regex</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;([a-z]{1,5})=([\w.:@/+!,_\-]+)&quot;</span><span class="p">)</span>
-<span class="n">spf_regex</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;([?+-~]?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)&quot;</span><span class="p">)</span>
-<span class="n">mailto_regex</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;mailto:([\w\-!#$%&amp;&#39;*+-/=?^_`{|}~][\w\-.!#$%&amp;&#39;*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?&quot;</span><span class="p">)</span>
+<span class="n">spf_regex</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\+|-|~?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)&quot;</span><span class="p">)</span>
+<span class="n">mailto_regex</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(mailto):([\w\-!#$%&amp;&#39;*+-/=?^_`{|}~][\w\-.!#$%&amp;&#39;*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?&quot;</span><span class="p">)</span>
 
 
 <span class="n">tag_values</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">adkim</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;DKIM Alignment Mode&quot;</span><span class="p">,</span>
@@ -340,7 +340,6 @@
                                                 <span class="p">}</span>
                                         <span class="p">),</span>
                          <span class="n">p</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Requested Mail Receiver Policy&quot;</span><span class="p">,</span>
-                                       <span class="n">default</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
                                        <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Specifies the policy to be enacted by the Receiver at &#39;</span>
                                                    <span class="s1">&#39;the request of the Domain Owner. The policy applies to the domain &#39;</span>
                                                    <span class="s1">&#39;and to its subdomains, unless subdomain policy is explicitly &#39;</span>
@@ -684,7 +683,7 @@
 <span class="sd">        uri: A DMARC URI</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An ``email_address`` and ``size_limit``</span>
+<span class="sd">        OrderedDict: Keys: &#39;&#39;scheme`` ``address`` and ``size_limit``</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">uri</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
@@ -692,12 +691,13 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mailto_matches</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">InvalidDMARCReportURI</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is not a valid DMARC report URI&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">uri</span><span class="p">))</span>
     <span class="n">match</span> <span class="o">=</span> <span class="n">mailto_matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">email_address</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">size_limit</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;!&quot;</span><span class="p">)</span>
+    <span class="n">scheme</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">email_address</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">size_limit</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;!&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">size_limit</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
         <span class="n">size_limit</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;scheme&quot;</span><span class="p">,</span> <span class="s2">&quot;mailto&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;address&quot;</span><span class="p">,</span> <span class="n">email_address</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;size_limit&quot;</span><span class="p">,</span> <span class="n">size_limit</span><span class="p">)])</span></div>
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;scheme&quot;</span><span class="p">,</span> <span class="n">scheme</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;address&quot;</span><span class="p">,</span> <span class="n">email_address</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;size_limit&quot;</span><span class="p">,</span> <span class="n">size_limit</span><span class="p">)])</span></div>
 
 
 <div class="viewcode-block" id="verify_external_dmarc_destination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.verify_external_dmarc_destination">[docs]</a><span class="k">def</span> <span class="nf">verify_external_dmarc_destination</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
@@ -772,6 +772,8 @@
     <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tag_values</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span> <span class="ow">and</span> <span class="s2">&quot;default&quot;</span> <span class="ow">in</span> <span class="n">tag_values</span><span class="p">[</span><span class="n">tag</span><span class="p">]:</span>
             <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">tag_values</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">]),</span> <span class="p">(</span><span class="s2">&quot;explicit&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)])</span>
+    <span class="k">if</span> <span class="s2">&quot;p&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DMARCError</span><span class="p">(</span><span class="s1">&#39;The record is missing the required policy (&quot;p&quot;) tag&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="s2">&quot;sp&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]),</span> <span class="p">(</span><span class="s2">&quot;explicit&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)])</span>
 
@@ -962,8 +964,8 @@
     <span class="n">parsed_record</span> <span class="o">=</span> <span class="n">spf_syntax_checker</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">parsed_record</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
         <span class="n">expecting</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">expecting</span><span class="p">)))</span>
-        <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span><span class="s2">&quot;Expected </span><span class="si">{0}</span><span class="s2"> at position </span><span class="si">{1}</span><span class="s2"> in: </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot; or &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expecting</span><span class="p">),</span>
-                                                                           <span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span><span class="p">,</span> <span class="n">record</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">: Expected </span><span class="si">{1}</span><span class="s2"> at position </span><span class="si">{2}</span><span class="s2"> in: </span><span class="si">{3}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot; or &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expecting</span><span class="p">),</span>
+                                                                                <span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span><span class="p">,</span> <span class="n">record</span><span class="p">))</span>
     <span class="n">matches</span> <span class="o">=</span> <span class="n">spf_regex</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;pass&quot;</span><span class="p">,</span> <span class="p">[]),</span>
                           <span class="p">(</span><span class="s2">&quot;neutral&quot;</span><span class="p">,</span> <span class="p">[]),</span>
@@ -1291,7 +1293,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.7.8',
+            VERSION:'1.7.9',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
