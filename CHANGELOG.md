@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.7.10
+------
+- Fix SPF regex regression
+
 1.7.9
 -----
 - Make DMARC `p` required, as specified in the RFC

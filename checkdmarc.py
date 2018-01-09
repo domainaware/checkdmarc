@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.9"
+__version__ = "1.7.10"
 
 
 class DNSException(Exception):
@@ -132,7 +132,7 @@ class DMARCURIDestinationDoesNotAcceptReports(DMARCError):
 class _SPFGrammar(Grammar):
     """Defines Pyleri grammar for SPF records"""
     version_tag = Regex("v=spf[\d.]+")
-    mechanism = Regex("(\+|-|~?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
+    mechanism = Regex("([+\-~?])?(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
     START = Sequence(version_tag, Repeat(mechanism))
 
 
@@ -144,7 +144,7 @@ class _DMARCGrammar(Grammar):
 
 
 dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
-spf_regex = compile(r"(\+|-|~?)(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
+spf_regex = compile(r"([+\-~?])?(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
 mailto_regex = compile(r"(mailto):([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?")
 
 
