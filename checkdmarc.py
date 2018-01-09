@@ -41,6 +41,16 @@ limitations under the License."""
 
 __version__ = "1.7.10"
 
+DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
+DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
+MAILTO_REGEX_STRING = r"(mailto):([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?"
+SPF_VERSION_TAG_REGEX_STRING = "v=spf[\d.]+"
+SPF_MECHANISM_REGEX_STRING = r"([+\-~?])?(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)"
+
+DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING)
+MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
+SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
+
 
 class DNSException(Exception):
     """Raised when a general DNS error occurs"""
@@ -131,21 +141,16 @@ class DMARCURIDestinationDoesNotAcceptReports(DMARCError):
 
 class _SPFGrammar(Grammar):
     """Defines Pyleri grammar for SPF records"""
-    version_tag = Regex("v=spf[\d.]+")
-    mechanism = Regex("([+\-~?])?(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+\/_.:\-{%}]*)")
+    version_tag = Regex(SPF_VERSION_TAG_REGEX_STRING)
+    mechanism = Regex(SPF_MECHANISM_REGEX_STRING)
     START = Sequence(version_tag, Repeat(mechanism))
 
 
 class _DMARCGrammar(Grammar):
     """Defines Pyleri grammar for DMARC records"""
-    version_tag = Regex("v=DMARC[\d.]+;")
-    tag_value = Regex("([a-z]{1,5})=([\w.:@\/+!,_\-]+)")
+    version_tag = Regex(DMARC_VERSION_REGEX_STRING)
+    tag_value = Regex(DMARC_TAG_VALUE_REGEX_STRING)
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
-
-
-dmarc_regex = compile(r"([a-z]{1,5})=([\w.:@/+!,_\-]+)")
-spf_regex = compile(r"([+\-~?])?(mx|ip4|ip6|exists|include|all|a|redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)")
-mailto_regex = compile(r"(mailto):([\w\-!#$%&'*+-/=?^_`{|}~][\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?")
 
 
 tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
@@ -530,7 +535,7 @@ def parse_dmarc_report_uri(uri):
 
     """
     uri = uri.strip()
-    mailto_matches = mailto_regex.findall(uri)
+    mailto_matches = MAILTO_REGEX.findall(uri)
     if len(mailto_matches) != 1:
         raise InvalidDMARCReportURI("{0} is not a valid DMARC report URI".format(uri))
     match = mailto_matches[0]
@@ -604,7 +609,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
         raise DMARCError("Error: Expected {0} at position {1} in: {2}".format(" or ".join(expecting),
                                                                               parsed_record.pos, record))
 
-    pairs = dmarc_regex.findall(record)
+    pairs = DMARC_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
 
     # Find explicit tags
@@ -809,7 +814,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
         expecting = list(map(lambda x: str(x).strip('"'), list(parsed_record.expecting)))
         raise SPFSyntaxError("{0}: Expected {1} at position {2} in: {3}".format(domain, " or ".join(expecting),
                                                                                 parsed_record.pos, record))
-    matches = spf_regex.findall(record.lower())
+    matches = SPF_MECHANISM_REGEX.findall(record.lower())
     results = OrderedDict([("pass", []),
                           ("neutral", []),
                           ("softfail", []),
