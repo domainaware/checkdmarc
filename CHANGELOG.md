@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.8.0
+-----
+
+- Fix SPF loop false-positives (#20)
+- Use the base/organisational domain name when validating DMARC report destinations (#21)
+- Add more granular exception classes in preparation for unit tests in 2.0.0
+
 1.7.10
 ------
 - Fix SPF regex regression

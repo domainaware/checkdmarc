@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.7.10"
+__version__ = "1.8.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -58,32 +58,26 @@ class DNSException(Exception):
 
 class DMARCException(Exception):
     """Raised when an error occurs when retrieving or parsing a DMARC record"""
-    pass
 
 
 class SPFException(Exception):
     """Raised when an error occurs when retrieving or parsing a SPF record"""
-    pass
 
 
 class SPFError(SPFException):
     """Raised when a fatal SPF error occurs"""
-    pass
 
 
 class SPFWarning(SPFException):
     """Raised when a non-fatal SPF error occurs"""
-    pass
 
 
 class DMARCError(DMARCException):
     """Raised when a fatal DMARC error occurs"""
-    pass
 
 
 class DMARCWarning(DMARCException):
     """Raised when a non-fatal DMARC error occurs"""
-    pass
 
 
 class SPFRecordNotFound(SPFError):
@@ -100,6 +94,18 @@ class SPFTooManyDNSLookups(SPFError):
 
 class SPFMissingRecords(SPFWarning):
     """Raised when a mechanism in a SPF record is missing the requested A/AAAA or MX records"""
+
+
+class SPFRedirectLoop(SPFError):
+    """Raised when a SPF redirect loop is detected"""
+
+
+class SPFIncludeLoop(SPFError):
+    """Raised when a SPF include loop is detected"""
+
+
+class SPFDuplicateInclude(SPFWarning):
+    """Raised when a duplicate SPF include is found"""
 
 
 class DMARCRecordNotFound(DMARCError):
@@ -137,6 +143,10 @@ class DMARCBestPracticeWarning(DMARCWarning):
 
 class DMARCURIDestinationDoesNotAcceptReports(DMARCError):
     """Raised when the destination of a DMARC report URI does not indicate that it accepts reports for the domain"""
+
+
+class MultipleDMARCRecords(DMARCError):
+    """Raised when multiple DMARC records are found, in violation of RFC 7486, section 6.6.3"""
 
 
 class _SPFGrammar(Grammar):
@@ -419,7 +429,11 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
     target = "_dmarc.{0}".format(domain.lower().replace("_dmarc.", ""))
     record = None
     try:
-        record = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)[0]
+        records = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)
+
+        if len(records) > 1:
+            raise MultipleDMARCRecords("Multiple DMARC policy records are not permitted - "
+                                       "https://tools.ietf.org/html/rfc7489#section-6.6.3")
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         pass
@@ -548,7 +562,7 @@ def parse_dmarc_report_uri(uri):
     return OrderedDict([("scheme", scheme), ("address", email_address), ("size_limit", size_limit)])
 
 
-def verify_external_dmarc_destination(source_domain, destination_domain, nameservers=None, timeout=6.0):
+def verify_dmarc_report_destination(source_domain, destination_domain, nameservers=None, timeout=6.0):
     """
       Checks if the report destination accepts reports for the source domain per RFC 7489, section 7.1
       
@@ -561,21 +575,22 @@ def verify_external_dmarc_destination(source_domain, destination_domain, nameser
       Returns:
           str: An unparsed DMARC string
       """
-    target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
-    message = "{0} does not indicate that it accepts DMARC reports about {1} - " \
-              "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
-                                                                       source_domain)
-    try:
-        answer = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)[0]
-        if not answer.startswith("v=DMARC1"):
+    if get_base_domain(source_domain) != get_base_domain(destination_domain):
+        target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
+        message = "{0} does not indicate that it accepts DMARC reports about {1} - " \
+                  "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
+                                                                           source_domain)
+        try:
+            answer = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)[0]
+            if not answer.startswith("v=DMARC1"):
+                raise DMARCURIDestinationDoesNotAcceptReports(message)
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
             raise DMARCURIDestinationDoesNotAcceptReports(message)
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-        raise DMARCURIDestinationDoesNotAcceptReports(message)
-    except dns.exception.DNSException as error:
-        raise DMARCURIDestinationDoesNotAcceptReports(
-            "Unable to validate that {0} DMARC accepts reports for {1} - {2}".format(destination_domain,
-                                                                                     source_domain,
-                                                                                     error.msg)
+        except dns.exception.DNSException as error:
+            raise DMARCURIDestinationDoesNotAcceptReports(
+                "Unable to validate that {0} DMARC accepts reports for {1} - {2}".format(destination_domain,
+                                                                                         source_domain,
+                                                                                         error.msg)
         )
     return True
 
@@ -669,8 +684,8 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                 email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
-                    verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,
-                                                      timeout=timeout)
+                    verify_dmarc_report_destination(domain, email_domain, nameservers=nameservers,
+                                                    timeout=timeout)
                 try:
                     _get_mx_hosts(email_domain, nameservers=nameservers, timeout=timeout)
                 except SPFWarning:
@@ -699,8 +714,8 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                 email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain.lower():
-                    verify_external_dmarc_destination(domain, email_domain, nameservers=nameservers,
-                                                      timeout=timeout)
+                    verify_dmarc_report_destination(domain, email_domain, nameservers=nameservers,
+                                                    timeout=timeout)
                 try:
                     _get_mx_hosts(email_domain, nameservers=nameservers, timeout=timeout)
                 except SPFWarning:
@@ -855,9 +870,9 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                 for host in mx_hosts:
                     results[result].append(OrderedDict([("value", host["hostname"]), ("mechanism", mechanism)]))
             elif mechanism == "redirect":
-                if value in seen:
-                    raise SPFError("Redirect loop detected: {0}".format(value))
-                seen.append(value)
+                if value.lower() in seen:
+                    raise SPFRedirectLoop("Redirect loop: {0}".format(value.lower()))
+                seen.append(value.lower())
                 try:
                     redirect_record = query_spf_record(value, nameservers=nameservers, timeout=timeout)
                     redirect = parse_spf_record(redirect_record, value, seen=seen,
@@ -880,9 +895,11 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
             elif mechanism == "all":
                 results["all"] = result
             elif mechanism == "include":
-                if value in seen:
-                    raise SPFError("Include loop detected: {0}".format(value))
-                seen.append(value)
+                if value.lower() == domain.lower():
+                    raise SPFIncludeLoop("Include loop: {0}".format(value))
+                if value.lower() in seen:
+                    raise SPFDuplicateInclude("Duplicate include: {0}".format(value.lower()))
+                seen.append(value.lower())
                 try:
                     include_record = query_spf_record(value, nameservers=nameservers, timeout=timeout)
                     include = parse_spf_record(include_record, value, seen=seen,
