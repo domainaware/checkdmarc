@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 1.7.10 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 1.8.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 1.7.10 documentation" href="index.html"/>
+    <link rel="top" title="checkdmarc 1.8.0 documentation" href="index.html"/>
         <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.7.10
+                1.8.0
               </div>
             
           
@@ -242,6 +242,20 @@
 </dd></dl>
 
 <dl class="exception">
+<dt id="checkdmarc.MultipleDMARCRecords">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">MultipleDMARCRecords</code><a class="reference internal" href="_modules/checkdmarc.html#MultipleDMARCRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleDMARCRecords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
+<p>Raised when multiple DMARC records are found, in violation of RFC 7486, section 6.6.3</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFDuplicateInclude">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFDuplicateInclude</code><a class="reference internal" href="_modules/checkdmarc.html#SPFDuplicateInclude"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFDuplicateInclude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFWarning" title="checkdmarc.SPFWarning"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFWarning</span></code></a></p>
+<p>Raised when a duplicate SPF include is found</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="checkdmarc.SPFError">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFError</code><a class="reference internal" href="_modules/checkdmarc.html#SPFError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFException" title="checkdmarc.SPFException"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFException</span></code></a></p>
@@ -253,6 +267,13 @@
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFException</code><a class="reference internal" href="_modules/checkdmarc.html#SPFException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">Exception</span></code></p>
 <p>Raised when an error occurs when retrieving or parsing a SPF record</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFIncludeLoop">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFIncludeLoop</code><a class="reference internal" href="_modules/checkdmarc.html#SPFIncludeLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFIncludeLoop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFError</span></code></a></p>
+<p>Raised when a SPF include loop is detected</p>
 </dd></dl>
 
 <dl class="exception">
@@ -275,6 +296,13 @@ record does not actually exist, and the request for TXT records was redirected t
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordNotFound</code><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordNotFound" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when an SPF record could not be found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SPFRedirectLoop">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRedirectLoop</code><a class="reference internal" href="_modules/checkdmarc.html#SPFRedirectLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRedirectLoop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFError</span></code></a></p>
+<p>Raised when a SPF redirect loop is detected</p>
 </dd></dl>
 
 <dl class="exception">
@@ -595,8 +623,8 @@ tag or value</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="checkdmarc.verify_external_dmarc_destination">
-<code class="descclassname">checkdmarc.</code><code class="descname">verify_external_dmarc_destination</code><span class="sig-paren">(</span><em>source_domain</em>, <em>destination_domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#verify_external_dmarc_destination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.verify_external_dmarc_destination" title="Permalink to this definition">¶</a></dt>
+<dt id="checkdmarc.verify_dmarc_report_destination">
+<code class="descclassname">checkdmarc.</code><code class="descname">verify_dmarc_report_destination</code><span class="sig-paren">(</span><em>source_domain</em>, <em>destination_domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#verify_dmarc_report_destination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.verify_dmarc_report_destination" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the report destination accepts reports for the source domain per RFC 7489, section 7.1</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -664,7 +692,7 @@ tag or value</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.7.10',
+            VERSION:'1.8.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

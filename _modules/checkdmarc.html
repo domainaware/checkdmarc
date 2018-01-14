@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 1.7.10 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 1.8.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 1.7.10 documentation" href="../index.html"/>
+    <link rel="top" title="checkdmarc 1.8.0 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.7.10
+                1.8.0
               </div>
             
           
@@ -196,7 +196,7 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.7.10&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.8.0&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">DMARC_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;([a-z]{1,5})=([\w.:@/+!,_\-]+)&quot;</span>
@@ -214,33 +214,27 @@
 
 
 <div class="viewcode-block" id="DMARCException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCException">[docs]</a><span class="k">class</span> <span class="nc">DMARCException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when an error occurs when retrieving or parsing a DMARC record&quot;&quot;&quot;</span>
-    <span class="k">pass</span></div>
+    <span class="sd">&quot;&quot;&quot;Raised when an error occurs when retrieving or parsing a DMARC record&quot;&quot;&quot;</span></div>
 
 
 <div class="viewcode-block" id="SPFException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFException">[docs]</a><span class="k">class</span> <span class="nc">SPFException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when an error occurs when retrieving or parsing a SPF record&quot;&quot;&quot;</span>
-    <span class="k">pass</span></div>
+    <span class="sd">&quot;&quot;&quot;Raised when an error occurs when retrieving or parsing a SPF record&quot;&quot;&quot;</span></div>
 
 
 <div class="viewcode-block" id="SPFError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFError">[docs]</a><span class="k">class</span> <span class="nc">SPFError</span><span class="p">(</span><span class="n">SPFException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when a fatal SPF error occurs&quot;&quot;&quot;</span>
-    <span class="k">pass</span></div>
+    <span class="sd">&quot;&quot;&quot;Raised when a fatal SPF error occurs&quot;&quot;&quot;</span></div>
 
 
 <div class="viewcode-block" id="SPFWarning"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFWarning">[docs]</a><span class="k">class</span> <span class="nc">SPFWarning</span><span class="p">(</span><span class="n">SPFException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when a non-fatal SPF error occurs&quot;&quot;&quot;</span>
-    <span class="k">pass</span></div>
+    <span class="sd">&quot;&quot;&quot;Raised when a non-fatal SPF error occurs&quot;&quot;&quot;</span></div>
 
 
 <div class="viewcode-block" id="DMARCError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCError">[docs]</a><span class="k">class</span> <span class="nc">DMARCError</span><span class="p">(</span><span class="n">DMARCException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when a fatal DMARC error occurs&quot;&quot;&quot;</span>
-    <span class="k">pass</span></div>
+    <span class="sd">&quot;&quot;&quot;Raised when a fatal DMARC error occurs&quot;&quot;&quot;</span></div>
 
 
 <div class="viewcode-block" id="DMARCWarning"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCWarning">[docs]</a><span class="k">class</span> <span class="nc">DMARCWarning</span><span class="p">(</span><span class="n">DMARCException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when a non-fatal DMARC error occurs&quot;&quot;&quot;</span>
-    <span class="k">pass</span></div>
+    <span class="sd">&quot;&quot;&quot;Raised when a non-fatal DMARC error occurs&quot;&quot;&quot;</span></div>
 
 
 <div class="viewcode-block" id="SPFRecordNotFound"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFRecordNotFound">[docs]</a><span class="k">class</span> <span class="nc">SPFRecordNotFound</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
@@ -257,6 +251,18 @@
 
 <div class="viewcode-block" id="SPFMissingRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFMissingRecords">[docs]</a><span class="k">class</span> <span class="nc">SPFMissingRecords</span><span class="p">(</span><span class="n">SPFWarning</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a mechanism in a SPF record is missing the requested A/AAAA or MX records&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="SPFRedirectLoop"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFRedirectLoop">[docs]</a><span class="k">class</span> <span class="nc">SPFRedirectLoop</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when a SPF redirect loop is detected&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="SPFIncludeLoop"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFIncludeLoop">[docs]</a><span class="k">class</span> <span class="nc">SPFIncludeLoop</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when a SPF include loop is detected&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="SPFDuplicateInclude"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFDuplicateInclude">[docs]</a><span class="k">class</span> <span class="nc">SPFDuplicateInclude</span><span class="p">(</span><span class="n">SPFWarning</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when a duplicate SPF include is found&quot;&quot;&quot;</span></div>
 
 
 <div class="viewcode-block" id="DMARCRecordNotFound"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCRecordNotFound">[docs]</a><span class="k">class</span> <span class="nc">DMARCRecordNotFound</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
@@ -294,6 +300,10 @@
 
 <div class="viewcode-block" id="DMARCURIDestinationDoesNotAcceptReports"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCURIDestinationDoesNotAcceptReports">[docs]</a><span class="k">class</span> <span class="nc">DMARCURIDestinationDoesNotAcceptReports</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when the destination of a DMARC report URI does not indicate that it accepts reports for the domain&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="MultipleDMARCRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.MultipleDMARCRecords">[docs]</a><span class="k">class</span> <span class="nc">MultipleDMARCRecords</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when multiple DMARC records are found, in violation of RFC 7486, section 6.6.3&quot;&quot;&quot;</span></div>
 
 
 <span class="k">class</span> <span class="nc">_SPFGrammar</span><span class="p">(</span><span class="n">Grammar</span><span class="p">):</span>
@@ -576,7 +586,11 @@
     <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;_dmarc.</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_dmarc.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
     <span class="n">record</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MultipleDMARCRecords</span><span class="p">(</span><span class="s2">&quot;Multiple DMARC policy records are not permitted - &quot;</span>
+                                       <span class="s2">&quot;https://tools.ietf.org/html/rfc7489#section-6.6.3&quot;</span><span class="p">)</span>
 
     <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">):</span>
         <span class="k">pass</span>
@@ -705,7 +719,7 @@
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;scheme&quot;</span><span class="p">,</span> <span class="n">scheme</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;address&quot;</span><span class="p">,</span> <span class="n">email_address</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;size_limit&quot;</span><span class="p">,</span> <span class="n">size_limit</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="verify_external_dmarc_destination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.verify_external_dmarc_destination">[docs]</a><span class="k">def</span> <span class="nf">verify_external_dmarc_destination</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
+<div class="viewcode-block" id="verify_dmarc_report_destination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.verify_dmarc_report_destination">[docs]</a><span class="k">def</span> <span class="nf">verify_dmarc_report_destination</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">      Checks if the report destination accepts reports for the source domain per RFC 7489, section 7.1</span>
 <span class="sd">      </span>
@@ -718,21 +732,22 @@
 <span class="sd">      Returns:</span>
 <span class="sd">          str: An unparsed DMARC string</span>
 <span class="sd">      &quot;&quot;&quot;</span>
-    <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">._report._dmarc.</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">)</span>
-    <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not indicate that it accepts DMARC reports about </span><span class="si">{1}</span><span class="s2"> - &quot;</span> \
-              <span class="s2">&quot;https://tools.ietf.org/html/rfc7489#section-7.1&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
-                                                                       <span class="n">source_domain</span><span class="p">)</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">answer</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">answer</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=DMARC1&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">source_domain</span><span class="p">)</span> <span class="o">!=</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">):</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">._report._dmarc.</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">)</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not indicate that it accepts DMARC reports about </span><span class="si">{1}</span><span class="s2"> - &quot;</span> \
+                  <span class="s2">&quot;https://tools.ietf.org/html/rfc7489#section-7.1&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
+                                                                           <span class="n">source_domain</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">answer</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=DMARC1&quot;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">DMARCURIDestinationDoesNotAcceptReports</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">DMARCURIDestinationDoesNotAcceptReports</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-    <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="n">DMARCURIDestinationDoesNotAcceptReports</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCURIDestinationDoesNotAcceptReports</span><span class="p">(</span>
-            <span class="s2">&quot;Unable to validate that </span><span class="si">{0}</span><span class="s2"> DMARC accepts reports for </span><span class="si">{1}</span><span class="s2"> - </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
-                                                                                     <span class="n">source_domain</span><span class="p">,</span>
-                                                                                     <span class="n">error</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">DMARCURIDestinationDoesNotAcceptReports</span><span class="p">(</span>
+                <span class="s2">&quot;Unable to validate that </span><span class="si">{0}</span><span class="s2"> DMARC accepts reports for </span><span class="si">{1}</span><span class="s2"> - </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
+                                                                                         <span class="n">source_domain</span><span class="p">,</span>
+                                                                                         <span class="n">error</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span></div>
 
@@ -826,8 +841,8 @@
                 <span class="n">email_address</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]</span>
                 <span class="n">email_domain</span> <span class="o">=</span> <span class="n">email_address</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">email_domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
-                    <span class="n">verify_external_dmarc_destination</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">email_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                                                      <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                    <span class="n">verify_dmarc_report_destination</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">email_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                                                    <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">_get_mx_hosts</span><span class="p">(</span><span class="n">email_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                 <span class="k">except</span> <span class="n">SPFWarning</span><span class="p">:</span>
@@ -856,8 +871,8 @@
                 <span class="n">email_address</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]</span>
                 <span class="n">email_domain</span> <span class="o">=</span> <span class="n">email_address</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">email_domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
-                    <span class="n">verify_external_dmarc_destination</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">email_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                                                      <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                    <span class="n">verify_dmarc_report_destination</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">email_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                                                    <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">_get_mx_hosts</span><span class="p">(</span><span class="n">email_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                 <span class="k">except</span> <span class="n">SPFWarning</span><span class="p">:</span>
@@ -1012,9 +1027,9 @@
                 <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">mx_hosts</span><span class="p">:</span>
                     <span class="n">results</span><span class="p">[</span><span class="n">result</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]),</span> <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">)]))</span>
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;redirect&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Redirect loop detected: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
-                <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">SPFRedirectLoop</span><span class="p">(</span><span class="s2">&quot;Redirect loop: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+                <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">redirect_record</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                     <span class="n">redirect</span> <span class="o">=</span> <span class="n">parse_spf_record</span><span class="p">(</span><span class="n">redirect_record</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">seen</span><span class="o">=</span><span class="n">seen</span><span class="p">,</span>
@@ -1037,9 +1052,11 @@
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
                 <span class="n">results</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;include&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="n">SPFError</span><span class="p">(</span><span class="s2">&quot;Include loop detected: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
-                <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="n">SPFIncludeLoop</span><span class="p">(</span><span class="s2">&quot;Include loop: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">SPFDuplicateInclude</span><span class="p">(</span><span class="s2">&quot;Duplicate include: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+                <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">include_record</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                     <span class="n">include</span> <span class="o">=</span> <span class="n">parse_spf_record</span><span class="p">(</span><span class="n">include_record</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">seen</span><span class="o">=</span><span class="n">seen</span><span class="p">,</span>
@@ -1298,7 +1315,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.7.10',
+            VERSION:'1.8.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
