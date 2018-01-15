@@ -1,1 +1,23 @@
-language: pythonsudo: falsepython:  - '3.4'  - '3.5'  - '3.6'# commands to install dependenciesinstall:  - "pip install flake8 pytest-cov pytest coveralls"  - "pip install -e ."# commands to run testsscript:  - "flake8 ."  - "cd docs"  - "make html"  - "cd .."  - "python test_checkdmarc.py"- "python setup.py bdist_wheel"
+language: python
+
+
+sudo: false
+
+python:
+  - '3.4'
+  - '3.5'
+  - '3.6'
+
+# commands to install dependencies
+install:
+  - "pip install flake8 pytest-cov pytest coveralls"
+  - "pip install -e ."
+
+# commands to run tests
+script:
+  - "flake8 ."
+  - "cd docs"
+  - "make html"
+  - "cd .."
+  - "python test_checkdmarc.py"
+- "python setup.py bdist_wheel"
