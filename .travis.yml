@@ -20,4 +20,4 @@ script:
   - "make html"
   - "cd .."
   - "python test_checkdmarc.py"
-- "python setup.py bdist_wheel"
+  - "python setup.py bdist_wheel"
