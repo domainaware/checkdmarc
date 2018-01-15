@@ -15,9 +15,9 @@ install:
 
 # commands to run tests
 script:
-  - "flake8 ."
+  # - "flake8 ."
   - "cd docs"
   - "make html"
   - "cd .."
-  - "python test_checkdmarc.py"
+  - "python tests.py"
   - "python setup.py bdist_wheel"
