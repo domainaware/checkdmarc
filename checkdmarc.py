@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.8.0"
+__version__ = "1.8.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -351,7 +351,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     except dns.resolver.NXDOMAIN:
         raise DNSException("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
-        raise DNSException("{0} does not have any MX records".format(domain))
+        pass
     except (dns.exception.DNSException, ValueError) as error:
         raise DNSException(error)
 
@@ -382,9 +382,6 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
         pass
     except dns.exception.DNSException as error:
         raise DNSException(error)
-    finally:
-        if len(addresses) == 0:
-            raise DNSException("{0} does not have any A or AAAA records".format(domain))
 
     return addresses
 
@@ -434,6 +431,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
         if len(records) > 1:
             raise MultipleDMARCRecords("Multiple DMARC policy records are not permitted - "
                                        "https://tools.ietf.org/html/rfc7489#section-6.6.3")
+        record = records[0]
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         pass
@@ -858,12 +856,16 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                 if value == "":
                     value = domain
                 a_records = _get_a_records(value, nameservers=nameservers, timeout=timeout)
+                if len(a_records) == 0:
+                    raise SPFMissingRecords("{0} does not have any A/AAAA records".format(value.lower()))
                 for record in a_records:
                     results[result].append(OrderedDict([("value", record), ("mechanism", mechanism)]))
             elif mechanism == "mx":
                 if value == "":
                     value = domain
                 mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
+                if len(mx_hosts) == 0:
+                    raise SPFMissingRecords("{0} does not have any MX records".format(value.lower()))
                 if len(mx_hosts) > 10:
                     raise SPFTooManyDNSLookups("{0} has more than 10 MX records - "
                                                "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(value))

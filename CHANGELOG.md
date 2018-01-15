@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.8.1
+-----
+- Fix a bug that causes all DMARC lookups to fail
+- First unit tests
+
 1.8.0
 -----
 
