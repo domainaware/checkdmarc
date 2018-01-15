@@ -11,7 +11,7 @@ python:
 # commands to install dependencies
 install:
   - "pip install flake8 pytest-cov pytest coveralls"
-  - "pip install -r requires.txt"
+  - "pip install -r requirements.txt"
 
 # commands to run tests
 script:
