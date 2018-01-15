@@ -1,3 +1,6 @@
+|Build Status|
+
+
 ::
 
     usage: checkdmarc [-h] [-d] [-f FORMAT] [-o OUTPUT]
@@ -191,3 +194,6 @@ Bug reports
 Please report bugs on the GitHub issue tracker
 
 https://github.com/domainaware/checkdmarc/issues
+
+.. |Build Status| image:: https://travis-ci.org/domainaware/checkdmarc.svg?branch=master
+   :target: https://travis-ci.org/domainaware/checkdmarc
