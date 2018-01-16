@@ -1,5 +1,9 @@
+checkdmarc
+==========
+
 |Build Status|
 
+A Python module and command line utility for validating SPF and DMARC DNS records
 
 ::
 

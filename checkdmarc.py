@@ -39,7 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-__version__ = "1.8.1"
+__version__ = "2.0.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -133,12 +133,20 @@ class SPFRecordFoundWhereDMARCRecordShouldBe(DMARCError):
     record does not actually exist, and the request for TXT records was redirected to the base domain"""
 
 
+class DMARCRecordInWrongLocation(DMARCError):
+    """Raised when a DMARC record is found at the root of a domain"""
+
+
 class DMARCReportEmailAddressMissingMXRecords(DMARCError):
     """Raised when a email address in a DMARC report URI is missing MX records"""
 
 
 class DMARCBestPracticeWarning(DMARCWarning):
     """Raised when a DMARC record does not follow a best practice"""
+
+
+class UnrelatedTXTRecordFound(DMARCError):
+    """Raised when a RXT record unrelated to DMARC is found"""
 
 
 class DMARCURIDestinationDoesNotAcceptReports(DMARCError):
@@ -335,7 +343,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
         nameservers (list): A list of nameservers to query
 
     Returns:
-        list: A list of ``OrderedDicts``; each containing a ``preference integer
+        list: A list of ``OrderedDicts``; each containing a ``preference`` integer and a ``hostname``
 
     """
     hosts = []
@@ -352,9 +360,6 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
         raise DNSException("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         pass
-    except (dns.exception.DNSException, ValueError) as error:
-        raise DNSException(error)
-
     return hosts
 
 
@@ -423,14 +428,39 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
     Returns:
         str: A record string or None
     """
-    target = "_dmarc.{0}".format(domain.lower().replace("_dmarc.", ""))
+    target = "_dmarc.{0}".format(domain.lower())
     record = None
+    dmarc_record_count = 0
+    unrelated_records = []
+
+    try:
+        records = _query_dns(domain.lower(), "TXT", nameservers=nameservers, timeout=timeout)
+        for record in records:
+            if record.startswith("v=DMARC1"):
+                raise DMARCRecordInWrongLocation("The DMARC record must be located at "
+                                                 "{0}, not {1}".format(target, domain.lower()))
+    except dns.resolver.NoAnswer:
+        pass
+    except dns.resolver.NXDOMAIN:
+        raise DMARCRecordNotFound("The domain {0} does not exist".format(domain))
+    except dns.exception.DNSException as error:
+        raise DMARCRecordNotFound(error.msg)
+
     try:
         records = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)
+        for record in records:
+            if record.startswith("v=DMARC1"):
+                dmarc_record_count += 1
+            else:
+                unrelated_records.append(record)
 
-        if len(records) > 1:
+        if dmarc_record_count > 1:
             raise MultipleDMARCRecords("Multiple DMARC policy records are not permitted - "
                                        "https://tools.ietf.org/html/rfc7489#section-6.6.3")
+        if len(unrelated_records) > 0:
+            raise UnrelatedTXTRecordFound("Unrelated TXT records were discovered. These should be removed, as some "
+                                          "receivers may not expect to find unrelated TXT records "
+                                          "at {0}\n\n{1}".format(target, "\n\n".join(unrelated_records)))
         record = records[0]
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
@@ -571,16 +601,29 @@ def verify_dmarc_report_destination(source_domain, destination_domain, nameserve
           timeout(float): number of seconds to wait for an answer from DNS
 
       Returns:
-          str: An unparsed DMARC string
+          bool: Indicates if the report domain accepts reports from the given domain
       """
     if get_base_domain(source_domain) != get_base_domain(destination_domain):
         target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
         message = "{0} does not indicate that it accepts DMARC reports about {1} - " \
                   "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
                                                                            source_domain)
+        dmarc_record_count = 0
+        unrelated_records = []
         try:
-            answer = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)[0]
-            if not answer.startswith("v=DMARC1"):
+            records = _query_dns(target, "TXT", nameservers=nameservers, timeout=timeout)
+            for record in records:
+                if record.startswith("v=DMARC1"):
+                    dmarc_record_count += 1
+                else:
+                    unrelated_records.append(record)
+
+            if len(unrelated_records) > 0:
+                raise UnrelatedTXTRecordFound("Unrelated TXT records were discovered. These should be removed, as some "
+                                              "receivers may not expect to find unrelated TXT records "
+                                              "at {0}\n\n{1}".format(target, "\n\n".join(unrelated_records)))
+
+            if dmarc_record_count < 1:
                 raise DMARCURIDestinationDoesNotAcceptReports(message)
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
             raise DMARCURIDestinationDoesNotAcceptReports(message)
@@ -588,8 +631,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain, nameserve
             raise DMARCURIDestinationDoesNotAcceptReports(
                 "Unable to validate that {0} DMARC accepts reports for {1} - {2}".format(destination_domain,
                                                                                          source_domain,
-                                                                                         error.msg)
-        )
+                                                                                         error.msg))
     return True
 
 
@@ -605,7 +647,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
-        OrderedDict: The DMARC record parsed by key
+        OrderedDict: ``keys`` and ``warnings``
 
     """
     spf_in_dmarc_error_msg = "Found a SPF record where a DMARC record should be; most likely, the _dmarc " \
@@ -789,7 +831,7 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
                 spf_record = record
                 break
         if spf_record is None:
-            raise SPFError("{0} does not have a SPF record".format(domain))
+            raise SPFRecordNotFound("{0} does not have a SPF record".format(domain))
         if not spf_record.startswith("v=spf1 "):
             raise SPFSyntaxError("{0} is not a valid SPF record".format(spf_record))
     except dns.resolver.NoAnswer:
@@ -958,7 +1000,7 @@ def check_domains(domains, output_format="json", output_path=None, include_dmarc
     
     Args:
         domains (list): A list of domains to check 
-        output_format (str): ``json`` or ``csv``
+        output_format (str): ``json`` or ``csv`` - only applies when ``output_path`` is specified
         output_path (str): Save output to the given file path 
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC tags and/or tag values in the results
         nameservers (list): A list of nameservers to query

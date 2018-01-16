@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2.0.0
+-----
+- Check for misplaced DMARC records
+- Update documentation
+- Write unit tests and deploy CI (#12)
+
 1.8.1
 -----
 - Fix a bug that causes all DMARC lookups to fail

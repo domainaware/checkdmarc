@@ -14,7 +14,7 @@ known_good_domains = [
 
 class Test(unittest.TestCase):
     def testKnownGood(self):
-        """Testing domains with known SPF and DMARC records"""
+        """Domains with known SPF and DMARC records"""
         results = checkdmarc.check_domains(known_good_domains)
         for domain in results:
             spf_error = None
@@ -23,9 +23,9 @@ class Test(unittest.TestCase):
                 spf_error = domain["spf"]["error"]
             if "error" in domain["dmarc"]:
                 dmarc_error = domain["dmarc"]["error"]
-            self.assertEqual(domain["spf"]["valid"], True, "Known good domain {0} failed SPF check: {0}".format(
+            self.assertEqual(domain["spf"]["valid"], True, "Known good domain {0} failed SPF check:\n\n{0}".format(
                 domain["domain"], spf_error))
-            self.assertEqual(domain["dmarc"]["valid"], True, "Known good domain {0} failed DMARC check: {1}".format(
+            self.assertEqual(domain["dmarc"]["valid"], True, "Known good domain {0} failed DMARC check:\n\n{1}".format(
                 domain["domain"], dmarc_error))
 
     def testIncludeMissingSPF(self):
@@ -72,6 +72,27 @@ class Test(unittest.TestCase):
         domain = "sogne.folkebibl.no"
         results = checkdmarc.parse_spf_record(spf_record, domain)
         self.assertIn("sogne.folkebibl.no does not have any A/AAAA records", results["warnings"])
+
+    def testDMARCPctLessThan100Warning(self):
+        """A warning is issued if the DMARC pvt value is less than 100"""
+        dmarc_record = "v=DMARC1; p=none; sp=none; fo=1; pct=50; adkim=r; aspf=r; rf=afrf; ri=86400; " \
+                       "rua=mailto:eits.dmarcrua@energy.gov; ruf=mailto:eits.dmarcruf@energy.gov"
+        domain = "energy.gov"
+        results = checkdmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertIn("pct value is less than 100", results["warnings"])
+
+    def testInvalidDMARCURI(self):
+        """An invalid DMARC report URI raises InvalidDMARCReportURI"""
+        dmarc_record = "v=DMARC1; p=none; rua=reports@dmarc.cyber.dhs.gov,mailto:dmarcreports@usdoj.gov"
+        domain = "dea.gov"
+        self.assertRaises(checkdmarc.InvalidDMARCReportURI, checkdmarc.parse_dmarc_record, dmarc_record, domain)
+
+    def testInvalidDMARCfo(self):
+        """An invalid DMARC fo tag value raises"""
+        dmarc_record = "v=DMARC1;p=none;aspf=s;adkim=s;fo=0:1:d:s;ruf=mailto:dmarcreports@omb.gov;" \
+                       "rua=mailto:dmarcreports@omb.gov"
+        domain = "omb.gov"
+        self.assertRaises(checkdmarc.DMARCSyntaxError, checkdmarc.parse_dmarc_record, dmarc_record, domain)
 
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)
