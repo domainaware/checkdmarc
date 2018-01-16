@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.0.1
+-----
+- Improve DMARC regex for edge cases
+- Add unit test for the above
+
 2.0.0
 -----
 - Check for misplaced DMARC records

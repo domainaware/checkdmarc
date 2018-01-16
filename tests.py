@@ -87,6 +87,9 @@ class Test(unittest.TestCase):
         domain = "dea.gov"
         self.assertRaises(checkdmarc.InvalidDMARCReportURI, checkdmarc.parse_dmarc_record, dmarc_record, domain)
 
+        dmarc_record = "v=DMARC1; p=none; rua=__mailto:reports@dmarc.cyber.dhs.gov,mailto:dmarcreports@usdoj.gov"
+        self.assertRaises(checkdmarc.InvalidDMARCReportURI, checkdmarc.parse_dmarc_record, dmarc_record, domain)
+
     def testInvalidDMARCfo(self):
         """An invalid DMARC fo tag value raises"""
         dmarc_record = "v=DMARC1;p=none;aspf=s;adkim=s;fo=0:1:d:s;ruf=mailto:dmarcreports@omb.gov;" \
