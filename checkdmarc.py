@@ -68,16 +68,24 @@ class SPFError(SPFException):
     """Raised when a fatal SPF error occurs"""
 
 
-class SPFWarning(SPFException):
+class _SPFWarning(SPFException):
     """Raised when a non-fatal SPF error occurs"""
+
+
+class _SPFMissingRecords(_SPFWarning):
+    """Raised when a mechanism in a SPF record is missing the requested A/AAAA or MX records"""
+
+
+class _SPFDuplicateInclude(_SPFWarning):
+    """Raised when a duplicate SPF include is found"""
+
+
+class _DMARCWarning(DMARCException):
+    """Raised when a non-fatal DMARC error occurs"""
 
 
 class DMARCError(DMARCException):
     """Raised when a fatal DMARC error occurs"""
-
-
-class DMARCWarning(DMARCException):
-    """Raised when a non-fatal DMARC error occurs"""
 
 
 class SPFRecordNotFound(SPFError):
@@ -91,21 +99,12 @@ class SPFSyntaxError(SPFError):
 class SPFTooManyDNSLookups(SPFError):
     """Raised when an SPF record requires too many DNS lookups (10 max)"""
 
-
-class SPFMissingRecords(SPFWarning):
-    """Raised when a mechanism in a SPF record is missing the requested A/AAAA or MX records"""
-
-
 class SPFRedirectLoop(SPFError):
     """Raised when a SPF redirect loop is detected"""
 
 
 class SPFIncludeLoop(SPFError):
     """Raised when a SPF include loop is detected"""
-
-
-class SPFDuplicateInclude(SPFWarning):
-    """Raised when a duplicate SPF include is found"""
 
 
 class DMARCRecordNotFound(DMARCError):
@@ -121,7 +120,7 @@ class InvalidDMARCTag(DMARCSyntaxError):
 
 
 class InvalidDMARCTagValue(DMARCSyntaxError):
-    """Raised when ian invalid DMARC tag value is found"""
+    """Raised when an invalid DMARC tag value is found"""
 
 
 class InvalidDMARCReportURI(DMARCSyntaxError):
@@ -141,12 +140,12 @@ class DMARCReportEmailAddressMissingMXRecords(DMARCError):
     """Raised when a email address in a DMARC report URI is missing MX records"""
 
 
-class DMARCBestPracticeWarning(DMARCWarning):
+class DMARCBestPracticeWarning(_DMARCWarning):
     """Raised when a DMARC record does not follow a best practice"""
 
 
 class UnrelatedTXTRecordFound(DMARCError):
-    """Raised when a RXT record unrelated to DMARC is found"""
+    """Raised when a TXT record unrelated to DMARC is found"""
 
 
 class DMARCURIDestinationDoesNotAcceptReports(DMARCError):
@@ -603,8 +602,11 @@ def verify_dmarc_report_destination(source_domain, destination_domain, nameserve
       Returns:
           bool: Indicates if the report domain accepts reports from the given domain
       """
-    if get_base_domain(source_domain) != get_base_domain(destination_domain):
-        target = "{0}._report._dmarc.{1}".format(get_base_domain(source_domain), get_base_domain(destination_domain))
+    source_domain = get_base_domain(source_domain)
+    destination_domain = get_base_domain(destination_domain)
+
+    if source_domain != destination_domain:
+        target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
         message = "{0} does not indicate that it accepts DMARC reports about {1} - " \
                   "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
                                                                            source_domain)
@@ -728,7 +730,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                                                     timeout=timeout)
                 try:
                     _get_mx_hosts(email_domain, nameservers=nameservers, timeout=timeout)
-                except SPFWarning:
+                except _SPFWarning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "The domain for rua email address {0} has no MX records".format(email_address)
                     )
@@ -741,7 +743,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
         else:
             raise DMARCBestPracticeWarning("rua tag (destination for aggregate reports) not found")
 
-    except DMARCWarning as warning:
+    except _DMARCWarning as warning:
         warnings.append(str(warning))
 
     try:
@@ -758,7 +760,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
                                                     timeout=timeout)
                 try:
                     _get_mx_hosts(email_domain, nameservers=nameservers, timeout=timeout)
-                except SPFWarning:
+                except _SPFWarning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "The domain for ruf email address {0} has no MX records".format(email_address)
                     )
@@ -774,7 +776,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False, nameserve
         elif tags["pct"]["value"] < 100:
             raise DMARCBestPracticeWarning("pct value is less than 100")
 
-    except DMARCWarning as warning:
+    except _DMARCWarning as warning:
         warnings.append(str(warning))
 
     # Add descriptions if requested
@@ -899,7 +901,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     value = domain
                 a_records = _get_a_records(value, nameservers=nameservers, timeout=timeout)
                 if len(a_records) == 0:
-                    raise SPFMissingRecords("{0} does not have any A/AAAA records".format(value.lower()))
+                    raise _SPFMissingRecords("{0} does not have any A/AAAA records".format(value.lower()))
                 for record in a_records:
                     results[result].append(OrderedDict([("value", record), ("mechanism", mechanism)]))
             elif mechanism == "mx":
@@ -907,7 +909,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     value = domain
                 mx_hosts = _get_mx_hosts(value, nameservers=nameservers, timeout=timeout)
                 if len(mx_hosts) == 0:
-                    raise SPFMissingRecords("{0} does not have any MX records".format(value.lower()))
+                    raise _SPFMissingRecords("{0} does not have any MX records".format(value.lower()))
                 if len(mx_hosts) > 10:
                     raise SPFTooManyDNSLookups("{0} has more than 10 MX records - "
                                                "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(value))
@@ -933,7 +935,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                                                        ("warnings", redirect["warnings"])])
                     warnings += redirect["warnings"]
                 except DNSException as error:
-                    raise SPFWarning(str(error))
+                    raise _SPFWarning(str(error))
             elif mechanism == "exp":
                 results["exp"] = _get_txt_records(value)[0]
             elif mechanism == "all":
@@ -942,7 +944,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                 if value.lower() == domain.lower():
                     raise SPFIncludeLoop("Include loop: {0}".format(value))
                 if value.lower() in seen:
-                    raise SPFDuplicateInclude("Duplicate include: {0}".format(value.lower()))
+                    raise _SPFDuplicateInclude("Duplicate include: {0}".format(value.lower()))
                 seen.append(value.lower())
                 try:
                     include_record = query_spf_record(value, nameservers=nameservers, timeout=timeout)
@@ -961,15 +963,15 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     warnings += include["warnings"]
 
                 except DNSException as error:
-                    raise SPFWarning(str(error))
+                    raise _SPFWarning(str(error))
             elif mechanism == "ptr":
                 results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
-                raise SPFWarning("The ptr mechanism should not be used - "
-                                 "https://tools.ietf.org/html/rfc7208#section-5.5")
+                raise _SPFWarning("The ptr mechanism should not be used - "
+                                  "https://tools.ietf.org/html/rfc7208#section-5.5")
             else:
                 results[result].append(OrderedDict([("value", value), ("mechanism", mechanism)]))
 
-        except (SPFWarning, DNSException) as warning:
+        except (_SPFWarning, DNSException) as warning:
             warnings.append(str(warning))
     return OrderedDict([('dns_lookups', lookup_mechanism_count), ("results", results), ("warnings", warnings)])
 
