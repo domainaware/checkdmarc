@@ -604,7 +604,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain, nameserve
           bool: Indicates if the report domain accepts reports from the given domain
       """
     if get_base_domain(source_domain) != get_base_domain(destination_domain):
-        target = "{0}._report._dmarc.{1}".format(source_domain, destination_domain)
+        target = "{0}._report._dmarc.{1}".format(get_base_domain(source_domain), get_base_domain(destination_domain))
         message = "{0} does not indicate that it accepts DMARC reports about {1} - " \
                   "https://tools.ietf.org/html/rfc7489#section-7.1".format(destination_domain,
                                                                            source_domain)
