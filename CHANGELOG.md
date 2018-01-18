@@ -6,6 +6,7 @@ Changelog
 - Improve DMARC regex for edge cases
 - Add unit test for the above
 - Use Organisational Domain when checking DMARC URI destination
+- Fix documentation
 
 2.0.0
 -----
