@@ -127,14 +127,38 @@ class Test(unittest.TestCase):
         self.assertRaises(checkdmarc.InvalidDMARCReportURI,
                           checkdmarc.parse_dmarc_record, dmarc_record, domain)
 
+    def testUnverifiedDMARCURIDestination(self):
+        """Unverified DMARC URI raises UnverifiedDMARCURIDestination"""
+        dmarc_record = "v=DMARC1; p=none; rua=mailto:dmarc@example.com"
+        domain = "example.net"
+        self.assertRaises(checkdmarc.UnverifiedDMARCURIDestination,
+                          checkdmarc.parse_dmarc_record,
+                          dmarc_record,
+                          domain)
+
+        dmarc_record = "v=DMARC1; p=none; rua=mailto:dmarc@fbi.mil"
+        self.assertRaises(checkdmarc.UnverifiedDMARCURIDestination,
+                          checkdmarc.parse_dmarc_record,
+                          dmarc_record,
+                          domain)
+
+    def testInvalidDMARCPolicyValue(self):
+        """An invalid DMARC policy value raises InvalidDMARCTagValue """
+        dmarc_record = "v=DMARC1; p=foo; rua=mailto:dmarc@example.com"
+        domain = "example.com"
+        self.assertRaises(checkdmarc.InvalidDMARCTagValue,
+                          checkdmarc.parse_dmarc_record,
+                          dmarc_record,
+                          domain)
+
     def testInvalidDMARCfo(self):
-        """An invalid DMARC fo tag value raises"""
+        """An invalid DMARC fo tag value raises InvalidDMARCTagValue"""
 
         dmarc_record = "v=DMARC1;p=none;aspf=s;adkim=s;fo=0:1:d:s;" \
                        "ruf=mailto:dmarcreports@omb.gov;" \
                        "rua=mailto:dmarcreports@omb.gov"
         domain = "omb.gov"
-        self.assertRaises(checkdmarc.DMARCSyntaxError,
+        self.assertRaises(checkdmarc.InvalidDMARCTagValue,
                           checkdmarc.parse_dmarc_record, dmarc_record, domain)
 
 

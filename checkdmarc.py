@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.0.1"
+__version__ = "2.1.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -54,23 +54,11 @@ MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
 
 
-class DNSException(Exception):
-    """Raised when a general DNS error occurs"""
-
-
-class DMARCException(Exception):
-    """Raised when an error occurs when retrieving or parsing a DMARC record"""
-
-
-class SPFException(Exception):
-    """Raised when an error occurs when retrieving or parsing a SPF record"""
-
-
-class SPFError(SPFException):
+class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
 
 
-class _SPFWarning(SPFException):
+class _SPFWarning(Exception):
     """Raised when a non-fatal SPF error occurs"""
 
 
@@ -83,11 +71,19 @@ class _SPFDuplicateInclude(_SPFWarning):
     """Raised when a duplicate SPF include is found"""
 
 
-class _DMARCWarning(DMARCException):
+class _DMARCWarning(Exception):
     """Raised when a non-fatal DMARC error occurs"""
 
 
-class DMARCError(DMARCException):
+class _DMARCBestPracticeWarning(_DMARCWarning):
+    """Raised when a DMARC record does not follow a best practice"""
+
+
+class DNSException(Exception):
+    """Raised when a general DNS error occurs"""
+
+
+class DMARCError(Exception):
     """Raised when a fatal DMARC error occurs"""
 
 
@@ -127,7 +123,7 @@ class InvalidDMARCTagValue(DMARCSyntaxError):
     """Raised when an invalid DMARC tag value is found"""
 
 
-class InvalidDMARCReportURI(DMARCSyntaxError):
+class InvalidDMARCReportURI(InvalidDMARCTagValue):
     """Raised when an invalid DMARC reporting URI is found"""
 
 
@@ -147,15 +143,11 @@ class DMARCReportEmailAddressMissingMXRecords(DMARCError):
     records"""
 
 
-class DMARCBestPracticeWarning(_DMARCWarning):
-    """Raised when a DMARC record does not follow a best practice"""
-
-
 class UnrelatedTXTRecordFound(DMARCError):
     """Raised when a TXT record unrelated to DMARC is found"""
 
 
-class DMARCURIDestinationDoesNotAcceptReports(DMARCError):
+class UnverifiedDMARCURIDestination(DMARCError):
     """Raised when the destination of a DMARC report URI does not indicate
     that it accepts reports for the domain"""
 
@@ -477,7 +469,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
 
     Returns:
         list: A list of ``OrderedDicts``; each containing a ``preference``
-        integer and a ``hostname``
+                        integer and a ``hostname``
 
     """
     hosts = []
@@ -621,7 +613,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
 
 def get_mx_hosts(domain, nameservers=None, timeout=6.0):
     """
-    Returns a list of OrderedDicts with keys of ``hostname`` and ``addresses``
+    Gets MX hostname and their addresses
 
     Args:
         domain (str): A domain name
@@ -629,12 +621,13 @@ def get_mx_hosts(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        OrderedDict: An OrderedDict with The following keys:
+        OrderedDict: An ``OrderedDict`` with The following keys:
+                     - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of
 
-            - ``hosts`` - A list of OrderedDicts with keys of
-                - ``hostname``
-                - ``addresses``
-            - ``warnings`` - A list of MX resolution warnings
+                       - ``hostname`` - A hostname
+                       - ``addresses`` - A ``list`` of IP addresses
+
+                     - ``warnings`` - A list of MX resolution warnings
 
     """
     mx_records = []
@@ -670,8 +663,9 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        OrderedDict: ``record`` - The unparsed DMARC record string;
-        ``location`` - the domain where the record was found
+        OrderedDict: An ``OrderedDict`` with The following keys:
+                     - ``record`` - The unparsed DMARC record string
+                     - ``location`` - the domain where the record was found
     """
     base_domain = get_base_domain(domain)
     record = _query_dmarc_record(domain, nameservers=nameservers,
@@ -696,8 +690,10 @@ def get_dmarc_tag_description(tag, value=None):
         value (str): An optional value
 
     Returns:
-        OrderedDict: A OrderedDictionary containing the tag's ``name``,
-        ``default`` value, and a ``description`` of the tag or value
+        OrderedDict: An ``OrderedDict`` with The following keys:
+                     - ``name`` - the tag name
+                     - ``default``- the tag's default value
+                     - ``description`` - A description of the tag or value
     """
     name = tag_values[tag]["name"]
     description = tag_values[tag]["description"]
@@ -725,7 +721,7 @@ def get_dmarc_tag_description(tag, value=None):
 
 def parse_dmarc_report_uri(uri):
     """
-    Parses a DMARC Reporting (i.e. ``rua``/``ruf)`` URI
+    Parses a DMARC Reporting (i.e. ``rua``/``ruf``) URI
 
     Notes:
         ``mailto:`` is the only reporting URI supported in `DMARC1`
@@ -734,7 +730,12 @@ def parse_dmarc_report_uri(uri):
         uri: A DMARC URI
 
     Returns:
-        OrderedDict: Keys: ''scheme`` ``address`` and ``size_limit``
+        OrderDict: An ``OrderedDict`` of the URI's components:
+                  - ``scheme``
+                  - ``address``
+                  - ``size_limit``
+    Raises:
+        :exc:`checkdmarc.InvalidDMARCReportURI`
 
     """
     uri = uri.strip()
@@ -768,6 +769,9 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
       Returns:
           bool: Indicates if the report domain accepts reports from the given
           domain
+
+      Raises:
+          :exc:`checkdmarc.UnrelatedTXTRecordFound`
       """
     source_domain = get_base_domain(source_domain)
     destination_domain = get_base_domain(destination_domain)
@@ -800,11 +804,11 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
                                            "\n\n".join(unrelated_records)))
 
             if dmarc_record_count < 1:
-                raise DMARCURIDestinationDoesNotAcceptReports(message)
-        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-            raise DMARCURIDestinationDoesNotAcceptReports(message)
+                raise UnverifiedDMARCURIDestination(message)
+        except dns.resolver.NoAnswer:
+            raise UnverifiedDMARCURIDestination(message)
         except dns.exception.DNSException as error:
-            raise DMARCURIDestinationDoesNotAcceptReports(
+            raise UnverifiedDMARCURIDestination(
                 "Unable to validate that {0} DMARC accepts reports for "
                 "{1} - {2}".format(destination_domain,
                                    source_domain,
@@ -937,7 +941,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
                     )
                 tags["rua"]["value"] = parsed_uris
         else:
-            raise DMARCBestPracticeWarning(
+            raise _DMARCBestPracticeWarning(
                 "rua tag (destination for aggregate reports) not found")
 
     except _DMARCWarning as warning:
@@ -977,7 +981,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
             raise InvalidDMARCTagValue(
                 "pct value must be an integer between 0 and 100")
         elif tags["pct"]["value"] < 100:
-            raise DMARCBestPracticeWarning("pct value is less than 100")
+            raise _DMARCBestPracticeWarning("pct value is less than 100")
 
     except _DMARCWarning as warning:
         warnings.append(str(warning))
@@ -1036,6 +1040,9 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
 
     Returns:
         str: An unparsed SPF string
+
+    Raises:
+
     """
     try:
         answers = _query_dns(domain, "TXT", nameservers=nameservers,
@@ -1048,9 +1055,6 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
         if spf_record is None:
             raise SPFRecordNotFound(
                 "{0} does not have a SPF record".format(domain))
-        if not spf_record.startswith("v=spf1 "):
-            raise SPFSyntaxError(
-                "{0} is not a valid SPF record".format(spf_record))
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound(
             "{0} does not have a SPF record".format(domain))
@@ -1265,16 +1269,18 @@ def check_domains(domains, output_format="json", output_path=None,
     Args:
         domains (list): A list of domains to check
         output_format (str): ``json`` or ``csv`` - only applies when
-        ``output_path`` is specified
+                             ``output_path`` is specified
         output_path (str): Save output to the given file path
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC
-        tags and/or tag values in the results
+                                               tags and/or tag values in the
+                                               results
         nameservers (list): A list of nameservers to query
         timeout(float): number of seconds to wait for an answer from DNS
         wait (float): number of seconds to wait between processing domains
 
     Returns:
-        OrderedDict: Parsed SPF and DMARC records
+        OrderedDict: An ``OrderedDict`` with the hollowing keys
+                     -
 
     """
     output_format = output_format.lower()

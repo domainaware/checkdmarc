@@ -1,12 +1,14 @@
 Changelog
 =========
 
-2.0.1
+2.1.0
 -----
 - Improve DMARC regex for edge cases
-- Add unit test for the above
 - Use Organisational Domain when checking DMARC URI destination
-- Fix documentation
+- Simplify exceptions
+- Add more unit tests
+- Many documentation improvements and fixes
+- PEP 8 compliment 
 
 2.0.0
 -----
