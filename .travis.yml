@@ -15,7 +15,8 @@ install:
 
 # commands to run tests
 script:
-  # - "flake8 ."
+  - "flake8 checkdmarc.py"
+  - "flake8 tests.py"
   - "cd docs"
   - "make html"
   - "cd .."
