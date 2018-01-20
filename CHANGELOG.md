@@ -6,6 +6,7 @@ Changelog
 - Improve DMARC regex for edge cases
 - Use Organisational Domain when checking DMARC URI destination
 - Simplify exceptions
+- Refactor dome method return values
 - Add more unit tests
 - Many documentation improvements and fixes
 - PEP 8 compliment 

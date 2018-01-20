@@ -63,7 +63,7 @@ class _SPFWarning(Exception):
 
 
 class _SPFMissingRecords(_SPFWarning):
-    """Raised when a mechanism in a SPF record is missing the requested
+    """Raised when a mechanism in a ``SPF`` record is missing the requested
     A/AAAA or MX records"""
 
 
@@ -130,7 +130,7 @@ class InvalidDMARCReportURI(InvalidDMARCTagValue):
 class SPFRecordFoundWhereDMARCRecordShouldBe(DMARCError):
     """Raised when a SPF record is found where a DMARC record should be;
     most likely, the ``_dmarc`` subdomain
-    record does not actually exist, and the request for TXT records was
+    record does not actually exist, and the request for ``TXT`` records was
     redirected to the base domain"""
 
 
@@ -411,14 +411,15 @@ def get_base_domain(domain):
     """
     Gets the base domain name for the given domain
 
+    .. note::
+        Results are based on a list of public domain suffixes at
+        https://publicsuffix.org/list/public_suffix_list.dat.
+
+        This file is saved to the current working directory,
+        where it is used as a cache file for 24 hours.
+
     Args:
         domain (str): A domain or subdomain
-
-    Notes:
-        Results are based on a list of public domain suffixes at
-        https://publicsuffix.org/list/public_suffix_list.dat
-        this file is saved to the Current Working Directory,
-        where it is used as a cache file for 24 hours
 
     Returns:
         str: The base domain of the given domain
@@ -471,6 +472,9 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
         list: A list of ``OrderedDicts``; each containing a ``preference``
                         integer and a ``hostname``
 
+    Raises:
+        :exc:`checkdmarc.InvalidDNSException`
+
     """
     hosts = []
     try:
@@ -503,6 +507,9 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
     Returns:
         list: A list of IPv4 and IPv6 addresses
 
+    Raises:
+        :exc:`checkdmarc.InvalidDNSException`
+
     """
     addresses = []
     try:
@@ -532,6 +539,9 @@ def _get_txt_records(domain, nameservers=None, timeout=6.0):
 
     Returns:
         list: A list of TXT records
+
+     Raises:
+        :exc:`checkdmarc.InvalidDNSException`
 
     """
     try:
@@ -621,13 +631,13 @@ def get_mx_hosts(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with The following keys:
+        OrderedDict: An ``OrderedDict`` with the following keys:
                      - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of
 
                        - ``hostname`` - A hostname
                        - ``addresses`` - A ``list`` of IP addresses
 
-                     - ``warnings`` - A list of MX resolution warnings
+                     - ``warnings`` - A ``list`` of MX resolution warnings
 
     """
     mx_records = []
@@ -663,9 +673,16 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with The following keys:
+        OrderedDict: An ``OrderedDict`` with the following keys:
                      - ``record`` - The unparsed DMARC record string
                      - ``location`` - the domain where the record was found
+
+     Raises:
+        :exc:`checkdmarc.DMARCRecordNotFound`
+        :exc:`checkdmarc.DMARCRecordInWrongLocation`
+        :exc:`checkdmarc.MultipleDMARCRecords`
+        :exc:`checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
+
     """
     base_domain = get_base_domain(domain)
     record = _query_dmarc_record(domain, nameservers=nameservers,
@@ -690,7 +707,7 @@ def get_dmarc_tag_description(tag, value=None):
         value (str): An optional value
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with The following keys:
+        OrderedDict: An ``OrderedDict`` with the following keys:
                      - ``name`` - the tag name
                      - ``default``- the tag's default value
                      - ``description`` - A description of the tag or value
@@ -723,17 +740,17 @@ def parse_dmarc_report_uri(uri):
     """
     Parses a DMARC Reporting (i.e. ``rua``/``ruf``) URI
 
-    Notes:
-        ``mailto:`` is the only reporting URI supported in `DMARC1`
+    .. note::
+        ``mailto`` is the only reporting URI scheme supported in DMARC1
 
     Args:
         uri: A DMARC URI
 
     Returns:
-        OrderDict: An ``OrderedDict`` of the URI's components:
-                  - ``scheme``
-                  - ``address``
-                  - ``size_limit``
+        OrderedDict: An ``OrderedDict`` of the URI's components:
+                    - ``scheme``
+                    - ``address``
+                    - ``size_limit``
     Raises:
         :exc:`checkdmarc.InvalidDMARCReportURI`
 
@@ -771,6 +788,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
           domain
 
       Raises:
+          :exc:`checkdmarc.UnverifiedDMARCURIDestination`
           :exc:`checkdmarc.UnrelatedTXTRecordFound`
       """
     source_domain = get_base_domain(source_domain)
@@ -829,7 +847,28 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
-        OrderedDict: ``keys`` and ``warnings``
+        OrderedDict: An ``OrderedDict`` with the following keys:
+         - ``tags`` - An ``OrderedDict`` of DMARC tags
+
+           - ``value`` - The DMARC tag value
+           - ``explicit`` - ``bool``: A value is explicitly set
+           - ``default`` - The tag's default value
+           - ``description`` - A description of the tag/value
+
+         - ``warnings`` - A ``list`` of warnings
+
+         .. note::
+            ``default`` and ``description`` are only included if
+            ``include_tag_descriptions`` is set to ``True``
+
+    Raises:
+        :exc:`checkdmarc.DMARCSyntaxError`
+        :exc:`checkdmarc.InvalidDMARCTag`
+        :exc:`checkdmarc.InvaliddDMARCTagValue`
+        :exc:`checkdmarc.InvalidDMARCReportURI`
+        :exc:`checkdmarc.UnverifiedDMARCURIDestination`
+        :exc:`checkdmarc.UnrelatedTXTRecordFound`
+        :exc:`checkdmarc.DMARCReportEmailAddressMissingMXRecords`
 
     """
     spf_in_dmarc_error_msg = "Found a SPF record where a DMARC record " \
@@ -846,9 +885,9 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
     if not parsed_record.is_valid:
         expecting = list(
             map(lambda x: str(x).strip('"'), list(parsed_record.expecting)))
-        raise DMARCError("Error: Expected {0} at position {1} in: {2}".format(
-            " or ".join(expecting),
-            parsed_record.pos, record))
+        raise DMARCSyntaxError("Error: Expected {0} at position {1} in: "
+                               "{2}".format(" or ".join(expecting),
+                                            parsed_record.pos, record))
 
     pairs = DMARC_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
@@ -1010,9 +1049,24 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
-        OrderedDict: ``record`` - the DMARC record,
-        ``tag`` - The DMARC record parsed by tag
+        OrderedDict: An ``OrderedDict`` with the following keys:
+         - ``record`` - The DMARC record string
+         - ``location`` -  Where the DMARC was found
+         - ``parsed`` - See :meth:`checkdmarc.parse_dmarc_record`
 
+     Raises:
+        :exc:`checkdmarc.DMARCRecordNotFound`
+        :exc:`checkdmarc.DMARCRecordInWrongLocation`
+        :exc:`checkdmarc.MultipleDMARCRecords`
+        :exc:`checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
+        :exc:`checkdmarc.UnverifiedDMARCURIDestination`
+        :exc:`checkdmarc.DMARCSyntaxError`
+        :exc:`checkdmarc.InvalidDMARCTag`
+        :exc:`checkdmarc.InvalidDMARCTagValue`
+        :exc:`checkdmarc.InvalidDMARCReportURI`
+        :exc:`checkdmarc.UnverifiedDMARCURIDestination`
+        :exc:`checkdmarc.UnrelatedTXTRecordFound`
+        :exc:`checkdmarc.DMARCReportEmailAddressMissingMXRecords`
     """
     query = query_dmarc_record(domain, nameservers=nameservers,
                                timeout=timeout)
@@ -1026,7 +1080,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
     return OrderedDict([("record",
                          query["record"]),
                         ("location", query["location"]),
-                        ("tags", tags)])
+                        ("pared", tags)])
 
 
 def query_spf_record(domain, nameservers=None, timeout=6.0):
@@ -1039,11 +1093,27 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
-        str: An unparsed SPF string
+        OrderedDict: An ``OrderedDict`` with the following keys:
+         - ``record`` - The SPF record string
+         - ``warnings`` - A ``list`` of warnings
 
     Raises:
-
+        :exc:`checkdmarc.SPFRecordNotFound`
     """
+    warnings = []
+    spf_type_records = []
+    try:
+        spf_type_records += _query_dns(domain, "SPF", nameservers=nameservers,
+                                       timeout=timeout)
+    except (dns.resolver.NoAnswer, dns.exception.DNSException):
+        pass
+
+    if len(spf_type_records) > 0:
+        message = "Use of DNS Type SPF has been removed in the standards " \
+                   "track version of SPF, RFC 7208. These records should " \
+                   "be removed and replaced with TXT records: " \
+                  "{0}".format(",".join(spf_type_records))
+        warnings.append(message)
     try:
         answers = _query_dns(domain, "TXT", nameservers=nameservers,
                              timeout=timeout)
@@ -1063,7 +1133,7 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
     except dns.exception.DNSException as error:
         raise SPFRecordNotFound(error)
 
-    return spf_record
+    return OrderedDict([("record", spf_record), ("warnings", warnings)])
 
 
 def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
@@ -1079,8 +1149,16 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
-        OrderedDict: A OrderedDictionary containing a parsed SPF record and
-        warnings
+        OrderedDict: An ``OrderedDict`` with the following keys:
+         - ``dns_lookups`` - Number of DNS lookups required by the record
+         - ``parsed`` - An ``OrderedDict`` of a parsed SPF record values
+         - ``warnings`` - A ``list`` of warnings
+
+    Raises:
+        :exc:`checkdmarc.SPFIncludeLoop`
+        :exc:`checkdmarc.SPFRedirectLoop`
+        :exc:`checkdmarc.SPFSyntaxError`
+        :exc:`checkdmarc.SPFTooManyDNSLookups`
     """
     lookup_mechanisms = ["a", "mx", "include", "exists", "redirect"]
     if seen is None:
@@ -1100,14 +1178,14 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                                                                pos,
                                                                record))
     matches = SPF_MECHANISM_REGEX.findall(record.lower())
-    results = OrderedDict([("pass", []),
-                           ("neutral", []),
-                           ("softfail", []),
-                           ("fail", []),
-                           ("include", []),
-                           ("redirect", None),
-                           ("exp", None),
-                           ("all", "neutral")])
+    parsed = OrderedDict([("pass", []),
+                          ("neutral", []),
+                          ("softfail", []),
+                          ("fail", []),
+                          ("include", []),
+                          ("redirect", None),
+                          ("exp", None),
+                          ("all", "neutral")])
 
     lookup_mechanism_count = 0
     for match in matches:
@@ -1136,7 +1214,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                         "{0} does not have any A/AAAA records".format(
                             value.lower()))
                 for record in a_records:
-                    results[result].append(OrderedDict(
+                    parsed[result].append(OrderedDict(
                         [("value", record), ("mechanism", mechanism)]))
             elif mechanism == "mx":
                 if value == "":
@@ -1153,7 +1231,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                         "{0} has more than 10 MX records - "
                         "{1}".format(value, url))
                 for host in mx_hosts:
-                    results[result].append(OrderedDict(
+                    parsed[result].append(OrderedDict(
                         [("value", host["hostname"]),
                          ("mechanism", mechanism)]))
             elif mechanism == "redirect":
@@ -1165,6 +1243,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     redirect_record = query_spf_record(value,
                                                        nameservers=nameservers,
                                                        timeout=timeout)
+                    redirect_record = redirect_record["record"]
                     redirect = parse_spf_record(redirect_record, value,
                                                 seen=seen,
                                                 nameservers=nameservers,
@@ -1177,18 +1256,18 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                             "https://tools.ietf.org/html/rfc7208"
                             "#section-4.6.4".format(
                                 lookup_mechanism_count))
-                    results["redirect"] = OrderedDict(
+                    parsed["redirect"] = OrderedDict(
                         [("domain", value), ("record", redirect_record),
                          ("dns_lookups", redirect["dns_lookups"]),
-                         ("results", redirect["results"]),
+                         ("parsed", redirect["parsed"]),
                          ("warnings", redirect["warnings"])])
                     warnings += redirect["warnings"]
                 except DNSException as error:
                     raise _SPFWarning(str(error))
             elif mechanism == "exp":
-                results["exp"] = _get_txt_records(value)[0]
+                parsed["exp"] = _get_txt_records(value)[0]
             elif mechanism == "all":
-                results["all"] = result
+                parsed["all"] = result
             elif mechanism == "include":
                 if value.lower() == domain.lower():
                     raise SPFIncludeLoop("Include loop: {0}".format(value))
@@ -1200,6 +1279,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     include_record = query_spf_record(value,
                                                       nameservers=nameservers,
                                                       timeout=timeout)
+                    include_record = include_record["record"]
                     include = parse_spf_record(include_record, value,
                                                seen=seen,
                                                nameservers=nameservers,
@@ -1215,27 +1295,27 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     include = OrderedDict(
                         [("domain", value), ("record", include_record),
                          ("dns_lookups", include["dns_lookups"]),
-                         ("results", include["results"]),
+                         ("parsed", include["parsed"]),
                          ("warnings", include["warnings"])])
-                    results["include"].append(include)
+                    parsed["include"].append(include)
                     warnings += include["warnings"]
 
                 except DNSException as error:
                     raise _SPFWarning(str(error))
             elif mechanism == "ptr":
-                results[result].append(
+                parsed[result].append(
                     OrderedDict([("value", value), ("mechanism", mechanism)]))
                 raise _SPFWarning("The ptr mechanism should not be used - "
                                   "https://tools.ietf.org/html/rfc7208"
                                   "#section-5.5")
             else:
-                results[result].append(
+                parsed[result].append(
                     OrderedDict([("value", value), ("mechanism", mechanism)]))
 
         except (_SPFWarning, DNSException) as warning:
             warnings.append(str(warning))
     return OrderedDict(
-        [('dns_lookups', lookup_mechanism_count), ("results", results),
+        [('dns_lookups', lookup_mechanism_count), ("parsed", parsed),
          ("warnings", warnings)])
 
 
@@ -1251,8 +1331,16 @@ def get_spf_record(domain, nameservers=None, timeout=6.0):
     Returns:
         OrderedDict: An SPF record parsed by result
 
+    Raises:
+        :exc:`checkdmarc.SPFRecordNotFound`
+        :exc:`checkdmarc.SPFIncludeLoop`
+        :exc:`checkdmarc.SPFRedirectLoop`
+        :exc:`checkdmarc.SPFSyntaxError`
+        :exc:`checkdmarc.SPFTooManyDNSLookups`
+
     """
     record = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
+    record = record["record"]
     record = parse_spf_record(record, domain, nameservers=nameservers,
                               timeout=timeout)
 
@@ -1262,14 +1350,13 @@ def get_spf_record(domain, nameservers=None, timeout=6.0):
 def check_domains(domains, output_format="json", output_path=None,
                   include_dmarc_tag_descriptions=False,
                   nameservers=None, timeout=6.0, wait=0.0):
-    """
+    """   Returns:
     Check the given domains for SPF and DMARC records, parse them, and return
     them
 
     Args:
         domains (list): A list of domains to check
-        output_format (str): ``json`` or ``csv`` - only applies when
-                             ``output_path`` is specified
+        output_format (str): ``json`` or ``csv``
         output_path (str): Save output to the given file path
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC
                                                tags and/or tag values in the
@@ -1279,9 +1366,18 @@ def check_domains(domains, output_format="json", output_path=None,
         wait (float): number of seconds to wait between processing domains
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the hollowing keys
-                     -
+       If ``output_format`` is ``json``, an ``OrderedDict`` is returned
 
+       - ``domain`` - The domain name
+       - ``base_domain`` The base domain
+       - ``mx`` - See :func:`checkdmarc.get_mx_hosts`
+       - ``spf`` -  A ``valid`` flag, plus the output of
+         :func:`checkdmarc.parse_spf_record` or an ``error``
+       - ``dmarc`` - A ``valid`` flag, plus the output of
+         :func:`checkdmarc.parse_dmarc_record` or an ``error``
+
+       Or, if ``output_format`` is ``csv``, the results are returned as a CSV
+       string
     """
     output_format = output_format.lower()
     domains = sorted(list(set(
@@ -1323,13 +1419,16 @@ def check_domains(domains, output_format="json", output_path=None,
                     mx["hosts"])))
             row["mx_warnings"] = ",".join(mx["warnings"])
             try:
-                row["spf_record"] = query_spf_record(domain,
-                                                     nameservers=nameservers,
-                                                     timeout=timeout)
-                row["spf_warnings"] = ",".join(
-                    parse_spf_record(row["spf_record"], row["domain"],
-                                     nameservers=nameservers,
-                                     timeout=timeout)["warnings"])
+                spf_record = query_spf_record(domain,
+                                              nameservers=nameservers,
+                                              timeout=timeout)
+                row["spf_record"] = spf_record["record"]
+                warnings = spf_record["warnings"]
+                warnings += parse_spf_record(row["spf_record"], row["domain"],
+                                             nameservers=nameservers,
+                                             timeout=timeout)["warnings"]
+
+                row["spf_warnings"] = ",".join(warnings)
             except SPFError as error:
                 row["spf_error"] = error
                 row["spf_valid"] = False
@@ -1375,10 +1474,12 @@ def check_domains(domains, output_format="json", output_path=None,
                                                 nameservers=nameservers,
                                                 timeout=timeout)
             try:
-                domain_results["spf"]["record"] = query_spf_record(
+                spf_query = query_spf_record(
                     domain,
                     nameservers=nameservers,
                     timeout=timeout)
+                domain_results["spf"]["record"] = spf_query["record"]
+                domain_results["spf"]["warnings"] = spf_query["warnings"]
                 parsed_spf = parse_spf_record(domain_results["spf"]["record"],
                                               domain_results["domain"],
                                               nameservers=nameservers,
@@ -1386,8 +1487,8 @@ def check_domains(domains, output_format="json", output_path=None,
 
                 domain_results["spf"]["dns_lookups"] = parsed_spf[
                     "dns_lookups"]
-                domain_results["spf"]["results"] = parsed_spf["results"]
-                domain_results["spf"]["warnings"] = parsed_spf["warnings"]
+                domain_results["spf"]["parsed"] = parsed_spf["parsed"]
+                domain_results["spf"]["warnings"] += parsed_spf["warnings"]
             except SPFError as error:
                 domain_results["spf"]["error"] = str(error)
                 del domain_results["spf"]["dns_lookups"]
