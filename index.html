@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 2.1.0 documentation</title>
+  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 2.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 2.1.0 documentation" href="#"/>
+    <link rel="top" title="checkdmarc 2.1.1 documentation" href="#"/>
         <link rel="next" title="checkdmarc module" href="checkdmarc.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                2.1.0
+                2.1.1
               </div>
             
           
@@ -190,71 +190,322 @@
 </pre></div>
 </div>
 <div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;base_domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;accenture.com&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;base_domain&quot;</span><span class="p">:</span> <span class="s2">&quot;accenture.com&quot;</span><span class="p">,</span>
   <span class="nt">&quot;mx&quot;</span><span class="p">:</span> <span class="p">{</span>
     <span class="nt">&quot;hosts&quot;</span><span class="p">:</span> <span class="p">[</span>
       <span class="p">{</span>
         <span class="nt">&quot;preference&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-        <span class="nt">&quot;hostname&quot;</span><span class="p">:</span> <span class="s2">&quot;mx-east.fbi.gov&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;hostname&quot;</span><span class="p">:</span> <span class="s2">&quot;mx0a-001dcc01.pphosted.com&quot;</span><span class="p">,</span>
         <span class="nt">&quot;addresses&quot;</span><span class="p">:</span> <span class="p">[</span>
-          <span class="s2">&quot;153.31.160.5&quot;</span>
+          <span class="s2">&quot;148.163.157.10&quot;</span>
+        <span class="p">]</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;preference&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="nt">&quot;hostname&quot;</span><span class="p">:</span> <span class="s2">&quot;mx0b-001dcc01.pphosted.com&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;addresses&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="s2">&quot;148.163.159.10&quot;</span>
         <span class="p">]</span>
       <span class="p">}</span>
     <span class="p">],</span>
     <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
   <span class="p">},</span>
   <span class="nt">&quot;spf&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=spf1 +mx ip4:153.31.0.0/16 -all&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=spf1 mx ip4:170.252.46.0/28 ip4:170.252.248.64/27 ip4:170.252.43.192/26 ip4:170.252.38.64/26 ip4:67.231.157.136 ip4:67.231.149.140 ip4:204.90.21.128 ip4:204.90.21.132 ip4:204.90.21.133 ip4:204.90.21.134 ip4:96.65.150.125 ip4:67.192.21.185 ip4:91.209.134.59 ip4:91.209.134.60 ip4:194.224.177.201 ip4:217.130.124.201 ip4:207.254.213.9 ip4:216.130.131.68 ip4:199.255.204.5 ip4:192.104.67.6 ip4:192.104.67.3 ip4:216.244.121.94 ip4:64.21.54.41 include:spf.protection.outlook.com -all&quot;</span><span class="p">,</span>
     <span class="nt">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-    <span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="nt">&quot;parsed&quot;</span><span class="p">:</span> <span class="p">{</span>
       <span class="nt">&quot;pass&quot;</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
-          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;mx-east.fbi.gov&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;mx0a-001dcc01.pphosted.com&quot;</span><span class="p">,</span>
           <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;mx&quot;</span>
         <span class="p">},</span>
         <span class="p">{</span>
-          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;153.31.0.0/16&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;mx0b-001dcc01.pphosted.com&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;mx&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;170.252.46.0/28&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;170.252.248.64/27&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;170.252.43.192/26&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;170.252.38.64/26&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;67.231.157.136&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;67.231.149.140&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;204.90.21.128&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;204.90.21.132&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;204.90.21.133&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;204.90.21.134&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;96.65.150.125&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;67.192.21.185&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;91.209.134.59&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;91.209.134.60&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;194.224.177.201&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;217.130.124.201&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;207.254.213.9&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;216.130.131.68&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;199.255.204.5&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;192.104.67.6&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;192.104.67.3&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;216.244.121.94&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;64.21.54.41&quot;</span><span class="p">,</span>
           <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
         <span class="p">}</span>
       <span class="p">],</span>
       <span class="nt">&quot;neutral&quot;</span><span class="p">:</span> <span class="p">[],</span>
       <span class="nt">&quot;softfail&quot;</span><span class="p">:</span> <span class="p">[],</span>
       <span class="nt">&quot;fail&quot;</span><span class="p">:</span> <span class="p">[],</span>
-      <span class="nt">&quot;include&quot;</span><span class="p">:</span> <span class="p">[],</span>
+      <span class="nt">&quot;include&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+          <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;spf.protection.outlook.com&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=spf1 ip4:207.46.100.0/24 ip4:207.46.163.0/24 ip4:65.55.169.0/24 ip4:157.56.110.0/23 ip4:157.55.234.0/24 ip4:213.199.154.0/24 ip4:213.199.180.128/26 include:spfa.protection.outlook.com -all&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+          <span class="nt">&quot;parsed&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;pass&quot;</span><span class="p">:</span> <span class="p">[</span>
+              <span class="p">{</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;207.46.100.0/24&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+              <span class="p">},</span>
+              <span class="p">{</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;207.46.163.0/24&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+              <span class="p">},</span>
+              <span class="p">{</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;65.55.169.0/24&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+              <span class="p">},</span>
+              <span class="p">{</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;157.56.110.0/23&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+              <span class="p">},</span>
+              <span class="p">{</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;157.55.234.0/24&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+              <span class="p">},</span>
+              <span class="p">{</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;213.199.154.0/24&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+              <span class="p">},</span>
+              <span class="p">{</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;213.199.180.128/26&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+              <span class="p">}</span>
+            <span class="p">],</span>
+            <span class="nt">&quot;neutral&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="nt">&quot;softfail&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="nt">&quot;fail&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="nt">&quot;include&quot;</span><span class="p">:</span> <span class="p">[</span>
+              <span class="p">{</span>
+                <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;spfa.protection.outlook.com&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=spf1 ip4:157.56.112.0/24 ip4:207.46.51.64/26 ip4:64.4.22.64/26 ip4:40.92.0.0/14 ip4:40.107.0.0/17 ip4:40.107.128.0/17 ip4:134.170.140.0/24 include:spfb.protection.outlook.com ip6:2001:489a:2202::/48 -all&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="nt">&quot;parsed&quot;</span><span class="p">:</span> <span class="p">{</span>
+                  <span class="nt">&quot;pass&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span>
+                      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;157.56.112.0/24&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;207.46.51.64/26&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;64.4.22.64/26&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;40.92.0.0/14&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;40.107.0.0/17&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;40.107.128.0/17&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;134.170.140.0/24&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;2001:489a:2202::/48&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip6&quot;</span>
+                    <span class="p">}</span>
+                  <span class="p">],</span>
+                  <span class="nt">&quot;neutral&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                  <span class="nt">&quot;softfail&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                  <span class="nt">&quot;fail&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                  <span class="nt">&quot;include&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span>
+                      <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;spfb.protection.outlook.com&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=spf1 ip6:2a01:111:f400::/48 ip4:23.103.128.0/19 ip4:23.103.198.0/23 ip4:65.55.88.0/24 ip4:104.47.0.0/17 ip4:23.103.200.0/21 ip4:23.103.208.0/21 ip4:23.103.191.0/24 ip4:216.32.180.0/23 ip4:94.245.120.64/26 -all&quot;</span><span class="p">,</span>
+                      <span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                      <span class="nt">&quot;parsed&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="nt">&quot;pass&quot;</span><span class="p">:</span> <span class="p">[</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;2a01:111:f400::/48&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip6&quot;</span>
+                          <span class="p">},</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;23.103.128.0/19&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                          <span class="p">},</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;23.103.198.0/23&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                          <span class="p">},</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;65.55.88.0/24&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                          <span class="p">},</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;104.47.0.0/17&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                          <span class="p">},</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;23.103.200.0/21&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                          <span class="p">},</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;23.103.208.0/21&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                          <span class="p">},</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;23.103.191.0/24&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                          <span class="p">},</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;216.32.180.0/23&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                          <span class="p">},</span>
+                          <span class="p">{</span>
+                            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;94.245.120.64/26&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;mechanism&quot;</span><span class="p">:</span> <span class="s2">&quot;ip4&quot;</span>
+                          <span class="p">}</span>
+                        <span class="p">],</span>
+                        <span class="nt">&quot;neutral&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                        <span class="nt">&quot;softfail&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                        <span class="nt">&quot;fail&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                        <span class="nt">&quot;include&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                        <span class="nt">&quot;redirect&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+                        <span class="nt">&quot;exp&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+                        <span class="nt">&quot;all&quot;</span><span class="p">:</span> <span class="s2">&quot;fail&quot;</span>
+                      <span class="p">},</span>
+                      <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
+                    <span class="p">}</span>
+                  <span class="p">],</span>
+                  <span class="nt">&quot;redirect&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+                  <span class="nt">&quot;exp&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+                  <span class="nt">&quot;all&quot;</span><span class="p">:</span> <span class="s2">&quot;fail&quot;</span>
+                <span class="p">},</span>
+                <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
+              <span class="p">}</span>
+            <span class="p">],</span>
+            <span class="nt">&quot;redirect&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+            <span class="nt">&quot;exp&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+            <span class="nt">&quot;all&quot;</span><span class="p">:</span> <span class="s2">&quot;fail&quot;</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
+        <span class="p">}</span>
+      <span class="p">],</span>
       <span class="nt">&quot;redirect&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
       <span class="nt">&quot;exp&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
       <span class="nt">&quot;all&quot;</span><span class="p">:</span> <span class="s2">&quot;fail&quot;</span>
-    <span class="p">},</span>
-    <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
+    <span class="p">}</span>
   <span class="p">},</span>
   <span class="nt">&quot;dmarc&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=DMARC1;p=none;fo=1;rua=mailto:dmarc_rua@emaildefense.proofpoint.com;ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com&quot;</span><span class="p">,</span>
     <span class="nt">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-    <span class="nt">&quot;location&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;location&quot;</span><span class="p">:</span> <span class="s2">&quot;accenture.com&quot;</span><span class="p">,</span>
     <span class="nt">&quot;tags&quot;</span><span class="p">:</span> <span class="p">{</span>
       <span class="nt">&quot;v&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;DMARC1&quot;</span><span class="p">,</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
       <span class="nt">&quot;p&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;reject&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
-      <span class="nt">&quot;adkim&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;aspf&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;fo&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="s2">&quot;1&quot;</span>
+        <span class="p">],</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
       <span class="nt">&quot;rua&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
           <span class="p">{</span>
             <span class="nt">&quot;scheme&quot;</span><span class="p">:</span> <span class="s2">&quot;mailto&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;address&quot;</span><span class="p">:</span> <span class="s2">&quot;dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;address&quot;</span><span class="p">:</span> <span class="s2">&quot;dmarc_rua@emaildefense.proofpoint.com&quot;</span><span class="p">,</span>
             <span class="nt">&quot;size_limit&quot;</span><span class="p">:</span> <span class="kc">null</span>
           <span class="p">}</span>
         <span class="p">],</span>
@@ -264,20 +515,22 @@
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
           <span class="p">{</span>
             <span class="nt">&quot;scheme&quot;</span><span class="p">:</span> <span class="s2">&quot;mailto&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;address&quot;</span><span class="p">:</span> <span class="s2">&quot;dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;address&quot;</span><span class="p">:</span> <span class="s2">&quot;dmarc_ruf@emaildefense.proofpoint.com&quot;</span><span class="p">,</span>
             <span class="nt">&quot;size_limit&quot;</span><span class="p">:</span> <span class="kc">null</span>
           <span class="p">}</span>
         <span class="p">],</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
+      <span class="nt">&quot;adkim&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;aspf&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
+      <span class="p">},</span>
       <span class="nt">&quot;pct&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;fo&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
-          <span class="s2">&quot;0&quot;</span>
-        <span class="p">],</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
       <span class="p">},</span>
       <span class="nt">&quot;rf&quot;</span><span class="p">:</span> <span class="p">{</span>
@@ -291,7 +544,7 @@
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
       <span class="p">},</span>
       <span class="nt">&quot;sp&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;reject&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
       <span class="p">}</span>
     <span class="p">},</span>
@@ -393,7 +646,7 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'2.1.0',
+            VERSION:'2.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
