@@ -8,7 +8,8 @@ known_good_domains = [
     "paypal.com",
     "google.com",
     "microsoft.com",
-    "amazon.com"
+    "amazon.com",
+    "accenture.com"
 ]
 
 

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.1.1
+-----
+- Fix external DMARC report destination validation
+- Update sample output in documentation
+
 2.1.0
 -----
 - Improve DMARC regex for edge cases
@@ -9,7 +14,7 @@ Changelog
 - Refactor dome method return values
 - Add more unit tests
 - Many documentation improvements and fixes
-- PEP 8 compliment 
+- PEP 8 compliant 
 
 2.0.0
 -----

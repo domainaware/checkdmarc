@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -791,10 +791,11 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
           :exc:`checkdmarc.UnverifiedDMARCURIDestination`
           :exc:`checkdmarc.UnrelatedTXTRecordFound`
       """
-    source_domain = get_base_domain(source_domain)
-    destination_domain = get_base_domain(destination_domain)
 
-    if source_domain != destination_domain:
+    source_domain = source_domain.lower()
+    destination_domain = destination_domain.lower()
+
+    if get_base_domain(source_domain) != get_base_domain(destination_domain):
         target = "{0}._report._dmarc.{1}".format(source_domain,
                                                  destination_domain)
         message = "{0} does not indicate that it accepts DMARC reports " \
