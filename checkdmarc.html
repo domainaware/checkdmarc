@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 2.1.1 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 2.1.2 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 2.1.1 documentation" href="index.html"/>
+    <link rel="top" title="checkdmarc 2.1.2 documentation" href="index.html"/>
         <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                2.1.1
+                2.1.2
               </div>
             
           
@@ -227,6 +227,13 @@ records</p>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when multiple DMARC records are found, in violation of
 RFC 7486, section 6.6.3</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.MultipleSPFRTXTRecords">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">MultipleSPFRTXTRecords</code><a class="reference internal" href="_modules/checkdmarc.html#MultipleSPFRTXTRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleSPFRTXTRecords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal"><span class="pre">checkdmarc.SPFError</span></code></a></p>
+<p>Raised when multiple TXT spf1 records are found</p>
 </dd></dl>
 
 <dl class="exception">
@@ -811,7 +818,7 @@ domain</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'2.1.1',
+            VERSION:'2.1.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
