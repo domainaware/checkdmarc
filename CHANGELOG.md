@@ -1,6 +1,10 @@
 Changelog
 =========
 
+2.1.2
+-----
+- Raise an error when multiple `spf1` `TXT` records are found
+
 2.1.1
 -----
 - Fix external DMARC report destination validation

@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.1"
+__version__ = "2.1.2"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -89,6 +89,10 @@ class DMARCError(Exception):
 
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
+
+
+class MultipleSPFRTXTRecords(SPFError):
+    """Raised when multiple TXT spf1 records are found"""
 
 
 class SPFSyntaxError(SPFError):
@@ -1103,6 +1107,7 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
     """
     warnings = []
     spf_type_records = []
+    spf_txt_records = []
     try:
         spf_type_records += _query_dns(domain, "SPF", nameservers=nameservers,
                                        timeout=timeout)
@@ -1121,8 +1126,13 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
         spf_record = None
         for record in answers:
             if record.startswith("v=spf1"):
-                spf_record = record
-                break
+                spf_txt_records.append(record)
+        if len(spf_txt_records) > 1:
+            raise MultipleSPFRTXTRecords(
+                "{0} has multiple spf1 TXT records".format(domain)
+            )
+        elif len(spf_txt_records) == 1:
+            spf_record = spf_txt_records[0]
         if spf_record is None:
             raise SPFRecordNotFound(
                 "{0} does not have a SPF record".format(domain))
