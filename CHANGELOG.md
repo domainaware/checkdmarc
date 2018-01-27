@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2.1.3
+-----
+- Use correct example output in documentation
+  - Replace `accenture.com` output from debugging with `fbi.gov` output
+   - That's what I get for copy/pasting without reading :(
+
 2.1.2
 -----
 - Raise an error when multiple `spf1` `TXT` records are found

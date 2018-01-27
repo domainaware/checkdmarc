@@ -46,322 +46,71 @@ Welcome to checkdmarc's documentation!
 .. code-block:: json
 
     {
-      "domain": "accenture.com",
-      "base_domain": "accenture.com",
+      "domain": "fbi.gov",
+      "base_domain": "fbi.gov",
       "mx": {
         "hosts": [
           {
             "preference": 10,
-            "hostname": "mx0a-001dcc01.pphosted.com",
+            "hostname": "mx-east.fbi.gov",
             "addresses": [
-              "148.163.157.10"
-            ]
-          },
-          {
-            "preference": 10,
-            "hostname": "mx0b-001dcc01.pphosted.com",
-            "addresses": [
-              "148.163.159.10"
+              "153.31.160.5"
             ]
           }
         ],
         "warnings": []
       },
       "spf": {
-        "record": "v=spf1 mx ip4:170.252.46.0/28 ip4:170.252.248.64/27 ip4:170.252.43.192/26 ip4:170.252.38.64/26 ip4:67.231.157.136 ip4:67.231.149.140 ip4:204.90.21.128 ip4:204.90.21.132 ip4:204.90.21.133 ip4:204.90.21.134 ip4:96.65.150.125 ip4:67.192.21.185 ip4:91.209.134.59 ip4:91.209.134.60 ip4:194.224.177.201 ip4:217.130.124.201 ip4:207.254.213.9 ip4:216.130.131.68 ip4:199.255.204.5 ip4:192.104.67.6 ip4:192.104.67.3 ip4:216.244.121.94 ip4:64.21.54.41 include:spf.protection.outlook.com -all",
+        "record": "v=spf1 +mx ip4:153.31.0.0/16 -all",
         "valid": true,
-        "dns_lookups": 4,
+        "dns_lookups": 1,
         "warnings": [],
         "parsed": {
           "pass": [
             {
-              "value": "mx0a-001dcc01.pphosted.com",
+              "value": "mx-east.fbi.gov",
               "mechanism": "mx"
             },
             {
-              "value": "mx0b-001dcc01.pphosted.com",
-              "mechanism": "mx"
-            },
-            {
-              "value": "170.252.46.0/28",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "170.252.248.64/27",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "170.252.43.192/26",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "170.252.38.64/26",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "67.231.157.136",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "67.231.149.140",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "204.90.21.128",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "204.90.21.132",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "204.90.21.133",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "204.90.21.134",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "96.65.150.125",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "67.192.21.185",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "91.209.134.59",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "91.209.134.60",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "194.224.177.201",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "217.130.124.201",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "207.254.213.9",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "216.130.131.68",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "199.255.204.5",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "192.104.67.6",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "192.104.67.3",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "216.244.121.94",
-              "mechanism": "ip4"
-            },
-            {
-              "value": "64.21.54.41",
+              "value": "153.31.0.0/16",
               "mechanism": "ip4"
             }
           ],
           "neutral": [],
           "softfail": [],
           "fail": [],
-          "include": [
-            {
-              "domain": "spf.protection.outlook.com",
-              "record": "v=spf1 ip4:207.46.100.0/24 ip4:207.46.163.0/24 ip4:65.55.169.0/24 ip4:157.56.110.0/23 ip4:157.55.234.0/24 ip4:213.199.154.0/24 ip4:213.199.180.128/26 include:spfa.protection.outlook.com -all",
-              "dns_lookups": 2,
-              "parsed": {
-                "pass": [
-                  {
-                    "value": "207.46.100.0/24",
-                    "mechanism": "ip4"
-                  },
-                  {
-                    "value": "207.46.163.0/24",
-                    "mechanism": "ip4"
-                  },
-                  {
-                    "value": "65.55.169.0/24",
-                    "mechanism": "ip4"
-                  },
-                  {
-                    "value": "157.56.110.0/23",
-                    "mechanism": "ip4"
-                  },
-                  {
-                    "value": "157.55.234.0/24",
-                    "mechanism": "ip4"
-                  },
-                  {
-                    "value": "213.199.154.0/24",
-                    "mechanism": "ip4"
-                  },
-                  {
-                    "value": "213.199.180.128/26",
-                    "mechanism": "ip4"
-                  }
-                ],
-                "neutral": [],
-                "softfail": [],
-                "fail": [],
-                "include": [
-                  {
-                    "domain": "spfa.protection.outlook.com",
-                    "record": "v=spf1 ip4:157.56.112.0/24 ip4:207.46.51.64/26 ip4:64.4.22.64/26 ip4:40.92.0.0/14 ip4:40.107.0.0/17 ip4:40.107.128.0/17 ip4:134.170.140.0/24 include:spfb.protection.outlook.com ip6:2001:489a:2202::/48 -all",
-                    "dns_lookups": 1,
-                    "parsed": {
-                      "pass": [
-                        {
-                          "value": "157.56.112.0/24",
-                          "mechanism": "ip4"
-                        },
-                        {
-                          "value": "207.46.51.64/26",
-                          "mechanism": "ip4"
-                        },
-                        {
-                          "value": "64.4.22.64/26",
-                          "mechanism": "ip4"
-                        },
-                        {
-                          "value": "40.92.0.0/14",
-                          "mechanism": "ip4"
-                        },
-                        {
-                          "value": "40.107.0.0/17",
-                          "mechanism": "ip4"
-                        },
-                        {
-                          "value": "40.107.128.0/17",
-                          "mechanism": "ip4"
-                        },
-                        {
-                          "value": "134.170.140.0/24",
-                          "mechanism": "ip4"
-                        },
-                        {
-                          "value": "2001:489a:2202::/48",
-                          "mechanism": "ip6"
-                        }
-                      ],
-                      "neutral": [],
-                      "softfail": [],
-                      "fail": [],
-                      "include": [
-                        {
-                          "domain": "spfb.protection.outlook.com",
-                          "record": "v=spf1 ip6:2a01:111:f400::/48 ip4:23.103.128.0/19 ip4:23.103.198.0/23 ip4:65.55.88.0/24 ip4:104.47.0.0/17 ip4:23.103.200.0/21 ip4:23.103.208.0/21 ip4:23.103.191.0/24 ip4:216.32.180.0/23 ip4:94.245.120.64/26 -all",
-                          "dns_lookups": 0,
-                          "parsed": {
-                            "pass": [
-                              {
-                                "value": "2a01:111:f400::/48",
-                                "mechanism": "ip6"
-                              },
-                              {
-                                "value": "23.103.128.0/19",
-                                "mechanism": "ip4"
-                              },
-                              {
-                                "value": "23.103.198.0/23",
-                                "mechanism": "ip4"
-                              },
-                              {
-                                "value": "65.55.88.0/24",
-                                "mechanism": "ip4"
-                              },
-                              {
-                                "value": "104.47.0.0/17",
-                                "mechanism": "ip4"
-                              },
-                              {
-                                "value": "23.103.200.0/21",
-                                "mechanism": "ip4"
-                              },
-                              {
-                                "value": "23.103.208.0/21",
-                                "mechanism": "ip4"
-                              },
-                              {
-                                "value": "23.103.191.0/24",
-                                "mechanism": "ip4"
-                              },
-                              {
-                                "value": "216.32.180.0/23",
-                                "mechanism": "ip4"
-                              },
-                              {
-                                "value": "94.245.120.64/26",
-                                "mechanism": "ip4"
-                              }
-                            ],
-                            "neutral": [],
-                            "softfail": [],
-                            "fail": [],
-                            "include": [],
-                            "redirect": null,
-                            "exp": null,
-                            "all": "fail"
-                          },
-                          "warnings": []
-                        }
-                      ],
-                      "redirect": null,
-                      "exp": null,
-                      "all": "fail"
-                    },
-                    "warnings": []
-                  }
-                ],
-                "redirect": null,
-                "exp": null,
-                "all": "fail"
-              },
-              "warnings": []
-            }
-          ],
+          "include": [],
           "redirect": null,
           "exp": null,
           "all": "fail"
         }
       },
       "dmarc": {
-        "record": "v=DMARC1;p=none;fo=1;rua=mailto:dmarc_rua@emaildefense.proofpoint.com;ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com",
+        "record": "v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100",
         "valid": true,
-        "location": "accenture.com",
+        "location": "fbi.gov",
         "tags": {
           "v": {
             "value": "DMARC1",
             "explicit": true
           },
           "p": {
-            "value": "none",
+            "value": "reject",
             "explicit": true
           },
-          "fo": {
-            "value": [
-              "1"
-            ],
+          "adkim": {
+            "value": "r",
+            "explicit": true
+          },
+          "aspf": {
+            "value": "r",
             "explicit": true
           },
           "rua": {
             "value": [
               {
                 "scheme": "mailto",
-                "address": "dmarc_rua@emaildefense.proofpoint.com",
+                "address": "dmarc-feedback@fbi.gov",
                 "size_limit": null
               }
             ],
@@ -371,22 +120,20 @@ Welcome to checkdmarc's documentation!
             "value": [
               {
                 "scheme": "mailto",
-                "address": "dmarc_ruf@emaildefense.proofpoint.com",
+                "address": "dmarc-feedback@fbi.gov",
                 "size_limit": null
               }
             ],
             "explicit": true
           },
-          "adkim": {
-            "value": "r",
-            "explicit": false
-          },
-          "aspf": {
-            "value": "r",
-            "explicit": false
-          },
           "pct": {
             "value": 100,
+            "explicit": true
+          },
+          "fo": {
+            "value": [
+              "0"
+            ],
             "explicit": false
           },
           "rf": {
@@ -400,16 +147,13 @@ Welcome to checkdmarc's documentation!
             "explicit": false
           },
           "sp": {
-            "value": "none",
+            "value": "reject",
             "explicit": false
           }
         },
         "warnings": []
       }
     }
-
-
-
 
 
 Installation
