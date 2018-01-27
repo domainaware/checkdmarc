@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.3"
+__version__ = "2.1.4"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -575,25 +575,9 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
         str: A record string or None
     """
     target = "_dmarc.{0}".format(domain.lower())
-    record = None
+    dmarc_record = None
     dmarc_record_count = 0
     unrelated_records = []
-
-    try:
-        records = _query_dns(domain.lower(), "TXT", nameservers=nameservers,
-                             timeout=timeout)
-        for record in records:
-            if record.startswith("v=DMARC1"):
-                raise DMARCRecordInWrongLocation(
-                    "The DMARC record must be located at "
-                    "{0}, not {1}".format(target, domain.lower()))
-    except dns.resolver.NoAnswer:
-        pass
-    except dns.resolver.NXDOMAIN:
-        raise DMARCRecordNotFound(
-            "The domain {0} does not exist".format(domain))
-    except dns.exception.DNSException as error:
-        raise DMARCRecordNotFound(error.msg)
 
     try:
         records = _query_dns(target, "TXT", nameservers=nameservers,
@@ -614,15 +598,28 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
                 "removed, as some receivers may not expect to find "
                 "unrelated TXT records "
                 "at {0}\n\n{1}".format(target, "\n\n".join(unrelated_records)))
-        record = records[0]
+        dmarc_record = records[0]
 
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-        pass
+    except dns.resolver.NoAnswer:
+        try:
+            records = _query_dns(domain.lower(), "TXT",
+                                 nameservers=nameservers,
+                                 timeout=timeout)
+            for record in records:
+                if record.startswith("v=DMARC1"):
+                    raise DMARCRecordInWrongLocation(
+                        "The DMARC record must be located at "
+                        "{0}, not {1}".format(target, domain.lower()))
+        except dns.resolver.NoAnswer:
+            pass
+        except dns.resolver.NXDOMAIN:
+            raise DMARCRecordNotFound(
+                "The domain {0} does not exist".format(domain))
 
     except dns.exception.DNSException as error:
         raise DMARCRecordNotFound(error.msg)
 
-    return record
+    return dmarc_record
 
 
 def get_mx_hosts(domain, nameservers=None, timeout=6.0):
@@ -678,8 +675,9 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
-                     - ``record`` - The unparsed DMARC record string
+                     - ``record`` - the unparsed DMARC record string
                      - ``location`` - the domain where the record was found
+                     - ``warnings`` - warning conditions found
 
      Raises:
         :exc:`checkdmarc.DMARCRecordNotFound`
@@ -688,9 +686,21 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
         :exc:`checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
 
     """
+    warnings = []
     base_domain = get_base_domain(domain)
     record = _query_dmarc_record(domain, nameservers=nameservers,
                                  timeout=timeout)
+    try:
+        root_records = _query_dns(domain.lower(), "TXT",
+                                  nameservers=nameservers,
+                                  timeout=timeout)
+        for root_record in root_records:
+            if root_record.startswith("v=DMARC1"):
+                warnings.append("DMARC record at root of {0} "
+                                "has no effect".format(domain.lower()))
+    except dns.resolver.NoAnswer:
+        pass
+
     if record is None and domain != base_domain:
         record = _query_dmarc_record(base_domain, nameservers=nameservers,
                                      timeout=timeout)
@@ -698,7 +708,8 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
         raise DMARCRecordNotFound(
             "A DMARC record does not exist for this domain or its base domain")
 
-    return OrderedDict([("record", record), ("location", domain)])
+    return OrderedDict([("record", record), ("location", domain),
+                        ("warnings", warnings)])
 
 
 def get_dmarc_tag_description(tag, value=None):
@@ -1464,7 +1475,8 @@ def check_domains(domains, output_format="json", output_path=None,
                     row["dmarc_rua"] = ",".join(dmarc["tags"]["rua"]["value"])
                 if "ruf" in dmarc:
                     row["dmarc_ruf"] = ",".join(dmarc["tags"]["ruf"]["value"])
-                row["dmarc_warnings"] = ",".join(dmarc["warnings"])
+                dmarc_warnings = dmarc_query["warnings"] + dmarc["warnings"]
+                row["dmarc_warnings"] = ",".join(dmarc_warnings)
             except DMARCError as error:
                 row["dmarc_error"] = error
                 row["dmarc_valid"] = False
@@ -1521,9 +1533,10 @@ def check_domains(domains, output_format="json", output_path=None,
                     include_tag_descriptions=include_dmarc_tag_descriptions,
                     nameservers=nameservers,
                     timeout=timeout)
+                domain_results["dmarc"]["warnings"] = dmarc_query["warnings"]
 
                 domain_results["dmarc"]["tags"] = parsed_dmarc_record["tags"]
-                domain_results["dmarc"]["warnings"] = parsed_dmarc_record[
+                domain_results["dmarc"]["warnings"] += parsed_dmarc_record[
                     "warnings"]
             except DMARCError as error:
                 domain_results["dmarc"]["error"] = str(error)

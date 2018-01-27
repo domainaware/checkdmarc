@@ -86,6 +86,7 @@ A Python module and command line utility for validating SPF and DMARC DNS record
         "record": "v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100",
         "valid": true,
         "location": "fbi.gov",
+        "warnings": [],
         "tags": {
           "v": {
             "value": "DMARC1",
@@ -147,10 +148,10 @@ A Python module and command line utility for validating SPF and DMARC DNS record
             "value": "reject",
             "explicit": false
           }
-        },
-        "warnings": []
+        }
       }
     }
+
 
 
 Installation
