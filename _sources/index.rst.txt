@@ -89,6 +89,7 @@ Welcome to checkdmarc's documentation!
         "record": "v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100",
         "valid": true,
         "location": "fbi.gov",
+        "warnings": [],
         "tags": {
           "v": {
             "value": "DMARC1",
@@ -150,8 +151,7 @@ Welcome to checkdmarc's documentation!
             "value": "reject",
             "explicit": false
           }
-        },
-        "warnings": []
+        }
       }
     }
 
