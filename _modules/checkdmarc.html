@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 2.1.7 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 2.1.8 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 2.1.7 documentation" href="../index.html"/>
+    <link rel="top" title="checkdmarc 2.1.8 documentation" href="../index.html"/>
         <link rel="up" title="Module code" href="index.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                2.1.7
+                2.1.8
               </div>
             
           
@@ -195,7 +195,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.1.7&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.1.8&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">DMARC_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;([a-z]{1,5})=([\w.:@/+!,_\-]+)&quot;</span>
@@ -1000,14 +1000,9 @@
 
             <span class="k">if</span> <span class="n">dmarc_record_count</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">UnverifiedDMARCURIDestination</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
+        <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">UnverifiedDMARCURIDestination</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">UnverifiedDMARCURIDestination</span><span class="p">(</span>
-                <span class="s2">&quot;Unable to validate that </span><span class="si">{0}</span><span class="s2"> DMARC accepts reports for &quot;</span>
-                <span class="s2">&quot;</span><span class="si">{1}</span><span class="s2"> - </span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
-                                   <span class="n">source_domain</span><span class="p">,</span>
-                                   <span class="n">error</span><span class="o">.</span><span class="n">msg</span><span class="p">))</span>
+
     <span class="k">return</span> <span class="kc">True</span></div>
 
 
@@ -1812,7 +1807,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'2.1.7',
+            VERSION:'2.1.8',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
