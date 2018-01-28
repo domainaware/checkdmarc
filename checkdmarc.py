@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.6"
+__version__ = "2.1.7"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -702,7 +702,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
             if root_record.startswith("v=DMARC1"):
                 warnings.append("DMARC record at root of {0} "
                                 "has no effect".format(domain.lower()))
-    except dns.resolver.NoAnswer:
+    except dns.exception.DNSException:
         pass
 
     if record is None and domain != base_domain:

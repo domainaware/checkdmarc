@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.1.7
+-----
+
+- Yet more DNS error handling
+
 2.1.6
 -----
 - More DNS `SERVFAIL` handling
