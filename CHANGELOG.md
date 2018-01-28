@@ -1,9 +1,12 @@
 Changelog
 =========
 
+2.1.8
+-----
+- Fix DNS report destination verification error message
+
 2.1.7
 -----
-
 - Yet more DNS error handling
 
 2.1.6

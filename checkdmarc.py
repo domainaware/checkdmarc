@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.7"
+__version__ = "2.1.8"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -843,14 +843,9 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
 
             if dmarc_record_count < 1:
                 raise UnverifiedDMARCURIDestination(message)
-        except dns.resolver.NoAnswer:
+        except (dns.resolver.NoAnswer, dns.exception.DNSException):
             raise UnverifiedDMARCURIDestination(message)
-        except dns.exception.DNSException as error:
-            raise UnverifiedDMARCURIDestination(
-                "Unable to validate that {0} DMARC accepts reports for "
-                "{1} - {2}".format(destination_domain,
-                                   source_domain,
-                                   error.msg))
+
     return True
 
 
