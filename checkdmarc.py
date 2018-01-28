@@ -843,7 +843,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
 
             if dmarc_record_count < 1:
                 raise UnverifiedDMARCURIDestination(message)
-        except (dns.resolver.NoAnswer, dns.exception.DNSException):
+        except dns.exception.DNSException:
             raise UnverifiedDMARCURIDestination(message)
 
     return True
