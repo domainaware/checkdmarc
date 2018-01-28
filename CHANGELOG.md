@@ -1,6 +1,10 @@
 Changelog
 =========
 
+2.1.5
+-----
+- Handle DNS failures better
+
 2.1.4
 -----
 - Properly handle a useless DMARC record at the root of a domain

@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.4"
+__version__ = "2.1.5"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -477,7 +477,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
                         integer and a ``hostname``
 
     Raises:
-        :exc:`checkdmarc.InvalidDNSException`
+        :exc:`checkdmarc.DNSException`
 
     """
     hosts = []
@@ -496,6 +496,8 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
         raise DNSException("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         pass
+    except dns.exception.DNSException as error:
+        raise DNSException(error)
     return hosts
 
 
@@ -512,7 +514,7 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
         list: A list of IPv4 and IPv6 addresses
 
     Raises:
-        :exc:`checkdmarc.InvalidDNSException`
+        :exc:`checkdmarc.DNSException`
 
     """
     addresses = []
@@ -545,7 +547,7 @@ def _get_txt_records(domain, nameservers=None, timeout=6.0):
         list: A list of TXT records
 
      Raises:
-        :exc:`checkdmarc.InvalidDNSException`
+        :exc:`checkdmarc.DNSException`
 
     """
     try:
