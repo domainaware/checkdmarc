@@ -111,7 +111,8 @@ class Test(unittest.TestCase):
                        "ruf=mailto:eits.dmarcruf@energy.gov"
         domain = "energy.gov"
         results = checkdmarc.parse_dmarc_record(dmarc_record, domain)
-        self.assertIn("pct value is less than 100", results["warnings"])
+        self.assertIn("pct value is less than 100",
+                      results["warnings"][0])
 
     def testInvalidDMARCURI(self):
         """An invalid DMARC report URI raises InvalidDMARCReportURI"""
