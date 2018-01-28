@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.1.6
+-----
+- More DNS `SERVFAIL` handling
+- More descriptive warning if DMARC `pct` < 100
+
 2.1.5
 -----
 - Handle DNS failures better

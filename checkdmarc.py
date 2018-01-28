@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.5"
+__version__ = "2.1.6"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -617,6 +617,8 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
         except dns.resolver.NXDOMAIN:
             raise DMARCRecordNotFound(
                 "The domain {0} does not exist".format(domain))
+        except dns.exception.DNSException as error:
+            DMARCRecordNotFound(error.msg)
 
     except dns.exception.DNSException as error:
         raise DMARCRecordNotFound(error.msg)
@@ -1038,7 +1040,11 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
             raise InvalidDMARCTagValue(
                 "pct value must be an integer between 0 and 100")
         elif tags["pct"]["value"] < 100:
-            raise _DMARCBestPracticeWarning("pct value is less than 100")
+            warning_msg = "pct value is less than 100. This leads to " \
+                          "inconsistent and unpredictable policy " \
+                          "enforcement. Consider using p=none to " \
+                          "monitor results instead"
+            raise _DMARCBestPracticeWarning(warning_msg)
 
     except _DMARCWarning as warning:
         warnings.append(str(warning))
