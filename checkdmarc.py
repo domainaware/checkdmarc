@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.8"
+__version__ = "2.1.9"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -620,6 +620,8 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
         except dns.exception.DNSException as error:
             DMARCRecordNotFound(error.msg)
 
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        pass
     except dns.exception.DNSException as error:
         raise DMARCRecordNotFound(error.msg)
 

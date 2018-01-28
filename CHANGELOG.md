@@ -1,6 +1,10 @@
 Changelog
 =========
 
+2.1.9
+-----
+- More exception handling fixes
+
 2.1.8
 -----
 - Fix DNS report destination verification error message
