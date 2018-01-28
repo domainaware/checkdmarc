@@ -1476,9 +1476,9 @@ def check_domains(domains, output_format="json", output_path=None,
                 row["dmarc_rf"] = ":".join(dmarc["tags"]["rf"]["value"])
                 row["dmarc_ri"] = dmarc["tags"]["ri"]["value"]
                 row["dmarc_sp"] = dmarc["tags"]["sp"]["value"]
-                if "rua" in dmarc:
+                if "rua" in dmarc["tags"]:
                     row["dmarc_rua"] = ",".join(dmarc["tags"]["rua"]["value"])
-                if "ruf" in dmarc:
+                if "ruf" in dmarc["tags"]:
                     row["dmarc_ruf"] = ",".join(dmarc["tags"]["ruf"]["value"])
                 dmarc_warnings = dmarc_query["warnings"] + dmarc["warnings"]
                 row["dmarc_warnings"] = ",".join(dmarc_warnings)

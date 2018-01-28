@@ -1,6 +1,10 @@
 Changelog
 =========
 
+2.1.10
+------
+- Fix dMARC `rua` and `ruf` CSV output
+
 2.1.9
 -----
 - More exception handling fixes
