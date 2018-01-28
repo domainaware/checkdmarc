@@ -1,9 +1,13 @@
 Changelog
 =========
 
+2.1.11
+------
+- Actually fix DMARC `rua` and `ruf` CSV output 
+
 2.1.10
 ------
-- Fix dMARC `rua` and `ruf` CSV output
+- Fix DMARC `rua` and `ruf` CSV output
 
 2.1.9
 -----

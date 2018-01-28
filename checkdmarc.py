@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.10"
+__version__ = "2.1.11"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\-]+)"
@@ -1477,9 +1477,14 @@ def check_domains(domains, output_format="json", output_path=None,
                 row["dmarc_ri"] = dmarc["tags"]["ri"]["value"]
                 row["dmarc_sp"] = dmarc["tags"]["sp"]["value"]
                 if "rua" in dmarc["tags"]:
-                    row["dmarc_rua"] = ",".join(dmarc["tags"]["rua"]["value"])
+                    addresses = dmarc["tags"]["rua"]["value"]
+                    addresses = list(map(lambda u: u["scheme"] + ":" +
+                                                   u["address"], addresses))
+                    row["dmarc_rua"] = ",".join(addresses)
                 if "ruf" in dmarc["tags"]:
-                    row["dmarc_ruf"] = ",".join(dmarc["tags"]["ruf"]["value"])
+                    addresses = dmarc["tags"]["ruf"]["value"]
+                    addresses = list(map(lambda u: u["address"], addresses))
+                    row["dmarc_ruf"] = ",".join(addresses)
                 dmarc_warnings = dmarc_query["warnings"] + dmarc["warnings"]
                 row["dmarc_warnings"] = ",".join(dmarc_warnings)
             except DMARCError as error:
