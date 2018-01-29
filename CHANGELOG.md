@@ -1,6 +1,10 @@
 Changelog
 =========
 
+2.1.12
+------
+- Allow whitespace in DMARC values
+
 2.1.11
 ------
 - Actually fix DMARC `rua` and `ruf` CSV output 
