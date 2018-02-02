@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.12"
+__version__ = "2.1.13"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -996,6 +996,10 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
                         "{0} - {1}".format(email_address, str(warning))
                     )
                 tags["rua"]["value"] = parsed_uris
+                if len(parsed_uris) > 2:
+                    raise _DMARCBestPracticeWarning("Some DMARC reporters "
+                                                    "might not send to more "
+                                                    "than two rua URIs")
         else:
             raise _DMARCBestPracticeWarning(
                 "rua tag (destination for aggregate reports) not found")
@@ -1032,10 +1036,14 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
                         "{0} - {1}".format(email_address, str(warning))
                     )
                 tags["ruf"]["value"] = parsed_uris
+                if len(parsed_uris) > 2:
+                    raise _DMARCBestPracticeWarning("Some DMARC reporters "
+                                                    "might not send to more "
+                                                    "than two ruf URIs")
 
-        if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
+        if tags["pct"]["value"] < 1 or tags["pct"]["value"] > 100:
             raise InvalidDMARCTagValue(
-                "pct value must be an integer between 0 and 100")
+                "pct value must be an integer between 1 and 100")
         elif tags["pct"]["value"] < 100:
             warning_msg = "pct value is less than 100. This leads to " \
                           "inconsistent and unpredictable policy " \

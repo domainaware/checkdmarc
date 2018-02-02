@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.1.13
+------
+- Treat `pct` < 1 as invalid
+- Issue warning if there are more that two URIs for `rua` or `ruf` (separate count)
+
 2.1.12
 ------
 - Allow whitespace in DMARC values
