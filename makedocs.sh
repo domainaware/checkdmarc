@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-. ~/venv/checkdmarc/bin/activate
+. ~/venv/domainaware/bin/activate
 cd docs && make html && cp -r build/html/* ../../checkdmarc-docs/

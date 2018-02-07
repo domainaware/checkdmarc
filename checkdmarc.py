@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.13"
+__version__ = "2.1.14"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -1596,7 +1596,7 @@ def _main():
     arg_parser.add_argument("-v", "--version", action="version",
                             version=__version__)
     arg_parser.add_argument("-w", "--wait", type=float,
-                            help="number os seconds to wait between "
+                            help="number of seconds to wait between "
                                  "processing domains (default 0.0)",
                             default=0.0)
 

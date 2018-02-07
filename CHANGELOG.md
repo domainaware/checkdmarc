@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.1.14
+-------
+- Fix typo in help
+- prefix `.` to `public_suffix_list.dat`
+
 2.1.13
 ------
 - Treat `pct` < 1 as invalid
