@@ -1,10 +1,14 @@
 Changelog
 =========
 
+2.1.15
+------
+- prefix `.` to `public_suffix_list.dat`
+
 2.1.14
 -------
 - Fix typo in help
-- prefix `.` to `public_suffix_list.dat`
+
 
 2.1.13
 ------
