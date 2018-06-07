@@ -1109,7 +1109,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
     return OrderedDict([("record",
                          query["record"]),
                         ("location", query["location"]),
-                        ("pared", tags)])
+                        ("parsed", tags)])
 
 
 def query_spf_record(domain, nameservers=None, timeout=6.0):
