@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 2.1.15 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 2.2.0 documentation</title>
   
 
   
@@ -24,26 +24,17 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../genindex.html"/>
-        <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="checkdmarc 2.1.15 documentation" href="../index.html"/>
-        <link rel="up" title="Module code" href="index.html"/> 
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -65,7 +56,7 @@
             
             
               <div class="version">
-                2.1.15
+                2.2.0
               </div>
             
           
@@ -102,7 +93,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">checkdmarc</a>
@@ -110,9 +101,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -141,8 +133,6 @@
     
     
       <li class="wy-breadcrumbs-aside">
-        
-            
         
       </li>
     
@@ -195,7 +185,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.1.15&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.2.0&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">DMARC_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;([a-z]{1,5})=([\w.:@/+!,_\- ]+)&quot;</span>
@@ -851,6 +841,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">base_domain</span> <span class="o">=</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                                  <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
@@ -867,11 +858,12 @@
     <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">domain</span> <span class="o">!=</span> <span class="n">base_domain</span><span class="p">:</span>
         <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dmarc_record</span><span class="p">(</span><span class="n">base_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                                      <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="n">base_domain</span>
     <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span>
             <span class="s2">&quot;A DMARC record does not exist for this domain or its base domain&quot;</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">),</span>
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="n">location</span><span class="p">),</span>
                         <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
@@ -1077,7 +1069,8 @@
             <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
                 <span class="p">[(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">tag_values</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">]),</span> <span class="p">(</span><span class="s2">&quot;explicit&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)])</span>
     <span class="k">if</span> <span class="s2">&quot;p&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCError</span><span class="p">(</span><span class="s1">&#39;The record is missing the required policy (&quot;p&quot;) tag&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">DMARCSyntaxError</span><span class="p">(</span>
+            <span class="s1">&#39;The record is missing the required policy (&quot;p&quot;) tag&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="s2">&quot;sp&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]),</span>
                                   <span class="p">(</span><span class="s2">&quot;explicit&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)])</span>
@@ -1266,7 +1259,7 @@
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span>
                          <span class="n">query</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]),</span>
                         <span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]),</span>
-                        <span class="p">(</span><span class="s2">&quot;pared&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">)])</span></div>
+                        <span class="p">(</span><span class="s2">&quot;parsed&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">)])</span></div>
 
 
 <div class="viewcode-block" id="query_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_spf_record">[docs]</a><span class="k">def</span> <span class="nf">query_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
@@ -1386,7 +1379,7 @@
             <span class="n">lookup_mechanism_count</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SPFTooManyDNSLookups</span><span class="p">(</span>
-            <span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum DNS lookups&quot;</span>
+            <span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum DNS lookups - &quot;</span>
             <span class="s2">&quot;https://tools.ietf.org/html/rfc7208#section-4.6.4&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="n">lookup_mechanism_count</span><span class="p">))</span>
 
@@ -1444,7 +1437,7 @@
                     <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="n">SPFTooManyDNSLookups</span><span class="p">(</span>
                             <span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum &quot;</span>
-                            <span class="s2">&quot;DNS lookups &quot;</span>
+                            <span class="s2">&quot;DNS lookups - &quot;</span>
                             <span class="s2">&quot;https://tools.ietf.org/html/rfc7208&quot;</span>
                             <span class="s2">&quot;#section-4.6.4&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                                 <span class="n">lookup_mechanism_count</span><span class="p">))</span>
@@ -1480,7 +1473,7 @@
                     <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="n">SPFTooManyDNSLookups</span><span class="p">(</span>
                             <span class="s2">&quot;Parsing the SPF record requires </span><span class="si">{0}</span><span class="s2">/10 maximum &quot;</span>
-                            <span class="s2">&quot;DNS lookups &quot;</span>
+                            <span class="s2">&quot;DNS lookups - &quot;</span>
                             <span class="s2">&quot;https://tools.ietf.org/html/rfc7208&quot;</span>
                             <span class="s2">&quot;#section-4.6.4&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                                 <span class="n">lookup_mechanism_count</span><span class="p">))</span>
@@ -1542,7 +1535,7 @@
 <div class="viewcode-block" id="check_domains"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.check_domains">[docs]</a><span class="k">def</span> <span class="nf">check_domains</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">include_dmarc_tag_descriptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;   Returns:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check the given domains for SPF and DMARC records, parse them, and return</span>
 <span class="sd">    them</span>
 
@@ -1789,9 +1782,7 @@
 </pre></div>
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -1804,7 +1795,7 @@
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -1822,7 +1813,8 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'2.1.15',
+            VERSION:'2.2.0',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -1835,19 +1827,13 @@
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

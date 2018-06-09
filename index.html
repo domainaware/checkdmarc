@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 2.1.15 documentation</title>
+  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 2.2.0 documentation</title>
   
 
   
@@ -24,26 +24,18 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="checkdmarc 2.1.15 documentation" href="#"/>
-        <link rel="next" title="checkdmarc module" href="checkdmarc.html"/> 
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="checkdmarc module" href="checkdmarc.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -65,7 +57,7 @@
             
             
               <div class="version">
-                2.1.15
+                2.2.0
               </div>
             
           
@@ -102,7 +94,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="#">checkdmarc</a>
@@ -110,9 +102,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -156,8 +149,8 @@
             
   <div class="section" id="welcome-to-checkdmarc-s-documentation">
 <h1>Welcome to checkdmarc’s documentation!<a class="headerlink" href="#welcome-to-checkdmarc-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p><code class="docutils literal"><span class="pre">checkdmarc</span></code> is a Python module and command line parser for SPF and DMARC DNS records</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">checkdmarc</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="n">FORMAT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">OUTPUT</span><span class="p">]</span>
+<p><code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> is a Python module and command line parser for SPF and DMARC DNS records</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">checkdmarc</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="n">FORMAT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">OUTPUT</span><span class="p">]</span>
               <span class="p">[</span><span class="o">-</span><span class="n">n</span> <span class="n">NAMESERVER</span> <span class="p">[</span><span class="n">NAMESERVER</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="n">TIMEOUT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span>
               <span class="p">[</span><span class="o">-</span><span class="n">w</span> <span class="n">WAIT</span><span class="p">]</span>
               <span class="n">domain</span> <span class="p">[</span><span class="n">domain</span> <span class="o">...</span><span class="p">]</span>
@@ -186,10 +179,10 @@
                         <span class="p">(</span><span class="n">default</span> <span class="mf">0.0</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov
 </pre></div>
 </div>
-<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
   <span class="nt">&quot;base_domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
   <span class="nt">&quot;mx&quot;</span><span class="p">:</span> <span class="p">{</span>
@@ -302,24 +295,24 @@
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal"><span class="pre">checkdmarc</span></code> requires Python 3.</p>
+<p><code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> requires Python 3.</p>
 <p>On Debian or Ubuntu systems, run:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ sudo apt-get install python3-pip
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo apt-get install python3-pip
 </pre></div>
 </div>
 <p>Python 3 installers for Windows and macOS can be found at <a class="reference external" href="https://www.python.org/downloads/">https://www.python.org/downloads/</a></p>
-<p>To install or upgrade to the latest stable release of <code class="docutils literal"><span class="pre">checkdmarc</span></code> on macOS or Linux, run</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ sudo -H pip3 install -U checkdmarc
+<p>To install or upgrade to the latest stable release of <code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> on macOS or Linux, run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo -H pip3 install -U checkdmarc
 </pre></div>
 </div>
 <p>Or, install the latest development release directly from GitHub:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ sudo -H pip3 install -U git+https://github.com/domainaware/checkdmarc.git
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo -H pip3 install -U git+https://github.com/domainaware/checkdmarc.git
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">On Windows, <code class="docutils literal"><span class="pre">pip3</span></code> is <code class="docutils literal"><span class="pre">pip</span></code>, even with Python 3. So on Windows, simply
-substitute <code class="docutils literal"><span class="pre">pip</span></code> as an administrator in place of <code class="docutils literal"><span class="pre">sudo</span> <span class="pre">pip3</span></code>, in the above commands.</p>
+<p class="last">On Windows, <code class="docutils literal notranslate"><span class="pre">pip3</span></code> is <code class="docutils literal notranslate"><span class="pre">pip</span></code>, even with Python 3. So on Windows, simply
+substitute <code class="docutils literal notranslate"><span class="pre">pip</span></code> as an administrator in place of <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">pip3</span></code>, in the above commands.</p>
 </div>
 </div>
 <div class="section" id="bug-reports">
@@ -353,9 +346,7 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -375,7 +366,7 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -393,7 +384,8 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'2.1.15',
+            VERSION:'2.2.0',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -406,19 +398,13 @@ substitute <code class="docutils literal"><span class="pre">pip</span></code> as
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>
