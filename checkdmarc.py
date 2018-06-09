@@ -694,6 +694,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
     """
     warnings = []
     base_domain = get_base_domain(domain)
+    location = domain.lower()
     record = _query_dmarc_record(domain, nameservers=nameservers,
                                  timeout=timeout)
     try:
@@ -710,11 +711,12 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
     if record is None and domain != base_domain:
         record = _query_dmarc_record(base_domain, nameservers=nameservers,
                                      timeout=timeout)
+        location = base_domain
     if record is None:
         raise DMARCRecordNotFound(
             "A DMARC record does not exist for this domain or its base domain")
 
-    return OrderedDict([("record", record), ("location", domain),
+    return OrderedDict([("record", record), ("location", location),
                         ("warnings", warnings)])
 
 
