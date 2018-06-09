@@ -76,10 +76,8 @@ class Test(unittest.TestCase):
     def testSPFIncludeLoop(self):
         """SPF record with include loop raises SPFIncludeLoop"""
 
-        spf_record = '"v=spf1 mx a ip4:213.161.174.26 ' \
-                     'a:spf.protection.outlook.com ' \
-                     'include:berlevag.kommune.no ~all"'
-        domain = "kommune.no"
+        spf_record = '"v=spf1 include:example.com"'
+        domain = "example.com"
         self.assertRaises(checkdmarc.SPFIncludeLoop,
                           checkdmarc.parse_spf_record, spf_record, domain)
 
