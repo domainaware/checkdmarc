@@ -15,7 +15,7 @@ from setuptools import setup
 from codecs import open
 from os import path
 
-from checkdmarc import __version__
+__version__ = "2.2.0"
 
 here = path.abspath(path.dirname(__file__))
 
