@@ -922,7 +922,8 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
             tags[tag] = OrderedDict(
                 [("value", tag_values[tag]["default"]), ("explicit", False)])
     if "p" not in tags:
-        raise DMARCError('The record is missing the required policy ("p") tag')
+        raise DMARCSyntaxError(
+            'The record is missing the required policy ("p") tag')
     if "sp" not in tags:
         tags["sp"] = OrderedDict([("value", tags["p"]["value"]),
                                   ("explicit", False)])
