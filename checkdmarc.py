@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.1.15"
+__version__ = "2.1.16"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -1229,7 +1229,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
             lookup_mechanism_count += 1
     if lookup_mechanism_count > 10:
         raise SPFTooManyDNSLookups(
-            "Parsing the SPF record requires {0}/10 maximum DNS lookups"
+            "Parsing the SPF record requires {0}/10 maximum DNS lookups - "
             "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
                 lookup_mechanism_count))
 
@@ -1287,7 +1287,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     if lookup_mechanism_count > 10:
                         raise SPFTooManyDNSLookups(
                             "Parsing the SPF record requires {0}/10 maximum "
-                            "DNS lookups "
+                            "DNS lookups - "
                             "https://tools.ietf.org/html/rfc7208"
                             "#section-4.6.4".format(
                                 lookup_mechanism_count))
@@ -1323,7 +1323,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                     if lookup_mechanism_count > 10:
                         raise SPFTooManyDNSLookups(
                             "Parsing the SPF record requires {0}/10 maximum "
-                            "DNS lookups "
+                            "DNS lookups - "
                             "https://tools.ietf.org/html/rfc7208"
                             "#section-4.6.4".format(
                                 lookup_mechanism_count))
@@ -1385,7 +1385,7 @@ def get_spf_record(domain, nameservers=None, timeout=6.0):
 def check_domains(domains, output_format="json", output_path=None,
                   include_dmarc_tag_descriptions=False,
                   nameservers=None, timeout=6.0, wait=0.0):
-    """   Returns:
+    """
     Check the given domains for SPF and DMARC records, parse them, and return
     them
 
