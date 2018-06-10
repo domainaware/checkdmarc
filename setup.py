@@ -15,17 +15,15 @@ from setuptools import setup
 from codecs import open
 from os import path
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
+
+desc = "A Python module and command line parser for SPF and DMARC records"
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
-
-
-description = "A Python module and command line parser for SPF and DMARC records"
-
 
 setup(
     name='checkdmarc',
@@ -35,7 +33,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version=__version__,
 
-    description=description,
+    description=desc,
     long_description=long_description,
 
     # The project's main homepage.

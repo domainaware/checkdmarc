@@ -38,7 +38,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -455,8 +455,11 @@ def get_base_domain(domain):
 def _query_dns(domain, record_type, nameservers=None, timeout=6.0):
     resolver = dns.resolver.Resolver()
     timeout = float(timeout)
-    if nameservers:
-        resolver.nameservers = nameservers
+    if nameservers is None:
+        nameservers = ["1.1.1.1", "1.0.0.1",
+                       "2606:4700:4700::1111", "2606:4700:4700::1001",
+                       ]
+    resolver.nameservers = nameservers
     resolver.timeout = timeout
     resolver.lifetime = timeout
     return list(map(
@@ -471,6 +474,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
 
     Returns:
         list: A list of ``OrderedDicts``; each containing a ``preference``
@@ -508,6 +512,7 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
@@ -541,6 +546,7 @@ def _get_txt_records(domain, nameservers=None, timeout=6.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
@@ -571,6 +577,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
@@ -635,6 +642,7 @@ def get_mx_hosts(domain, nameservers=None, timeout=6.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
@@ -677,6 +685,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
@@ -804,6 +813,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
           source_domain (str): The source domain
           destination_domain (str): The destination domain
           nameservers (list): A list of nameservers to query
+          (Cloudflare's by default)
           timeout(float): number of seconds to wait for an answer from DNS
 
       Returns:
@@ -863,6 +873,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
         domain (str): The email domain
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
@@ -1078,6 +1089,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
         domain (str): A domain name
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
@@ -1122,6 +1134,7 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
@@ -1184,6 +1197,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
         seen (list): A list of domains seen in past loops
         domain (str): The domain that the SPF record came from
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
@@ -1364,6 +1378,7 @@ def get_spf_record(domain, nameservers=None, timeout=6.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): Number of seconds to wait for an answer from DNS
 
     Returns:
@@ -1400,6 +1415,7 @@ def check_domains(domains, output_format="json", output_path=None,
                                                tags and/or tag values in the
                                                results
         nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
         timeout(float): number of seconds to wait for an answer from DNS
         wait (float): number of seconds to wait between processing domains
 
