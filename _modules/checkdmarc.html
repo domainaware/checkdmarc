@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 2.2.0 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 2.3.0 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                2.2.0
+                2.3.0
               </div>
             
           
@@ -185,7 +185,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.2.0&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.3.0&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">DMARC_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;([a-z]{1,5})=([\w.:@/+!,_\- ]+)&quot;</span>
@@ -602,8 +602,11 @@
 <span class="k">def</span> <span class="nf">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
     <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">nameservers</span><span class="p">:</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
+    <span class="k">if</span> <span class="n">nameservers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">nameservers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;1.1.1.1&quot;</span><span class="p">,</span> <span class="s2">&quot;1.0.0.1&quot;</span><span class="p">,</span>
+                       <span class="s2">&quot;2606:4700:4700::1111&quot;</span><span class="p">,</span> <span class="s2">&quot;2606:4700:4700::1001&quot;</span><span class="p">,</span>
+                       <span class="p">]</span>
+    <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
     <span class="n">resolver</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
     <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
@@ -618,6 +621,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of ``OrderedDicts``; each containing a ``preference``</span>
@@ -655,6 +659,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -688,6 +693,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -718,6 +724,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -782,6 +789,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -824,6 +832,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -951,6 +960,7 @@
 <span class="sd">          source_domain (str): The source domain</span>
 <span class="sd">          destination_domain (str): The destination domain</span>
 <span class="sd">          nameservers (list): A list of nameservers to query</span>
+<span class="sd">          (Cloudflare&#39;s by default)</span>
 <span class="sd">          timeout(float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">      Returns:</span>
@@ -1010,6 +1020,7 @@
 <span class="sd">        domain (str): The email domain</span>
 <span class="sd">        include_tag_descriptions (bool): Include descriptions in parsed results</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -1225,6 +1236,7 @@
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        include_tag_descriptions (bool): Include descriptions in parsed results</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -1269,6 +1281,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -1331,6 +1344,7 @@
 <span class="sd">        seen (list): A list of domains seen in past loops</span>
 <span class="sd">        domain (str): The domain that the SPF record came from</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -1511,6 +1525,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): Number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
@@ -1547,6 +1562,7 @@
 <span class="sd">                                               tags and/or tag values in the</span>
 <span class="sd">                                               results</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
 <span class="sd">        wait (float): number of seconds to wait between processing domains</span>
 
@@ -1737,7 +1753,8 @@
                             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;output to a file path rather than &quot;</span>
                                  <span class="s2">&quot;printing to the screen&quot;</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="s2">&quot;--nameserver&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
-                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;nameservers to query&quot;</span><span class="p">)</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;nameservers to query &quot;</span>
+                                 <span class="s2">&quot;(Default is Cloudflare&#39;s&quot;</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-t&quot;</span><span class="p">,</span> <span class="s2">&quot;--timeout&quot;</span><span class="p">,</span>
                             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;number of seconds to wait for an answer &quot;</span>
                                  <span class="s2">&quot;from DNS (default 6.0)&quot;</span><span class="p">,</span>
@@ -1813,7 +1830,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'2.2.0',
+            VERSION:'2.3.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
