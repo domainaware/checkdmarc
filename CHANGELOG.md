@@ -1,6 +1,15 @@
 Changelog
 =========
 
+2.3.0
+-----
+- Use Cloudflare's DNS resolvers by default
+
+2.2.0
+-----
+- Fix DMARC record location when subdomain is missing record
+- Fix typos
+
 2.1.15
 ------
 - prefix `.` to `public_suffix_list.dat`

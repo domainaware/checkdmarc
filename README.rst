@@ -27,7 +27,7 @@ A Python module and command line utility for validating SPF and DMARC DNS record
                             output to a file path rather than printing to the
                             screen
       -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
-                            nameservers to query
+                            nameservers to query (Default is Cloudflare's)
       -t TIMEOUT, --timeout TIMEOUT
                             number of seconds to wait for an answer from DNS
                             (default 6.0)

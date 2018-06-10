@@ -1606,7 +1606,8 @@ def _main():
                             help="output to a file path rather than "
                                  "printing to the screen")
     arg_parser.add_argument("-n", "--nameserver", nargs="+",
-                            help="nameservers to query")
+                            help="nameservers to query "
+                                 "(Default is Cloudflare's")
     arg_parser.add_argument("-t", "--timeout",
                             help="number of seconds to wait for an answer "
                                  "from DNS (default 6.0)",
