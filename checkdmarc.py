@@ -495,7 +495,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
             hostname = record[1].rstrip(".").strip().lower()
             hosts.append(OrderedDict(
                 [("preference", preference), ("hostname", hostname)]))
-        hosts = sorted(hosts, key=lambda h: h["preference"])
+        hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:
         raise DNSException("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
@@ -528,6 +528,7 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
                                 timeout=timeout)
         addresses += _query_dns(domain, "AAAA", nameservers=nameservers,
                                 timeout=timeout)
+        addresses = sorted(addresses)
     except dns.resolver.NXDOMAIN:
         raise DNSException("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
