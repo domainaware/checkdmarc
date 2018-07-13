@@ -501,6 +501,8 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     except dns.resolver.NoAnswer:
         pass
     except dns.exception.DNSException as error:
+        if isinstance(error, dns.exception.Timeout):
+            error.kwargs['timeout'] = round(error.kwargs['timeout'], 1)
         raise DNSException(error)
     return hosts
 
