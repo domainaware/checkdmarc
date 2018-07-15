@@ -518,27 +518,27 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
-        list: A list of IPv4 and IPv6 addresses
+        list: A sorted list of IPv4 and IPv6 addresses
 
     Raises:
         :exc:`checkdmarc.DNSException`
 
     """
+    qtypes = ["A", "AAAA"]
     addresses = []
-    try:
-        addresses += _query_dns(domain, "A", nameservers=nameservers,
-                                timeout=timeout)
-        addresses += _query_dns(domain, "AAAA", nameservers=nameservers,
-                                timeout=timeout)
-        addresses = sorted(addresses)
-    except dns.resolver.NXDOMAIN:
-        raise DNSException("The domain {0} does not exist".format(domain))
-    except dns.resolver.NoAnswer:
-        # Sometimes a domain will only have A or AAAA records, but not both
-        pass
-    except dns.exception.DNSException as error:
-        raise DNSException(error)
+    for qt in qtypes:
+        try:
+            addresses += _query_dns(domain, qt, nameservers=nameservers,
+                                    timeout=timeout)
+        except dns.resolver.NXDOMAIN:
+            raise DNSException("The domain {0} does not exist".format(domain))
+        except dns.resolver.NoAnswer:
+            # Sometimes a domain will only have A or AAAA records, but not both
+            pass
+        except dns.exception.DNSException as error:
+            raise DNSException(error)
 
+    addresses = sorted(addresses)
     return addresses
 
 
