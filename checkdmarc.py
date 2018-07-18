@@ -432,22 +432,22 @@ def get_base_domain(domain):
     psl_path = ".public_suffix_list.dat"
 
     def download_psl():
-        fresh_psl = publicsuffix.fetch()
+        fresh_psl = publicsuffix.fetch().read()
         with open(psl_path, "w", encoding="utf-8") as fresh_psl_file:
-            fresh_psl_file.write(fresh_psl.read())
-
-        return publicsuffix.PublicSuffixList(fresh_psl)
+            fresh_psl_file.write(fresh_psl)
 
     if not path.exists(psl_path):
-        psl = download_psl()
+        download_psl()
     else:
         psl_age = datetime.now() - datetime.fromtimestamp(
             stat(psl_path).st_mtime)
         if psl_age > timedelta(hours=24):
-            psl = download_psl()
-        else:
-            with open(psl_path, encoding="utf-8") as psl_file:
-                psl = publicsuffix.PublicSuffixList(psl_file)
+            try:
+                download_psl()
+            except:
+                pass
+    with open(psl_path, encoding="utf-8") as psl_file:
+        psl = publicsuffix.PublicSuffixList(psl_file)
 
     return psl.get_public_suffix(domain)
 
@@ -501,6 +501,8 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     except dns.resolver.NoAnswer:
         pass
     except dns.exception.DNSException as error:
+        if isinstance(error, dns.exception.Timeout):
+            error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
         raise DNSException(error)
     return hosts
 
@@ -516,27 +518,27 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
         timeout(float): number of seconds to wait for an answer from DNS
 
     Returns:
-        list: A list of IPv4 and IPv6 addresses
+        list: A sorted list of IPv4 and IPv6 addresses
 
     Raises:
         :exc:`checkdmarc.DNSException`
 
     """
+    qtypes = ["A", "AAAA"]
     addresses = []
-    try:
-        addresses += _query_dns(domain, "A", nameservers=nameservers,
-                                timeout=timeout)
-        addresses += _query_dns(domain, "AAAA", nameservers=nameservers,
-                                timeout=timeout)
-        addresses = sorted(addresses)
-    except dns.resolver.NXDOMAIN:
-        raise DNSException("The domain {0} does not exist".format(domain))
-    except dns.resolver.NoAnswer:
-        # Sometimes a domain will only have A or AAAA records, but not both
-        pass
-    except dns.exception.DNSException as error:
-        raise DNSException(error)
+    for qt in qtypes:
+        try:
+            addresses += _query_dns(domain, qt, nameservers=nameservers,
+                                    timeout=timeout)
+        except dns.resolver.NXDOMAIN:
+            raise DNSException("The domain {0} does not exist".format(domain))
+        except dns.resolver.NoAnswer:
+            # Sometimes a domain will only have A or AAAA records, but not both
+            pass
+        except dns.exception.DNSException as error:
+            raise DNSException(error)
 
+    addresses = sorted(addresses)
     return addresses
 
 
