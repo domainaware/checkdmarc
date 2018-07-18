@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.4.0
+-----
+- Close #31 - Public Suffix List checked before list is available (malvidin)
+- Decrease precision of DNS timeout (malvidin)
+- Close #15 - Add sorting of A/AAAA records (malvidin)
+- Add basic logging of runtime warnings (seanthegeek)
+
 2.3.0
 -----
 - Use Cloudflare's DNS resolvers by default
@@ -30,7 +37,7 @@ Changelog
 
 2.1.11
 ------
-- Actually fix DMARC `rua` and `ruf` CSV output 
+- Actually fix DMARC `rua` and `ruf` CSV output
 
 2.1.10
 ------
@@ -84,7 +91,7 @@ Changelog
 - Refactor dome method return values
 - Add more unit tests
 - Many documentation improvements and fixes
-- PEP 8 compliant 
+- PEP 8 compliant
 
 2.0.0
 -----
@@ -117,7 +124,7 @@ Changelog
 -----
 - Update `mailto` regex to accept single char mailbox names
 - Clarify DMARC tag and value descriptions
-- Pass in nameservers and timeout when querying for `MX` records 
+- Pass in nameservers and timeout when querying for `MX` records
 
 1.7.7
 -----
@@ -199,7 +206,7 @@ Changelog
 
 1.3.7
 ----
-- Properly handle DMARC records that are made up of multiple strings 
+- Properly handle DMARC records that are made up of multiple strings
 
 1.3.6
 -----
@@ -212,7 +219,7 @@ Changelog
 - Rearrange the order of the CSV fields to that the longest entries are to the right
 - Documentation improvements
 - Fix external DMARC report destination validation
-- Count each MX resource record once 
+- Count each MX resource record once
 
 1.3.3 and 1.3.4
 ---------------
@@ -252,7 +259,7 @@ Changelog
 1.1.0
 ------
 
-- Separate SPF MX record limit from SPF DNS mechanism limit 
+- Separate SPF MX record limit from SPF DNS mechanism limit
 - Fix DMARC CSV output
 
 1.0.12
@@ -301,12 +308,12 @@ Changelog
 - Make JSON output order consistent
 - Resolve SPF `redirect`
 - Put include results in a JSON list
-- Count `exists` SPF mechanisms in the overall SPF query limit 
+- Count `exists` SPF mechanisms in the overall SPF query limit
 - Make `a` SPF mechanisms count as one lookup instead of two
-  - `checkdmarc` actually makes two queries per `a` mechanism, one for `A` records, and one for `AAAA` records. 
-  However, [RFC 7208, Section 1.6.4][1] only mentions counting the mechanisms that use lookups 
+  - `checkdmarc` actually makes two queries per `a` mechanism, one for `A` records, and one for `AAAA` records.
+  However, [RFC 7208, Section 1.6.4][1] only mentions counting the mechanisms that use lookups
   (i.e. `mx`, `a`, `exists`, `include`, and `redirect`), and including each `MX` record returned in the overall count,
-    (since those in turn will need to be resolved). This aligns `checkdmarc` with 3rd party SPF validators at 
+    (since those in turn will need to be resolved). This aligns `checkdmarc` with 3rd party SPF validators at
     [MxToolbox][2] and [DMARC Analyzer][3]
 
 1.0.3

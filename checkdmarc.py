@@ -3,6 +3,7 @@
 
 """Validates and parses SPF amd DMARC DNS records"""
 
+import logging
 from collections import OrderedDict
 from re import compile
 import json
@@ -38,7 +39,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.3.0"
+__version__ = "2.4.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -53,6 +54,8 @@ DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING)
 MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
@@ -444,8 +447,9 @@ def get_base_domain(domain):
         if psl_age > timedelta(hours=24):
             try:
                 download_psl()
-            except:
-                pass
+            except as error:
+                logger.warning("Failed to download an updated PSL - \
+                               {0}".format(error))
     with open(psl_path, encoding="utf-8") as psl_file:
         psl = publicsuffix.PublicSuffixList(psl_file)
 
