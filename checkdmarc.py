@@ -447,7 +447,7 @@ def get_base_domain(domain):
         if psl_age > timedelta(hours=24):
             try:
                 download_psl()
-            except as error:
+            except Exception as error:
                 logger.warning("Failed to download an updated PSL - \
                                {0}".format(error))
     with open(psl_path, encoding="utf-8") as psl_file:
