@@ -57,6 +57,7 @@ SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
 
