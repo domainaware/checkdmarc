@@ -50,17 +50,10 @@ class Test(unittest.TestCase):
         """SPF records with > 10 SPF mechanisms that cause DNS lookups raise
         SPFTooManyDNSLookups"""
 
-        spf_record = "v=spf1 ip4:205.131.177.0/24 ip4:205.131.188.0/24 " \
-                     "ip4:73.23.28.0/24 ip4:137.227.97.89/32 " \
-                     "ip4:137.227.97.90/32 ip4:137.227.196.62/32 " \
-                     "ip4:137.227.28.0/24 ip4:137.227.82.0/24 " \
-                     "ip4:198.183.146.165/32 ip6:2620:109:20:2000::0141 " \
-                     "ip6:2620:109:20:2000::0158 ip6:2620:109:0:2000::251  " \
-                     "include:leepfrog.com include:spf.mailengine1.com " \
-                     "include:monster.com include:accenture.com " \
-                     "include:usalearning.net include:MAAS360.com " \
-                     "include:MAAS360.info include:Fiberlink.com -all"
-        domain = "opm.gov"
+        spf_record = "v=spf1 a include:_spf.salesforce.com include:spf.protection.outlook.com " \
+                     "include:spf.constantcontact.com include:_spf.elasticemail.com include:servers.mcsv.net " \
+                     "~all"
+        domain = "example.com"
         self.assertRaises(checkdmarc.SPFTooManyDNSLookups,
                           checkdmarc.parse_spf_record, spf_record, domain)
 
@@ -69,6 +62,14 @@ class Test(unittest.TestCase):
 
         spf_record = '"v=spf1 mx a:mail.cohaesio.net ' \
                      'include: trustpilotservice.com ~all"'
+        domain = "2021.ai"
+        self.assertRaises(checkdmarc.SPFSyntaxError,
+                          checkdmarc.parse_spf_record, spf_record, domain)
+
+    def TestSPFInvalidIPv4(self):
+        """Invalid ipv4 SPF mechanism values raise SPFSyntaxError"""
+        spf_record = "v=spf1 ip4:78.46.96.236 +a +mx +ip4:138.201.239.158 +ip4:78.46.224.83 " \
+                     "+ip4:relay.mailchannels.net +ip4:138.201.60.20 ~all"
         domain = "surftown.dk"
         self.assertRaises(checkdmarc.SPFSyntaxError,
                           checkdmarc.parse_spf_record, spf_record, domain)

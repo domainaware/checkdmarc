@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2.5.0
+-----
+
+- Close #32 - Raise `SPFSyntaxError` when an invalid value is encountered for an `ip4`SPF mechanism
+- Close #33 - Add `python3 setup.py sdist` to `build.sh`, and publish source distribution to PyPI
+
 2.4.0
 -----
 - Close #31 - Public Suffix List checked before list is available (malvidin)

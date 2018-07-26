@@ -39,7 +39,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -49,10 +49,12 @@ MAILTO_REGEX_STRING = r"^(mailto):" \
 SPF_VERSION_TAG_REGEX_STRING = "v=spf1"
 SPF_MECHANISM_REGEX_STRING = r"([+\-~?])?(mx|ip4|ip6|exists|include|all|a|" \
                              r"redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)"
+IPV4_REGEX_STRING = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{2})?$"
 
 DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING)
 MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
+IPV4_REGEX = compile(IPV4_REGEX_STRING)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -1264,6 +1266,14 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
         value = match[2]
 
         try:
+            if mechanism == "ip4":
+                if len(IPV4_REGEX.findall(value)) == 0:
+                    raise SPFSyntaxError("{0} is not a valid ipv4 value".format(value))
+                for octet in value.split("."):
+                    octet = int(octet.split("/")[0])
+                    if octet > 255:
+                        raise SPFSyntaxError("{0} is not a valid ipv4 value".format(value))
+
             if mechanism == "a":
                 if value == "":
                     value = domain
