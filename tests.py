@@ -50,8 +50,11 @@ class Test(unittest.TestCase):
         """SPF records with > 10 SPF mechanisms that cause DNS lookups raise
         SPFTooManyDNSLookups"""
 
-        spf_record = "v=spf1 a include:_spf.salesforce.com include:spf.protection.outlook.com " \
-                     "include:spf.constantcontact.com include:_spf.elasticemail.com include:servers.mcsv.net " \
+        spf_record = "v=spf1 a include:_spf.salesforce.com " \
+                     "include:spf.protection.outlook.com " \
+                     "include:spf.constantcontact.com " \
+                     "include:_spf.elasticemail.com " \
+                     "include:servers.mcsv.net " \
                      "~all"
         domain = "example.com"
         self.assertRaises(checkdmarc.SPFTooManyDNSLookups,
@@ -68,7 +71,8 @@ class Test(unittest.TestCase):
 
     def TestSPFInvalidIPv4(self):
         """Invalid ipv4 SPF mechanism values raise SPFSyntaxError"""
-        spf_record = "v=spf1 ip4:78.46.96.236 +a +mx +ip4:138.201.239.158 +ip4:78.46.224.83 " \
+        spf_record = "v=spf1 ip4:78.46.96.236 +a +mx +ip4:138.201.239.158 " \
+                     "+ip4:78.46.224.83 " \
                      "+ip4:relay.mailchannels.net +ip4:138.201.60.20 ~all"
         domain = "surftown.dk"
         self.assertRaises(checkdmarc.SPFSyntaxError,

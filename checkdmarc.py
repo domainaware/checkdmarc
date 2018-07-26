@@ -1268,11 +1268,13 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
         try:
             if mechanism == "ip4":
                 if len(IPV4_REGEX.findall(value)) == 0:
-                    raise SPFSyntaxError("{0} is not a valid ipv4 value".format(value))
+                    raise SPFSyntaxError("{0} is not a valid ipv4 "
+                                         "value".format(value))
                 for octet in value.split("."):
                     octet = int(octet.split("/")[0])
                     if octet > 255:
-                        raise SPFSyntaxError("{0} is not a valid ipv4 value".format(value))
+                        raise SPFSyntaxError("{0} is not a valid ipv4 "
+                                             "value".format(value))
 
             if mechanism == "a":
                 if value == "":
