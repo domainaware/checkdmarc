@@ -87,6 +87,9 @@ class _DMARCBestPracticeWarning(_DMARCWarning):
 
 class DNSException(Exception):
     """Raised when a general DNS error occurs"""
+    def __init__(self, error):
+        if isinstance(error, dns.exception.Timeout):
+            error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
 
 class DMARCError(Exception):
@@ -95,6 +98,9 @@ class DMARCError(Exception):
 
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
+    def __init__(self, error):
+        if isinstance(error, dns.exception.Timeout):
+            error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
 
 class MultipleSPFRTXTRecords(SPFError):
@@ -119,6 +125,9 @@ class SPFIncludeLoop(SPFError):
 
 class DMARCRecordNotFound(DMARCError):
     """Raised when a DMARC record could not be found"""
+    def __init__(self, error):
+        if isinstance(error, dns.exception.Timeout):
+            error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
 
 class DMARCSyntaxError(DMARCError):
@@ -508,8 +517,6 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     except dns.resolver.NoAnswer:
         pass
     except dns.exception.DNSException as error:
-        if isinstance(error, dns.exception.Timeout):
-            error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
         raise DNSException(error)
     return hosts
 
@@ -635,12 +642,12 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
             raise DMARCRecordNotFound(
                 "The domain {0} does not exist".format(domain))
         except dns.exception.DNSException as error:
-            DMARCRecordNotFound(error.msg)
+            DMARCRecordNotFound(error)
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         pass
     except dns.exception.DNSException as error:
-        raise DMARCRecordNotFound(error.msg)
+        raise DMARCRecordNotFound(error)
 
     return dmarc_record
 
