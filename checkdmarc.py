@@ -153,7 +153,6 @@ class DMARCRecordNotFound(DMARCError):
         self.msg = self.args[0]
 
 
-
 class DMARCSyntaxError(DMARCError):
     """Raised when a DMARC syntax error is found"""
 
@@ -1360,7 +1359,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                             "https://tools.ietf.org/html/rfc7208"
                             "#section-4.6.4".format(
                                 lookup_mechanism_count),
-                        dns_lookups=lookup_mechanism_count)
+                            dns_lookups=lookup_mechanism_count)
                     parsed["redirect"] = OrderedDict(
                         [("domain", value), ("record", redirect_record),
                          ("dns_lookups", redirect["dns_lookups"]),
@@ -1397,7 +1396,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                             "https://tools.ietf.org/html/rfc7208"
                             "#section-4.6.4".format(
                                 lookup_mechanism_count),
-                        dns_lookups=lookup_mechanism_count)
+                            dns_lookups=lookup_mechanism_count)
                     include = OrderedDict(
                         [("domain", value), ("record", include_record),
                          ("dns_lookups", include["dns_lookups"]),
