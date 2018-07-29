@@ -39,7 +39,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.5.0"
+__version__ = "2.6.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -119,6 +119,7 @@ class SPFRecordNotFound(SPFError):
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+        self.msg = self.args[0]
 
 
 class MultipleSPFRTXTRecords(SPFError):
@@ -149,6 +150,8 @@ class DMARCRecordNotFound(DMARCError):
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+        self.msg = self.args[0]
+
 
 
 class DMARCSyntaxError(DMARCError):
@@ -1604,7 +1607,7 @@ def check_domains(domains, output_format="json", output_path=None,
                 domain_results["spf"]["error"] = str(error.msg)
                 del domain_results["spf"]["dns_lookups"]
                 domain_results["spf"]["valid"] = False
-                if error.data:
+                if hasattr(error, "data") and error.data:
                     for key in error.data:
                         domain_results["spf"][key] = error.data[key]
 
@@ -1632,8 +1635,9 @@ def check_domains(domains, output_format="json", output_path=None,
             except DMARCError as error:
                 domain_results["dmarc"]["error"] = str(error.msg)
                 domain_results["dmarc"]["valid"] = False
-
-
+                if hasattr(error, "data") and error.data:
+                    for key in error.data:
+                        domain_results["dmarc"][key] = error.data[key]
             results.append(domain_results)
             sleep(wait)
         if len(results) == 1:

@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.6.0
+-----
+
+- Refactored  `DMARCError` and `SPFError` exceptions to support adding data to the results (seanthegeek)
+- Close #18 - include `dns_lookups` in `spf`  results when number of SPF lookups are exceeded (seanthegeek)
+- Added timeout rounding to the Exception classes (malvidin)
+
 2.5.1
 -----
 
