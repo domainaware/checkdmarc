@@ -62,6 +62,15 @@ logger.setLevel(logging.INFO)
 
 class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
+    def __init__(self, msg, data=None):
+        """
+        Args:
+            msg (str): The error message
+            data (dict): A dictionary of data to include in the output
+        """
+        self.msg = msg
+        self.data = data
+        Exception.__init__(self)
 
 
 class _SPFWarning(Exception):
@@ -91,6 +100,15 @@ class DNSException(Exception):
 
 class DMARCError(Exception):
     """Raised when a fatal DMARC error occurs"""
+    def __init__(self, msg, data=None):
+        """
+        Args:
+            msg (str): The error message
+            data (dict): A dictionary of data to include in the results
+        """
+        self.msg = msg
+        self.data = data
+        Exception.__init__(self)
 
 
 class SPFRecordNotFound(SPFError):
@@ -107,6 +125,9 @@ class SPFSyntaxError(SPFError):
 
 class SPFTooManyDNSLookups(SPFError):
     """Raised when an SPF record requires too many DNS lookups (10 max)"""
+    def __init__(self, *args, **kwargs):
+        data = dict(dns_lookups=kwargs["dns_lookups"])
+        SPFError.__init__(self, args[0], data=data)
 
 
 class SPFRedirectLoop(SPFError):
@@ -1258,7 +1279,8 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
         raise SPFTooManyDNSLookups(
             "Parsing the SPF record requires {0}/10 maximum DNS lookups - "
             "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
-                lookup_mechanism_count))
+                lookup_mechanism_count),
+            dns_lookups=lookup_mechanism_count)
 
     for match in matches:
         result = spf_qualifiers[match[0]]
@@ -1327,7 +1349,8 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                             "DNS lookups - "
                             "https://tools.ietf.org/html/rfc7208"
                             "#section-4.6.4".format(
-                                lookup_mechanism_count))
+                                lookup_mechanism_count),
+                        dns_lookups=lookup_mechanism_count)
                     parsed["redirect"] = OrderedDict(
                         [("domain", value), ("record", redirect_record),
                          ("dns_lookups", redirect["dns_lookups"]),
@@ -1363,7 +1386,8 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
                             "DNS lookups - "
                             "https://tools.ietf.org/html/rfc7208"
                             "#section-4.6.4".format(
-                                lookup_mechanism_count))
+                                lookup_mechanism_count),
+                        dns_lookups=lookup_mechanism_count)
                     include = OrderedDict(
                         [("domain", value), ("record", include_record),
                          ("dns_lookups", include["dns_lookups"]),
@@ -1504,7 +1528,7 @@ def check_domains(domains, output_format="json", output_path=None,
 
                 row["spf_warnings"] = ",".join(warnings)
             except SPFError as error:
-                row["spf_error"] = error
+                row["spf_error"] = error.msg
                 row["spf_valid"] = False
             try:
                 dmarc_query = query_dmarc_record(domain,
@@ -1535,7 +1559,7 @@ def check_domains(domains, output_format="json", output_path=None,
                 dmarc_warnings = dmarc_query["warnings"] + dmarc["warnings"]
                 row["dmarc_warnings"] = ",".join(dmarc_warnings)
             except DMARCError as error:
-                row["dmarc_error"] = error
+                row["dmarc_error"] = error.msg
                 row["dmarc_valid"] = False
             writer.writerow(row)
             output_file.flush()
@@ -1570,9 +1594,12 @@ def check_domains(domains, output_format="json", output_path=None,
                 domain_results["spf"]["parsed"] = parsed_spf["parsed"]
                 domain_results["spf"]["warnings"] += parsed_spf["warnings"]
             except SPFError as error:
-                domain_results["spf"]["error"] = str(error)
+                domain_results["spf"]["error"] = str(error.msg)
                 del domain_results["spf"]["dns_lookups"]
                 domain_results["spf"]["valid"] = False
+                if error.data:
+                    for key in error.data:
+                        domain_results["spf"][key] = error.data[key]
 
             # DMARC
             domain_results["dmarc"] = OrderedDict([("record", None),
@@ -1596,8 +1623,9 @@ def check_domains(domains, output_format="json", output_path=None,
                 domain_results["dmarc"]["warnings"] += parsed_dmarc_record[
                     "warnings"]
             except DMARCError as error:
-                domain_results["dmarc"]["error"] = str(error)
+                domain_results["dmarc"]["error"] = str(error.msg)
                 domain_results["dmarc"]["valid"] = False
+
 
             results.append(domain_results)
             sleep(wait)
