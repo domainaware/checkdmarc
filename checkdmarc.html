@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 2.5.0 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 2.6.0 documentation</title>
   
 
   
@@ -57,7 +57,7 @@
             
             
               <div class="version">
-                2.5.0
+                2.6.0
               </div>
             
           
@@ -152,28 +152,28 @@
 <p>Validates and parses SPF amd DMARC DNS records</p>
 <dl class="exception">
 <dt id="checkdmarc.DMARCError">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCError</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCError</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raised when a fatal DMARC error occurs</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.DMARCRecordInWrongLocation">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCRecordInWrongLocation</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordInWrongLocation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordInWrongLocation" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCRecordInWrongLocation</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordInWrongLocation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordInWrongLocation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a DMARC record is found at the root of a domain</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.DMARCRecordNotFound">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCRecordNotFound</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCRecordNotFound</code><span class="sig-paren">(</span><em>error</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordNotFound" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a DMARC record could not be found</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.DMARCReportEmailAddressMissingMXRecords">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCReportEmailAddressMissingMXRecords</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCReportEmailAddressMissingMXRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCReportEmailAddressMissingMXRecords</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCReportEmailAddressMissingMXRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a email address in a DMARC report URI is missing MX
 records</p>
@@ -181,42 +181,42 @@ records</p>
 
 <dl class="exception">
 <dt id="checkdmarc.DMARCSyntaxError">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCSyntaxError</code><a class="reference internal" href="_modules/checkdmarc.html#DMARCSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCSyntaxError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCSyntaxError</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCSyntaxError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a DMARC syntax error is found</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.DNSException">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DNSException</code><a class="reference internal" href="_modules/checkdmarc.html#DNSException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DNSException" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DNSException</code><span class="sig-paren">(</span><em>error</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DNSException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DNSException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raised when a general DNS error occurs</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.InvalidDMARCReportURI">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCReportURI</code><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCReportURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCReportURI" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCReportURI</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCReportURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCReportURI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.InvalidDMARCTagValue" title="checkdmarc.InvalidDMARCTagValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.InvalidDMARCTagValue</span></code></a></p>
 <p>Raised when an invalid DMARC reporting URI is found</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.InvalidDMARCTag">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCTag</code><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTag" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCTag</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTag" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCSyntaxError</span></code></a></p>
 <p>Raised when an invalid DMARC tag is found</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.InvalidDMARCTagValue">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCTagValue</code><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTagValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTagValue" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCTagValue</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTagValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTagValue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCSyntaxError</span></code></a></p>
 <p>Raised when an invalid DMARC tag value is found</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.MultipleDMARCRecords">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">MultipleDMARCRecords</code><a class="reference internal" href="_modules/checkdmarc.html#MultipleDMARCRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleDMARCRecords" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">MultipleDMARCRecords</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleDMARCRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleDMARCRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when multiple DMARC records are found, in violation of
 RFC 7486, section 6.6.3</p>
@@ -224,28 +224,28 @@ RFC 7486, section 6.6.3</p>
 
 <dl class="exception">
 <dt id="checkdmarc.MultipleSPFRTXTRecords">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">MultipleSPFRTXTRecords</code><a class="reference internal" href="_modules/checkdmarc.html#MultipleSPFRTXTRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleSPFRTXTRecords" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">MultipleSPFRTXTRecords</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleSPFRTXTRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleSPFRTXTRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when multiple TXT spf1 records are found</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.SPFError">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFError</code><a class="reference internal" href="_modules/checkdmarc.html#SPFError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFError</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raised when a fatal SPF error occurs</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.SPFIncludeLoop">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFIncludeLoop</code><a class="reference internal" href="_modules/checkdmarc.html#SPFIncludeLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFIncludeLoop" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFIncludeLoop</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFIncludeLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFIncludeLoop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when a SPF include loop is detected</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordFoundWhereDMARCRecordShouldBe</code><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereDMARCRecordShouldBe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordFoundWhereDMARCRecordShouldBe</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereDMARCRecordShouldBe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a SPF record is found where a DMARC record should be;
 most likely, the <code class="docutils literal notranslate"><span class="pre">_dmarc</span></code> subdomain
@@ -255,42 +255,42 @@ redirected to the base domain</p>
 
 <dl class="exception">
 <dt id="checkdmarc.SPFRecordNotFound">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordNotFound</code><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordNotFound</code><span class="sig-paren">(</span><em>error</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordNotFound" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when an SPF record could not be found</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.SPFRedirectLoop">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRedirectLoop</code><a class="reference internal" href="_modules/checkdmarc.html#SPFRedirectLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRedirectLoop" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRedirectLoop</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRedirectLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRedirectLoop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when a SPF redirect loop is detected</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.SPFSyntaxError">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFSyntaxError</code><a class="reference internal" href="_modules/checkdmarc.html#SPFSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFSyntaxError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFSyntaxError</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFSyntaxError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when an SPF syntax error is found</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.SPFTooManyDNSLookups">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFTooManyDNSLookups</code><a class="reference internal" href="_modules/checkdmarc.html#SPFTooManyDNSLookups"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFTooManyDNSLookups" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFTooManyDNSLookups</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFTooManyDNSLookups"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFTooManyDNSLookups" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when an SPF record requires too many DNS lookups (10 max)</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.UnrelatedTXTRecordFound">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">UnrelatedTXTRecordFound</code><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFound" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">UnrelatedTXTRecordFound</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFound" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a TXT record unrelated to DMARC is found</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="checkdmarc.UnverifiedDMARCURIDestination">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">UnverifiedDMARCURIDestination</code><a class="reference internal" href="_modules/checkdmarc.html#UnverifiedDMARCURIDestination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnverifiedDMARCURIDestination" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">UnverifiedDMARCURIDestination</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnverifiedDMARCURIDestination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnverifiedDMARCURIDestination" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when the destination of a DMARC report URI does not indicate
 that it accepts reports for the domain</p>
@@ -818,7 +818,7 @@ domain</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'2.5.0',
+            VERSION:'2.6.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
