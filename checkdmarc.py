@@ -39,7 +39,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.6.0"
+__version__ = "2.6.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -68,9 +68,8 @@ class SPFError(Exception):
             msg (str): The error message
             data (dict): A dictionary of data to include in the output
         """
-        self.msg = msg
         self.data = data
-        Exception.__init__(self)
+        Exception.__init__(self, msg)
 
 
 class _SPFWarning(Exception):
@@ -109,9 +108,8 @@ class DMARCError(Exception):
             msg (str): The error message
             data (dict): A dictionary of data to include in the results
         """
-        self.msg = msg
         self.data = data
-        Exception.__init__(self)
+        Exception.__init__(self, msg)
 
 
 class SPFRecordNotFound(SPFError):
@@ -119,7 +117,6 @@ class SPFRecordNotFound(SPFError):
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
-        self.msg = self.args[0]
 
 
 class MultipleSPFRTXTRecords(SPFError):
@@ -150,7 +147,6 @@ class DMARCRecordNotFound(DMARCError):
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
-        self.msg = self.args[0]
 
 
 class DMARCSyntaxError(DMARCError):
@@ -1537,7 +1533,7 @@ def check_domains(domains, output_format="json", output_path=None,
 
                 row["spf_warnings"] = ",".join(warnings)
             except SPFError as error:
-                row["spf_error"] = error.msg
+                row["spf_error"] = error
                 row["spf_valid"] = False
             try:
                 dmarc_query = query_dmarc_record(domain,
@@ -1568,7 +1564,7 @@ def check_domains(domains, output_format="json", output_path=None,
                 dmarc_warnings = dmarc_query["warnings"] + dmarc["warnings"]
                 row["dmarc_warnings"] = ",".join(dmarc_warnings)
             except DMARCError as error:
-                row["dmarc_error"] = error.msg
+                row["dmarc_error"] = error
                 row["dmarc_valid"] = False
             writer.writerow(row)
             output_file.flush()
@@ -1603,7 +1599,7 @@ def check_domains(domains, output_format="json", output_path=None,
                 domain_results["spf"]["parsed"] = parsed_spf["parsed"]
                 domain_results["spf"]["warnings"] += parsed_spf["warnings"]
             except SPFError as error:
-                domain_results["spf"]["error"] = str(error.msg)
+                domain_results["spf"]["error"] = str(error)
                 del domain_results["spf"]["dns_lookups"]
                 domain_results["spf"]["valid"] = False
                 if hasattr(error, "data") and error.data:
@@ -1632,7 +1628,7 @@ def check_domains(domains, output_format="json", output_path=None,
                 domain_results["dmarc"]["warnings"] += parsed_dmarc_record[
                     "warnings"]
             except DMARCError as error:
-                domain_results["dmarc"]["error"] = str(error.msg)
+                domain_results["dmarc"]["error"] = str(error)
                 domain_results["dmarc"]["valid"] = False
                 if hasattr(error, "data") and error.data:
                     for key in error.data:
