@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 2.6.1 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 2.6.2 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                2.6.1
+                2.6.2
               </div>
             
           
@@ -186,7 +186,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.6.1&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.6.2&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">DMARC_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;([a-z]{1,5})=([\w.:@/+!,_\- ]+)&quot;</span>
@@ -645,7 +645,7 @@
     <span class="n">resolver</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
     <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
-        <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
+        <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
         <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">tcp</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
 
 
@@ -1398,7 +1398,7 @@
     <span class="n">lookup_mechanisms</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;include&quot;</span><span class="p">,</span> <span class="s2">&quot;exists&quot;</span><span class="p">,</span> <span class="s2">&quot;redirect&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">seen</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">seen</span> <span class="o">=</span> <span class="p">[</span><span class="n">domain</span><span class="p">]</span>
-    <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">spf_syntax_checker</span> <span class="o">=</span> <span class="n">_SPFGrammar</span><span class="p">()</span>
     <span class="n">parsed_record</span> <span class="o">=</span> <span class="n">spf_syntax_checker</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
@@ -1884,7 +1884,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'2.6.1',
+            VERSION:'2.6.2',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
