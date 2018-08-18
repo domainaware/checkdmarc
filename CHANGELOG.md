@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.6.2
+-----
+
+- Properly concatenate multi-line TXT records 
+
 2.6.1
 -----
 

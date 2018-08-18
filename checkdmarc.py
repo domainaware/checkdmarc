@@ -39,7 +39,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.6.1"
+__version__ = "2.6.2"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -498,7 +498,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=6.0):
     resolver.timeout = timeout
     resolver.lifetime = timeout
     return list(map(
-        lambda r: r.to_text().replace(' "', '').replace('"', '').rstrip("."),
+        lambda r: r.to_text().replace('" ', '').replace('"', '').rstrip("."),
         resolver.query(domain, record_type, tcp=True)))
 
 
@@ -1251,7 +1251,7 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=6.0):
     lookup_mechanisms = ["a", "mx", "include", "exists", "redirect"]
     if seen is None:
         seen = [domain]
-    record = record.replace(' "', '').replace('"', '')
+    record = record.replace('" ', '').replace('"', '')
     warnings = []
     spf_syntax_checker = _SPFGrammar()
     parsed_record = spf_syntax_checker.parse(record.lower())

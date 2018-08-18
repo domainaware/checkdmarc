@@ -33,6 +33,15 @@ class Test(unittest.TestCase):
                              "Known good domain {0} failed DMARC check:"
                              "\n\n{1}".format(domain["domain"], dmarc_error))
 
+    def testSplitSPFRecord(self):
+        """Split SPF records are parsed properly"""
+
+        rec = '"v=spf1 ip4:147.75.8.208 " "include:_spf.salesforce.com -all"'
+
+        parsed_record = checkdmarc.parse_spf_record(rec, "example.com")
+
+        self.assertEqual(parsed_record["parsed"]["all"], "fail")
+
     def testIncludeMissingSPF(self):
         """SPF records that include domains that are missing SPF records
         raise SPFRecordNotFound"""
