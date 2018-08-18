@@ -109,3 +109,5 @@ output/
 
 *.json
 *.csv
+.public_suffix_list.dat
+
