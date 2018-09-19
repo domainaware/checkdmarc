@@ -6,3 +6,4 @@ sphinx_rtd_theme
 collective.checkdocs
 wheel
 nose
+rstcheck
