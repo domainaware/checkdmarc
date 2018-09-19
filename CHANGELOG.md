@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.7.0
+------
+
+- Fix report destination verification
+
 2.6.3
 -----
 

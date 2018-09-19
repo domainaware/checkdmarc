@@ -39,7 +39,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.6.3"
+__version__ = "2.7.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -869,9 +869,10 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
                                                  destination_domain)
         message = "{0} does not indicate that it accepts DMARC reports " \
                   "about {1} - " \
-                  "https://tools.ietf.org/html/rfc7489" \
-                  "#section-7.1".format(destination_domain,
-                                        source_domain)
+                  "Authorization record not found: " \
+                  '{2} IN TXT "DMARC1"'.format(destination_domain,
+                                               source_domain,
+                                               target)
         dmarc_record_count = 0
         unrelated_records = []
         try:
@@ -906,7 +907,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
 
     Args:
         record (str): A DMARC record
-        domain (str): The email domain
+        domain (str): The domain where the record is found
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
         (Cloudflare's by default)
@@ -1153,7 +1154,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
 
     tag_descriptions = include_tag_descriptions
 
-    tags = parse_dmarc_record(query["record"], domain,
+    tags = parse_dmarc_record(query["record"], query["location"],
                               include_tag_descriptions=tag_descriptions,
                               nameservers=nameservers, timeout=timeout)
 
@@ -1541,7 +1542,8 @@ def check_domains(domains, output_format="json", output_path=None,
                                                  timeout=timeout)
                 row["dmarc_record"] = dmarc_query["record"]
                 row["dmarc_record_location"] = dmarc_query["location"]
-                dmarc = parse_dmarc_record(dmarc_query["record"], domain,
+                dmarc = parse_dmarc_record(dmarc_query["record"],
+                                           dmarc_query["location"],
                                            nameservers=nameservers,
                                            timeout=timeout)
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
@@ -1618,7 +1620,7 @@ def check_domains(domains, output_format="json", output_path=None,
                 domain_results["dmarc"]["location"] = dmarc_query["location"]
                 parsed_dmarc_record = parse_dmarc_record(
                     dmarc_query["record"],
-                    domain,
+                    dmarc_query["location"],
                     include_tag_descriptions=include_dmarc_tag_descriptions,
                     nameservers=nameservers,
                     timeout=timeout)
