@@ -5,7 +5,7 @@ Changelog
 -----
 
 - Reduce default DNS timeout to 2.0 seconds
-
+- Always use `\n` as the newline when generating output
 
 2.6.2
 -----

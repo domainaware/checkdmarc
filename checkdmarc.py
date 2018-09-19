@@ -1508,7 +1508,7 @@ def check_domains(domains, output_format="json", output_path=None,
         if output_path:
             output_file = open(output_path, "w", newline="\n")
         else:
-            output_file = StringIO()
+            output_file = StringIO(newline="\n")
         writer = DictWriter(output_file, fieldnames=fields)
         writer.writeheader()
         while "" in domains:
