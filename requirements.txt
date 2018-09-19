@@ -1,7 +1,7 @@
 dnspython
 pyleri
 publicsuffix
-sphinx
+sphinx==1.7.9
 sphinx_rtd_theme
 collective.checkdocs
 wheel
