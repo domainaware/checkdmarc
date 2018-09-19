@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2.6.3
+-----
+
+- Reduce default DNS timeout to 2.0 seconds
+
+
 2.6.2
 -----
 
