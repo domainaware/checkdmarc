@@ -39,7 +39,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.7.0"
+__version__ = "2.7.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
@@ -498,7 +498,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0):
     resolver.timeout = timeout
     resolver.lifetime = timeout
     return list(map(
-        lambda r: r.to_text().replace('" ', '').replace('"', '').rstrip("."),
+        lambda r: r.to_text().replace('"', '').rstrip("."),
         resolver.query(domain, record_type, tcp=True)))
 
 
@@ -1092,9 +1092,9 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
                                                     "might not send to more "
                                                     "than two ruf URIs")
 
-        if tags["pct"]["value"] < 1 or tags["pct"]["value"] > 100:
+        if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
             raise InvalidDMARCTagValue(
-                "pct value must be an integer between 1 and 100")
+                "pct value must be an integer between 0 and 100")
         elif tags["pct"]["value"] < 100:
             warning_msg = "pct value is less than 100. This leads to " \
                           "inconsistent and unpredictable policy " \

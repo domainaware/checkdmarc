@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.7.1
+-----
+
+- Fix false-negative SPF and DMARC validations
+
 2.7.0
 ------
 
