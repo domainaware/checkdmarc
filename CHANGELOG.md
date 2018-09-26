@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.7.2
+-----
+- Fix false-negative SPF validation of `ipv4` mechanisms with a single digit
+  CIDR notation (PR #35)
+
 2.7.1
 -----
 
