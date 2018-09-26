@@ -49,7 +49,7 @@ MAILTO_REGEX_STRING = r"^(mailto):" \
 SPF_VERSION_TAG_REGEX_STRING = "v=spf1"
 SPF_MECHANISM_REGEX_STRING = r"([+\-~?])?(mx|ip4|ip6|exists|include|all|a|" \
                              r"redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)"
-IPV4_REGEX_STRING = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{2})?$"
+IPV4_REGEX_STRING = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
 
 DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING)
 MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
