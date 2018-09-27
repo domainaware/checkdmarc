@@ -502,7 +502,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0):
             lambda r: r.strings,
             resolver.query(domain, record_type, tcp=True)))
         _resourcerecord = [
-            resourcerecord[0][:0].join(resourcerecord) 
+            resourcerecord[0][:0].join(resourcerecord)
             for resourcerecord in resourcerecords if resourcerecord]
         return [r.decode('ascii') for r in _resourcerecord]
     else:
