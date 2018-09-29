@@ -497,9 +497,18 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0):
     resolver.nameservers = nameservers
     resolver.timeout = timeout
     resolver.lifetime = timeout
-    return list(map(
-        lambda r: r.to_text().replace('"', '').rstrip("."),
-        resolver.query(domain, record_type, tcp=True)))
+    if record_type == "TXT":
+        resourcerecords = list(map(
+            lambda r: r.strings,
+            resolver.query(domain, record_type, tcp=True)))
+        _resourcerecord = [
+            resourcerecord[0][:0].join(resourcerecord)
+            for resourcerecord in resourcerecords if resourcerecord]
+        return [r.decode('ascii') for r in _resourcerecord]
+    else:
+        return list(map(
+            lambda r: r.to_text().replace('"', '').rstrip("."),
+            resolver.query(domain, record_type, tcp=True)))
 
 
 def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
