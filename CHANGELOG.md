@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.7.3
+-----
+
+- Fix parsing of TXT records over multiple lines (PR #36)
+
 2.7.2
 -----
 - Fix false-negative SPF validation of `ipv4` mechanisms with a single digit
