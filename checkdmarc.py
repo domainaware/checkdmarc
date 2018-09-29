@@ -504,7 +504,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0):
         _resourcerecord = [
             resourcerecord[0][:0].join(resourcerecord)
             for resourcerecord in resourcerecords if resourcerecord]
-        return [r.decode('ascii') for r in _resourcerecord]
+        return [r.decode() for r in _resourcerecord]
     else:
         return list(map(
             lambda r: r.to_text().replace('"', '').rstrip("."),

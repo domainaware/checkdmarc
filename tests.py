@@ -17,7 +17,7 @@ known_good_domains = [
 
 class Test(unittest.TestCase):
     def testKnownGood(self):
-        """Domains with known SPF and DMARC records"""
+        """Domains with known good SPF and DMARC records"""
 
         results = checkdmarc.check_domains(known_good_domains)
         for domain in results:
