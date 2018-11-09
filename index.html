@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 2.7.3 documentation</title>
+  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 2.8.0 documentation</title>
   
 
   
@@ -57,7 +57,7 @@
             
             
               <div class="version">
-                2.7.3
+                2.8.0
               </div>
             
           
@@ -150,10 +150,10 @@
   <div class="section" id="welcome-to-checkdmarc-s-documentation">
 <h1>Welcome to checkdmarc’s documentation!<a class="headerlink" href="#welcome-to-checkdmarc-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> is a Python module and command line parser for SPF and DMARC DNS records</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">checkdmarc</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="n">FORMAT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">OUTPUT</span><span class="p">]</span>
-              <span class="p">[</span><span class="o">-</span><span class="n">n</span> <span class="n">NAMESERVER</span> <span class="p">[</span><span class="n">NAMESERVER</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="n">TIMEOUT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span>
-              <span class="p">[</span><span class="o">-</span><span class="n">w</span> <span class="n">WAIT</span><span class="p">]</span>
-              <span class="n">domain</span> <span class="p">[</span><span class="n">domain</span> <span class="o">...</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">checkdmarc</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="n">FORMAT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">OUTPUT</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">-</span><span class="n">n</span> <span class="n">NAMESERVER</span> <span class="p">[</span><span class="n">NAMESERVER</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="n">TIMEOUT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span> <span class="n">WAIT</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">mx</span> <span class="n">MX</span><span class="p">]</span>
+                  <span class="n">domain</span> <span class="p">[</span><span class="n">domain</span> <span class="o">...</span><span class="p">]</span>
 
 <span class="n">Validates</span> <span class="ow">and</span> <span class="n">parses</span> <span class="n">SPF</span> <span class="n">amd</span> <span class="n">DMARC</span> <span class="n">DNS</span> <span class="n">records</span>
 
@@ -163,6 +163,7 @@
 
 <span class="n">optional</span> <span class="n">arguments</span><span class="p">:</span>
   <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>            <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
+  <span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="o">--</span><span class="n">parked</span>          <span class="n">Indicate</span> <span class="n">that</span> <span class="n">the</span> <span class="n">doomains</span> <span class="n">are</span> <span class="n">parked</span>
   <span class="o">-</span><span class="n">d</span><span class="p">,</span> <span class="o">--</span><span class="n">descriptions</span>    <span class="n">include</span> <span class="n">descriptions</span> <span class="n">of</span> <span class="n">DMARC</span> <span class="n">tags</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">JSON</span> <span class="n">output</span>
   <span class="o">-</span><span class="n">f</span> <span class="n">FORMAT</span><span class="p">,</span> <span class="o">--</span><span class="nb">format</span> <span class="n">FORMAT</span>
                         <span class="n">specify</span> <span class="n">JSON</span> <span class="ow">or</span> <span class="n">CSV</span> <span class="n">output</span> <span class="nb">format</span>
@@ -170,13 +171,14 @@
                         <span class="n">output</span> <span class="n">to</span> <span class="n">a</span> <span class="n">file</span> <span class="n">path</span> <span class="n">rather</span> <span class="n">than</span> <span class="n">printing</span> <span class="n">to</span> <span class="n">the</span>
                         <span class="n">screen</span>
   <span class="o">-</span><span class="n">n</span> <span class="n">NAMESERVER</span> <span class="p">[</span><span class="n">NAMESERVER</span> <span class="o">...</span><span class="p">],</span> <span class="o">--</span><span class="n">nameserver</span> <span class="n">NAMESERVER</span> <span class="p">[</span><span class="n">NAMESERVER</span> <span class="o">...</span><span class="p">]</span>
-                        <span class="n">nameservers</span> <span class="n">to</span> <span class="n">query</span>
+                        <span class="n">nameservers</span> <span class="n">to</span> <span class="n">query</span> <span class="p">(</span><span class="n">Default</span> <span class="ow">is</span> <span class="n">Cloudflare</span><span class="s1">&#39;s</span>
   <span class="o">-</span><span class="n">t</span> <span class="n">TIMEOUT</span><span class="p">,</span> <span class="o">--</span><span class="n">timeout</span> <span class="n">TIMEOUT</span>
                         <span class="n">number</span> <span class="n">of</span> <span class="n">seconds</span> <span class="n">to</span> <span class="n">wait</span> <span class="k">for</span> <span class="n">an</span> <span class="n">answer</span> <span class="kn">from</span> <span class="nn">DNS</span>
-                        <span class="p">(</span><span class="n">default</span> <span class="mf">6.0</span><span class="p">)</span>
+                        <span class="p">(</span><span class="n">default</span> <span class="mf">2.0</span><span class="p">)</span>
   <span class="o">-</span><span class="n">v</span><span class="p">,</span> <span class="o">--</span><span class="n">version</span>         <span class="n">show</span> <span class="n">program</span><span class="s1">&#39;s version number and exit</span>
-  <span class="o">-</span><span class="n">w</span> <span class="n">WAIT</span><span class="p">,</span> <span class="o">--</span><span class="n">wait</span> <span class="n">WAIT</span>  <span class="n">number</span> <span class="n">os</span> <span class="n">seconds</span> <span class="n">to</span> <span class="n">wait</span> <span class="n">between</span> <span class="n">processing</span> <span class="n">domains</span>
+  <span class="o">-</span><span class="n">w</span> <span class="n">WAIT</span><span class="p">,</span> <span class="o">--</span><span class="n">wait</span> <span class="n">WAIT</span>  <span class="n">number</span> <span class="n">of</span> <span class="n">seconds</span> <span class="n">to</span> <span class="n">wait</span> <span class="n">between</span> <span class="n">processing</span> <span class="n">domains</span>
                         <span class="p">(</span><span class="n">default</span> <span class="mf">0.0</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">mx</span> <span class="n">MX</span>               <span class="n">A</span> <span class="n">comma</span> <span class="n">separated</span> <span class="nb">list</span> <span class="n">of</span> <span class="n">approved</span> <span class="n">MX</span> <span class="n">hostnames</span>
 </pre></div>
 </div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov
@@ -192,10 +194,13 @@
         <span class="nt">&quot;hostname&quot;</span><span class="p">:</span> <span class="s2">&quot;mx-east.fbi.gov&quot;</span><span class="p">,</span>
         <span class="nt">&quot;addresses&quot;</span><span class="p">:</span> <span class="p">[</span>
           <span class="s2">&quot;153.31.160.5&quot;</span>
-        <span class="p">]</span>
+        <span class="p">],</span>
+        <span class="nt">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">}</span>
     <span class="p">],</span>
-    <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
+    <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="s2">&quot;mx-east.fbi.gov does not have a SPF TXT record. MX hosts should have a SPF record of: v=spf1 a -all so bouncebacks pass SPF.&quot;</span>
+    <span class="p">]</span>
   <span class="p">},</span>
   <span class="nt">&quot;spf&quot;</span><span class="p">:</span> <span class="p">{</span>
     <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=spf1 +mx ip4:153.31.0.0/16 -all&quot;</span><span class="p">,</span>
@@ -223,7 +228,7 @@
     <span class="p">}</span>
   <span class="p">},</span>
   <span class="nt">&quot;dmarc&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;record&quot;</span><span class="p">:</span> <span class="s2">&quot;v=DMARC1; p=reject; rua=mailto:dmarc-feedback@fbi.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100&quot;</span><span class="p">,</span>
     <span class="nt">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
     <span class="nt">&quot;location&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
     <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[],</span>
@@ -236,19 +241,16 @@
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;reject&quot;</span><span class="p">,</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
       <span class="p">},</span>
-      <span class="nt">&quot;adkim&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;aspf&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
-      <span class="p">},</span>
       <span class="nt">&quot;rua&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
           <span class="p">{</span>
             <span class="nt">&quot;scheme&quot;</span><span class="p">:</span> <span class="s2">&quot;mailto&quot;</span><span class="p">,</span>
             <span class="nt">&quot;address&quot;</span><span class="p">:</span> <span class="s2">&quot;dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;size_limit&quot;</span><span class="p">:</span> <span class="kc">null</span>
+          <span class="p">},</span>
+          <span class="p">{</span>
+            <span class="nt">&quot;scheme&quot;</span><span class="p">:</span> <span class="s2">&quot;mailto&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;address&quot;</span><span class="p">:</span> <span class="s2">&quot;reports@dmarc.cyber.dhs.gov&quot;</span><span class="p">,</span>
             <span class="nt">&quot;size_limit&quot;</span><span class="p">:</span> <span class="kc">null</span>
           <span class="p">}</span>
         <span class="p">],</span>
@@ -267,6 +269,14 @@
       <span class="nt">&quot;pct&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
         <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;adkim&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;aspf&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">false</span>
       <span class="p">},</span>
       <span class="nt">&quot;fo&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span>
@@ -362,7 +372,7 @@ substitute <code class="docutils literal notranslate"><span class="pre">pip</spa
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Sean Whalen.
+        &copy; Copyright 2017, Sean Whalen
 
     </p>
   </div>
@@ -381,20 +391,23 @@ substitute <code class="docutils literal notranslate"><span class="pre">pip</spa
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'2.7.3',
-            LANGUAGE:'None',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'./',
+              VERSION:'2.8.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+    
 
   
 

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 2.7.3 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 2.8.0 documentation</title>
   
 
   
@@ -57,7 +57,7 @@
             
             
               <div class="version">
-                2.7.3
+                2.8.0
               </div>
             
           
@@ -151,6 +151,34 @@
 <span id="checkdmarc-module"></span><h1>checkdmarc module<a class="headerlink" href="#module-checkdmarc" title="Permalink to this headline">¶</a></h1>
 <p>Validates and parses SPF amd DMARC DNS records</p>
 <dl class="exception">
+<dt id="checkdmarc.BIMIError">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">BIMIError</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMIError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when a fatal BIMI error occurs</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.BIMIRecordInWrongLocation">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">BIMIRecordInWrongLocation</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordInWrongLocation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMIRecordInWrongLocation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
+<p>Raised when a BIMI record is found at the root of a domain</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.BIMIRecordNotFound">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">BIMIRecordNotFound</code><span class="sig-paren">(</span><em>error</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMIRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
+<p>Raised when a BIMI record could not be found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.BIMISyntaxError">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">BIMISyntaxError</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMISyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMISyntaxError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
+<p>Raised when a BIMI syntax error is found</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="checkdmarc.DMARCError">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">DMARCError</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
@@ -194,6 +222,27 @@ records</p>
 </dd></dl>
 
 <dl class="exception">
+<dt id="checkdmarc.InvalidBIMIIndicatorURI">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidBIMIIndicatorURI</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMIIndicatorURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidBIMIIndicatorURI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.InvalidBIMITagValue" title="checkdmarc.InvalidBIMITagValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.InvalidBIMITagValue</span></code></a></p>
+<p>Raised when an invalid BIMI indicator URI is found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.InvalidBIMITag">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidBIMITag</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMISyntaxError" title="checkdmarc.BIMISyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMISyntaxError</span></code></a></p>
+<p>Raised when an invalid BIMI tag is found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.InvalidBIMITagValue">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidBIMITagValue</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITagValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITagValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMISyntaxError" title="checkdmarc.BIMISyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMISyntaxError</span></code></a></p>
+<p>Raised when an invalid BIMI tag value is found</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="checkdmarc.InvalidDMARCReportURI">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">InvalidDMARCReportURI</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCReportURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCReportURI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.InvalidDMARCTagValue" title="checkdmarc.InvalidDMARCTagValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.InvalidDMARCTagValue</span></code></a></p>
@@ -215,6 +264,13 @@ records</p>
 </dd></dl>
 
 <dl class="exception">
+<dt id="checkdmarc.MultipleBIMIRecords">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">MultipleBIMIRecords</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleBIMIRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleBIMIRecords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
+<p>Raised when multiple BIMI records are found</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="checkdmarc.MultipleDMARCRecords">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">MultipleDMARCRecords</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleDMARCRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleDMARCRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
@@ -227,6 +283,13 @@ RFC 7486, section 6.6.3</p>
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">MultipleSPFRTXTRecords</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleSPFRTXTRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleSPFRTXTRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when multiple TXT spf1 records are found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.SMTPError">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SMTPError</code><a class="reference internal" href="_modules/checkdmarc.html#SMTPError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SMTPError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when n SMTP error occurs</p>
 </dd></dl>
 
 <dl class="exception">
@@ -244,9 +307,19 @@ RFC 7486, section 6.6.3</p>
 </dd></dl>
 
 <dl class="exception">
+<dt id="checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordFoundWhereBIMIRecordShouldBe</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereBIMIRecordShouldBe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI" title="checkdmarc.UnrelatedTXTRecordFoundAtBIMI"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFoundAtBIMI</span></code></a></p>
+<p>Raised when a SPF record is found where a BIMI record should be;
+most likely, the <code class="docutils literal notranslate"><span class="pre">selector_bimi</span></code> subdomain
+record does not actually exist, and the request for <code class="docutils literal notranslate"><span class="pre">TXT</span></code> records was
+redirected to the base domain</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe">
 <em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">SPFRecordFoundWhereDMARCRecordShouldBe</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereDMARCRecordShouldBe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC" title="checkdmarc.UnrelatedTXTRecordFoundAtDMARC"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFoundAtDMARC</span></code></a></p>
 <p>Raised when a SPF record is found where a DMARC record should be;
 most likely, the <code class="docutils literal notranslate"><span class="pre">_dmarc</span></code> subdomain
 record does not actually exist, and the request for <code class="docutils literal notranslate"><span class="pre">TXT</span></code> records was
@@ -282,8 +355,15 @@ redirected to the base domain</p>
 </dd></dl>
 
 <dl class="exception">
-<dt id="checkdmarc.UnrelatedTXTRecordFound">
-<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">UnrelatedTXTRecordFound</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFound" title="Permalink to this definition">¶</a></dt>
+<dt id="checkdmarc.UnrelatedTXTRecordFoundAtBIMI">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">UnrelatedTXTRecordFoundAtBIMI</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtBIMI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
+<p>Raised when a TXT record unrelated to BIMI is found</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="checkdmarc.UnrelatedTXTRecordFoundAtDMARC">
+<em class="property">exception </em><code class="descclassname">checkdmarc.</code><code class="descname">UnrelatedTXTRecordFoundAtDMARC</code><span class="sig-paren">(</span><em>msg</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtDMARC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a TXT record unrelated to DMARC is found</p>
 </dd></dl>
@@ -298,7 +378,7 @@ that it accepts reports for the domain</p>
 
 <dl class="function">
 <dt id="checkdmarc.check_domains">
-<code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>output_format='json'</em>, <em>output_path=None</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=2.0</em>, <em>wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>parked=False</em>, <em>approved_mx_hostnames=None</em>, <em>output_format='json'</em>, <em>output_path=None</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=2.0</em>, <em>wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the given domains for SPF and DMARC records, parse them, and return
 them</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -307,6 +387,8 @@ them</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>domains</strong> (<em>list</em>) – A list of domains to check</li>
+<li><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</li>
+<li><strong>approved_mx_hostnames</strong> (<em>list</em>) – A list of approved MX hostnames</li>
 <li><strong>output_format</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">json</span></code> or <code class="docutils literal notranslate"><span class="pre">csv</span></code></li>
 <li><strong>output_path</strong> (<em>str</em>) – Save output to the given file path</li>
 <li><strong>include_dmarc_tag_descriptions</strong> (<em>bool</em>) – Include descriptions of DMARC
@@ -405,7 +487,7 @@ where it is used as a cache file for 24 hours.</p>
 <a class="reference internal" href="#checkdmarc.InvalidDMARCTagValue" title="checkdmarc.InvalidDMARCTagValue"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.InvalidDMARCTagValue</span></code></a>
 <a class="reference internal" href="#checkdmarc.InvalidDMARCReportURI" title="checkdmarc.InvalidDMARCReportURI"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.InvalidDMARCReportURI</span></code></a>
 <a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination" title="checkdmarc.UnverifiedDMARCURIDestination"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnverifiedDMARCURIDestination</span></code></a>
-<a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFound" title="checkdmarc.UnrelatedTXTRecordFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFound</span></code></a>
+<code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFound</span></code>
 <a class="reference internal" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="checkdmarc.DMARCReportEmailAddressMissingMXRecords"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCReportEmailAddressMissingMXRecords</span></code></a></p>
 </dd>
 </dl>
@@ -452,7 +534,7 @@ description for a tag value</p>
 
 <dl class="function">
 <dt id="checkdmarc.get_mx_hosts">
-<code class="descclassname">checkdmarc.</code><code class="descname">get_mx_hosts</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">get_mx_hosts</code><span class="sig-paren">(</span><em>domain</em>, <em>approved_hostnames=None</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets MX hostname and their addresses</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -460,6 +542,8 @@ description for a tag value</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>domain</strong> (<em>str</em>) – A domain name</li>
+<li><strong>approved_hostnames</strong> (<em>list</em>) – Raise a warning if an unapproved hostname</li>
+<li><strong>found</strong> (<em>is</em>) – </li>
 <li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
 <li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
 <li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
@@ -525,7 +609,7 @@ description for a tag value</p>
 
 <dl class="function">
 <dt id="checkdmarc.parse_dmarc_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">parse_dmarc_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>include_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">parse_dmarc_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>parked=False</em>, <em>include_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a DMARC record</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -534,6 +618,7 @@ description for a tag value</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>record</strong> (<em>str</em>) – A DMARC record</li>
 <li><strong>domain</strong> (<em>str</em>) – The domain where the record is found</li>
+<li><strong>parked</strong> (<em>bool</em>) – Indicates if a domain is parked</li>
 <li><strong>include_tag_descriptions</strong> (<em>bool</em>) – Include descriptions in parsed results</li>
 <li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
 <li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
@@ -572,7 +657,7 @@ description for a tag value</p>
 <li><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.InvaliddDMARCTagValue</span></code></li>
 <li><a class="reference internal" href="#checkdmarc.InvalidDMARCReportURI" title="checkdmarc.InvalidDMARCReportURI"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.InvalidDMARCReportURI</span></code></a></li>
 <li><a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination" title="checkdmarc.UnverifiedDMARCURIDestination"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnverifiedDMARCURIDestination</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFound" title="checkdmarc.UnrelatedTXTRecordFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFound</span></code></a></li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFound</span></code></li>
 <li><a class="reference internal" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="checkdmarc.DMARCReportEmailAddressMissingMXRecords"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCReportEmailAddressMissingMXRecords</span></code></a></li>
 </ul>
 </td>
@@ -616,7 +701,7 @@ description for a tag value</p>
 
 <dl class="function">
 <dt id="checkdmarc.parse_spf_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">parse_spf_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>seen=None</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">parse_spf_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>parked=False</em>, <em>seen=None</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a SPF record, including resolving <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">mx</span></code>, and <code class="docutils literal notranslate"><span class="pre">include</span></code>
 mechanisms</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -625,8 +710,9 @@ mechanisms</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>record</strong> (<em>str</em>) – An SPF record</li>
-<li><strong>seen</strong> (<em>list</em>) – A list of domains seen in past loops</li>
 <li><strong>domain</strong> (<em>str</em>) – The domain that the SPF record came from</li>
+<li><strong>parked</strong> (<em>bool</em>) – indicated if a domain has been parked</li>
+<li><strong>seen</strong> (<em>list</em>) – A list of domains seen in past loops</li>
 <li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
 <li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
 <li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</li>
@@ -654,6 +740,50 @@ mechanisms</p>
 <li><a class="reference internal" href="#checkdmarc.SPFSyntaxError" title="checkdmarc.SPFSyntaxError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFSyntaxError</span></code></a></li>
 <li><a class="reference internal" href="#checkdmarc.SPFTooManyDNSLookups" title="checkdmarc.SPFTooManyDNSLookups"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFTooManyDNSLookups</span></code></a></li>
 </ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.query_bimi_record">
+<code class="descclassname">checkdmarc.</code><code class="descname">query_bimi_record</code><span class="sig-paren">(</span><em>domain</em>, <em>selector='default'</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_bimi_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_bimi_record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queries DNS for a BIMI record</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
+<li><strong>selector</strong> (<em>str</em>) – The BMI selector</li>
+<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
+<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
+<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt>
+<dd><ul class="first last simple">
+<li><code class="docutils literal notranslate"><span class="pre">record</span></code> - the unparsed DMARC record string</li>
+<li><code class="docutils literal notranslate"><span class="pre">location</span></code> - the domain where the record was found</li>
+<li><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - warning conditions found</li>
+</ul>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p>OrderedDict</p>
+<dl class="docutils">
+<dt>Raises:</dt>
+<dd><p class="first last"><a class="reference internal" href="#checkdmarc.BIMIRecordNotFound" title="checkdmarc.BIMIRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.BIMIRecordNotFound</span></code></a>
+<a class="reference internal" href="#checkdmarc.BIMIRecordInWrongLocation" title="checkdmarc.BIMIRecordInWrongLocation"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.BIMIRecordInWrongLocation</span></code></a>
+<a class="reference internal" href="#checkdmarc.MultipleBIMIRecords" title="checkdmarc.MultipleBIMIRecords"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.MultipleBIMIRecords</span></code></a></p>
+</dd>
+</dl>
+</p>
 </td>
 </tr>
 </tbody>
@@ -742,6 +872,25 @@ mechanisms</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="checkdmarc.test_starttls">
+<code class="descclassname">checkdmarc.</code><code class="descname">test_starttls</code><span class="sig-paren">(</span><em>hostname</em>, <em>ssl_context=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_starttls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_starttls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attempt to connect to a SMTP server and validate STARTTLS support</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>hostname</strong> (<em>str</em>) – The hostname</li>
+<li><strong>ssl_context</strong> – A SSL context</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Returns:</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="checkdmarc.verify_dmarc_report_destination">
 <code class="descclassname">checkdmarc.</code><code class="descname">verify_dmarc_report_destination</code><span class="sig-paren">(</span><em>source_domain</em>, <em>destination_domain</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#verify_dmarc_report_destination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.verify_dmarc_report_destination" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the report destination accepts reports for the source domain
@@ -768,7 +917,7 @@ domain</p>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
 <li><a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination" title="checkdmarc.UnverifiedDMARCURIDestination"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnverifiedDMARCURIDestination</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFound" title="checkdmarc.UnrelatedTXTRecordFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFound</span></code></a></li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFound</span></code></li>
 </ul>
 </td>
 </tr>
@@ -796,7 +945,7 @@ domain</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Sean Whalen.
+        &copy; Copyright 2017, Sean Whalen
 
     </p>
   </div>
@@ -815,20 +964,23 @@ domain</p>
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'2.7.3',
-            LANGUAGE:'None',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'./',
+              VERSION:'2.8.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+    
 
   
 
