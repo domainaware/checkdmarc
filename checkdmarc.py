@@ -1732,7 +1732,7 @@ def get_mx_hosts(domain, approved_hostnames=None,
     for record in mx_records:
         hosts.append(OrderedDict([("preference", record["preference"]),
                                   ("hostname", record["hostname"]),
-                                  ("addresses", []), ("starttlss", False)]))
+                                  ("addresses", []), ("starttls", False)]))
     for host in hosts:
         try:
             if approved_hostnames:
