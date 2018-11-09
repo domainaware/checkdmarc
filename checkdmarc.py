@@ -42,7 +42,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.7.4"
+__version__ = "2.8.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1640,10 +1640,11 @@ def get_spf_record(domain, nameservers=None, timeout=2.0):
     """
     record = query_spf_record(domain, nameservers=nameservers, timeout=timeout)
     record = record["record"]
-    record = parse_spf_record(record, domain, nameservers=nameservers,
-                              timeout=timeout)
+    parsed_record = parse_spf_record(record, domain, nameservers=nameservers,
+                                     timeout=timeout)
+    parsed_record["record"] = record
 
-    return record
+    return parsed_record
 
 
 def test_starttls(hostname, ssl_context=None):
@@ -1685,11 +1686,20 @@ def test_starttls(hostname, ssl_context=None):
     except CertificateError as error:
         raise SMTPError("Certificate error: {0}".format(error.__str__()))
     except smtplib.SMTPConnectError as e:
-        raise SMTPError("Could not connect: {0}".format(e.__str__()))
+        message = e.__str__()
+        error_code = int(message.lstrip("(").split(",")[0])
+        if error_code == 554:
+            message = " SMTP error code 554 - Not allowed"
+        else:
+            message = " SMTP error code {0}".format(error_code)
+        raise SMTPError("Could not connect: {0}".format(message))
     except smtplib.SMTPHeloError as e:
         raise SMTPError("HELO error: {0}".format(e.__str__()))
     except smtplib.SMTPException as error:
-        raise SMTPError("SMTP error code {0}".format(error))
+        message = error.__str__()
+        error_code = message.lstrip("(").split(",")[0]
+        message = "SMTP error code {0}".format(error_code)
+        raise SMTPError(message)
 
     finally:
         try:
@@ -1743,7 +1753,12 @@ def get_mx_hosts(domain, approved_hostnames=None,
             host["addresses"] = _get_a_records(host["hostname"],
                                                nameservers=nameservers,
                                                timeout=timeout)
-            host["starttls"] = test_starttls(host["hostname"])
+            starttls = test_starttls(host["hostname"])
+            if not starttls:
+                warnings.append("{0}: STARTTLS is not supported".format(
+                    host["hostname"]))
+
+            host["starttls"] = starttls
 
         except DNSException as warning:
             warnings.append(str(warning))
@@ -1754,13 +1769,14 @@ def get_mx_hosts(domain, approved_hostnames=None,
         correct_mx_spf_record = "v=spf1 a -all"
 
         try:
-            mx_spf_record = get_spf_record(host["hostname"],
-                                           nameservers=nameservers,
-                                           timeout=timeout)
+            mx_spf_record = query_spf_record(host["hostname"],
+                                             nameservers=nameservers,
+                                             timeout=timeout)["record"]
             if mx_spf_record != correct_mx_spf_record:
                 warning = "{0} should have a SPF record of: {1} " \
-                          "instead of: {1}, so bouncebacks pass " \
-                          "SPF.".format(host["hostname"], mx_spf_record)
+                          "instead of: {2}, so bouncebacks pass " \
+                          "SPF.".format(host["hostname"],
+                                        correct_mx_spf_record, mx_spf_record)
                 warnings.append(warning)
 
         except Exception as e:
