@@ -1843,7 +1843,8 @@ def check_domains(domains, parked=False, approved_mx_hostnames=None,
                   "dmarc_adkim", "dmarc_aspf",
                   "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
                   "dmarc_rua", "dmarc_ruf", "dmarc_sp",
-                  "mx", "spf_record", "dmarc_record", "dmarc_record_location",
+                  "mx", "startssl" "spf_record", "dmarc_record",
+                  "dmarc_record_location",
                   "mx_warnings", "spf_error",
                   "spf_warnings", "dmarc_error", "dmarc_warnings"]
         if output_path:
@@ -1861,6 +1862,9 @@ def check_domains(domains, parked=False, approved_mx_hostnames=None,
                               nameservers=nameservers, timeout=timeout)
             row["mx"] = ",".join(list(
                 map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
+                    mx["hosts"])))
+            row["starttls"] = ",".join(list(
+                map(lambda r: "{0}".format(r["starttls"]),
                     mx["hosts"])))
             row["mx_warnings"] = ",".join(mx["warnings"])
             try:

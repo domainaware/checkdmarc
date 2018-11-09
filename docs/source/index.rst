@@ -10,33 +10,35 @@ Welcome to checkdmarc's documentation!
 
 ::
 
-    usage: checkdmarc [-h] [-d] [-f FORMAT] [-o OUTPUT]
-                  [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
-                  [-w WAIT]
-                  domain [domain ...]
+   usage: checkdmarc [-h] [-p] [-d] [-f FORMAT] [-o OUTPUT]
+                     [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v] [-w WAIT]
+                     [--mx MX]
+                     domain [domain ...]
 
-    Validates and parses SPF amd DMARC DNS records
+   Validates and parses SPF amd DMARC DNS records
 
-    positional arguments:
-      domain                one or ore domains, or a single path to a file
-                            containing a list of domains
+   positional arguments:
+     domain                one or ore domains, or a single path to a file
+                           containing a list of domains
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -d, --descriptions    include descriptions of DMARC tags in the JSON output
-      -f FORMAT, --format FORMAT
-                            specify JSON or CSV output format
-      -o OUTPUT, --output OUTPUT
-                            output to a file path rather than printing to the
-                            screen
-      -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
-                            nameservers to query
-      -t TIMEOUT, --timeout TIMEOUT
-                            number of seconds to wait for an answer from DNS
-                            (default 6.0)
-      -v, --version         show program's version number and exit
-      -w WAIT, --wait WAIT  number os seconds to wait between processing domains
-                            (default 0.0)
+   optional arguments:
+     -h, --help            show this help message and exit
+     -p, --parked          Indicate that the doomains are parked
+     -d, --descriptions    include descriptions of DMARC tags in the JSON output
+     -f FORMAT, --format FORMAT
+                           specify JSON or CSV output format
+     -o OUTPUT, --output OUTPUT
+                           output to a file path rather than printing to the
+                           screen
+     -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
+                           nameservers to query (Default is Cloudflare's
+     -t TIMEOUT, --timeout TIMEOUT
+                           number of seconds to wait for an answer from DNS
+                           (default 2.0)
+     -v, --version         show program's version number and exit
+     -w WAIT, --wait WAIT  number of seconds to wait between processing domains
+                           (default 0.0)
+     --mx MX               A comma separated list of approved MX hostnames
 
 
 .. code-block:: bash
