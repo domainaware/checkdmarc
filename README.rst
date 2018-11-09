@@ -53,10 +53,13 @@ A Python module and command line utility for validating SPF and DMARC DNS record
             "hostname": "mx-east.fbi.gov",
             "addresses": [
               "153.31.160.5"
-            ]
+            ],
+            "starttls": true
           }
         ],
-        "warnings": []
+        "warnings": [
+          "mx-east.fbi.gov does not have a SPF TXT record. MX hosts should have a SPF record of: v=spf1 a -all so bouncebacks pass SPF."
+        ]
       },
       "spf": {
         "record": "v=spf1 +mx ip4:153.31.0.0/16 -all",
@@ -84,7 +87,7 @@ A Python module and command line utility for validating SPF and DMARC DNS record
         }
       },
       "dmarc": {
-        "record": "v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100",
+        "record": "v=DMARC1; p=reject; rua=mailto:dmarc-feedback@fbi.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100",
         "valid": true,
         "location": "fbi.gov",
         "warnings": [],
@@ -97,19 +100,16 @@ A Python module and command line utility for validating SPF and DMARC DNS record
             "value": "reject",
             "explicit": true
           },
-          "adkim": {
-            "value": "r",
-            "explicit": true
-          },
-          "aspf": {
-            "value": "r",
-            "explicit": true
-          },
           "rua": {
             "value": [
               {
                 "scheme": "mailto",
                 "address": "dmarc-feedback@fbi.gov",
+                "size_limit": null
+              },
+              {
+                "scheme": "mailto",
+                "address": "reports@dmarc.cyber.dhs.gov",
                 "size_limit": null
               }
             ],
@@ -128,6 +128,14 @@ A Python module and command line utility for validating SPF and DMARC DNS record
           "pct": {
             "value": 100,
             "explicit": true
+          },
+          "adkim": {
+            "value": "r",
+            "explicit": false
+          },
+          "aspf": {
+            "value": "r",
+            "explicit": false
           },
           "fo": {
             "value": [

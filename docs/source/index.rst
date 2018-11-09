@@ -47,116 +47,123 @@ Welcome to checkdmarc's documentation!
 
 .. code-block:: json
 
-    {
-      "domain": "fbi.gov",
-      "base_domain": "fbi.gov",
-      "mx": {
-        "hosts": [
-          {
-            "preference": 10,
-            "hostname": "mx-east.fbi.gov",
-            "addresses": [
-              "153.31.160.5"
-            ]
-          }
-        ],
-        "warnings": []
-      },
-      "spf": {
-        "record": "v=spf1 +mx ip4:153.31.0.0/16 -all",
-        "valid": true,
-        "dns_lookups": 1,
-        "warnings": [],
-        "parsed": {
-          "pass": [
-            {
-              "value": "mx-east.fbi.gov",
-              "mechanism": "mx"
-            },
-            {
-              "value": "153.31.0.0/16",
-              "mechanism": "ip4"
-            }
-          ],
-          "neutral": [],
-          "softfail": [],
-          "fail": [],
-          "include": [],
-          "redirect": null,
-          "exp": null,
-          "all": "fail"
-        }
-      },
-      "dmarc": {
-        "record": "v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc-feedback@fbi.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100",
-        "valid": true,
-        "location": "fbi.gov",
-        "warnings": [],
-        "tags": {
-          "v": {
-            "value": "DMARC1",
-            "explicit": true
-          },
-          "p": {
-            "value": "reject",
-            "explicit": true
-          },
-          "adkim": {
-            "value": "r",
-            "explicit": true
-          },
-          "aspf": {
-            "value": "r",
-            "explicit": true
-          },
-          "rua": {
-            "value": [
-              {
-                "scheme": "mailto",
-                "address": "dmarc-feedback@fbi.gov",
-                "size_limit": null
-              }
-            ],
-            "explicit": true
-          },
-          "ruf": {
-            "value": [
-              {
-                "scheme": "mailto",
-                "address": "dmarc-feedback@fbi.gov",
-                "size_limit": null
-              }
-            ],
-            "explicit": true
-          },
-          "pct": {
-            "value": 100,
-            "explicit": true
-          },
-          "fo": {
-            "value": [
-              "0"
-            ],
-            "explicit": false
-          },
-          "rf": {
-            "value": [
-              "afrf"
-            ],
-            "explicit": false
-          },
-          "ri": {
-            "value": 86400,
-            "explicit": false
-          },
-          "sp": {
-            "value": "reject",
-            "explicit": false
-          }
-        }
-      }
-    }
-
+   {
+     "domain": "fbi.gov",
+     "base_domain": "fbi.gov",
+     "mx": {
+       "hosts": [
+         {
+           "preference": 10,
+           "hostname": "mx-east.fbi.gov",
+           "addresses": [
+             "153.31.160.5"
+           ],
+           "starttls": true
+         }
+       ],
+       "warnings": [
+         "mx-east.fbi.gov does not have a SPF TXT record. MX hosts should have a SPF record of: v=spf1 a -all so bouncebacks pass SPF."
+       ]
+     },
+     "spf": {
+       "record": "v=spf1 +mx ip4:153.31.0.0/16 -all",
+       "valid": true,
+       "dns_lookups": 1,
+       "warnings": [],
+       "parsed": {
+         "pass": [
+           {
+             "value": "mx-east.fbi.gov",
+             "mechanism": "mx"
+           },
+           {
+             "value": "153.31.0.0/16",
+             "mechanism": "ip4"
+           }
+         ],
+         "neutral": [],
+         "softfail": [],
+         "fail": [],
+         "include": [],
+         "redirect": null,
+         "exp": null,
+         "all": "fail"
+       }
+     },
+     "dmarc": {
+       "record": "v=DMARC1; p=reject; rua=mailto:dmarc-feedback@fbi.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100",
+       "valid": true,
+       "location": "fbi.gov",
+       "warnings": [],
+       "tags": {
+         "v": {
+           "value": "DMARC1",
+           "explicit": true
+         },
+         "p": {
+           "value": "reject",
+           "explicit": true
+         },
+         "rua": {
+           "value": [
+             {
+               "scheme": "mailto",
+               "address": "dmarc-feedback@fbi.gov",
+               "size_limit": null
+             },
+             {
+               "scheme": "mailto",
+               "address": "reports@dmarc.cyber.dhs.gov",
+               "size_limit": null
+             }
+           ],
+           "explicit": true
+         },
+         "ruf": {
+           "value": [
+             {
+               "scheme": "mailto",
+               "address": "dmarc-feedback@fbi.gov",
+               "size_limit": null
+             }
+           ],
+           "explicit": true
+         },
+         "pct": {
+           "value": 100,
+           "explicit": true
+         },
+         "adkim": {
+           "value": "r",
+           "explicit": false
+         },
+         "aspf": {
+           "value": "r",
+           "explicit": false
+         },
+         "fo": {
+           "value": [
+             "0"
+           ],
+           "explicit": false
+         },
+         "rf": {
+           "value": [
+             "afrf"
+           ],
+           "explicit": false
+         },
+         "ri": {
+           "value": 86400,
+           "explicit": false
+         },
+         "sp": {
+           "value": "reject",
+           "explicit": false
+         }
+       }
+     }
+   }
 
 Installation
 ------------
