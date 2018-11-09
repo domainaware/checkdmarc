@@ -12,6 +12,9 @@ from argparse import ArgumentParser
 from os import path, stat
 from time import sleep
 from datetime import datetime, timedelta
+import socket
+import smtplib
+from ssl import SSLError, CertificateError, create_default_context
 
 from io import StringIO
 
@@ -61,6 +64,10 @@ IPV4_REGEX = compile(IPV4_REGEX_STRING)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+class SMTPError(Exception):
+    """Raised when n SMTP error occurs"""
 
 
 class SPFError(Exception):
@@ -1639,6 +1646,58 @@ def get_spf_record(domain, nameservers=None, timeout=2.0):
     return record
 
 
+def test_starttls(hostname, ssl_context=None):
+    """
+    Attempt to connect to a SMTP server and validate STARTTLS support
+
+    Args:
+        hostname (str): The hostname
+        ssl_context: A SSL context
+
+    Returns:
+
+    """
+    if ssl_context is None:
+        ssl_context = create_default_context()
+    try:
+        server = smtplib.SMTP(hostname)
+        server.connect(hostname)
+        server.ehlo_or_helo_if_needed()
+        if server.has_extn("starttls"):
+            server.starttls(context=ssl_context)
+            server.ehlo()
+            return True
+        else:
+            return False
+
+    except socket.gaierror:
+        raise SMTPError("DNS resolution failed")
+    except ConnectionRefusedError:
+        raise SMTPError("Connection refused")
+    except ConnectionResetError:
+        raise SMTPError("Connection reset")
+    except ConnectionAbortedError:
+        raise SMTPError("Connection aborted")
+    except TimeoutError:
+        raise SMTPError("Connection timed out")
+    except SSLError as error:
+        raise SMTPError("SSL error: {0}".format(error.__str__()))
+    except CertificateError as error:
+        raise SMTPError("Certificate error: {0}".format(error.__str__()))
+    except smtplib.SMTPConnectError as e:
+        raise SMTPError("Could not connect: {0}".format(e.__str__()))
+    except smtplib.SMTPHeloError as e:
+        raise SMTPError("HELO error: {0}".format(e.__str__()))
+    except smtplib.SMTPException as error:
+        raise SMTPError("SMTP error code {0}".format(error))
+
+    finally:
+        try:
+            server.quit()
+        except Exception as e:
+            logging.debug(e)
+
+
 def get_mx_hosts(domain, approved_hostnames=None,
                  nameservers=None, timeout=2.0):
     """
@@ -1673,7 +1732,7 @@ def get_mx_hosts(domain, approved_hostnames=None,
     for record in mx_records:
         hosts.append(OrderedDict([("preference", record["preference"]),
                                   ("hostname", record["hostname"]),
-                                  ("addresses", [])]))
+                                  ("addresses", []), ("starttlss", False)]))
     for host in hosts:
         try:
             if approved_hostnames:
@@ -1684,8 +1743,12 @@ def get_mx_hosts(domain, approved_hostnames=None,
             host["addresses"] = _get_a_records(host["hostname"],
                                                nameservers=nameservers,
                                                timeout=timeout)
+            host["starttls"] = test_starttls(host["hostname"])
+
         except DNSException as warning:
             warnings.append(str(warning))
+        except SMTPError as error:
+            warnings.append("{0}: {1}".format(host["hostname"], error))
 
         mx_spf_record = None
         correct_mx_spf_record = "v=spf1 a -all"
