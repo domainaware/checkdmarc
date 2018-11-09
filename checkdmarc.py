@@ -39,10 +39,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.7.3"
+__version__ = "2.7.4"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
+BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
 DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
+BIMI_TAG_VALUE_REGEX_STRING = r"([a-z]{1})=(.*)"
 MAILTO_REGEX_STRING = r"^(mailto):" \
                       r"([\w\-!#$%&'*+-/=?^_`{|}~]" \
                       r"[\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?"
@@ -52,6 +54,7 @@ SPF_MECHANISM_REGEX_STRING = r"([+\-~?])?(mx|ip4|ip6|exists|include|all|a|" \
 IPV4_REGEX_STRING = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
 
 DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING)
+BIMI_TAG_VALUE_REGEX = compile(BIMI_TAG_VALUE_REGEX_STRING)
 MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
 IPV4_REGEX = compile(IPV4_REGEX_STRING)
@@ -87,6 +90,10 @@ class _SPFDuplicateInclude(_SPFWarning):
 
 class _DMARCWarning(Exception):
     """Raised when a non-fatal DMARC error occurs"""
+
+
+class _BIMIWarning(Exception):
+    """Raised when a non-fatal BIMI error occurs"""
 
 
 class _DMARCBestPracticeWarning(_DMARCWarning):
@@ -165,7 +172,11 @@ class InvalidDMARCReportURI(InvalidDMARCTagValue):
     """Raised when an invalid DMARC reporting URI is found"""
 
 
-class SPFRecordFoundWhereDMARCRecordShouldBe(DMARCError):
+class UnrelatedTXTRecordFoundAtDMARC(DMARCError):
+    """Raised when a TXT record unrelated to DMARC is found"""
+
+
+class SPFRecordFoundWhereDMARCRecordShouldBe(UnrelatedTXTRecordFoundAtDMARC):
     """Raised when a SPF record is found where a DMARC record should be;
     most likely, the ``_dmarc`` subdomain
     record does not actually exist, and the request for ``TXT`` records was
@@ -181,10 +192,6 @@ class DMARCReportEmailAddressMissingMXRecords(DMARCError):
     records"""
 
 
-class UnrelatedTXTRecordFound(DMARCError):
-    """Raised when a TXT record unrelated to DMARC is found"""
-
-
 class UnverifiedDMARCURIDestination(DMARCError):
     """Raised when the destination of a DMARC report URI does not indicate
     that it accepts reports for the domain"""
@@ -193,6 +200,60 @@ class UnverifiedDMARCURIDestination(DMARCError):
 class MultipleDMARCRecords(DMARCError):
     """Raised when multiple DMARC records are found, in violation of
     RFC 7486, section 6.6.3"""
+
+
+class BIMIError(Exception):
+    """Raised when a fatal BIMI error occurs"""
+    def __init__(self, msg, data=None):
+        """
+        Args:
+            msg (str): The error message
+            data (dict): A dictionary of data to include in the results
+        """
+        self.data = data
+        Exception.__init__(self, msg)
+
+
+class BIMIRecordNotFound(BIMIError):
+    """Raised when a BIMI record could not be found"""
+    def __init__(self, error):
+        if isinstance(error, dns.exception.Timeout):
+            error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+
+
+class BIMISyntaxError(BIMIError):
+    """Raised when a BIMI syntax error is found"""
+
+
+class InvalidBIMITag(BIMISyntaxError):
+    """Raised when an invalid BIMI tag is found"""
+
+
+class InvalidBIMITagValue(BIMISyntaxError):
+    """Raised when an invalid BIMI tag value is found"""
+
+
+class InvalidBIMIIndicatorURI(InvalidBIMITagValue):
+    """Raised when an invalid BIMI indicator URI is found"""
+
+
+class UnrelatedTXTRecordFoundAtBIMI(BIMIError):
+    """Raised when a TXT record unrelated to BIMI is found"""
+
+
+class SPFRecordFoundWhereBIMIRecordShouldBe(UnrelatedTXTRecordFoundAtBIMI):
+    """Raised when a SPF record is found where a BIMI record should be;
+    most likely, the ``selector_bimi`` subdomain
+    record does not actually exist, and the request for ``TXT`` records was
+    redirected to the base domain"""
+
+
+class BIMIRecordInWrongLocation(BIMIError):
+    """Raised when a BIMI record is found at the root of a domain"""
+
+
+class MultipleBIMIRecords(BIMIError):
+    """Raised when multiple BIMI records are found"""
 
 
 class _SPFGrammar(Grammar):
@@ -206,6 +267,13 @@ class _DMARCGrammar(Grammar):
     """Defines Pyleri grammar for DMARC records"""
     version_tag = Regex(DMARC_VERSION_REGEX_STRING)
     tag_value = Regex(DMARC_TAG_VALUE_REGEX_STRING)
+    START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
+
+
+class _BIMIGrammar(Grammar):
+    """Defines Pyleri grammar for BIMI records"""
+    version_tag = Regex(BIMI_VERSION_REGEX_STRING)
+    tag_value = Regex(BIMI_TAG_VALUE_REGEX_STRING)
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
 
 
@@ -422,7 +490,6 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                     'for subdomains.'
                                         ),
                          v=OrderedDict(name="Version",
-                                       default="DMARC1",
                                        description='Identifies the record '
                                                    'retrieved as a DMARC '
                                                    'record. It MUST have the '
@@ -443,6 +510,22 @@ spf_qualifiers = {
     "-": "fail",
     "~": "softfail"
 }
+
+
+bimi_tags = OrderedDict(
+    v=OrderedDict(name="Version",
+                  description='Identifies the record '
+                              'retrieved as a BIMI '
+                              'record. It MUST have the '
+                              'value of "BIMI1". The '
+                              'value of this tag MUST '
+                              'match precisely; if it '
+                              'does not or it is absent, '
+                              'the entire retrieved '
+                              'record MUST be ignored. '
+                              'It MUST be the first '
+                              'tag in the list.')
+)
 
 
 def get_base_domain(domain):
@@ -647,7 +730,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
                 "Multiple DMARC policy records are not permitted - "
                 "https://tools.ietf.org/html/rfc7489#section-6.6.3")
         if len(unrelated_records) > 0:
-            raise UnrelatedTXTRecordFound(
+            raise UnrelatedTXTRecordFoundAtDMARC(
                 "Unrelated TXT records were discovered. These should be "
                 "removed, as some receivers may not expect to find "
                 "unrelated TXT records "
@@ -680,47 +763,70 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
     return dmarc_record
 
 
-def get_mx_hosts(domain, nameservers=None, timeout=2.0):
+def _query_bmi_record(domain, selector="default", nameservers=None,
+                      timeout=2.0):
     """
-    Gets MX hostname and their addresses
+    Queries DNS for a BIMI record
 
     Args:
         domain (str): A domain name
+        selector: the BIMI selector
         nameservers (list): A list of nameservers to query
         (Cloudflare's by default)
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
-                     - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of
-
-                       - ``hostname`` - A hostname
-                       - ``addresses`` - A ``list`` of IP addresses
-
-                     - ``warnings`` - A ``list`` of MX resolution warnings
-
+        str: A record string or None
     """
-    mx_records = []
-    hosts = []
-    warnings = []
-    try:
-        mx_records = _get_mx_hosts(domain, nameservers=nameservers,
-                                   timeout=timeout)
-    except DNSException as warning:
-        warnings.append(str(warning))
-    for record in mx_records:
-        hosts.append(OrderedDict([("preference", record["preference"]),
-                                  ("hostname", record["hostname"]),
-                                  ("addresses", [])]))
-    for host in hosts:
-        try:
-            host["addresses"] = _get_a_records(host["hostname"],
-                                               nameservers=nameservers,
-                                               timeout=timeout)
-        except DNSException as warning:
-            warnings.append(str(warning))
+    target = "{0}._bimi.{1}".format(selector, domain.lower())
+    bimi_record = None
+    bmi_record_count = 0
+    unrelated_records = []
 
-    return OrderedDict([("hosts", hosts), ("warnings", warnings)])
+    try:
+        records = _query_dns(target, "TXT", nameservers=nameservers,
+                             timeout=timeout)
+        for record in records:
+            if record.startswith("v=BIMI1"):
+                bmi_record_count += 1
+            else:
+                unrelated_records.append(record)
+
+        if bmi_record_count > 1:
+            raise MultipleBIMIRecords(
+                "Multiple BMI records are not permitted")
+        if len(unrelated_records) > 0:
+            raise UnrelatedTXTRecordFoundAtDMARC(
+                "Unrelated TXT records were discovered. These should be "
+                "removed, as some receivers may not expect to find "
+                "unrelated TXT records "
+                "at {0}\n\n{1}".format(target, "\n\n".join(unrelated_records)))
+        bimi_record = records[0]
+
+    except dns.resolver.NoAnswer:
+        try:
+            records = _query_dns(domain.lower(), "TXT",
+                                 nameservers=nameservers,
+                                 timeout=timeout)
+            for record in records:
+                if record.startswith("v=BIMI1"):
+                    raise BIMIRecordInWrongLocation(
+                        "The BIMI record must be located at "
+                        "{0}, not {1}".format(target, domain.lower()))
+        except dns.resolver.NoAnswer:
+            pass
+        except dns.resolver.NXDOMAIN:
+            raise BIMIRecordNotFound(
+                "The domain {0} does not exist".format(domain))
+        except dns.exception.DNSException as error:
+            BIMIRecordNotFound(error)
+
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        pass
+    except dns.exception.DNSException as error:
+        raise BIMIRecordNotFound(error)
+
+    return bimi_record
 
 
 def query_dmarc_record(domain, nameservers=None, timeout=2.0):
@@ -769,6 +875,59 @@ def query_dmarc_record(domain, nameservers=None, timeout=2.0):
     if record is None:
         raise DMARCRecordNotFound(
             "A DMARC record does not exist for this domain or its base domain")
+
+    return OrderedDict([("record", record), ("location", location),
+                        ("warnings", warnings)])
+
+
+def query_bimi_record(domain, selector="default", nameservers=None,
+                      timeout=2.0):
+    """
+    Queries DNS for a BIMI record
+
+    Args:
+        domain (str): A domain name
+        selector (str): The BMI selector
+        nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
+        timeout(float): number of seconds to wait for an record from DNS
+
+    Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
+                     - ``record`` - the unparsed DMARC record string
+                     - ``location`` - the domain where the record was found
+                     - ``warnings`` - warning conditions found
+
+     Raises:
+        :exc:`checkdmarc.BIMIRecordNotFound`
+        :exc:`checkdmarc.BIMIRecordInWrongLocation`
+        :exc:`checkdmarc.MultipleBIMIRecords`
+
+    """
+    warnings = []
+    base_domain = get_base_domain(domain)
+    location = domain.lower()
+    record = _query_bmi_record(domain, selector=selector,
+                               nameservers=nameservers, timeout=timeout)
+    try:
+        root_records = _query_dns(domain.lower(), "TXT",
+                                  nameservers=nameservers,
+                                  timeout=timeout)
+        for root_record in root_records:
+            if root_record.startswith("v=BIMI1"):
+                warnings.append("BIMI record at root of {0} "
+                                "has no effect".format(domain.lower()))
+    except dns.exception.DNSException:
+        pass
+
+    if record is None and domain != base_domain and selector != "default":
+        record = _query_bmi_record(base_domain, selector="default",
+                                   nameservers=nameservers,
+                                   timeout=timeout)
+        location = base_domain
+    if record is None:
+        raise BIMIRecordNotFound(
+            "A BIMI record does not exist for this domain or its base domain")
 
     return OrderedDict([("record", record), ("location", location),
                         ("warnings", warnings)])
@@ -894,7 +1053,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
                     unrelated_records.append(record)
 
             if len(unrelated_records) > 0:
-                raise UnrelatedTXTRecordFound(
+                raise UnrelatedTXTRecordFoundAtDMARC(
                     "Unrelated TXT records were discovered. "
                     "These should be removed, as some "
                     "receivers may not expect to find unrelated TXT records "
@@ -909,7 +1068,8 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
     return True
 
 
-def parse_dmarc_record(record, domain, include_tag_descriptions=False,
+def parse_dmarc_record(record, domain, parked=False,
+                       include_tag_descriptions=False,
                        nameservers=None, timeout=2.0):
     """
     Parses a DMARC record
@@ -917,6 +1077,7 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
     Args:
         record (str): A DMARC record
         domain (str): The domain where the record is found
+        parked (bool): Indicates if a domain is parked
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
         (Cloudflare's by default)
@@ -1110,7 +1271,13 @@ def parse_dmarc_record(record, domain, include_tag_descriptions=False,
                           "enforcement. Consider using p=none to " \
                           "monitor results instead"
             raise _DMARCBestPracticeWarning(warning_msg)
-
+        if parked and tags["p"] != "reject":
+            warning_msg = "Policy (p=) should be reject for parked domains"
+            raise _DMARCBestPracticeWarning(warning_msg)
+        if parked and tags["sp"] != "reject":
+            warning_msg = "Subdomain policy (sp=) should be reject for " \
+                          "parked domains"
+            raise _DMARCBestPracticeWarning(warning_msg)
     except _DMARCWarning as warning:
         warnings.append(str(warning))
 
@@ -1201,11 +1368,15 @@ def query_spf_record(domain, nameservers=None, timeout=2.0):
         pass
 
     if len(spf_type_records) > 0:
-        message = "Use of DNS Type SPF has been removed in the standards " \
+        message = "SPF type DNS records found. Use of DNS Type SPF has been " \
+                  "removed in the standards " \
                    "track version of SPF, RFC 7208. These records should " \
                    "be removed and replaced with TXT records: " \
                   "{0}".format(",".join(spf_type_records))
         warnings.append(message)
+    warnings_str = ""
+    if len(warnings) > 0:
+        warnings_str = ". {0}".format(" ".join(warnings))
     try:
         answers = _query_dns(domain, "TXT", nameservers=nameservers,
                              timeout=timeout)
@@ -1215,16 +1386,18 @@ def query_spf_record(domain, nameservers=None, timeout=2.0):
                 spf_txt_records.append(record)
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords(
-                "{0} has multiple spf1 TXT records".format(domain)
-            )
+                "{0} has multiple SPF TXT records{1}".format(
+                    domain, warnings_str))
         elif len(spf_txt_records) == 1:
             spf_record = spf_txt_records[0]
         if spf_record is None:
             raise SPFRecordNotFound(
-                "{0} does not have a SPF record".format(domain))
+                "{0} does not have a SPF TXT record{1}".format(
+                    domain, warnings_str))
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound(
-            "{0} does not have a SPF record".format(domain))
+             "{0} does not have a SPF TXT record{1}".format(
+                    domain, warnings_str))
     except dns.resolver.NXDOMAIN:
         raise SPFRecordNotFound("The domain {0} does not exist".format(domain))
     except dns.exception.DNSException as error:
@@ -1233,15 +1406,17 @@ def query_spf_record(domain, nameservers=None, timeout=2.0):
     return OrderedDict([("record", spf_record), ("warnings", warnings)])
 
 
-def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2.0):
+def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
+                     timeout=2.0):
     """
     Parses a SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
 
     Args:
         record (str): An SPF record
-        seen (list): A list of domains seen in past loops
         domain (str): The domain that the SPF record came from
+        parked (bool): indicated if a domain has been parked
+        seen (list): A list of domains seen in past loops
         nameservers (list): A list of nameservers to query
         (Cloudflare's by default)
         timeout(float): number of seconds to wait for an answer from DNS
@@ -1264,7 +1439,12 @@ def parse_spf_record(record, domain, seen=None, nameservers=None, timeout=2.0):
     record = record.replace('" ', '').replace('"', '')
     warnings = []
     spf_syntax_checker = _SPFGrammar()
-    parsed_record = spf_syntax_checker.parse(record.lower())
+    if parked:
+        correct_record = "v=spf1 -all"
+        if record != correct_record:
+            warnings.append("The SPF record for parked domains should be: "
+                            "{0} not: {1}".format(correct_record, record))
+    parsed_record = spf_syntax_checker.parse(record)
     if not parsed_record.is_valid:
         pos = parsed_record.pos
         expecting = list(
@@ -1459,7 +1639,77 @@ def get_spf_record(domain, nameservers=None, timeout=2.0):
     return record
 
 
-def check_domains(domains, output_format="json", output_path=None,
+def get_mx_hosts(domain, approved_hostnames=None,
+                 nameservers=None, timeout=2.0):
+    """
+    Gets MX hostname and their addresses
+
+    Args:
+        domain (str): A domain name
+        approved_hostnames (list): Raise a warning if an unapproved hostname
+        is found
+        nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
+        timeout(float): number of seconds to wait for an record from DNS
+
+    Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
+                     - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of
+
+                       - ``hostname`` - A hostname
+                       - ``addresses`` - A ``list`` of IP addresses
+
+                     - ``warnings`` - A ``list`` of MX resolution warnings
+
+    """
+    mx_records = []
+    hosts = []
+    warnings = []
+    try:
+        mx_records = _get_mx_hosts(domain, nameservers=nameservers,
+                                   timeout=timeout)
+    except DNSException as warning:
+        warnings.append(str(warning))
+    for record in mx_records:
+        hosts.append(OrderedDict([("preference", record["preference"]),
+                                  ("hostname", record["hostname"]),
+                                  ("addresses", [])]))
+    for host in hosts:
+        try:
+            if approved_hostnames:
+                if host["hostname"] not in approved_hostnames:
+                    warnings.append("Unapproved MX hostname: {0}".format(
+                        host["hostname"]
+                    ))
+            host["addresses"] = _get_a_records(host["hostname"],
+                                               nameservers=nameservers,
+                                               timeout=timeout)
+        except DNSException as warning:
+            warnings.append(str(warning))
+
+        mx_spf_record = None
+        correct_mx_spf_record = "v=spf1 a -all"
+
+        try:
+            mx_spf_record = get_spf_record(host["hostname"],
+                                           nameservers=nameservers,
+                                           timeout=timeout)
+            if mx_spf_record != correct_mx_spf_record:
+                warning = "{0} should have a SPF record of: {1} " \
+                          "instead of: {1}, so bouncebacks pass " \
+                          "SPF.".format(host["hostname"], mx_spf_record)
+                warnings.append(warning)
+
+        except Exception as e:
+            warning = "{0}. MX hosts should have a SPF record of: {1} so " \
+                      "bouncebacks pass SPF.".format(e, correct_mx_spf_record)
+            warnings.append(format(warning))
+
+    return OrderedDict([("hosts", hosts), ("warnings", warnings)])
+
+
+def check_domains(domains, parked=False, approved_mx_hostnames=None,
+                  output_format="json",  output_path=None,
                   include_dmarc_tag_descriptions=False,
                   nameservers=None, timeout=2.0, wait=0.0):
     """
@@ -1468,6 +1718,8 @@ def check_domains(domains, output_format="json", output_path=None,
 
     Args:
         domains (list): A list of domains to check
+        parked (bool): Indicates that the domains are parked
+        approved_mx_hostnames (list): A list of approved MX hostnames
         output_format (str): ``json`` or ``csv``
         output_path (str): Save output to the given file path
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC
@@ -1526,7 +1778,8 @@ def check_domains(domains, output_format="json", output_path=None,
         for domain in domains:
             row = dict(domain=domain, base_domain=get_base_domain(domain),
                        mx="", spf_valid=True, dmarc_valid=True)
-            mx = get_mx_hosts(domain, nameservers=nameservers, timeout=timeout)
+            mx = get_mx_hosts(domain, approved_hostnames=approved_mx_hostnames,
+                              nameservers=nameservers, timeout=timeout)
             row["mx"] = ",".join(list(
                 map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
                     mx["hosts"])))
@@ -1537,7 +1790,9 @@ def check_domains(domains, output_format="json", output_path=None,
                                               timeout=timeout)
                 row["spf_record"] = spf_record["record"]
                 warnings = spf_record["warnings"]
-                warnings += parse_spf_record(row["spf_record"], row["domain"],
+                warnings += parse_spf_record(row["spf_record"],
+                                             row["domain"],
+                                             parked=parked,
                                              nameservers=nameservers,
                                              timeout=timeout)["warnings"]
 
@@ -1553,6 +1808,7 @@ def check_domains(domains, output_format="json", output_path=None,
                 row["dmarc_record_location"] = dmarc_query["location"]
                 dmarc = parse_dmarc_record(dmarc_query["record"],
                                            dmarc_query["location"],
+                                           parked=parked,
                                            nameservers=nameservers,
                                            timeout=timeout)
                 row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
@@ -1590,9 +1846,11 @@ def check_domains(domains, output_format="json", output_path=None,
                  ("mx", [])])
             domain_results["spf"] = OrderedDict(
                 [("record", None), ("valid", True), ("dns_lookups", None)])
-            domain_results["mx"] = get_mx_hosts(domain,
-                                                nameservers=nameservers,
-                                                timeout=timeout)
+            domain_results["mx"] = get_mx_hosts(
+                domain,
+                approved_hostnames=approved_mx_hostnames,
+                nameservers=nameservers,
+                timeout=timeout)
             try:
                 spf_query = query_spf_record(
                     domain,
@@ -1602,6 +1860,7 @@ def check_domains(domains, output_format="json", output_path=None,
                 domain_results["spf"]["warnings"] = spf_query["warnings"]
                 parsed_spf = parse_spf_record(domain_results["spf"]["record"],
                                               domain_results["domain"],
+                                              parked=parked,
                                               nameservers=nameservers,
                                               timeout=timeout)
 
@@ -1630,6 +1889,7 @@ def check_domains(domains, output_format="json", output_path=None,
                 parsed_dmarc_record = parse_dmarc_record(
                     dmarc_query["record"],
                     dmarc_query["location"],
+                    parked=parked,
                     include_tag_descriptions=include_dmarc_tag_descriptions,
                     nameservers=nameservers,
                     timeout=timeout)
@@ -1662,6 +1922,9 @@ def _main():
     arg_parser.add_argument("domain", nargs="+",
                             help="one or ore domains, or a single path to a "
                                  "file containing a list of domains")
+    arg_parser.add_argument("-p", "--parked", help="Indicate that the "
+                                                   "doomains are parked",
+                            action="store_true", default=False)
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in "
                                  "the JSON output")
@@ -1684,6 +1947,8 @@ def _main():
                             help="number of seconds to wait between "
                                  "processing domains (default 0.0)",
                             default=0.0)
+    arg_parser.add_argument("--mx", help="A comma separated list of approved "
+                                         "MX hostnames")
 
     args = arg_parser.parse_args()
 
@@ -1700,7 +1965,9 @@ def _main():
             for domain in not_domains:
                 domains.remove(domain)
 
-    results = check_domains(domains, output_format=args.format,
+    results = check_domains(domains, parked=args.parked,
+                            output_format=args.format,
+                            approved_mx_hostnames=args.mx,
                             output_path=args.output,
                             include_dmarc_tag_descriptions=args.descriptions,
                             nameservers=args.nameserver, timeout=args.timeout)

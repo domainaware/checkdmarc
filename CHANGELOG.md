@@ -1,6 +1,16 @@
 Changelog
 =========
 
+2.7.4
+-----
+
+- Bugix: Always raise warning when SPF type DNS records are found
+- Check for proper SPF records for MX hosts
+- Add option `-p/--parked` to check for best practices for parked domains
+- Add option `--mx` to provide a list of approved MX hostnames
+- Add `query_bimi_record()` to the API
+
+
 2.7.3
 -----
 
