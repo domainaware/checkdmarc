@@ -20,7 +20,7 @@ A Python module and command line utility for validating SPF and DMARC DNS record
 
     optional arguments:
       -h, --help            show this help message and exit
-      -p, --parked          Indicate that the doomains are parked
+      -p, --parked          Indicate that the domains are parked
       -d, --descriptions    include descriptions of DMARC tags in the JSON output
       -f FORMAT, --format FORMAT
                             specify JSON or CSV output format
