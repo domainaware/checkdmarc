@@ -5,7 +5,7 @@ Changelog
 -----
 
 - Make warning about proper SPF records for MX hosts a only show with `--debug`
- (Very noisy - Many hosts use DKIM without SPF the DMARC align bouncebacks)
+ (Very noisy - Many hosts use DKIM without SPF to DMARC align bouncebacks)
 
 2.8.0
 -----
