@@ -3,20 +3,24 @@ Changelog
 
 2.8.1
 -----
+
+- Bugfix: CSV format `-f csv` for starttls header
+- Use python3 in docs Makefile for Sphinx build
+- Correct spelling of domains
 - Add `--debug` option
 - Make warning about proper SPF records for MX hosts a only show with `--debug`
  (Very noisy - Many hosts use DKIM without SPF to DMARC align bouncebacks)
 
+
 2.8.0
 -----
 
-- Bugix: Always raise warning when SPF type DNS records are found
+- Bugfix: Always raise warning when SPF type DNS records are found
 - Add check for proper SPF records for MX hosts
 - Add check for STARTTLS
 - Add option `-p/--parked` to check for best practices for parked domains
 - Add option `--mx` to provide a list of approved MX hostnames
 - Add `query_bimi_record()` to the API
-
 
 2.7.3
 -----
@@ -47,7 +51,7 @@ Changelog
 2.6.2
 -----
 
-- Properly concatenate multi-line TXT records 
+- Properly concatenate multi-line TXT records
 
 2.6.1
 -----

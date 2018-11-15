@@ -42,7 +42,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.8.0"
+__version__ = "2.8.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1377,8 +1377,8 @@ def query_spf_record(domain, nameservers=None, timeout=2.0):
     if len(spf_type_records) > 0:
         message = "SPF type DNS records found. Use of DNS Type SPF has been " \
                   "removed in the standards " \
-                   "track version of SPF, RFC 7208. These records should " \
-                   "be removed and replaced with TXT records: " \
+                  "track version of SPF, RFC 7208. These records should " \
+                  "be removed and replaced with TXT records: " \
                   "{0}".format(",".join(spf_type_records))
         warnings.append(message)
     warnings_str = ""
@@ -1403,8 +1403,8 @@ def query_spf_record(domain, nameservers=None, timeout=2.0):
                     domain, warnings_str))
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound(
-             "{0} does not have a SPF TXT record{1}".format(
-                    domain, warnings_str))
+            "{0} does not have a SPF TXT record{1}".format(
+                domain, warnings_str))
     except dns.resolver.NXDOMAIN:
         raise SPFRecordNotFound("The domain {0} does not exist".format(domain))
     except dns.exception.DNSException as error:
@@ -1845,7 +1845,7 @@ def check_domains(domains, parked=False, approved_mx_hostnames=None,
                   "dmarc_adkim", "dmarc_aspf",
                   "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
                   "dmarc_rua", "dmarc_ruf", "dmarc_sp",
-                  "mx", "startssl" "spf_record", "dmarc_record",
+                  "mx", "starttls", "spf_record", "dmarc_record",
                   "dmarc_record_location",
                   "mx_warnings", "spf_error",
                   "spf_warnings", "dmarc_error", "dmarc_warnings"]
@@ -2008,7 +2008,7 @@ def _main():
                             help="one or ore domains, or a single path to a "
                                  "file containing a list of domains")
     arg_parser.add_argument("-p", "--parked", help="Indicate that the "
-                                                   "doomains are parked",
+                                                   "domains are parked",
                             action="store_true", default=False)
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in "
