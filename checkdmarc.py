@@ -2034,9 +2034,13 @@ def _main():
                             default=0.0)
     arg_parser.add_argument("--mx", help="A comma separated list of approved "
                                          "MX hostnames")
+    arg_parser.add_argument("--debug", action="store_true",
+                            help="Enable debugging output")
 
     args = arg_parser.parse_args()
 
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
     domains = args.domain
     if len(domains) == 1 and path.exists(domains[0]):
         with open(domains[0]) as domains_file:
