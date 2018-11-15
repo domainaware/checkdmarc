@@ -17,6 +17,7 @@ import smtplib
 from ssl import SSLError, CertificateError, create_default_context
 
 from io import StringIO
+from expiringdict import ExpiringDict
 
 import publicsuffix
 import dns.resolver
@@ -42,7 +43,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.8.1"
+__version__ = "2.9.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -64,6 +65,8 @@ IPV4_REGEX = compile(IPV4_REGEX_STRING)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+DNS_CACHE = ExpiringDict(max_len=10000, max_age_seconds=1800)
 
 
 class SMTPError(Exception):
@@ -578,6 +581,28 @@ def get_base_domain(domain):
 
 
 def _query_dns(domain, record_type, nameservers=None, timeout=2.0):
+    """
+    Queries DNS
+
+    Args:
+        domain (str): The domain or subdomain to query about
+        record_type (str): The record type to query for
+        nameservers (list): A list of one or more nameservers to use
+        (Cloudflare's public DNS resolvers by default)
+        timeout (float): Sets the DNS timeout in seconds
+
+    Returns:
+        list: A list of answers
+    """
+    domain = str(domain).lower()
+    record_type = record_type.upper()
+    cache_key = "{0}_{1}".format(domain, record_type)
+    cache = DNS_CACHE
+    if cache:
+        records = cache.get(cache_key, None)
+        if records:
+            return records
+
     resolver = dns.resolver.Resolver()
     timeout = float(timeout)
     if nameservers is None:
@@ -588,17 +613,22 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0):
     resolver.timeout = timeout
     resolver.lifetime = timeout
     if record_type == "TXT":
-        resourcerecords = list(map(
+        resource_records = list(map(
             lambda r: r.strings,
             resolver.query(domain, record_type, tcp=True)))
-        _resourcerecord = [
-            resourcerecord[0][:0].join(resourcerecord)
-            for resourcerecord in resourcerecords if resourcerecord]
-        return [r.decode() for r in _resourcerecord]
+        _resource_record = [
+            resource_record[0][:0].join(resource_record)
+            for resource_record in resource_records if resource_record]
+        records = [r.decode() for r in _resource_record]
     else:
-        return list(map(
+        records = list(map(
             lambda r: r.to_text().replace('"', '').rstrip("."),
             resolver.query(domain, record_type, tcp=True)))
+    if cache:
+        cache[cache_key] = records
+
+    return records
+
 
 
 def _get_mx_hosts(domain, nameservers=None, timeout=2.0):

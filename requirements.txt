@@ -1,4 +1,5 @@
 dnspython
+expiringdict
 pyleri
 publicsuffix
 sphinx
