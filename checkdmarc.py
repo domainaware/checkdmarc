@@ -630,7 +630,6 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0):
     return records
 
 
-
 def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for a list of Mail Exchange hosts
