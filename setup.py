@@ -15,7 +15,7 @@ from setuptools import setup
 from codecs import open
 from os import path
 
-__version__ = "2.8.0"
+__version__ = "2.8.1"
 
 desc = "A Python module and command line parser for SPF and DMARC records"
 

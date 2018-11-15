@@ -1777,12 +1777,14 @@ def get_mx_hosts(domain, approved_hostnames=None,
                           "instead of: {2}, so bouncebacks pass " \
                           "SPF.".format(host["hostname"],
                                         correct_mx_spf_record, mx_spf_record)
-                warnings.append(warning)
+                if logger.level == logging.DEBUG:
+                    warnings.append(warning)
 
         except Exception as e:
             warning = "{0}. MX hosts should have a SPF record of: {1} so " \
                       "bouncebacks pass SPF.".format(e, correct_mx_spf_record)
-            warnings.append(format(warning))
+            if logger.level == logging.DEBUG:
+                warnings.append(warning)
 
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
