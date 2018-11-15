@@ -67,6 +67,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 DNS_CACHE = ExpiringDict(max_len=10000, max_age_seconds=1800)
+STARTTLS_CACHE = ExpiringDict(max_len=10000, max_age_seconds=1800)
 
 
 class SMTPError(Exception):
@@ -1676,29 +1677,34 @@ def get_spf_record(domain, nameservers=None, timeout=2.0):
     return parsed_record
 
 
-def test_starttls(hostname, ssl_context=None):
+def test_starttls(hostname, ssl_context=None, cache=None):
     """
     Attempt to connect to a SMTP server and validate STARTTLS support
 
     Args:
         hostname (str): The hostname
+        cache (ExpiringDict): Cache storage
         ssl_context: A SSL context
 
     Returns:
 
     """
+    starttls = False
+    if cache:
+        starttls = STARTTLS_CACHE.get(hostname, None)
+        if starttls is not None:
+            return starttls
     if ssl_context is None:
         ssl_context = create_default_context()
     try:
         server = smtplib.SMTP(hostname)
-        server.connect(hostname)
         server.ehlo_or_helo_if_needed()
         if server.has_extn("starttls"):
             server.starttls(context=ssl_context)
             server.ehlo()
-            return True
-        else:
-            return False
+            starttls = True
+        STARTTLS_CACHE[hostname] = starttls
+        return starttls
 
     except socket.gaierror:
         raise SMTPError("DNS resolution failed")
@@ -1733,6 +1739,7 @@ def test_starttls(hostname, ssl_context=None):
     finally:
         try:
             server.quit()
+            server.close()
         except Exception as e:
             logging.debug(e)
 
@@ -1782,7 +1789,7 @@ def get_mx_hosts(domain, approved_hostnames=None,
             host["addresses"] = _get_a_records(host["hostname"],
                                                nameservers=nameservers,
                                                timeout=timeout)
-            starttls = test_starttls(host["hostname"])
+            starttls = test_starttls(host["hostname"], cache=STARTTLS_CACHE)
             if not starttls:
                 warnings.append("{0}: STARTTLS is not supported".format(
                     host["hostname"]))
@@ -1794,7 +1801,6 @@ def get_mx_hosts(domain, approved_hostnames=None,
         except SMTPError as error:
             warnings.append("{0}: {1}".format(host["hostname"], error))
 
-        mx_spf_record = None
         correct_mx_spf_record = "v=spf1 a -all"
 
         try:

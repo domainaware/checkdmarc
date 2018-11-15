@@ -5,8 +5,9 @@ Changelog
 -----
 
 - Bugfix: CSV format `-f csv` for starttls header
+- Bugfix: Always properly close a SMTP connection
+- Cache DNS and STARTTLS results in memory
 - Use python3 in docs Makefile for Sphinx build
-- Correct spelling of domains
 - Add `--debug` option
 - Make warning about proper SPF records for MX hosts a only show with `--debug`
  (Very noisy - Many hosts use DKIM without SPF to DMARC align bouncebacks)
