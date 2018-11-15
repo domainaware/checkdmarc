@@ -1,9 +1,9 @@
 dnspython
 pyleri
 publicsuffix
-sphinx==1.7.9
+sphinx
 sphinx_rtd_theme
 collective.checkdocs
 wheel
 nose
-rstcheck
+rstcheck>=3.3.1
