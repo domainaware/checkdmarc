@@ -7,9 +7,9 @@ A Python module and command line utility for validating SPF and DMARC DNS record
 
 ::
 
-    usage: checkdmarc [-h] [-p] [-d] [-f FORMAT] [-o OUTPUT]
+    usage: checkdmarc [-h] [-p] [--mx MX [MX ...]] [-d] [-f FORMAT] [-o OUTPUT]
                       [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v] [-w WAIT]
-                      [--mx MX] [--debug]
+                      [--debug]
                       domain [domain ...]
 
     Validates and parses SPF amd DMARC DNS records
@@ -21,6 +21,7 @@ A Python module and command line utility for validating SPF and DMARC DNS record
     optional arguments:
       -h, --help            show this help message and exit
       -p, --parked          Indicate that the domains are parked
+      --mx MX [MX ...]      Approved MX hostnames
       -d, --descriptions    include descriptions of DMARC tags in the JSON output
       -f FORMAT, --format FORMAT
                             specify JSON or CSV output format
@@ -35,7 +36,6 @@ A Python module and command line utility for validating SPF and DMARC DNS record
       -v, --version         show program's version number and exit
       -w WAIT, --wait WAIT  number of seconds to wait between processing domains
                             (default 0.0)
-      --mx MX               A comma separated list of approved MX hostnames
       --debug               Enable debugging output
 
 .. code-block:: bash
