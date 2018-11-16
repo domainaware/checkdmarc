@@ -20,9 +20,11 @@ class Test(unittest.TestCase):
             spf_error = None
             dmarc_error = None
             for mx in result["mx"]["hosts"]:
-                self.assertEqual(mx["starttls"], True,
-                                 "MX host of known good domain {0} failed STARTTLS check:"
-                                 "\n\n{0}".format(result["domain"], mx["hostname"]))
+                self.assertEqual(
+                    mx["starttls"], True,
+                    "MX host of known good domain {0} failed STARTTLS check:"
+                    "\n\n{0}".format(result["domain"], mx["hostname"])
+                )
             if "error" in result["spf"]:
                 spf_error = result["spf"]["error"]
             if "error" in result["dmarc"]:
