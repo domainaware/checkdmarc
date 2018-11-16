@@ -4,6 +4,7 @@ Changelog
 2.9.1
 -----
 
+- Bugfix: STARTTLS caching
 - Add MX warnings for parked domains
 - Increase default DNS timeout from 2.0 seconds to 6.0 seconds
 

@@ -1691,9 +1691,9 @@ def test_starttls(hostname, ssl_context=None, cache=None):
     """
     starttls = False
     if cache:
-        starttls = STARTTLS_CACHE.get(hostname, None)
-        if starttls is not None:
-            return starttls
+        cached_result = STARTTLS_CACHE.get(hostname, None)
+        if cached_result is not None:
+            return cached_result
     if ssl_context is None:
         ssl_context = create_default_context()
     try:

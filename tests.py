@@ -5,34 +5,34 @@ import checkdmarc
 known_good_domains = [
     "fbi.gov",
     "dhs.gov",
-    "hhs.gov",
-    "paypal.com",
     "google.com",
-    "microsoft.com",
-    "amazon.com",
-    "accenture.com",
-
+    "microsoft.com"
 ]
 
 
 class Test(unittest.TestCase):
     def testKnownGood(self):
-        """Domains with known good SPF and DMARC records"""
+        """Domains with working STARTTLS support,
+        and known good SPF and DMARC records"""
 
         results = checkdmarc.check_domains(known_good_domains)
-        for domain in results:
+        for result in results:
             spf_error = None
             dmarc_error = None
-            if "error" in domain["spf"]:
-                spf_error = domain["spf"]["error"]
-            if "error" in domain["dmarc"]:
-                dmarc_error = domain["dmarc"]["error"]
-            self.assertEqual(domain["spf"]["valid"], True,
+            for mx in result["mx"]["hosts"]:
+                self.assertEqual(mx["starttls"], True,
+                                 "MX host of known good domain {0} failed STARTTLS check:"
+                                 "\n\n{0}".format(result["domain"], mx["hostname"]))
+            if "error" in result["spf"]:
+                spf_error = result["spf"]["error"]
+            if "error" in result["dmarc"]:
+                dmarc_error = result["dmarc"]["error"]
+            self.assertEqual(result["spf"]["valid"], True,
                              "Known good domain {0} failed SPF check:"
-                             "\n\n{0}".format(domain["domain"], spf_error))
-            self.assertEqual(domain["dmarc"]["valid"], True,
+                             "\n\n{0}".format(result["domain"], spf_error))
+            self.assertEqual(result["dmarc"]["valid"], True,
                              "Known good domain {0} failed DMARC check:"
-                             "\n\n{1}".format(domain["domain"], dmarc_error))
+                             "\n\n{1}".format(result["domain"], dmarc_error))
 
     def testSplitSPFRecord(self):
         """Split SPF records are parsed properly"""
