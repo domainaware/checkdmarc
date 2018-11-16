@@ -43,7 +43,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.9.1"
+__version__ = "2.9.2"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -2052,6 +2052,8 @@ def _main():
     arg_parser.add_argument("-p", "--parked", help="Indicate that the "
                                                    "domains are parked",
                             action="store_true", default=False)
+    arg_parser.add_argument("--mx", nargs="+",
+                            help="Approved MX hostnames")
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in "
                                  "the JSON output")
@@ -2074,8 +2076,6 @@ def _main():
                             help="number of seconds to wait between "
                                  "processing domains (default 0.0)",
                             default=0.0)
-    arg_parser.add_argument("--mx", help="A comma separated list of approved "
-                                         "MX hostnames")
     arg_parser.add_argument("--debug", action="store_true",
                             help="Enable debugging output")
 

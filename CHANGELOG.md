@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.9.2
+-----
+
+- Fix `--mx` CLI option
+
 2.9.1
 -----
 
