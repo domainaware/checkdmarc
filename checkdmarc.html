@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 2.9.0 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 2.9.1 documentation</title>
   
 
   
@@ -57,7 +57,7 @@
             
             
               <div class="version">
-                2.9.0
+                2.9.1
               </div>
             
           
@@ -378,7 +378,7 @@ that it accepts reports for the domain</p>
 
 <dl class="function">
 <dt id="checkdmarc.check_domains">
-<code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>parked=False</em>, <em>approved_mx_hostnames=None</em>, <em>output_format='json'</em>, <em>output_path=None</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=2.0</em>, <em>wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>parked=False</em>, <em>approved_mx_hostnames=None</em>, <em>output_format='json'</em>, <em>output_path=None</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em>, <em>wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the given domains for SPF and DMARC records, parse them, and return
 them</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -447,7 +447,7 @@ where it is used as a cache file for 24 hours.</p>
 
 <dl class="function">
 <dt id="checkdmarc.get_dmarc_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">get_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>include_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">get_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>include_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves a DMARC record for a domain and parses it</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -534,7 +534,7 @@ description for a tag value</p>
 
 <dl class="function">
 <dt id="checkdmarc.get_mx_hosts">
-<code class="descclassname">checkdmarc.</code><code class="descname">get_mx_hosts</code><span class="sig-paren">(</span><em>domain</em>, <em>approved_hostnames=None</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">get_mx_hosts</code><span class="sig-paren">(</span><em>domain</em>, <em>approved_hostnames=None</em>, <em>parked=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets MX hostname and their addresses</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -544,6 +544,7 @@ description for a tag value</p>
 <li><strong>domain</strong> (<em>str</em>) – A domain name</li>
 <li><strong>approved_hostnames</strong> (<em>list</em>) – Raise a warning if an unapproved hostname</li>
 <li><strong>found</strong> (<em>is</em>) – </li>
+<li><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</li>
 <li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
 <li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
 <li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
@@ -574,7 +575,7 @@ description for a tag value</p>
 
 <dl class="function">
 <dt id="checkdmarc.get_spf_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">get_spf_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_spf_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">get_spf_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves and parses an SPF record</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -609,7 +610,7 @@ description for a tag value</p>
 
 <dl class="function">
 <dt id="checkdmarc.parse_dmarc_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">parse_dmarc_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>parked=False</em>, <em>include_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">parse_dmarc_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>parked=False</em>, <em>include_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a DMARC record</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -701,7 +702,7 @@ description for a tag value</p>
 
 <dl class="function">
 <dt id="checkdmarc.parse_spf_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">parse_spf_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>parked=False</em>, <em>seen=None</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">parse_spf_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>parked=False</em>, <em>seen=None</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a SPF record, including resolving <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">mx</span></code>, and <code class="docutils literal notranslate"><span class="pre">include</span></code>
 mechanisms</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -748,7 +749,7 @@ mechanisms</p>
 
 <dl class="function">
 <dt id="checkdmarc.query_bimi_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">query_bimi_record</code><span class="sig-paren">(</span><em>domain</em>, <em>selector='default'</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_bimi_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_bimi_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">query_bimi_record</code><span class="sig-paren">(</span><em>domain</em>, <em>selector='default'</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_bimi_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_bimi_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a BIMI record</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -792,7 +793,7 @@ mechanisms</p>
 
 <dl class="function">
 <dt id="checkdmarc.query_dmarc_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">query_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">query_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a DMARC record</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -836,7 +837,7 @@ mechanisms</p>
 
 <dl class="function">
 <dt id="checkdmarc.query_spf_record">
-<code class="descclassname">checkdmarc.</code><code class="descname">query_spf_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_spf_record" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">query_spf_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a SPF record</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -893,7 +894,7 @@ mechanisms</p>
 
 <dl class="function">
 <dt id="checkdmarc.verify_dmarc_report_destination">
-<code class="descclassname">checkdmarc.</code><code class="descname">verify_dmarc_report_destination</code><span class="sig-paren">(</span><em>source_domain</em>, <em>destination_domain</em>, <em>nameservers=None</em>, <em>timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#verify_dmarc_report_destination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.verify_dmarc_report_destination" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">verify_dmarc_report_destination</code><span class="sig-paren">(</span><em>source_domain</em>, <em>destination_domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#verify_dmarc_report_destination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.verify_dmarc_report_destination" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the report destination accepts reports for the source domain
 per RFC 7489, section 7.1</p>
 <table class="docutils field-list" frame="void" rules="none">

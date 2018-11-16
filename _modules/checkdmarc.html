@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 2.9.0 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 2.9.1 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                2.9.0
+                2.9.1
               </div>
             
           
@@ -190,7 +190,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.9.0&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.9.1&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -728,7 +728,7 @@
     <span class="k">return</span> <span class="n">psl</span><span class="o">.</span><span class="n">get_public_suffix</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span></div>
 
 
-<span class="k">def</span> <span class="nf">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS</span>
 
@@ -778,7 +778,7 @@
     <span class="k">return</span> <span class="n">records</span>
 
 
-<span class="k">def</span> <span class="nf">_get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a list of Mail Exchange hosts</span>
 
@@ -816,7 +816,7 @@
     <span class="k">return</span> <span class="n">hosts</span>
 
 
-<span class="k">def</span> <span class="nf">_get_a_records</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_get_a_records</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for A and AAAA records</span>
 
@@ -851,7 +851,7 @@
     <span class="k">return</span> <span class="n">addresses</span>
 
 
-<span class="k">def</span> <span class="nf">_get_txt_records</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_get_txt_records</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for TXT records</span>
 
@@ -882,7 +882,7 @@
     <span class="k">return</span> <span class="n">records</span>
 
 
-<span class="k">def</span> <span class="nf">_query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a DMARC record</span>
 
@@ -948,7 +948,7 @@
 
 
 <span class="k">def</span> <span class="nf">_query_bmi_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">selector</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                      <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+                      <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a BIMI record</span>
 
@@ -1013,7 +1013,7 @@
     <span class="k">return</span> <span class="n">bimi_record</span>
 
 
-<div class="viewcode-block" id="query_dmarc_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="query_dmarc_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a DMARC record</span>
 
@@ -1065,7 +1065,7 @@
 
 
 <div class="viewcode-block" id="query_bimi_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_bimi_record">[docs]</a><span class="k">def</span> <span class="nf">query_bimi_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">selector</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                      <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+                      <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a BIMI record</span>
 
@@ -1192,7 +1192,7 @@
 
 
 <div class="viewcode-block" id="verify_dmarc_report_destination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.verify_dmarc_report_destination">[docs]</a><span class="k">def</span> <span class="nf">verify_dmarc_report_destination</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">,</span>
-                                    <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+                                    <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">      Checks if the report destination accepts reports for the source domain</span>
 <span class="sd">      per RFC 7489, section 7.1</span>
@@ -1254,7 +1254,7 @@
 
 <div class="viewcode-block" id="parse_dmarc_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.parse_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">parse_dmarc_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                        <span class="n">include_tag_descriptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                       <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+                       <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parses a DMARC record</span>
 
@@ -1478,7 +1478,7 @@
 
 
 <div class="viewcode-block" id="get_dmarc_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">get_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">include_tag_descriptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                     <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+                     <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Retrieves a DMARC record for a domain and parses it</span>
 
@@ -1524,7 +1524,7 @@
                         <span class="p">(</span><span class="s2">&quot;parsed&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="query_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_spf_record">[docs]</a><span class="k">def</span> <span class="nf">query_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="query_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_spf_record">[docs]</a><span class="k">def</span> <span class="nf">query_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a SPF record</span>
 
@@ -1591,7 +1591,7 @@
 
 
 <div class="viewcode-block" id="parse_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.parse_spf_record">[docs]</a><span class="k">def</span> <span class="nf">parse_spf_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">seen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                     <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+                     <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parses a SPF record, including resolving ``a``, ``mx``, and ``include``</span>
 <span class="sd">    mechanisms</span>
@@ -1794,7 +1794,7 @@
          <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="get_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_spf_record">[docs]</a><span class="k">def</span> <span class="nf">get_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="get_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_spf_record">[docs]</a><span class="k">def</span> <span class="nf">get_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Retrieves and parses an SPF record</span>
 
@@ -1838,9 +1838,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">starttls</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-        <span class="n">starttls</span> <span class="o">=</span> <span class="n">STARTTLS_CACHE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">starttls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">starttls</span>
+        <span class="n">cached_result</span> <span class="o">=</span> <span class="n">STARTTLS_CACHE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cached_result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cached_result</span>
     <span class="k">if</span> <span class="n">ssl_context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ssl_context</span> <span class="o">=</span> <span class="n">create_default_context</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
@@ -1891,8 +1891,8 @@
             <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_mx_hosts"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_mx_hosts">[docs]</a><span class="k">def</span> <span class="nf">get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">approved_hostnames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="get_mx_hosts"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_mx_hosts">[docs]</a><span class="k">def</span> <span class="nf">get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">approved_hostnames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Gets MX hostname and their addresses</span>
 
@@ -1900,6 +1900,7 @@
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        approved_hostnames (list): Raise a warning if an unapproved hostname</span>
 <span class="sd">        is found</span>
+<span class="sd">        parked (bool): Indicates that the domains are parked</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
 <span class="sd">        (Cloudflare&#39;s by default)</span>
 <span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
@@ -1926,6 +1927,11 @@
         <span class="n">hosts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;preference&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;preference&quot;</span><span class="p">]),</span>
                                   <span class="p">(</span><span class="s2">&quot;hostname&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]),</span>
                                   <span class="p">(</span><span class="s2">&quot;addresses&quot;</span><span class="p">,</span> <span class="p">[]),</span> <span class="p">(</span><span class="s2">&quot;starttls&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)]))</span>
+    <span class="k">if</span> <span class="n">parked</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">hosts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;MX records found on parked domains&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">parked</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">hosts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;No MX records found. Is the domain parked?&quot;</span><span class="p">)</span>
+
     <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">approved_hostnames</span><span class="p">:</span>
@@ -1974,7 +1980,7 @@
 <div class="viewcode-block" id="check_domains"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.check_domains">[docs]</a><span class="k">def</span> <span class="nf">check_domains</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">approved_mx_hostnames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">output_format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>  <span class="n">output_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">include_dmarc_tag_descriptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                  <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+                  <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check the given domains for SPF and DMARC records, parse them, and return</span>
 <span class="sd">    them</span>
@@ -2042,7 +2048,8 @@
         <span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
             <span class="n">row</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span> <span class="n">base_domain</span><span class="o">=</span><span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">),</span>
                        <span class="n">mx</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">spf_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dmarc_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">mx</span> <span class="o">=</span> <span class="n">get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">approved_hostnames</span><span class="o">=</span><span class="n">approved_mx_hostnames</span><span class="p">,</span>
+            <span class="n">mx</span> <span class="o">=</span> <span class="n">get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="n">parked</span><span class="p">,</span>
+                              <span class="n">approved_hostnames</span><span class="o">=</span><span class="n">approved_mx_hostnames</span><span class="p">,</span>
                               <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span>
                 <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;preference&quot;</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]),</span>
@@ -2205,9 +2212,9 @@
                                  <span class="s2">&quot;(Default is Cloudflare&#39;s&quot;</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-t&quot;</span><span class="p">,</span> <span class="s2">&quot;--timeout&quot;</span><span class="p">,</span>
                             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;number of seconds to wait for an answer &quot;</span>
-                                 <span class="s2">&quot;from DNS (default 2.0)&quot;</span><span class="p">,</span>
+                                 <span class="s2">&quot;from DNS (default 6.0)&quot;</span><span class="p">,</span>
                             <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
-                            <span class="n">default</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+                            <span class="n">default</span><span class="o">=</span><span class="mf">6.0</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-v&quot;</span><span class="p">,</span> <span class="s2">&quot;--version&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">,</span>
                             <span class="n">version</span><span class="o">=</span><span class="n">__version__</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-w&quot;</span><span class="p">,</span> <span class="s2">&quot;--wait&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
