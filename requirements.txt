@@ -5,6 +5,7 @@ publicsuffix
 sphinx
 sphinx_rtd_theme
 collective.checkdocs
+flake8
 wheel
 nose
 rstcheck>=3.3.1
