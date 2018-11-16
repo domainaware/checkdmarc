@@ -12,8 +12,7 @@ known_good_domains = [
 
 class Test(unittest.TestCase):
     def testKnownGood(self):
-        """Domains with working STARTTLS support,
-        and known good SPF and DMARC records"""
+        """Domains with known good STARTTLS support SPF and DMARC records"""
 
         results = checkdmarc.check_domains(known_good_domains)
         for result in results:
