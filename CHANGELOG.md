@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.9.1
+-----
+
+- Add MX warnings for parked domains
+
 2.9.0
 -----
 

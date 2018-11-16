@@ -43,7 +43,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.9.0"
+__version__ = "2.9.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1744,7 +1744,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             logging.debug(e)
 
 
-def get_mx_hosts(domain, approved_hostnames=None,
+def get_mx_hosts(domain, approved_hostnames=None, parked=False,
                  nameservers=None, timeout=2.0):
     """
     Gets MX hostname and their addresses
@@ -1753,6 +1753,7 @@ def get_mx_hosts(domain, approved_hostnames=None,
         domain (str): A domain name
         approved_hostnames (list): Raise a warning if an unapproved hostname
         is found
+        parked (bool): Indicates that the domains are parked
         nameservers (list): A list of nameservers to query
         (Cloudflare's by default)
         timeout(float): number of seconds to wait for an record from DNS
@@ -1779,6 +1780,11 @@ def get_mx_hosts(domain, approved_hostnames=None,
         hosts.append(OrderedDict([("preference", record["preference"]),
                                   ("hostname", record["hostname"]),
                                   ("addresses", []), ("starttls", False)]))
+    if parked and len(hosts) > 0:
+        warnings.append("MX records found on parked domains")
+    elif not parked and len(hosts) == 0:
+        warnings.append("No MX records found. Is the domain parked?")
+
     for host in hosts:
         try:
             if approved_hostnames:
@@ -1895,7 +1901,8 @@ def check_domains(domains, parked=False, approved_mx_hostnames=None,
         for domain in domains:
             row = dict(domain=domain, base_domain=get_base_domain(domain),
                        mx="", spf_valid=True, dmarc_valid=True)
-            mx = get_mx_hosts(domain, approved_hostnames=approved_mx_hostnames,
+            mx = get_mx_hosts(domain, parked=parked,
+                              approved_hostnames=approved_mx_hostnames,
                               nameservers=nameservers, timeout=timeout)
             row["mx"] = ",".join(list(
                 map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
