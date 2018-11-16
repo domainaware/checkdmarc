@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 2.8.0 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 2.9.0 documentation</title>
   
 
   
@@ -57,7 +57,7 @@
             
             
               <div class="version">
-                2.8.0
+                2.9.0
               </div>
             
           
@@ -873,7 +873,7 @@ mechanisms</p>
 
 <dl class="function">
 <dt id="checkdmarc.test_starttls">
-<code class="descclassname">checkdmarc.</code><code class="descname">test_starttls</code><span class="sig-paren">(</span><em>hostname</em>, <em>ssl_context=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_starttls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_starttls" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">test_starttls</code><span class="sig-paren">(</span><em>hostname</em>, <em>ssl_context=None</em>, <em>cache=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_starttls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_starttls" title="Permalink to this definition">¶</a></dt>
 <dd><p>Attempt to connect to a SMTP server and validate STARTTLS support</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -881,6 +881,7 @@ mechanisms</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>hostname</strong> (<em>str</em>) – The hostname</li>
+<li><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</li>
 <li><strong>ssl_context</strong> – A SSL context</li>
 </ul>
 </td>
@@ -966,17 +967,7 @@ domain</p>
 
     
     
-      <script type="text/javascript">
-          var DOCUMENTATION_OPTIONS = {
-              URL_ROOT:'./',
-              VERSION:'2.8.0',
-              LANGUAGE:'None',
-              COLLAPSE_INDEX:false,
-              FILE_SUFFIX:'.html',
-              HAS_SOURCE:  true,
-              SOURCELINK_SUFFIX: '.txt'
-          };
-      </script>
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script type="text/javascript" src="_static/jquery.js"></script>
         <script type="text/javascript" src="_static/underscore.js"></script>
         <script type="text/javascript" src="_static/doctools.js"></script>

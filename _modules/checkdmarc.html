@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 2.8.0 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 2.9.0 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                2.8.0
+                2.9.0
               </div>
             
           
@@ -164,6 +164,7 @@
 <span class="kn">from</span> <span class="nn">ssl</span> <span class="k">import</span> <span class="n">SSLError</span><span class="p">,</span> <span class="n">CertificateError</span><span class="p">,</span> <span class="n">create_default_context</span>
 
 <span class="kn">from</span> <span class="nn">io</span> <span class="k">import</span> <span class="n">StringIO</span>
+<span class="kn">from</span> <span class="nn">expiringdict</span> <span class="k">import</span> <span class="n">ExpiringDict</span>
 
 <span class="kn">import</span> <span class="nn">publicsuffix</span>
 <span class="kn">import</span> <span class="nn">dns.resolver</span>
@@ -189,7 +190,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.8.0&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.9.0&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -211,6 +212,9 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<span class="n">DNS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span><span class="n">max_len</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="mi">1800</span><span class="p">)</span>
+<span class="n">STARTTLS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span><span class="n">max_len</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="mi">1800</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="SMTPError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SMTPError">[docs]</a><span class="k">class</span> <span class="nc">SMTPError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -725,6 +729,28 @@
 
 
 <span class="k">def</span> <span class="nf">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Queries DNS</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        domain (str): The domain or subdomain to query about</span>
+<span class="sd">        record_type (str): The record type to query for</span>
+<span class="sd">        nameservers (list): A list of one or more nameservers to use</span>
+<span class="sd">        (Cloudflare&#39;s public DNS resolvers by default)</span>
+<span class="sd">        timeout (float): Sets the DNS timeout in seconds</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: A list of answers</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">record_type</span> <span class="o">=</span> <span class="n">record_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">)</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">DNS_CACHE</span>
+    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">records</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">records</span>
+
     <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
     <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">nameservers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -735,17 +761,21 @@
     <span class="n">resolver</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
     <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
     <span class="k">if</span> <span class="n">record_type</span> <span class="o">==</span> <span class="s2">&quot;TXT&quot;</span><span class="p">:</span>
-        <span class="n">resourcerecords</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
+        <span class="n">resource_records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">strings</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">tcp</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
-        <span class="n">_resourcerecord</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">resourcerecord</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">resourcerecord</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">resourcerecord</span> <span class="ow">in</span> <span class="n">resourcerecords</span> <span class="k">if</span> <span class="n">resourcerecord</span><span class="p">]</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">_resourcerecord</span><span class="p">]</span>
+        <span class="n">_resource_record</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">resource_record</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">resource_record</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">resource_record</span> <span class="ow">in</span> <span class="n">resource_records</span> <span class="k">if</span> <span class="n">resource_record</span><span class="p">]</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">_resource_record</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
             <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">tcp</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">records</span>
+
+    <span class="k">return</span> <span class="n">records</span>
 
 
 <span class="k">def</span> <span class="nf">_get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
@@ -1524,8 +1554,8 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spf_type_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;SPF type DNS records found. Use of DNS Type SPF has been &quot;</span> \
                   <span class="s2">&quot;removed in the standards &quot;</span> \
-                   <span class="s2">&quot;track version of SPF, RFC 7208. These records should &quot;</span> \
-                   <span class="s2">&quot;be removed and replaced with TXT records: &quot;</span> \
+                  <span class="s2">&quot;track version of SPF, RFC 7208. These records should &quot;</span> \
+                  <span class="s2">&quot;be removed and replaced with TXT records: &quot;</span> \
                   <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">spf_type_records</span><span class="p">))</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
     <span class="n">warnings_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
@@ -1550,8 +1580,8 @@
                     <span class="n">domain</span><span class="p">,</span> <span class="n">warnings_str</span><span class="p">))</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span>
-             <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have a SPF TXT record</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">domain</span><span class="p">,</span> <span class="n">warnings_str</span><span class="p">))</span>
+            <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have a SPF TXT record</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">domain</span><span class="p">,</span> <span class="n">warnings_str</span><span class="p">))</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="s2">&quot;The domain </span><span class="si">{0}</span><span class="s2"> does not exist&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">))</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
@@ -1794,29 +1824,34 @@
     <span class="k">return</span> <span class="n">parsed_record</span></div>
 
 
-<div class="viewcode-block" id="test_starttls"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.test_starttls">[docs]</a><span class="k">def</span> <span class="nf">test_starttls</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">ssl_context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="test_starttls"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.test_starttls">[docs]</a><span class="k">def</span> <span class="nf">test_starttls</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">ssl_context</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Attempt to connect to a SMTP server and validate STARTTLS support</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        hostname (str): The hostname</span>
+<span class="sd">        cache (ExpiringDict): Cache storage</span>
 <span class="sd">        ssl_context: A SSL context</span>
 
 <span class="sd">    Returns:</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">starttls</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="n">starttls</span> <span class="o">=</span> <span class="n">STARTTLS_CACHE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">starttls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">starttls</span>
     <span class="k">if</span> <span class="n">ssl_context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ssl_context</span> <span class="o">=</span> <span class="n">create_default_context</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">server</span> <span class="o">=</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTP</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
-        <span class="n">server</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
         <span class="n">server</span><span class="o">.</span><span class="n">ehlo_or_helo_if_needed</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">has_extn</span><span class="p">(</span><span class="s2">&quot;starttls&quot;</span><span class="p">):</span>
             <span class="n">server</span><span class="o">.</span><span class="n">starttls</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">ssl_context</span><span class="p">)</span>
             <span class="n">server</span><span class="o">.</span><span class="n">ehlo</span><span class="p">()</span>
-            <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span>
+            <span class="n">starttls</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">STARTTLS_CACHE</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
+        <span class="k">return</span> <span class="n">starttls</span>
 
     <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="s2">&quot;DNS resolution failed&quot;</span><span class="p">)</span>
@@ -1851,6 +1886,7 @@
     <span class="k">finally</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">server</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+            <span class="n">server</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div>
 
@@ -1900,7 +1936,7 @@
             <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span>
                                                <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                                                <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-            <span class="n">starttls</span> <span class="o">=</span> <span class="n">test_starttls</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">])</span>
+            <span class="n">starttls</span> <span class="o">=</span> <span class="n">test_starttls</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span> <span class="n">cache</span><span class="o">=</span><span class="n">STARTTLS_CACHE</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">starttls</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">: STARTTLS is not supported&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                     <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]))</span>
@@ -1912,7 +1948,6 @@
         <span class="k">except</span> <span class="n">SMTPError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span> <span class="n">error</span><span class="p">))</span>
 
-        <span class="n">mx_spf_record</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">correct_mx_spf_record</span> <span class="o">=</span> <span class="s2">&quot;v=spf1 a -all&quot;</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -1924,12 +1959,14 @@
                           <span class="s2">&quot;instead of: </span><span class="si">{2}</span><span class="s2">, so bouncebacks pass &quot;</span> \
                           <span class="s2">&quot;SPF.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span>
                                         <span class="n">correct_mx_spf_record</span><span class="p">,</span> <span class="n">mx_spf_record</span><span class="p">)</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">level</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">warning</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">. MX hosts should have a SPF record of: </span><span class="si">{1}</span><span class="s2"> so &quot;</span> \
                       <span class="s2">&quot;bouncebacks pass SPF.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">correct_mx_spf_record</span><span class="p">)</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">level</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hosts&quot;</span><span class="p">,</span> <span class="n">hosts</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
@@ -1990,7 +2027,7 @@
                   <span class="s2">&quot;dmarc_adkim&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_aspf&quot;</span><span class="p">,</span>
                   <span class="s2">&quot;dmarc_fo&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_p&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_pct&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_rf&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_ri&quot;</span><span class="p">,</span>
                   <span class="s2">&quot;dmarc_rua&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_ruf&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_sp&quot;</span><span class="p">,</span>
-                  <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;startssl&quot;</span> <span class="s2">&quot;spf_record&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_record&quot;</span><span class="p">,</span>
+                  <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;starttls&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_record&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_record&quot;</span><span class="p">,</span>
                   <span class="s2">&quot;dmarc_record_location&quot;</span><span class="p">,</span>
                   <span class="s2">&quot;mx_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_error&quot;</span><span class="p">,</span>
                   <span class="s2">&quot;spf_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_error&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_warnings&quot;</span><span class="p">]</span>
@@ -2153,7 +2190,7 @@
                             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;one or ore domains, or a single path to a &quot;</span>
                                  <span class="s2">&quot;file containing a list of domains&quot;</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="s2">&quot;--parked&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Indicate that the &quot;</span>
-                                                   <span class="s2">&quot;doomains are parked&quot;</span><span class="p">,</span>
+                                                   <span class="s2">&quot;domains are parked&quot;</span><span class="p">,</span>
                             <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-d&quot;</span><span class="p">,</span> <span class="s2">&quot;--descriptions&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
                             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;include descriptions of DMARC tags in &quot;</span>
@@ -2179,9 +2216,13 @@
                             <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--mx&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;A comma separated list of approved &quot;</span>
                                          <span class="s2">&quot;MX hostnames&quot;</span><span class="p">)</span>
+    <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--debug&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable debugging output&quot;</span><span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="n">arg_parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
     <span class="n">domains</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">domain</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">domains</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">domains</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">domains</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">as</span> <span class="n">domains_file</span><span class="p">:</span>
@@ -2244,17 +2285,7 @@
 
     
     
-      <script type="text/javascript">
-          var DOCUMENTATION_OPTIONS = {
-              URL_ROOT:'../',
-              VERSION:'2.8.0',
-              LANGUAGE:'None',
-              COLLAPSE_INDEX:false,
-              FILE_SUFFIX:'.html',
-              HAS_SOURCE:  true,
-              SOURCELINK_SUFFIX: '.txt'
-          };
-      </script>
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script type="text/javascript" src="../_static/jquery.js"></script>
         <script type="text/javascript" src="../_static/underscore.js"></script>
         <script type="text/javascript" src="../_static/doctools.js"></script>
