@@ -581,7 +581,7 @@ def get_base_domain(domain):
     return psl.get_public_suffix(domain)
 
 
-def _query_dns(domain, record_type, nameservers=None, timeout=2.0):
+def _query_dns(domain, record_type, nameservers=None, timeout=6.0):
     """
     Queries DNS
 
@@ -631,7 +631,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0):
     return records
 
 
-def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
+def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a list of Mail Exchange hosts
 
@@ -669,7 +669,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
     return hosts
 
 
-def _get_a_records(domain, nameservers=None, timeout=2.0):
+def _get_a_records(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for A and AAAA records
 
@@ -704,7 +704,7 @@ def _get_a_records(domain, nameservers=None, timeout=2.0):
     return addresses
 
 
-def _get_txt_records(domain, nameservers=None, timeout=2.0):
+def _get_txt_records(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for TXT records
 
@@ -735,7 +735,7 @@ def _get_txt_records(domain, nameservers=None, timeout=2.0):
     return records
 
 
-def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
+def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a DMARC record
 
@@ -801,7 +801,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
 
 
 def _query_bmi_record(domain, selector="default", nameservers=None,
-                      timeout=2.0):
+                      timeout=6.0):
     """
     Queries DNS for a BIMI record
 
@@ -866,7 +866,7 @@ def _query_bmi_record(domain, selector="default", nameservers=None,
     return bimi_record
 
 
-def query_dmarc_record(domain, nameservers=None, timeout=2.0):
+def query_dmarc_record(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a DMARC record
 
@@ -918,7 +918,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=2.0):
 
 
 def query_bimi_record(domain, selector="default", nameservers=None,
-                      timeout=2.0):
+                      timeout=6.0):
     """
     Queries DNS for a BIMI record
 
@@ -1045,7 +1045,7 @@ def parse_dmarc_report_uri(uri):
 
 
 def verify_dmarc_report_destination(source_domain, destination_domain,
-                                    nameservers=None, timeout=2.0):
+                                    nameservers=None, timeout=6.0):
     """
       Checks if the report destination accepts reports for the source domain
       per RFC 7489, section 7.1
@@ -1107,7 +1107,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
 
 def parse_dmarc_record(record, domain, parked=False,
                        include_tag_descriptions=False,
-                       nameservers=None, timeout=2.0):
+                       nameservers=None, timeout=6.0):
     """
     Parses a DMARC record
 
@@ -1331,7 +1331,7 @@ def parse_dmarc_record(record, domain, parked=False,
 
 
 def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
-                     timeout=2.0):
+                     timeout=6.0):
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -1377,7 +1377,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
                         ("parsed", tags)])
 
 
-def query_spf_record(domain, nameservers=None, timeout=2.0):
+def query_spf_record(domain, nameservers=None, timeout=6.0):
     """
     Queries DNS for a SPF record
 
@@ -1444,7 +1444,7 @@ def query_spf_record(domain, nameservers=None, timeout=2.0):
 
 
 def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
-                     timeout=2.0):
+                     timeout=6.0):
     """
     Parses a SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
@@ -1647,7 +1647,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
          ("warnings", warnings)])
 
 
-def get_spf_record(domain, nameservers=None, timeout=2.0):
+def get_spf_record(domain, nameservers=None, timeout=6.0):
     """
     Retrieves and parses an SPF record
 
@@ -1745,7 +1745,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
 
 
 def get_mx_hosts(domain, approved_hostnames=None, parked=False,
-                 nameservers=None, timeout=2.0):
+                 nameservers=None, timeout=6.0):
     """
     Gets MX hostname and their addresses
 
@@ -1833,7 +1833,7 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
 def check_domains(domains, parked=False, approved_mx_hostnames=None,
                   output_format="json",  output_path=None,
                   include_dmarc_tag_descriptions=False,
-                  nameservers=None, timeout=2.0, wait=0.0):
+                  nameservers=None, timeout=6.0, wait=0.0):
     """
     Check the given domains for SPF and DMARC records, parse them, and return
     them
@@ -2065,9 +2065,9 @@ def _main():
                                  "(Default is Cloudflare's")
     arg_parser.add_argument("-t", "--timeout",
                             help="number of seconds to wait for an answer "
-                                 "from DNS (default 2.0)",
+                                 "from DNS (default 6.0)",
                             type=float,
-                            default=2.0)
+                            default=6.0)
     arg_parser.add_argument("-v", "--version", action="version",
                             version=__version__)
     arg_parser.add_argument("-w", "--wait", type=float,

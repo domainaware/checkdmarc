@@ -5,6 +5,7 @@ Changelog
 -----
 
 - Add MX warnings for parked domains
+- Increase default DNS timeout from 2.0 seconds to 6.0 seconds
 
 2.9.0
 -----

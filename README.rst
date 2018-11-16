@@ -31,7 +31,7 @@ A Python module and command line utility for validating SPF and DMARC DNS record
                             nameservers to query (Default is Cloudflare's
       -t TIMEOUT, --timeout TIMEOUT
                             number of seconds to wait for an answer from DNS
-                            (default 2.0)
+                            (default 6.0)
       -v, --version         show program's version number and exit
       -w WAIT, --wait WAIT  number of seconds to wait between processing domains
                             (default 0.0)
