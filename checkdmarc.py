@@ -2051,7 +2051,8 @@ def check_domains(domains, parked=False,
         results = []
         for domain in domains:
             domain_results = OrderedDict(
-                [("domain", domain), ("base_domain", get_base_domain(domain))])
+                [("domain", domain), ("base_domain", get_base_domain(domain)),
+                 ("ns", []), ("mx", [])])
             domain_results["spf"] = OrderedDict(
                 [("record", None), ("valid", True), ("dns_lookups", None)])
             domain_results["ns"] = get_nameservers(
