@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 2.9.2 documentation</title>
+  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 3.0.0 documentation</title>
   
 
   
@@ -57,7 +57,7 @@
             
             
               <div class="version">
-                2.9.2
+                3.0.0
               </div>
             
           
@@ -150,9 +150,9 @@
   <div class="section" id="welcome-to-checkdmarc-s-documentation">
 <h1>Welcome to checkdmarc’s documentation!<a class="headerlink" href="#welcome-to-checkdmarc-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> is a Python module and command line parser for SPF and DMARC DNS records</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">checkdmarc</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">mx</span> <span class="n">MX</span> <span class="p">[</span><span class="n">MX</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="n">FORMAT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">OUTPUT</span><span class="p">]</span>
-                  <span class="p">[</span><span class="o">-</span><span class="n">n</span> <span class="n">NAMESERVER</span> <span class="p">[</span><span class="n">NAMESERVER</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="n">TIMEOUT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span> <span class="n">WAIT</span><span class="p">]</span>
-                  <span class="p">[</span><span class="o">--</span><span class="n">debug</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">checkdmarc</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ns</span> <span class="n">NS</span> <span class="p">[</span><span class="n">NS</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">mx</span> <span class="n">MX</span> <span class="p">[</span><span class="n">MX</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="n">FORMAT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">OUTPUT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">n</span> <span class="n">NAMESERVER</span> <span class="p">[</span><span class="n">NAMESERVER</span> <span class="o">...</span><span class="p">]]</span>
+                  <span class="p">[</span><span class="o">-</span><span class="n">t</span> <span class="n">TIMEOUT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">w</span> <span class="n">WAIT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">debug</span><span class="p">]</span>
                   <span class="n">domain</span> <span class="p">[</span><span class="n">domain</span> <span class="o">...</span><span class="p">]</span>
 
 <span class="n">Validates</span> <span class="ow">and</span> <span class="n">parses</span> <span class="n">SPF</span> <span class="n">amd</span> <span class="n">DMARC</span> <span class="n">DNS</span> <span class="n">records</span>
@@ -163,8 +163,9 @@
 
 <span class="n">optional</span> <span class="n">arguments</span><span class="p">:</span>
   <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>            <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
-  <span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="o">--</span><span class="n">parked</span>          <span class="n">Indicate</span> <span class="n">that</span> <span class="n">the</span> <span class="n">domains</span> <span class="n">are</span> <span class="n">parked</span>
-  <span class="o">--</span><span class="n">mx</span> <span class="n">MX</span> <span class="p">[</span><span class="n">MX</span> <span class="o">...</span><span class="p">]</span>      <span class="n">Approved</span> <span class="n">MX</span> <span class="n">hostnames</span>
+  <span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="o">--</span><span class="n">parked</span>          <span class="n">indicate</span> <span class="n">that</span> <span class="n">the</span> <span class="n">domains</span> <span class="n">are</span> <span class="n">parked</span>
+  <span class="o">--</span><span class="n">ns</span> <span class="n">NS</span> <span class="p">[</span><span class="n">NS</span> <span class="o">...</span><span class="p">]</span>      <span class="n">approved</span> <span class="n">nameservers</span>
+  <span class="o">--</span><span class="n">mx</span> <span class="n">MX</span> <span class="p">[</span><span class="n">MX</span> <span class="o">...</span><span class="p">]</span>      <span class="n">approved</span> <span class="n">MX</span> <span class="n">hostnames</span>
   <span class="o">-</span><span class="n">d</span><span class="p">,</span> <span class="o">--</span><span class="n">descriptions</span>    <span class="n">include</span> <span class="n">descriptions</span> <span class="n">of</span> <span class="n">DMARC</span> <span class="n">tags</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">JSON</span> <span class="n">output</span>
   <span class="o">-</span><span class="n">f</span> <span class="n">FORMAT</span><span class="p">,</span> <span class="o">--</span><span class="nb">format</span> <span class="n">FORMAT</span>
                         <span class="n">specify</span> <span class="n">JSON</span> <span class="ow">or</span> <span class="n">CSV</span> <span class="n">output</span> <span class="nb">format</span>
@@ -188,6 +189,14 @@
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
   <span class="nt">&quot;base_domain&quot;</span><span class="p">:</span> <span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;ns&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;hostnames&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="s2">&quot;a1.fbi.gov&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;a2.fbi.gov&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;a3.fbi.gov&quot;</span>
+    <span class="p">],</span>
+    <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[]</span>
+  <span class="p">},</span>
   <span class="nt">&quot;mx&quot;</span><span class="p">:</span> <span class="p">{</span>
     <span class="nt">&quot;hosts&quot;</span><span class="p">:</span> <span class="p">[</span>
       <span class="p">{</span>
@@ -196,11 +205,11 @@
         <span class="nt">&quot;addresses&quot;</span><span class="p">:</span> <span class="p">[</span>
           <span class="s2">&quot;153.31.160.5&quot;</span>
         <span class="p">],</span>
-        <span class="nt">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">true</span>
+        <span class="nt">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">false</span>
       <span class="p">}</span>
     <span class="p">],</span>
     <span class="nt">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[</span>
-      <span class="s2">&quot;mx-east.fbi.gov does not have a SPF TXT record. MX hosts should have a SPF record of: v=spf1 a -all so bouncebacks pass SPF.&quot;</span>
+      <span class="s2">&quot;mx-east.fbi.gov: Connection refused&quot;</span>
     <span class="p">]</span>
   <span class="p">},</span>
   <span class="nt">&quot;spf&quot;</span><span class="p">:</span> <span class="p">{</span>

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 2.9.2 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 3.0.0 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                2.9.2
+                3.0.0
               </div>
             
           
@@ -190,7 +190,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;2.9.2&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;3.0.0&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -776,6 +776,37 @@
         <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">records</span>
 
     <span class="k">return</span> <span class="n">records</span>
+
+
+<span class="k">def</span> <span class="nf">_get_nameservers</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Queries DNS for a list ofnameservers</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        domain (str): A domain name</span>
+<span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: A list of ``OrderedDicts``; each containing a ``preference``</span>
+<span class="sd">                        integer and a ``hostname``</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        :exc:`checkdmarc.DNSException`</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">answers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">try</span><span class="p">:</span>
+
+        <span class="n">answers</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;NS&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span><span class="s2">&quot;The domain </span><span class="si">{0}</span><span class="s2"> does not exist&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">answers</span>
 
 
 <span class="k">def</span> <span class="nf">_get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
@@ -1932,10 +1963,13 @@
     <span class="k">elif</span> <span class="ow">not</span> <span class="n">parked</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">hosts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;No MX records found. Is the domain parked?&quot;</span><span class="p">)</span>
 
+    <span class="k">if</span> <span class="n">approved_hostnames</span><span class="p">:</span>
+        <span class="n">approved_hostnames</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="n">h</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+                                      <span class="n">approved_hostnames</span><span class="p">))</span>
     <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">approved_hostnames</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">approved_hostnames</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">approved_hostnames</span><span class="p">:</span>
                     <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Unapproved MX hostname: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                         <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
                     <span class="p">))</span>
@@ -1977,7 +2011,50 @@
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hosts&quot;</span><span class="p">,</span> <span class="n">hosts</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="check_domains"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.check_domains">[docs]</a><span class="k">def</span> <span class="nf">check_domains</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">approved_mx_hostnames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="get_nameservers"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_nameservers">[docs]</a><span class="k">def</span> <span class="nf">get_nameservers</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">approved_nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets a list of nameservers for a given domain</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        domain (str): A domain name</span>
+<span class="sd">        approved_nameservers (list): Raise a warning if an unapproved hostname</span>
+<span class="sd">        is found</span>
+<span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
+<span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict: A dictionary with the following keys:</span>
+<span class="sd">              - ``hostnames`` - A list of nameserver hostnames</span>
+<span class="sd">              - ``warnings``  - A list of warnings</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ns_records</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ns_records</span> <span class="o">=</span> <span class="n">_get_nameservers</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                                      <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">approved_nameservers</span><span class="p">:</span>
+        <span class="n">approved_nameservers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="n">h</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+                                        <span class="n">approved_nameservers</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">nameserver</span> <span class="ow">in</span> <span class="n">ns_records</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">approved_nameservers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">nameserver</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">approved_nameservers</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Unapproved nameserver: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">nameserver</span>
+                <span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hostnames&quot;</span><span class="p">,</span> <span class="n">ns_records</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
+
+
+<div class="viewcode-block" id="check_domains"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.check_domains">[docs]</a><span class="k">def</span> <span class="nf">check_domains</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">approved_nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">approved_mx_hostnames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">output_format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>  <span class="n">output_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">include_dmarc_tag_descriptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
@@ -1988,6 +2065,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domains (list): A list of domains to check</span>
 <span class="sd">        parked (bool): Indicates that the domains are parked</span>
+<span class="sd">        approved_nameservers (list): A list of approved nameservers</span>
 <span class="sd">        approved_mx_hostnames (list): A list of approved MX hostnames</span>
 <span class="sd">        output_format (str): ``json`` or ``csv``</span>
 <span class="sd">        output_path (str): Save output to the given file path</span>
@@ -2036,7 +2114,8 @@
                   <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;starttls&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_record&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_record&quot;</span><span class="p">,</span>
                   <span class="s2">&quot;dmarc_record_location&quot;</span><span class="p">,</span>
                   <span class="s2">&quot;mx_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_error&quot;</span><span class="p">,</span>
-                  <span class="s2">&quot;spf_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_error&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_warnings&quot;</span><span class="p">]</span>
+                  <span class="s2">&quot;spf_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_error&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_warnings&quot;</span><span class="p">,</span>
+                  <span class="s2">&quot;ns&quot;</span><span class="p">,</span> <span class="s2">&quot;ns_warnings&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
             <span class="n">output_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -2048,9 +2127,14 @@
         <span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
             <span class="n">row</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span> <span class="n">base_domain</span><span class="o">=</span><span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">),</span>
                        <span class="n">mx</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">spf_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dmarc_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">ns</span> <span class="o">=</span> <span class="n">get_nameservers</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span>
+                                 <span class="n">approved_nameservers</span><span class="o">=</span><span class="n">approved_nameservers</span><span class="p">,</span>
+                                 <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
             <span class="n">mx</span> <span class="o">=</span> <span class="n">get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="n">parked</span><span class="p">,</span>
                               <span class="n">approved_hostnames</span><span class="o">=</span><span class="n">approved_mx_hostnames</span><span class="p">,</span>
                               <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;ns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ns</span><span class="p">[</span><span class="s2">&quot;hostnames&quot;</span><span class="p">])</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;ns_warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ns</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">])</span>
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span>
                 <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;preference&quot;</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]),</span>
                     <span class="n">mx</span><span class="p">[</span><span class="s2">&quot;hosts&quot;</span><span class="p">])))</span>
@@ -2117,9 +2201,14 @@
         <span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
             <span class="n">domain_results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
                 <span class="p">[(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;base_domain&quot;</span><span class="p">,</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)),</span>
-                 <span class="p">(</span><span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="p">[])])</span>
+                 <span class="p">(</span><span class="s2">&quot;ns&quot;</span><span class="p">,</span> <span class="p">[]),</span> <span class="p">(</span><span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="p">[])])</span>
             <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
                 <span class="p">[(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)])</span>
+            <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;ns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_nameservers</span><span class="p">(</span>
+                <span class="n">domain</span><span class="p">,</span>
+                <span class="n">approved_nameservers</span><span class="o">=</span><span class="n">approved_nameservers</span><span class="p">,</span>
+                <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
             <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_mx_hosts</span><span class="p">(</span>
                 <span class="n">domain</span><span class="p">,</span>
                 <span class="n">approved_hostnames</span><span class="o">=</span><span class="n">approved_mx_hostnames</span><span class="p">,</span>
@@ -2196,11 +2285,13 @@
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
                             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;one or ore domains, or a single path to a &quot;</span>
                                  <span class="s2">&quot;file containing a list of domains&quot;</span><span class="p">)</span>
-    <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="s2">&quot;--parked&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Indicate that the &quot;</span>
+    <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="s2">&quot;--parked&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;indicate that the &quot;</span>
                                                    <span class="s2">&quot;domains are parked&quot;</span><span class="p">,</span>
                             <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--ns&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;approved nameservers&quot;</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--mx&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
-                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Approved MX hostnames&quot;</span><span class="p">)</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;approved MX hostnames&quot;</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-d&quot;</span><span class="p">,</span> <span class="s2">&quot;--descriptions&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
                             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;include descriptions of DMARC tags in &quot;</span>
                                  <span class="s2">&quot;the JSON output&quot;</span><span class="p">)</span>
@@ -2245,6 +2336,7 @@
 
     <span class="n">results</span> <span class="o">=</span> <span class="n">check_domains</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">parked</span><span class="p">,</span>
                             <span class="n">output_format</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">format</span><span class="p">,</span>
+                            <span class="n">approved_nameservers</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">ns</span><span class="p">,</span>
                             <span class="n">approved_mx_hostnames</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">mx</span><span class="p">,</span>
                             <span class="n">output_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span>
                             <span class="n">include_dmarc_tag_descriptions</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">descriptions</span><span class="p">,</span>

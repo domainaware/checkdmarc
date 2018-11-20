@@ -10,9 +10,9 @@ Welcome to checkdmarc's documentation!
 
 ::
 
-   usage: checkdmarc [-h] [-p] [--mx MX [MX ...]] [-d] [-f FORMAT] [-o OUTPUT]
-                     [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v] [-w WAIT]
-                     [--debug]
+   usage: checkdmarc [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d]
+                     [-f FORMAT] [-o OUTPUT] [-n NAMESERVER [NAMESERVER ...]]
+                     [-t TIMEOUT] [-v] [-w WAIT] [--debug]
                      domain [domain ...]
 
    Validates and parses SPF amd DMARC DNS records
@@ -23,8 +23,9 @@ Welcome to checkdmarc's documentation!
 
    optional arguments:
      -h, --help            show this help message and exit
-     -p, --parked          Indicate that the domains are parked
-     --mx MX [MX ...]      Approved MX hostnames
+     -p, --parked          indicate that the domains are parked
+     --ns NS [NS ...]      approved nameservers
+     --mx MX [MX ...]      approved MX hostnames
      -d, --descriptions    include descriptions of DMARC tags in the JSON output
      -f FORMAT, --format FORMAT
                            specify JSON or CSV output format
@@ -50,6 +51,14 @@ Welcome to checkdmarc's documentation!
    {
      "domain": "fbi.gov",
      "base_domain": "fbi.gov",
+     "ns": {
+       "hostnames": [
+         "a1.fbi.gov",
+         "a2.fbi.gov",
+         "a3.fbi.gov"
+       ],
+       "warnings": []
+     },
      "mx": {
        "hosts": [
          {
@@ -58,11 +67,11 @@ Welcome to checkdmarc's documentation!
            "addresses": [
              "153.31.160.5"
            ],
-           "starttls": true
+           "starttls": false
          }
        ],
        "warnings": [
-         "mx-east.fbi.gov does not have a SPF TXT record. MX hosts should have a SPF record of: v=spf1 a -all so bouncebacks pass SPF."
+         "mx-east.fbi.gov: Connection refused"
        ]
      },
      "spf": {
