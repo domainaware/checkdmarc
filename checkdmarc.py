@@ -43,7 +43,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "2.9.2"
+__version__ = "3.0.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -629,6 +629,37 @@ def _query_dns(domain, record_type, nameservers=None, timeout=6.0):
         cache[cache_key] = records
 
     return records
+
+
+def _get_nameservers(domain, nameservers=None, timeout=6.0):
+    """
+    Queries DNS for a list ofnameservers
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
+
+    Returns:
+        list: A list of ``OrderedDicts``; each containing a ``preference``
+                        integer and a ``hostname``
+
+    Raises:
+        :exc:`checkdmarc.DNSException`
+
+    """
+    answers = []
+    try:
+
+        answers = _query_dns(domain, "NS", nameservers=nameservers,
+                             timeout=timeout)
+    except dns.resolver.NXDOMAIN:
+        raise DNSException("The domain {0} does not exist".format(domain))
+    except dns.resolver.NoAnswer:
+        pass
+    except dns.exception.DNSException as error:
+        raise DNSException(error)
+    return answers
 
 
 def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
@@ -1785,10 +1816,13 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
     elif not parked and len(hosts) == 0:
         warnings.append("No MX records found. Is the domain parked?")
 
+    if approved_hostnames:
+        approved_hostnames = list(map(lambda h: h.lower(),
+                                      approved_hostnames))
     for host in hosts:
         try:
             if approved_hostnames:
-                if host["hostname"] not in approved_hostnames:
+                if host["hostname"].lower() not in approved_hostnames:
                     warnings.append("Unapproved MX hostname: {0}".format(
                         host["hostname"]
                     ))
@@ -1830,7 +1864,48 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
 
-def check_domains(domains, parked=False, approved_mx_hostnames=None,
+def get_nameservers(domain, approved_nameservers=None,
+                    nameservers=None, timeout=6.0):
+    """
+    Gets a list of nameservers for a given domain
+    
+    Args:
+        domain (str): A domain name
+        approved_nameservers (list): Raise a warning if an unapproved hostname
+        is found
+        nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
+        timeout(float): number of seconds to wait for an record from DNS
+
+    Returns:
+
+    """
+    ns_records = []
+    warnings = []
+
+    try:
+        ns_records = _get_nameservers(domain, nameservers=nameservers,
+                                      timeout=timeout)
+
+    except DNSException as warning:
+        warnings.append(str(warning))
+
+    if approved_nameservers:
+        approved_nameservers = list(map(lambda h: h.lower(),
+                                        approved_nameservers))
+    for nameserver in ns_records:
+        if approved_nameservers:
+            if nameserver.lower() not in approved_nameservers:
+                warnings.append("Unapproved nameserver: {0}".format(
+                    nameserver
+                ))
+
+    return OrderedDict([("hostnames", ns_records), ("warnings", warnings)])
+
+
+def check_domains(domains, parked=False,
+                  approved_nameservers=None,
+                  approved_mx_hostnames=None,
                   output_format="json",  output_path=None,
                   include_dmarc_tag_descriptions=False,
                   nameservers=None, timeout=6.0, wait=0.0):
@@ -1841,6 +1916,7 @@ def check_domains(domains, parked=False, approved_mx_hostnames=None,
     Args:
         domains (list): A list of domains to check
         parked (bool): Indicates that the domains are parked
+        approved_nameservers (list): A list of approved nameservers
         approved_mx_hostnames (list): A list of approved MX hostnames
         output_format (str): ``json`` or ``csv``
         output_path (str): Save output to the given file path
@@ -1889,7 +1965,8 @@ def check_domains(domains, parked=False, approved_mx_hostnames=None,
                   "mx", "starttls", "spf_record", "dmarc_record",
                   "dmarc_record_location",
                   "mx_warnings", "spf_error",
-                  "spf_warnings", "dmarc_error", "dmarc_warnings"]
+                  "spf_warnings", "dmarc_error", "dmarc_warnings",
+                  "ns", "ns_warnings"]
         if output_path:
             output_file = open(output_path, "w", newline="\n")
         else:
@@ -1901,9 +1978,14 @@ def check_domains(domains, parked=False, approved_mx_hostnames=None,
         for domain in domains:
             row = dict(domain=domain, base_domain=get_base_domain(domain),
                        mx="", spf_valid=True, dmarc_valid=True)
+            ns = get_nameservers(domain,
+                                 approved_nameservers=approved_nameservers,
+                                 nameservers=nameservers, timeout=timeout)
             mx = get_mx_hosts(domain, parked=parked,
                               approved_hostnames=approved_mx_hostnames,
                               nameservers=nameservers, timeout=timeout)
+            row["ns"] = ",".join(ns["hostnames"])
+            row["ns_warnings"] = ",".join(ns["warnings"])
             row["mx"] = ",".join(list(
                 map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
                     mx["hosts"])))
@@ -1969,10 +2051,14 @@ def check_domains(domains, parked=False, approved_mx_hostnames=None,
         results = []
         for domain in domains:
             domain_results = OrderedDict(
-                [("domain", domain), ("base_domain", get_base_domain(domain)),
-                 ("mx", [])])
+                [("domain", domain), ("base_domain", get_base_domain(domain))])
             domain_results["spf"] = OrderedDict(
                 [("record", None), ("valid", True), ("dns_lookups", None)])
+            domain_results["ns"] = get_nameservers(
+                domain,
+                approved_nameservers=approved_nameservers,
+                nameservers=nameservers,
+                timeout=timeout)
             domain_results["mx"] = get_mx_hosts(
                 domain,
                 approved_hostnames=approved_mx_hostnames,
@@ -2052,6 +2138,8 @@ def _main():
     arg_parser.add_argument("-p", "--parked", help="Indicate that the "
                                                    "domains are parked",
                             action="store_true", default=False)
+    arg_parser.add_argument("--ns", nargs="+",
+                            help="Approved nameservers")
     arg_parser.add_argument("--mx", nargs="+",
                             help="Approved MX hostnames")
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
@@ -2098,6 +2186,7 @@ def _main():
 
     results = check_domains(domains, parked=args.parked,
                             output_format=args.format,
+                            approved_nameservers=args.ns,
                             approved_mx_hostnames=args.mx,
                             output_path=args.output,
                             include_dmarc_tag_descriptions=args.descriptions,

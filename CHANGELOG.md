@@ -1,6 +1,13 @@
 Changelog
 =========
 
+3.0.0
+-----
+
+- Add `get_nameservers()` to the API
+- Add `NS` record lookup to output as `ns`
+- Add `--ns` option to CLI for listing approved nameservers
+
 2.9.2
 -----
 
