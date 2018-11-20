@@ -1868,7 +1868,7 @@ def get_nameservers(domain, approved_nameservers=None,
                     nameservers=None, timeout=6.0):
     """
     Gets a list of nameservers for a given domain
-    
+
     Args:
         domain (str): A domain name
         approved_nameservers (list): Raise a warning if an unapproved hostname
@@ -1878,7 +1878,9 @@ def get_nameservers(domain, approved_nameservers=None,
         timeout(float): number of seconds to wait for an record from DNS
 
     Returns:
-
+        Dict: A dictionary with the following keys:
+              - ``hostnames`` - A list of nameserver hostnames
+              - ``warnings``  - A list of warnings
     """
     ns_records = []
     warnings = []

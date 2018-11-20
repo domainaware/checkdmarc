@@ -7,9 +7,9 @@ A Python module and command line utility for validating SPF and DMARC DNS record
 
 ::
 
-    usage: checkdmarc [-h] [-p] [--mx MX [MX ...]] [-d] [-f FORMAT] [-o OUTPUT]
-                      [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v] [-w WAIT]
-                      [--debug]
+    usage: checkdmarc [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d]
+                      [-f FORMAT] [-o OUTPUT] [-n NAMESERVER [NAMESERVER ...]]
+                      [-t TIMEOUT] [-v] [-w WAIT] [--debug]
                       domain [domain ...]
 
     Validates and parses SPF amd DMARC DNS records
@@ -21,6 +21,7 @@ A Python module and command line utility for validating SPF and DMARC DNS record
     optional arguments:
       -h, --help            show this help message and exit
       -p, --parked          Indicate that the domains are parked
+      --ns NS [NS ...]      Approved nameservers
       --mx MX [MX ...]      Approved MX hostnames
       -d, --descriptions    include descriptions of DMARC tags in the JSON output
       -f FORMAT, --format FORMAT
@@ -47,6 +48,14 @@ A Python module and command line utility for validating SPF and DMARC DNS record
     {
       "domain": "fbi.gov",
       "base_domain": "fbi.gov",
+      "ns": {
+        "hostnames": [
+          "a1.fbi.gov",
+          "a2.fbi.gov",
+          "a3.fbi.gov"
+        ],
+        "warnings": []
+      },
       "mx": {
         "hosts": [
           {
@@ -55,10 +64,12 @@ A Python module and command line utility for validating SPF and DMARC DNS record
             "addresses": [
               "153.31.160.5"
             ],
-            "starttls": true
+            "starttls": false
           }
         ],
-        "warnings": []
+        "warnings": [
+          "mx-east.fbi.gov: Connection refused"
+        ]
       },
       "spf": {
         "record": "v=spf1 +mx ip4:153.31.0.0/16 -all",
@@ -159,8 +170,6 @@ A Python module and command line utility for validating SPF and DMARC DNS record
         }
       }
     }
-
-
 
 Installation
 ------------
