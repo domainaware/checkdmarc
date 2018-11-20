@@ -2138,13 +2138,13 @@ def _main():
     arg_parser.add_argument("domain", nargs="+",
                             help="one or ore domains, or a single path to a "
                                  "file containing a list of domains")
-    arg_parser.add_argument("-p", "--parked", help="Indicate that the "
+    arg_parser.add_argument("-p", "--parked", help="indicate that the "
                                                    "domains are parked",
                             action="store_true", default=False)
     arg_parser.add_argument("--ns", nargs="+",
-                            help="Approved nameservers")
+                            help="approved nameservers")
     arg_parser.add_argument("--mx", nargs="+",
-                            help="Approved MX hostnames")
+                            help="approved MX hostnames")
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in "
                                  "the JSON output")
