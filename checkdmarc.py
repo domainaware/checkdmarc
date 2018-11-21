@@ -2152,7 +2152,7 @@ def _main():
     arg_parser.add_argument("--ns", nargs="+",
                             help="approved nameserver substrings")
     arg_parser.add_argument("--mx", nargs="+",
-                            help="approved MX hostnams substrings")
+                            help="approved MX hostname substrings")
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in "
                                  "the JSON output")
