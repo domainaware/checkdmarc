@@ -2176,7 +2176,7 @@ def _main():
                                  "processing domains (default 0.0)",
                             default=0.0)
     arg_parser.add_argument("--debug", action="store_true",
-                            help="Enable debugging output")
+                            help="enable debugging output")
 
     args = arg_parser.parse_args()
 
