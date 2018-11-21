@@ -1,6 +1,12 @@
 Changelog
 =========
 
+3.0.1
+-----
+
+- Use substrings for matching approved 'MX' and 'NS' records, rather than the 
+full string
+
 3.0.0
 -----
 

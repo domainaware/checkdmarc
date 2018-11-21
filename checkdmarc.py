@@ -43,7 +43,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1782,8 +1782,7 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
 
     Args:
         domain (str): A domain name
-        approved_hostnames (list): Raise a warning if an unapproved hostname
-        is found
+        approved_hostnames (list): A list of approved MX hostname substrings
         parked (bool): Indicates that the domains are parked
         nameservers (list): A list of nameservers to query
         (Cloudflare's by default)
@@ -1822,7 +1821,12 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
     for host in hosts:
         try:
             if approved_hostnames:
-                if host["hostname"].lower() not in approved_hostnames:
+                approved = False
+                for approved_hostname in approved_hostnames:
+                    if approved_hostname in host["hostname"].lower():
+                        approved = True
+                        break
+                if not approved:
                     warnings.append("Unapproved MX hostname: {0}".format(
                         host["hostname"]
                     ))
@@ -1871,9 +1875,8 @@ def get_nameservers(domain, approved_nameservers=None,
 
     Args:
         domain (str): A domain name
-        approved_nameservers (list): Raise a warning if an unapproved hostname
-        is found
-        nameservers (list): A list of nameservers to query
+        approved_nameservers (list): A list of approved nameserver substrings
+        nameservers (list): A list of nameservers to qu+ery
         (Cloudflare's by default)
         timeout(float): number of seconds to wait for an record from DNS
 
@@ -1897,7 +1900,12 @@ def get_nameservers(domain, approved_nameservers=None,
                                         approved_nameservers))
     for nameserver in ns_records:
         if approved_nameservers:
-            if nameserver.lower() not in approved_nameservers:
+            approved = False
+            for approved_nameserver in approved_nameservers:
+                if approved_nameserver in nameserver.lower():
+                    approved = True
+                    break
+            if not approved:
                 warnings.append("Unapproved nameserver: {0}".format(
                     nameserver
                 ))
@@ -2142,9 +2150,9 @@ def _main():
                                                    "domains are parked",
                             action="store_true", default=False)
     arg_parser.add_argument("--ns", nargs="+",
-                            help="approved nameservers")
+                            help="approved nameserver substrings")
     arg_parser.add_argument("--mx", nargs="+",
-                            help="approved MX hostnames")
+                            help="approved MX hostnams substrings")
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
                             help="include descriptions of DMARC tags in "
                                  "the JSON output")
