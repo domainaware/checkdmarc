@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 3.0.0 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 3.0.2 documentation</title>
   
 
   
@@ -57,7 +57,7 @@
             
             
               <div class="version">
-                3.0.0
+                3.0.2
               </div>
             
           
@@ -543,8 +543,7 @@ description for a tag value</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>approved_hostnames</strong> (<em>list</em>) – Raise a warning if an unapproved hostname</li>
-<li><strong>found</strong> (<em>is</em>) – </li>
+<li><strong>approved_hostnames</strong> (<em>list</em>) – A list of approved MX hostname substrings</li>
 <li><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</li>
 <li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
 <li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
@@ -584,9 +583,8 @@ description for a tag value</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>approved_nameservers</strong> (<em>list</em>) – Raise a warning if an unapproved hostname</li>
-<li><strong>found</strong> (<em>is</em>) – </li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
+<li><strong>approved_nameservers</strong> (<em>list</em>) – A list of approved nameserver substrings</li>
+<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to qu+ery</li>
 <li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
 <li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
 </ul>
