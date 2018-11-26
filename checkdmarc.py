@@ -43,7 +43,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "3.0.1"
+__version__ = "3.0.2"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -560,7 +560,7 @@ def get_base_domain(domain):
     psl_path = ".public_suffix_list.dat"
 
     def download_psl():
-        fresh_psl = publicsuffix.fetch().read()
+        fresh_psl = publicsuffix2.fetch().read()
         with open(psl_path, "w", encoding="utf-8") as fresh_psl_file:
             fresh_psl_file.write(fresh_psl)
 
@@ -1962,6 +1962,11 @@ def check_domains(domains, parked=False,
             not_domains.append(domain)
     for domain in not_domains:
         domains.remove(domain)
+    if output_path:
+        if output_path.lower().endswith(".csv"):
+            output_format = "csv"
+        elif output_path.lower().endswith(".json"):
+            output_format = "json"
     if output_format not in ["json", "csv"]:
         raise ValueError(
             "Invalid output format {0}. Valid options are "

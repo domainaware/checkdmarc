@@ -1,6 +1,11 @@
 Changelog
 =========
 
+3.0.2
+-----
+
+- Use output path file extension to set output format
+
 3.0.1
 -----
 
