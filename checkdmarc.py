@@ -560,7 +560,7 @@ def get_base_domain(domain):
     psl_path = ".public_suffix_list.dat"
 
     def download_psl():
-        fresh_psl = publicsuffix2.fetch().read()
+        fresh_psl = publicsuffix.fetch().read()
         with open(psl_path, "w", encoding="utf-8") as fresh_psl_file:
             fresh_psl_file.write(fresh_psl)
 
