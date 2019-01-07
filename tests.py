@@ -9,6 +9,7 @@ known_good_domains = [
 
 
 class Test(unittest.TestCase):
+    @unittest.skip
     def testKnownGood(self):
         """Domains with known good STARTTLS support, SPF and DMARC records"""
 
