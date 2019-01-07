@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 3.0.2 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 3.0.3 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                3.0.2
+                3.0.3
               </div>
             
           
@@ -190,7 +190,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;3.0.2&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;3.0.3&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -880,6 +880,31 @@
 
     <span class="n">addresses</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">addresses</span>
+
+
+<span class="k">def</span> <span class="nf">_get_reverse_dns</span><span class="p">(</span><span class="n">ip_address</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Queries for an IP addresses reverse DNS hostname(s)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ip_address (str): An IPv4 or IPv6 address</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: A list of reverse DNS hostnames</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        :exc:`checkdmarc.DNSException`</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyaddr</span><span class="p">(</span><span class="n">ip_address</span><span class="p">)</span>
+        <span class="n">hostnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">+</span> <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">herror</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hostnames</span>
 
 
 <span class="k">def</span> <span class="nf">_get_txt_records</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
@@ -1894,6 +1919,8 @@
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="s2">&quot;Connection aborted&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">TimeoutError</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="s2">&quot;Connection timed out&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BlockingIOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
     <span class="k">except</span> <span class="n">SSLError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="s2">&quot;SSL error: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()))</span>
     <span class="k">except</span> <span class="n">CertificateError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
@@ -1980,6 +2007,19 @@
             <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span>
                                                <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                                                <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]:</span>
+                <span class="n">reverse_domain_hostnames</span> <span class="o">=</span> <span class="n">_get_reverse_dns</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reverse_domain_hostnames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have any reverse DNS (PTR) &quot;</span>
+                        <span class="s2">&quot;records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">hostname</span> <span class="ow">in</span> <span class="n">reverse_domain_hostnames</span><span class="p">:</span>
+                    <span class="n">_addresses</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">address</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_addresses</span><span class="p">:</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;The reverse DNS of </span><span class="si">{1}</span><span class="s2"> is </span><span class="si">{0}</span><span class="s2">, but &quot;</span>
+                                        <span class="s2">&quot;the A/AAAA DNS records for &quot;</span>
+                                        <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> do not resolve to &quot;</span>
+                                        <span class="s2">&quot;</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">address</span><span class="p">))</span>
             <span class="n">starttls</span> <span class="o">=</span> <span class="n">test_starttls</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span> <span class="n">cache</span><span class="o">=</span><span class="n">STARTTLS_CACHE</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">starttls</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">: STARTTLS is not supported&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -2401,6 +2441,7 @@
         <script type="text/javascript" src="../_static/jquery.js"></script>
         <script type="text/javascript" src="../_static/underscore.js"></script>
         <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
     
 
   
