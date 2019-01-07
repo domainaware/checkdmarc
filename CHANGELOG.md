@@ -1,6 +1,12 @@
 Changelog
 =========
 
+3.0.3
+-----
+
+- Catch `BlockingIOError` exception when testing `STARTTLS`
+- Add warning if PTR records for MX do not match the hostname's A/AAAA records
+
 3.0.2
 -----
 

@@ -43,7 +43,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "3.0.2"
+__version__ = "3.0.3"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -733,6 +733,31 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
 
     addresses = sorted(addresses)
     return addresses
+
+
+def _get_reverse_dns(ip_address):
+    """
+    Queries for an IP addresses reverse DNS hostname(s)
+
+    Args:
+        ip_address (str): An IPv4 or IPv6 address
+
+    Returns:
+        list: A list of reverse DNS hostnames
+
+    Raises:
+        :exc:`checkdmarc.DNSException`
+
+    """
+    try:
+        results = socket.gethostbyaddr(ip_address)
+        hostnames = [results[0]] + results[1]
+    except socket.herror:
+        return []
+    except Exception as error:
+        raise DNSException(error)
+
+    return hostnames
 
 
 def _get_txt_records(domain, nameservers=None, timeout=6.0):
@@ -1747,6 +1772,8 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         raise SMTPError("Connection aborted")
     except TimeoutError:
         raise SMTPError("Connection timed out")
+    except BlockingIOError as e:
+        raise SMTPError(e.__str__())
     except SSLError as error:
         raise SMTPError("SSL error: {0}".format(error.__str__()))
     except CertificateError as error:
@@ -1833,6 +1860,19 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
             host["addresses"] = _get_a_records(host["hostname"],
                                                nameservers=nameservers,
                                                timeout=timeout)
+            for address in host["addresses"]:
+                reverse_domain_hostnames = _get_reverse_dns(address)
+                if len(reverse_domain_hostnames) == 0:
+                    warnings.append(
+                        "{0} does not have any reverse DNS (PTR) "
+                        "records".format(address))
+                for hostname in reverse_domain_hostnames:
+                    _addresses = _get_a_records(hostname)
+                    if address not in _addresses:
+                        warnings.append("The reverse DNS of {1} is {0}, but "
+                                        "the A/AAAA DNS records for "
+                                        "{0} do not resolve to "
+                                        "{1}".format(hostname, address))
             starttls = test_starttls(host["hostname"], cache=STARTTLS_CACHE)
             if not starttls:
                 warnings.append("{0}: STARTTLS is not supported".format(
