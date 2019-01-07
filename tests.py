@@ -5,8 +5,8 @@ import checkdmarc
 known_good_domains = [
     "fbi.gov",
     "dhs.gov",
-    "google.com",
-    "microsoft.com"
+    "huntington.com",
+    "pm.me"
 ]
 
 
