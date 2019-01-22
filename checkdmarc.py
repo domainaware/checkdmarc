@@ -1752,6 +1752,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             return cached_result
     if ssl_context is None:
         ssl_context = create_default_context()
+    logging.debug("Checking for STARTTLS on {0}".format(hostname))
     try:
         server = smtplib.SMTP(hostname)
         server.ehlo_or_helo_if_needed()
@@ -2227,6 +2228,7 @@ def _main():
 
     if args.debug:
         logger.setLevel(logging.DEBUG)
+        logger.debug("Debug output enabled")
     domains = args.domain
     if len(domains) == 1 and path.exists(domains[0]):
         with open(domains[0]) as domains_file:
