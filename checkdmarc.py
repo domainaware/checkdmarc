@@ -63,6 +63,7 @@ MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
 IPV4_REGEX = compile(IPV4_REGEX_STRING)
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -1775,6 +1776,8 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         raise SMTPError("Connection timed out")
     except BlockingIOError as e:
         raise SMTPError(e.__str__())
+    except OSError as e:
+        raise SMTPError(e.__str__())
     except SSLError as error:
         raise SMTPError("SSL error: {0}".format(error.__str__()))
     except CertificateError as error:
@@ -2227,7 +2230,6 @@ def _main():
     args = arg_parser.parse_args()
 
     if args.debug:
-        logger.setLevel(logging.DEBUG)
         logger.debug("Debug output enabled")
     domains = args.domain
     if len(domains) == 1 and path.exists(domains[0]):
