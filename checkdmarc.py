@@ -63,9 +63,6 @@ MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
 IPV4_REGEX = compile(IPV4_REGEX_STRING)
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 DNS_CACHE = ExpiringDict(max_len=10000, max_age_seconds=1800)
 STARTTLS_CACHE = ExpiringDict(max_len=10000, max_age_seconds=1800)
 
@@ -573,7 +570,7 @@ def get_base_domain(domain):
             try:
                 download_psl()
             except Exception as error:
-                logger.warning("Failed to download an updated PSL - \
+                logging.warning("Failed to download an updated PSL - \
                                {0}".format(error))
     with open(psl_path, encoding="utf-8") as psl_file:
         psl = publicsuffix.PublicSuffixList(psl_file)
@@ -1201,6 +1198,7 @@ def parse_dmarc_record(record, domain, parked=False,
         :exc:`checkdmarc.DMARCReportEmailAddressMissingMXRecords`
 
     """
+    logging.debug("PArsing the DMARC record for {0}".format(domain))
     spf_in_dmarc_error_msg = "Found a SPF record where a DMARC record " \
                              "should be; most likely, the _dmarc " \
                              "subdomain record does not actually exist, " \
@@ -1451,6 +1449,7 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
     Raises:
         :exc:`checkdmarc.SPFRecordNotFound`
     """
+    logging.debug("Querying for a SPF record on {0}".format(domain))
     warnings = []
     spf_type_records = []
     spf_txt_records = []
@@ -1526,6 +1525,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
         :exc:`checkdmarc.SPFSyntaxError`
         :exc:`checkdmarc.SPFTooManyDNSLookups`
     """
+    logging.debug("Parsing the SPF record on {0}".format(domain))
     lookup_mechanisms = ["a", "mx", "include", "exists", "redirect"]
     if seen is None:
         seen = [domain]
@@ -1826,6 +1826,7 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
                      - ``warnings`` - A ``list`` of MX resolution warnings
 
     """
+    logging.debug("Getting MX hosts of {0}".format(domain))
     mx_records = []
     hosts = []
     warnings = []
@@ -1897,14 +1898,12 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
                           "instead of: {2}, so bouncebacks pass " \
                           "SPF.".format(host["hostname"],
                                         correct_mx_spf_record, mx_spf_record)
-                if logger.level == logging.DEBUG:
-                    warnings.append(warning)
+                warnings.append(warning)
 
         except Exception as e:
             warning = "{0}. MX hosts should have a SPF record of: {1} so " \
                       "bouncebacks pass SPF.".format(e, correct_mx_spf_record)
-            if logger.level == logging.DEBUG:
-                warnings.append(warning)
+            warnings.append(warning)
 
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
@@ -1926,6 +1925,7 @@ def get_nameservers(domain, approved_nameservers=None,
               - ``hostnames`` - A list of nameserver hostnames
               - ``warnings``  - A list of warnings
     """
+    logging.debug("Getting nameservers of {0}".format(domain))
     ns_records = []
     warnings = []
 
@@ -2032,6 +2032,7 @@ def check_domains(domains, parked=False,
         while "" in domains:
             domains.remove("")
         for domain in domains:
+            logging.debug("Checking {0} in CSV format".format(domain))
             row = dict(domain=domain, base_domain=get_base_domain(domain),
                        mx="", spf_valid=True, dmarc_valid=True)
             ns = get_nameservers(domain,
@@ -2106,6 +2107,7 @@ def check_domains(domains, parked=False,
     elif output_format == "json":
         results = []
         for domain in domains:
+            logging.debug("Checking {0} in JSON format0".format(domain))
             domain_results = OrderedDict(
                 [("domain", domain), ("base_domain", get_base_domain(domain)),
                  ("ns", []), ("mx", [])])
@@ -2227,7 +2229,8 @@ def _main():
     args = arg_parser.parse_args()
 
     if args.debug:
-        logger.debug("Debug output enabled")
+        logging.basicConfig(level=logging.DEBUG)
+        logging.debug("Debug output enabled")
     domains = args.domain
     if len(domains) == 1 and path.exists(domains[0]):
         with open(domains[0]) as domains_file:
