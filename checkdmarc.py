@@ -66,7 +66,6 @@ IPV4_REGEX = compile(IPV4_REGEX_STRING)
 DNS_CACHE = ExpiringDict(max_len=10000, max_age_seconds=1800)
 STARTTLS_CACHE = ExpiringDict(max_len=10000, max_age_seconds=1800)
 
-
 class SMTPError(Exception):
     """Raised when n SMTP error occurs"""
 
@@ -942,6 +941,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
         :exc:`checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
 
     """
+    logging.debug("Checking for a DMARC record on {0}".format(domain))
     warnings = []
     base_domain = get_base_domain(domain)
     location = domain.lower()
@@ -994,6 +994,7 @@ def query_bimi_record(domain, selector="default", nameservers=None,
         :exc:`checkdmarc.MultipleBIMIRecords`
 
     """
+    logging.debug("Checking for a BIMI record on {0}".format(domain))
     warnings = []
     base_domain = get_base_domain(domain)
     location = domain.lower()
@@ -1198,7 +1199,7 @@ def parse_dmarc_record(record, domain, parked=False,
         :exc:`checkdmarc.DMARCReportEmailAddressMissingMXRecords`
 
     """
-    logging.debug("PArsing the DMARC record for {0}".format(domain))
+    logging.debug("Parsing the DMARC record for {0}".format(domain))
     spf_in_dmarc_error_msg = "Found a SPF record where a DMARC record " \
                              "should be; most likely, the _dmarc " \
                              "subdomain record does not actually exist, " \
@@ -1449,7 +1450,7 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
     Raises:
         :exc:`checkdmarc.SPFRecordNotFound`
     """
-    logging.debug("Querying for a SPF record on {0}".format(domain))
+    logging.debug("Checking for a SPF record on {0}".format(domain))
     warnings = []
     spf_type_records = []
     spf_txt_records = []
@@ -1826,7 +1827,7 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
                      - ``warnings`` - A ``list`` of MX resolution warnings
 
     """
-    logging.debug("Getting MX hosts of {0}".format(domain))
+    logging.debug("Checking for  MX hosts on {0}".format(domain))
     mx_records = []
     hosts = []
     warnings = []
@@ -1925,7 +1926,7 @@ def get_nameservers(domain, approved_nameservers=None,
               - ``hostnames`` - A list of nameserver hostnames
               - ``warnings``  - A list of warnings
     """
-    logging.debug("Getting nameservers of {0}".format(domain))
+    logging.debug("Getting NS records on {0}".format(domain))
     ns_records = []
     warnings = []
 
@@ -2107,7 +2108,7 @@ def check_domains(domains, parked=False,
     elif output_format == "json":
         results = []
         for domain in domains:
-            logging.debug("Checking {0} in JSON format0".format(domain))
+            logging.debug("Checking {0} in JSON format".format(domain))
             domain_results = OrderedDict(
                 [("domain", domain), ("base_domain", get_base_domain(domain)),
                  ("ns", []), ("mx", [])])
@@ -2229,7 +2230,8 @@ def _main():
     args = arg_parser.parse_args()
 
     if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG,
+                            format="%(asctime)s - %(levelname)s - %(message)s")
         logging.debug("Debug output enabled")
     domains = args.domain
     if len(domains) == 1 and path.exists(domains[0]):
