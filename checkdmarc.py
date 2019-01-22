@@ -43,7 +43,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "3.0.3"
+__version__ = "3.1.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -63,8 +63,9 @@ MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
 IPV4_REGEX = compile(IPV4_REGEX_STRING)
 
-DNS_CACHE = ExpiringDict(max_len=10000, max_age_seconds=1800)
-STARTTLS_CACHE = ExpiringDict(max_len=10000, max_age_seconds=1800)
+DNS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
+STARTTLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
+
 
 class SMTPError(Exception):
     """Raised when n SMTP error occurs"""
@@ -1761,7 +1762,6 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             server.starttls(context=ssl_context)
             server.ehlo()
             starttls = True
-        STARTTLS_CACHE[hostname] = starttls
         try:
             server.quit()
             server.close()
@@ -1802,6 +1802,8 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         raise SMTPError(message)
     except OSError as e:
         raise SMTPError(e.__str__())
+    finally:
+        STARTTLS_CACHE[hostname] = starttls
 
 
 def get_mx_hosts(domain, approved_hostnames=None, parked=False,
@@ -1831,6 +1833,8 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
     mx_records = []
     hosts = []
     warnings = []
+    hostnames = set()
+    dupe_hostnames = set()
     try:
         mx_records = _get_mx_hosts(domain, nameservers=nameservers,
                                    timeout=timeout)
@@ -1838,7 +1842,7 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
         warnings.append(str(warning))
     for record in mx_records:
         hosts.append(OrderedDict([("preference", record["preference"]),
-                                  ("hostname", record["hostname"]),
+                                  ("hostname", record["hostname"].lower()),
                                   ("addresses", []), ("starttls", False)]))
     if parked and len(hosts) > 0:
         warnings.append("MX records found on parked domains")
@@ -1849,11 +1853,19 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
         approved_hostnames = list(map(lambda h: h.lower(),
                                       approved_hostnames))
     for host in hosts:
+        if host["hostname"] in hostnames:
+            if host["hostname"] not in dupe_hostnames:
+                warnings.append(
+                    "Hostname {0} is listed multiple MX records".format(
+                        host["hostname"]))
+                dupe_hostnames.add(host["hostname"])
+            continue
+        hostnames.add(host["hostname"])
         try:
             if approved_hostnames:
                 approved = False
                 for approved_hostname in approved_hostnames:
-                    if approved_hostname in host["hostname"].lower():
+                    if approved_hostname in host["hostname"]:
                         approved = True
                         break
                 if not approved:

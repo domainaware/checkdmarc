@@ -1,6 +1,14 @@
 Changelog
 =========
 
+3.1.0
+-----
+
+- Fix debug output
+- Cache `STARTTLS` failures
+- Add warning for duplicate hostnames in MX records
+- Increase cache sizes
+
 3.0.3
 -----
 
