@@ -63,7 +63,6 @@ MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
 IPV4_REGEX = compile(IPV4_REGEX_STRING)
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -1762,6 +1761,11 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             server.ehlo()
             starttls = True
         STARTTLS_CACHE[hostname] = starttls
+        try:
+            server.quit()
+            server.close()
+        except Exception as e:
+            logging.debug(e)
         return starttls
 
     except socket.gaierror:
@@ -1775,8 +1779,6 @@ def test_starttls(hostname, ssl_context=None, cache=None):
     except TimeoutError:
         raise SMTPError("Connection timed out")
     except BlockingIOError as e:
-        raise SMTPError(e.__str__())
-    except OSError as e:
         raise SMTPError(e.__str__())
     except SSLError as error:
         raise SMTPError("SSL error: {0}".format(error.__str__()))
@@ -1797,13 +1799,8 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         error_code = message.lstrip("(").split(",")[0]
         message = "SMTP error code {0}".format(error_code)
         raise SMTPError(message)
-
-    finally:
-        try:
-            server.quit()
-            server.close()
-        except Exception as e:
-            logging.debug(e)
+    except OSError as e:
+        raise SMTPError(e.__str__())
 
 
 def get_mx_hosts(domain, approved_hostnames=None, parked=False,
