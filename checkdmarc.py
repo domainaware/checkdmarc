@@ -1827,7 +1827,7 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
                      - ``warnings`` - A ``list`` of MX resolution warnings
 
     """
-    logging.debug("Checking for  MX hosts on {0}".format(domain))
+    logging.debug("Checking for MX hosts on {0}".format(domain))
     mx_records = []
     hosts = []
     warnings = []
