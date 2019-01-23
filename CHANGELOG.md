@@ -9,6 +9,7 @@ Changelog
 - Cache `STARTTLS` failures
 - Add warning for duplicate hostnames in MX records
 - Increase cache sizes
+- Disable check for SPF records on MX hostnames - too noisy
 
 3.0.3
 -----

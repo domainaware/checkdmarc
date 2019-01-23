@@ -1939,6 +1939,9 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
         except SMTPError as error:
             warnings.append("{0}: {1}".format(host["hostname"], error))
 
+        # Disable check for SPF records on MX hostnames - too noisy
+
+        """
         correct_mx_spf_record = "v=spf1 a -all"
 
         try:
@@ -1956,6 +1959,7 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
             warning = "{0}. MX hosts should have a SPF record of: {1} so " \
                       "bouncebacks pass SPF.".format(e, correct_mx_spf_record)
             warnings.append(warning)
+        """
 
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
