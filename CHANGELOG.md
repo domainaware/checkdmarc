@@ -5,6 +5,7 @@ Changelog
 -----
 
 - Fix debug output
+- Fix crash when checking domains with more than 10 MX records
 - Cache `STARTTLS` failures
 - Add warning for duplicate hostnames in MX records
 - Increase cache sizes

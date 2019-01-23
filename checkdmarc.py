@@ -578,7 +578,8 @@ def get_base_domain(domain):
     return psl.get_public_suffix(domain)
 
 
-def _query_dns(domain, record_type, nameservers=None, timeout=6.0):
+def _query_dns(domain, record_type, nameservers=None, timeout=6.0,
+               cache=None):
     """
     Queries DNS
 
@@ -588,6 +589,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=6.0):
         nameservers (list): A list of one or more nameservers to use
         (Cloudflare's public DNS resolvers by default)
         timeout (float): Sets the DNS timeout in seconds
+        cache (ExpiringDict): Cache storage
 
     Returns:
         list: A list of answers
@@ -595,7 +597,8 @@ def _query_dns(domain, record_type, nameservers=None, timeout=6.0):
     domain = str(domain).lower()
     record_type = record_type.upper()
     cache_key = "{0}_{1}".format(domain, record_type)
-    cache = DNS_CACHE
+    if cache is None:
+        cache = DNS_CACHE
     if cache:
         records = cache.get(cache_key, None)
         if records:
@@ -1613,7 +1616,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
                     url = "https://tools.ietf.org/html/rfc7208#section-4.6.4"
                     raise SPFTooManyDNSLookups(
                         "{0} has more than 10 MX records - "
-                        "{1}".format(value, url))
+                        "{1}".format(value, url), dns_lookups=len(mx_hosts))
                 for host in mx_hosts:
                     parsed[result].append(OrderedDict(
                         [("value", host["hostname"]),
@@ -1749,9 +1752,11 @@ def test_starttls(hostname, ssl_context=None, cache=None):
     """
     starttls = False
     if cache:
-        cached_result = STARTTLS_CACHE.get(hostname, None)
+        cached_result = cache.get(hostname, None)
         if cached_result is not None:
-            return cached_result
+            if cached_result["error"] is not None:
+                raise SMTPError(cached_result["error"])
+            return cached_result["starttls"]
     if ssl_context is None:
         ssl_context = create_default_context()
     logging.debug("Checking for STARTTLS on {0}".format(hostname))
@@ -1770,21 +1775,44 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         return starttls
 
     except socket.gaierror:
-        raise SMTPError("DNS resolution failed")
+        error = "DNS resolution failed"
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     except ConnectionRefusedError:
-        raise SMTPError("Connection refused")
+        error = "Connection refused"
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     except ConnectionResetError:
-        raise SMTPError("Connection reset")
+        error = "Connection reset"
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     except ConnectionAbortedError:
-        raise SMTPError("Connection aborted")
+        error = "Connection aborted"
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     except TimeoutError:
-        raise SMTPError("Connection timed out")
+        error = "Connection timed out"
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     except BlockingIOError as e:
-        raise SMTPError(e.__str__())
-    except SSLError as error:
-        raise SMTPError("SSL error: {0}".format(error.__str__()))
-    except CertificateError as error:
-        raise SMTPError("Certificate error: {0}".format(error.__str__()))
+        error = e.__str__()
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
+    except SSLError as e:
+        error = "SSL error: {0}".format(e.__str__())
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
+    except CertificateError as e:
+        error = "Certificate error: {0}".format(e.__str__())
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
     except smtplib.SMTPConnectError as e:
         message = e.__str__()
         error_code = int(message.lstrip("(").split(",")[0])
@@ -1792,18 +1820,29 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             message = " SMTP error code 554 - Not allowed"
         else:
             message = " SMTP error code {0}".format(error_code)
-        raise SMTPError("Could not connect: {0}".format(message))
+        error = "Could not connect: {0}".format(message)
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     except smtplib.SMTPHeloError as e:
-        raise SMTPError("HELO error: {0}".format(e.__str__()))
-    except smtplib.SMTPException as error:
-        message = error.__str__()
-        error_code = message.lstrip("(").split(",")[0]
-        message = "SMTP error code {0}".format(error_code)
-        raise SMTPError(message)
+        error = "HELO error: {0}".format(e.__str__())
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+    except smtplib.SMTPException as e:
+        error = e.__str__()
+        error_code = error.lstrip("(").split(",")[0]
+        error = "SMTP error code {0}".format(error_code)
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     except OSError as e:
-        raise SMTPError(e.__str__())
+        error = e.__str__()
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     finally:
-        STARTTLS_CACHE[hostname] = starttls
+        if cache:
+            cache[hostname] = dict(starttls=starttls, error=None)
 
 
 def get_mx_hosts(domain, approved_hostnames=None, parked=False,
