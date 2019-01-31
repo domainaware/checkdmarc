@@ -1772,7 +1772,8 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             server.close()
         except Exception as e:
             logging.debug(e)
-        return starttls
+        finally:
+            return starttls
 
     except socket.gaierror:
         error = "DNS resolution failed"
@@ -1843,6 +1844,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
     finally:
         if cache:
             cache[hostname] = dict(starttls=starttls, error=None)
+        return starttls
 
 
 def get_mx_hosts(domain, approved_hostnames=None, parked=False,
