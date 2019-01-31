@@ -1,6 +1,11 @@
 Changelog
 =========
 
+3.1.1
+-----
+
+- Fix returning `STARTTLS` results upon exception
+
 3.1.0
 -----
 
