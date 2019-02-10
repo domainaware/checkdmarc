@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 3.1.1 documentation</title>
+  <title>Welcome to checkdmarc’s documentation! &mdash; checkdmarc 3.1.2 documentation</title>
   
 
   
@@ -57,7 +57,7 @@
             
             
               <div class="version">
-                3.1.1
+                3.1.2
               </div>
             
           
@@ -149,6 +149,7 @@
             
   <div class="section" id="welcome-to-checkdmarc-s-documentation">
 <h1>Welcome to checkdmarc’s documentation!<a class="headerlink" href="#welcome-to-checkdmarc-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="https://travis-ci.org/domainaware/checkdmarc"><img alt="Build Status" src="https://travis-ci.org/domainaware/checkdmarc.svg?branch=master" /></a></p>
 <p><code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> is a Python module and command line parser for SPF and DMARC DNS records</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">checkdmarc</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">ns</span> <span class="n">NS</span> <span class="p">[</span><span class="n">NS</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">mx</span> <span class="n">MX</span> <span class="p">[</span><span class="n">MX</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span><span class="p">]</span>
                   <span class="p">[</span><span class="o">-</span><span class="n">f</span> <span class="n">FORMAT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">OUTPUT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">n</span> <span class="n">NAMESERVER</span> <span class="p">[</span><span class="n">NAMESERVER</span> <span class="o">...</span><span class="p">]]</span>
@@ -182,6 +183,15 @@
                         <span class="p">(</span><span class="n">default</span> <span class="mf">0.0</span><span class="p">)</span>
   <span class="o">--</span><span class="n">debug</span>               <span class="n">Enable</span> <span class="n">debugging</span> <span class="n">output</span>
 </pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>It is <strong>strongly recommended</strong> to <strong>not</strong> use the <code class="docutils literal notranslate"><span class="pre">--nameserver/-n</span></code> setting.
+By default, <code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> uses <a class="reference external" href="https://1.1.1.1/">Cloudflare’s public resolvers</a>,
+which are much faster and more reliable than Google, Cisco OpenDNS, or
+even most local resolvers.</p>
+<p class="last">The <code class="docutils literal notranslate"><span class="pre">--nameservers/-n</span></code> option should only be used if your network blocks DNS
+requests to outside resolvers.</p>
 </div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ checkdmarc fbi.gov
 </pre></div>
@@ -334,6 +344,15 @@
 <p class="last">On Windows, <code class="docutils literal notranslate"><span class="pre">pip3</span></code> is <code class="docutils literal notranslate"><span class="pre">pip</span></code>, even with Python 3. So on Windows, simply
 substitute <code class="docutils literal notranslate"><span class="pre">pip</span></code> as an administrator in place of <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">pip3</span></code>, in the above commands.</p>
 </div>
+</div>
+</div>
+<div class="section" id="resources">
+<h1>Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="dmarc-guides">
+<h2>DMARC guides<a class="headerlink" href="#dmarc-guides" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://seanthegeek.net/459/demystifying-dmarc/">Demystifying DMARC</a> - A complete guide to SPF, DKIM, and DMARC</li>
+</ul>
 </div>
 <div class="section" id="bug-reports">
 <h2>Bug reports<a class="headerlink" href="#bug-reports" title="Permalink to this headline">¶</a></h2>

@@ -6,6 +6,8 @@
 Welcome to checkdmarc's documentation!
 ======================================
 
+|Build Status|
+
 ``checkdmarc`` is a Python module and command line parser for SPF and DMARC DNS records
 
 ::
@@ -41,6 +43,17 @@ Welcome to checkdmarc's documentation!
      -w WAIT, --wait WAIT  number of seconds to wait between processing domains
                            (default 0.0)
      --debug               Enable debugging output
+
+.. warning::
+
+    It is **strongly recommended** to **not** use the ``--nameserver/-n`` setting.
+    By default, ``checkdmarc`` uses `Cloudflare's public resolvers`_,
+    which are much faster and more reliable than Google, Cisco OpenDNS, or
+    even most local resolvers.
+
+    The ``--nameservers/-n`` option should only be used if your network blocks DNS
+    requests to outside resolvers.
+
 
 .. code-block:: bash
 
@@ -206,6 +219,15 @@ Or, install the latest development release directly from GitHub:
     substitute ``pip`` as an administrator in place of ``sudo pip3``, in the above commands.
 
 
+Resources
+=========
+
+DMARC guides
+------------
+
+* `Demystifying DMARC`_ - A complete guide to SPF, DKIM, and DMARC
+
+
 Bug reports
 -----------
 
@@ -230,3 +252,10 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. |Build Status| image:: https://travis-ci.org/domainaware/checkdmarc.svg?branch=master
+   :target: https://travis-ci.org/domainaware/checkdmarc
+
+.. _Cloudflare's public resolvers: https://1.1.1.1/
+
+.. _Demystifying DMARC: https://seanthegeek.net/459/demystifying-dmarc/
