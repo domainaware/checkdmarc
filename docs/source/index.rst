@@ -6,6 +6,8 @@
 Welcome to checkdmarc's documentation!
 ======================================
 
+|Build Status|
+
 ``checkdmarc`` is a Python module and command line parser for SPF and DMARC DNS records
 
 ::
@@ -217,6 +219,15 @@ Or, install the latest development release directly from GitHub:
     substitute ``pip`` as an administrator in place of ``sudo pip3``, in the above commands.
 
 
+Resources
+=========
+
+DMARC guides
+------------
+
+* `Demystifying DMARC`_ - A complete guide to SPF, DKIM, and DMARC
+
+
 Bug reports
 -----------
 
@@ -241,3 +252,10 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. |Build Status| image:: https://travis-ci.org/domainaware/checkdmarc.svg?branch=master
+   :target: https://travis-ci.org/domainaware/checkdmarc
+
+.. _Cloudflare's public resolvers: https://1.1.1.1/
+
+.. _Demystifying DMARC: https://seanthegeek.net/459/demystifying-dmarc/

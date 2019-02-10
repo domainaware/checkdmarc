@@ -225,5 +225,18 @@ Please report bugs on the GitHub issue tracker
 
 https://github.com/domainaware/checkdmarc/issues
 
+Resources
+=========
+
+DMARC guides
+------------
+
+* `Demystifying DMARC`_ - A complete guide to SPF, DKIM, and DMARC
+
+
 .. |Build Status| image:: https://travis-ci.org/domainaware/checkdmarc.svg?branch=master
    :target: https://travis-ci.org/domainaware/checkdmarc
+
+.. _Cloudflare's public resolvers: https://1.1.1.1/
+
+.. _Demystifying DMARC: https://seanthegeek.net/459/demystifying-dmarc/
