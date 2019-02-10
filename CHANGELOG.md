@@ -1,6 +1,16 @@
 Changelog
 =========
 
+3.1.2
+-----
+
+- Save `public_suffix_list.dat` to a temporary folder instead of the current 
+working directory (CWD)
+- Emulate a brouser HTTP `User-Agent` sting when downloading 
+`public_suffix_list.dat`
+- Add requirement `requests`
+- Change list seperator within CSV fields from `,` to `|`
+
 3.1.1
 -----
 

@@ -2,6 +2,7 @@ dnspython
 expiringdict
 pyleri
 publicsuffix
+requests
 sphinx
 sphinx_rtd_theme
 collective.checkdocs

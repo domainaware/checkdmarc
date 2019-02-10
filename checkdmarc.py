@@ -9,11 +9,16 @@ from re import compile
 import json
 from csv import DictWriter
 from argparse import ArgumentParser
-from os import path, stat
+import os
 from time import sleep
 from datetime import datetime, timedelta
 import socket
 import smtplib
+import tempfile
+import platform
+import shutil
+import atexit
+import requests
 from ssl import SSLError, CertificateError, create_default_context
 
 from io import StringIO
@@ -43,7 +48,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "3.1.1"
+__version__ = "3.1.2"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -63,8 +68,24 @@ MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
 IPV4_REGEX = compile(IPV4_REGEX_STRING)
 
+USER_AGENT = "Mozilla/5.0 ((0 {1})) parsedmarc/{2}".format(
+            platform.system(),
+            platform.release(),
+            __version__
+        )
+
 DNS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 STARTTLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
+
+TMPDIR = tempfile.mkdtemp()
+
+
+def _cleanup():
+    """Remove temporary files"""
+    shutil.rmtree(TMPDIR)
+
+
+atexit.register(_cleanup)
 
 
 class SMTPError(Exception):
@@ -554,24 +575,27 @@ def get_base_domain(domain):
         str: The base domain of the given domain
 
     """
-    psl_path = ".public_suffix_list.dat"
+    psl_path = os.path.join(TMPDIR, "public_suffix_list.dat")
 
     def download_psl():
-        fresh_psl = publicsuffix.fetch().read()
+        url = "https://publicsuffix.org/list/public_suffix_list.dat"
+        # Use a browser-like user agent string to bypass some proxy blocks
+        headers = {"User-Agent": USER_AGENT}
+        fresh_psl = requests.get(url, headers=headers).text
         with open(psl_path, "w", encoding="utf-8") as fresh_psl_file:
             fresh_psl_file.write(fresh_psl)
 
-    if not path.exists(psl_path):
+    if not os.path.exists(psl_path):
         download_psl()
     else:
         psl_age = datetime.now() - datetime.fromtimestamp(
-            stat(psl_path).st_mtime)
+            os.stat(psl_path).st_mtime)
         if psl_age > timedelta(hours=24):
             try:
                 download_psl()
             except Exception as error:
-                logging.warning("Failed to download an updated PSL - \
-                               {0}".format(error))
+                logging.warning(
+                    "Failed to download an updated PSL {0}".format(error))
     with open(psl_path, encoding="utf-8") as psl_file:
         psl = publicsuffix.PublicSuffixList(psl_file)
 
@@ -2099,15 +2123,15 @@ def check_domains(domains, parked=False,
             mx = get_mx_hosts(domain, parked=parked,
                               approved_hostnames=approved_mx_hostnames,
                               nameservers=nameservers, timeout=timeout)
-            row["ns"] = ",".join(ns["hostnames"])
-            row["ns_warnings"] = ",".join(ns["warnings"])
-            row["mx"] = ",".join(list(
+            row["ns"] = "|".join(ns["hostnames"])
+            row["ns_warnings"] = "|".join(ns["warnings"])
+            row["mx"] = "|".join(list(
                 map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
                     mx["hosts"])))
-            row["starttls"] = ",".join(list(
+            row["starttls"] = "|".join(list(
                 map(lambda r: "{0}".format(r["starttls"]),
                     mx["hosts"])))
-            row["mx_warnings"] = ",".join(mx["warnings"])
+            row["mx_warnings"] = "|".join(mx["warnings"])
             try:
                 spf_record = query_spf_record(domain,
                                               nameservers=nameservers,
@@ -2120,7 +2144,7 @@ def check_domains(domains, parked=False,
                                              nameservers=nameservers,
                                              timeout=timeout)["warnings"]
 
-                row["spf_warnings"] = ",".join(warnings)
+                row["spf_warnings"] = "|".join(warnings)
             except SPFError as error:
                 row["spf_error"] = error
                 row["spf_valid"] = False
@@ -2147,13 +2171,13 @@ def check_domains(domains, parked=False,
                     addresses = dmarc["tags"]["rua"]["value"]
                     addresses = list(map(lambda u: u["scheme"] + ":" +
                                                    u["address"], addresses))
-                    row["dmarc_rua"] = ",".join(addresses)
+                    row["dmarc_rua"] = "|".join(addresses)
                 if "ruf" in dmarc["tags"]:
                     addresses = dmarc["tags"]["ruf"]["value"]
                     addresses = list(map(lambda u: u["address"], addresses))
-                    row["dmarc_ruf"] = ",".join(addresses)
+                    row["dmarc_ruf"] = "|".join(addresses)
                 dmarc_warnings = dmarc_query["warnings"] + dmarc["warnings"]
-                row["dmarc_warnings"] = ",".join(dmarc_warnings)
+                row["dmarc_warnings"] = "|".join(dmarc_warnings)
             except DMARCError as error:
                 row["dmarc_error"] = error
                 row["dmarc_valid"] = False
@@ -2291,7 +2315,7 @@ def _main():
                             format="%(asctime)s - %(levelname)s - %(message)s")
         logging.debug("Debug output enabled")
     domains = args.domain
-    if len(domains) == 1 and path.exists(domains[0]):
+    if len(domains) == 1 and os.path.exists(domains[0]):
         with open(domains[0]) as domains_file:
             domains = sorted(list(set(
                 map(lambda d: d.rstrip(".\r\n").strip().lower().split(",")[0],
