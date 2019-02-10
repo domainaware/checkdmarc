@@ -39,6 +39,16 @@ A Python module and command line utility for validating SPF and DMARC DNS record
                             (default 0.0)
       --debug               Enable debugging output
 
+.. warning::
+
+    It is **strongly recommended** to **not** use the ``--nameserver/-n`` setting.
+    By default, ``checkdmarc`` uses `Cloudflare's public resolvers`_,
+    which are much faster and more reliable than Google, Cisco OpenDNS, or
+    even most local resolvers.
+
+    The ``--nameservers/-n`` option should only be used if your network blocks DNS
+    requests to outside resolvers.
+
 .. code-block:: bash
 
     $ checkdmarc fbi.gov
