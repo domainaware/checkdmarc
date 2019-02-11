@@ -1783,7 +1783,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             return cached_result["starttls"]
     if ssl_context is None:
         ssl_context = create_default_context()
-    logging.debug("Checking for STARTTLS on {0}".format(hostname))
+    logging.debug("Testing STARTTLS on {0}".format(hostname))
     try:
         server = smtplib.SMTP(hostname)
         server.ehlo_or_helo_if_needed()
@@ -1959,8 +1959,6 @@ def get_mx_hosts(domain, skip_starttls=False,
                 logging.debug("Skipping STARTTLS test on {0}".format(
                     host[hostname]))
             else:
-                logging.debug("Testing STARTTLS on {0}".format(
-                    host["hostname"]))
                 starttls = test_starttls(host["hostname"],
                                          cache=STARTTLS_CACHE)
                 if not starttls:
@@ -2263,7 +2261,7 @@ def _main():
     """Called when the module in executed"""
     arg_parser = ArgumentParser(description=__doc__)
     arg_parser.add_argument("domain", nargs="+",
-                            help="one or ore domains, or a single path to a "
+                            help="one or more domains, or a single path to a "
                                  "file containing a list of domains")
     arg_parser.add_argument("-p", "--parked", help="indicate that the "
                                                    "domains are parked",
@@ -2293,7 +2291,7 @@ def _main():
                             version=__version__)
     arg_parser.add_argument("-w", "--wait", type=float,
                             help="number of seconds to wait between "
-                                 "processing domains (default 0.0)",
+                                 "checking domains (default 0.0)",
                             default=0.0),
     arg_parser.add_argument("--skip-starttls", action="store_true",
                             help="skip STARTTLS testing")

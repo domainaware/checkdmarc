@@ -7,16 +7,16 @@ A Python module and command line utility for validating SPF and DMARC DNS record
 
 ::
 
-   usage: checkdmarc.py [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d]
-                     [-f FORMAT] [-o OUTPUT [OUTPUT ...]]
-                     [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
-                     [-w WAIT] [--debug]
-                     domain [domain ...]
+    usage: checkdmarc.py [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d]
+                         [-f FORMAT] [-o OUTPUT [OUTPUT ...]]
+                         [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
+                         [-w WAIT] [--skip-starttls] [--debug]
+                         domain [domain ...]
 
     Validates and parses SPF amd DMARC DNS records
 
     positional arguments:
-      domain                one or ore domains, or a single path to a file
+      domain                one or more domains, or a single path to a file
                             containing a list of domains
 
     optional arguments:
@@ -36,8 +36,9 @@ A Python module and command line utility for validating SPF and DMARC DNS record
                             number of seconds to wait for an answer from DNS
                             (default 6.0)
       -v, --version         show program's version number and exit
-      -w WAIT, --wait WAIT  number of seconds to wait between processing domains
+      -w WAIT, --wait WAIT  number of seconds to wait between checking domains
                             (default 0.0)
+      --skip-starttls       skip STARTTLS testing
       --debug               enable debugging output
 
 .. warning::
