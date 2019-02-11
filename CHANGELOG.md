@@ -5,6 +5,7 @@ Changelog
 -----
 
 - Add option to CLI and API to skip STARTTLS testing
+- Fix CSV output
 - Fix debug logging
 - Documentation fixes
 

@@ -2195,6 +2195,8 @@ def results_to_csv(results):
         mx = result["mx"]
         spf = result["spf"]
         dmarc = result["dmarc"]
+        row["domain"] = result["domain"]
+        row["base_domain"] = results["base_domain"]
         row["ns"] = "|".join(ns["hostnames"])
         row["ns_warnings"] = "|".join(ns["warnings"])
         row["mx"] = "|".join(list(
@@ -2217,6 +2219,7 @@ def results_to_csv(results):
 
         row["dmarc_record"] = dmarc["record"]
         row["dmarc_record_location"] = dmarc["location"]
+        row["dmarc_valid"] = dmarc["valid"]
         if "error" in dmarc:
             row["dmarc_error"] = dmarc["error"]
         else:
