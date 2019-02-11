@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.0.0
+-----
+
+- Refactor API and CLI
+
+
 3.1.2
 -----
 

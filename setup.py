@@ -15,7 +15,7 @@ from setuptools import setup
 from codecs import open
 from os import path
 
-__version__ = "3.1.2"
+__version__ = "4.0.0"
 
 desc = "A Python module and command line parser for SPF and DMARC records"
 
@@ -28,7 +28,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='checkdmarc',
 
-    # Versions should comply with PEP440.  For a discussion on single-sourcing
+    # Versions should comply with PEP440.  Fr a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
     version=__version__,

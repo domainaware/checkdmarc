@@ -48,7 +48,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "3.1.2"
+__version__ = "4.0.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -2039,7 +2039,6 @@ def get_nameservers(domain, approved_nameservers=None,
 def check_domains(domains, parked=False,
                   approved_nameservers=None,
                   approved_mx_hostnames=None,
-                  output_format="json",  output_path=None,
                   include_dmarc_tag_descriptions=False,
                   nameservers=None, timeout=6.0, wait=0.0):
     """
@@ -2051,8 +2050,6 @@ def check_domains(domains, parked=False,
         parked (bool): Indicates that the domains are parked
         approved_nameservers (list): A list of approved nameservers
         approved_mx_hostnames (list): A list of approved MX hostnames
-        output_format (str): ``json`` or ``csv``
-        output_path (str): Save output to the given file path
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC
                                                tags and/or tag values in the
                                                results
@@ -2075,7 +2072,6 @@ def check_domains(domains, parked=False,
        Or, if ``output_format`` is ``csv``, the results are returned as a CSV
        string
     """
-    output_format = output_format.lower()
     domains = sorted(list(set(
         map(lambda d: d.rstrip(".\r\n").strip().lower().split(",")[0],
             domains))))
@@ -2085,189 +2081,187 @@ def check_domains(domains, parked=False,
             not_domains.append(domain)
     for domain in not_domains:
         domains.remove(domain)
-    if output_path:
-        if output_path.lower().endswith(".csv"):
-            output_format = "csv"
-        elif output_path.lower().endswith(".json"):
-            output_format = "json"
-    if output_format not in ["json", "csv"]:
-        raise ValueError(
-            "Invalid output format {0}. Valid options are "
-            "json and csv.".format(
-                output_format))
-    if output_format == "csv":
-        fields = ["domain", "base_domain", "spf_valid", "dmarc_valid",
-                  "dmarc_adkim", "dmarc_aspf",
-                  "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
-                  "dmarc_rua", "dmarc_ruf", "dmarc_sp",
-                  "mx", "starttls", "spf_record", "dmarc_record",
-                  "dmarc_record_location",
-                  "mx_warnings", "spf_error",
-                  "spf_warnings", "dmarc_error", "dmarc_warnings",
-                  "ns", "ns_warnings"]
-        if output_path:
-            output_file = open(output_path, "w", newline="\n")
-        else:
-            output_file = StringIO(newline="\n")
-        writer = DictWriter(output_file, fieldnames=fields)
-        writer.writeheader()
-        while "" in domains:
-            domains.remove("")
-        for domain in domains:
-            logging.debug("Checking {0} in CSV format".format(domain))
-            row = dict(domain=domain, base_domain=get_base_domain(domain),
-                       mx="", spf_valid=True, dmarc_valid=True)
-            ns = get_nameservers(domain,
-                                 approved_nameservers=approved_nameservers,
-                                 nameservers=nameservers, timeout=timeout)
-            mx = get_mx_hosts(domain, parked=parked,
-                              approved_hostnames=approved_mx_hostnames,
-                              nameservers=nameservers, timeout=timeout)
-            row["ns"] = "|".join(ns["hostnames"])
-            row["ns_warnings"] = "|".join(ns["warnings"])
-            row["mx"] = "|".join(list(
-                map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
-                    mx["hosts"])))
-            row["starttls"] = "|".join(list(
-                map(lambda r: "{0}".format(r["starttls"]),
-                    mx["hosts"])))
-            row["mx_warnings"] = "|".join(mx["warnings"])
-            try:
-                spf_record = query_spf_record(domain,
-                                              nameservers=nameservers,
-                                              timeout=timeout)
-                row["spf_record"] = spf_record["record"]
-                warnings = spf_record["warnings"]
-                warnings += parse_spf_record(row["spf_record"],
-                                             row["domain"],
-                                             parked=parked,
+    while "" in domains:
+        domains.remove("")
+    results = []
+    for domain in domains:
+        domain_results = OrderedDict(
+            [("domain", domain), ("base_domain", get_base_domain(domain)),
+             ("ns", []), ("mx", [])])
+        domain_results["spf"] = OrderedDict(
+            [("record", None), ("valid", True), ("dns_lookups", None)])
+        domain_results["ns"] = get_nameservers(
+            domain,
+            approved_nameservers=approved_nameservers,
+            nameservers=nameservers,
+            timeout=timeout)
+        domain_results["mx"] = get_mx_hosts(
+            domain,
+            approved_hostnames=approved_mx_hostnames,
+            nameservers=nameservers,
+            timeout=timeout)
+        try:
+            spf_query = query_spf_record(
+                domain,
+                nameservers=nameservers,
+                timeout=timeout)
+            domain_results["spf"]["record"] = spf_query["record"]
+            domain_results["spf"]["warnings"] = spf_query["warnings"]
+            parsed_spf = parse_spf_record(domain_results["spf"]["record"],
+                                          domain_results["domain"],
+                                          parked=parked,
+                                          nameservers=nameservers,
+                                          timeout=timeout)
+
+            domain_results["spf"]["dns_lookups"] = parsed_spf[
+                "dns_lookups"]
+            domain_results["spf"]["parsed"] = parsed_spf["parsed"]
+            domain_results["spf"]["warnings"] += parsed_spf["warnings"]
+        except SPFError as error:
+            domain_results["spf"]["error"] = str(error)
+            del domain_results["spf"]["dns_lookups"]
+            domain_results["spf"]["valid"] = False
+            if hasattr(error, "data") and error.data:
+                for key in error.data:
+                    domain_results["spf"][key] = error.data[key]
+
+        # DMARC
+        domain_results["dmarc"] = OrderedDict([("record", None),
+                                               ("valid", True),
+                                               ("location", None)])
+        try:
+            dmarc_query = query_dmarc_record(domain,
                                              nameservers=nameservers,
-                                             timeout=timeout)["warnings"]
-
-                row["spf_warnings"] = "|".join(warnings)
-            except SPFError as error:
-                row["spf_error"] = error
-                row["spf_valid"] = False
-            try:
-                dmarc_query = query_dmarc_record(domain,
-                                                 nameservers=nameservers,
-                                                 timeout=timeout)
-                row["dmarc_record"] = dmarc_query["record"]
-                row["dmarc_record_location"] = dmarc_query["location"]
-                dmarc = parse_dmarc_record(dmarc_query["record"],
-                                           dmarc_query["location"],
-                                           parked=parked,
-                                           nameservers=nameservers,
-                                           timeout=timeout)
-                row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
-                row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
-                row["dmarc_fo"] = ":".join(dmarc["tags"]["fo"]["value"])
-                row["dmarc_p"] = dmarc["tags"]["p"]["value"]
-                row["dmarc_pct"] = dmarc["tags"]["pct"]["value"]
-                row["dmarc_rf"] = ":".join(dmarc["tags"]["rf"]["value"])
-                row["dmarc_ri"] = dmarc["tags"]["ri"]["value"]
-                row["dmarc_sp"] = dmarc["tags"]["sp"]["value"]
-                if "rua" in dmarc["tags"]:
-                    addresses = dmarc["tags"]["rua"]["value"]
-                    addresses = list(map(lambda u: u["scheme"] + ":" +
-                                                   u["address"], addresses))
-                    row["dmarc_rua"] = "|".join(addresses)
-                if "ruf" in dmarc["tags"]:
-                    addresses = dmarc["tags"]["ruf"]["value"]
-                    addresses = list(map(lambda u: u["address"], addresses))
-                    row["dmarc_ruf"] = "|".join(addresses)
-                dmarc_warnings = dmarc_query["warnings"] + dmarc["warnings"]
-                row["dmarc_warnings"] = "|".join(dmarc_warnings)
-            except DMARCError as error:
-                row["dmarc_error"] = error
-                row["dmarc_valid"] = False
-            writer.writerow(row)
-            output_file.flush()
-            sleep(wait)
-        if output_path is None:
-            return output_file.getvalue()
-    elif output_format == "json":
-        results = []
-        for domain in domains:
-            logging.debug("Checking {0} in JSON format".format(domain))
-            domain_results = OrderedDict(
-                [("domain", domain), ("base_domain", get_base_domain(domain)),
-                 ("ns", []), ("mx", [])])
-            domain_results["spf"] = OrderedDict(
-                [("record", None), ("valid", True), ("dns_lookups", None)])
-            domain_results["ns"] = get_nameservers(
-                domain,
-                approved_nameservers=approved_nameservers,
+                                             timeout=timeout)
+            domain_results["dmarc"]["record"] = dmarc_query["record"]
+            domain_results["dmarc"]["location"] = dmarc_query["location"]
+            parsed_dmarc_record = parse_dmarc_record(
+                dmarc_query["record"],
+                dmarc_query["location"],
+                parked=parked,
+                include_tag_descriptions=include_dmarc_tag_descriptions,
                 nameservers=nameservers,
                 timeout=timeout)
-            domain_results["mx"] = get_mx_hosts(
-                domain,
-                approved_hostnames=approved_mx_hostnames,
-                nameservers=nameservers,
-                timeout=timeout)
-            try:
-                spf_query = query_spf_record(
-                    domain,
-                    nameservers=nameservers,
-                    timeout=timeout)
-                domain_results["spf"]["record"] = spf_query["record"]
-                domain_results["spf"]["warnings"] = spf_query["warnings"]
-                parsed_spf = parse_spf_record(domain_results["spf"]["record"],
-                                              domain_results["domain"],
-                                              parked=parked,
-                                              nameservers=nameservers,
-                                              timeout=timeout)
+            domain_results["dmarc"]["warnings"] = dmarc_query["warnings"]
 
-                domain_results["spf"]["dns_lookups"] = parsed_spf[
-                    "dns_lookups"]
-                domain_results["spf"]["parsed"] = parsed_spf["parsed"]
-                domain_results["spf"]["warnings"] += parsed_spf["warnings"]
-            except SPFError as error:
-                domain_results["spf"]["error"] = str(error)
-                del domain_results["spf"]["dns_lookups"]
-                domain_results["spf"]["valid"] = False
-                if hasattr(error, "data") and error.data:
-                    for key in error.data:
-                        domain_results["spf"][key] = error.data[key]
+            domain_results["dmarc"]["tags"] = parsed_dmarc_record["tags"]
+            domain_results["dmarc"]["warnings"] += parsed_dmarc_record[
+                "warnings"]
+        except DMARCError as error:
+            domain_results["dmarc"]["error"] = str(error)
+            domain_results["dmarc"]["valid"] = False
+            if hasattr(error, "data") and error.data:
+                for key in error.data:
+                    domain_results["dmarc"][key] = error.data[key]
+        results.append(domain_results)
+        sleep(wait)
+    if len(results) == 1:
+        results = results[0]
 
-            # DMARC
-            domain_results["dmarc"] = OrderedDict([("record", None),
-                                                   ("valid", True),
-                                                   ("location", None)])
-            try:
-                dmarc_query = query_dmarc_record(domain,
-                                                 nameservers=nameservers,
-                                                 timeout=timeout)
-                domain_results["dmarc"]["record"] = dmarc_query["record"]
-                domain_results["dmarc"]["location"] = dmarc_query["location"]
-                parsed_dmarc_record = parse_dmarc_record(
-                    dmarc_query["record"],
-                    dmarc_query["location"],
-                    parked=parked,
-                    include_tag_descriptions=include_dmarc_tag_descriptions,
-                    nameservers=nameservers,
-                    timeout=timeout)
-                domain_results["dmarc"]["warnings"] = dmarc_query["warnings"]
+    return results
 
-                domain_results["dmarc"]["tags"] = parsed_dmarc_record["tags"]
-                domain_results["dmarc"]["warnings"] += parsed_dmarc_record[
-                    "warnings"]
-            except DMARCError as error:
-                domain_results["dmarc"]["error"] = str(error)
-                domain_results["dmarc"]["valid"] = False
-                if hasattr(error, "data") and error.data:
-                    for key in error.data:
-                        domain_results["dmarc"][key] = error.data[key]
-            results.append(domain_results)
-            sleep(wait)
-        if len(results) == 1:
-            results = results[0]
-        if output_path:
-            with open(output_path, "w", newline="\n") as output_file:
-                output_file.write(
-                    json.dumps(results, ensure_ascii=False, indent=2))
 
-        return results
+def results_to_json(results):
+    """
+    Converts a dictionary of results to a JSON string
+
+    Args:
+        results (dict): A dictionary of results
+
+    Returns:
+        str: Results in JSON format
+    """
+    return json.dumps(results, ensure_ascii=False, indent=2)
+
+
+def results_to_csv(results):
+    """
+    Converts a dictionary of results to a CSV string
+
+    Args:
+        results (dict): A dictionary of results
+
+    Returns:
+        str: Results in CSV format
+    """
+    fields = ["domain", "base_domain", "spf_valid", "dmarc_valid",
+              "dmarc_adkim", "dmarc_aspf",
+              "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
+              "dmarc_rua", "dmarc_ruf", "dmarc_sp",
+              "mx", "starttls", "spf_record", "dmarc_record",
+              "dmarc_record_location",
+              "mx_warnings", "spf_error",
+              "spf_warnings", "dmarc_error", "dmarc_warnings",
+              "ns", "ns_warnings"]
+
+    output = StringIO(newline="\n")
+    writer = DictWriter(output, fieldnames=fields)
+    writer.writeheader()
+
+    if type(results) == OrderedDict:
+        results = [results]
+
+    for result in results:
+        row = dict()
+        ns = result["ns"]
+        mx = result["mx"]
+        spf = result["spf"]
+        dmarc = result["dmarc"]
+        row["ns"] = "|".join(ns["hostnames"])
+        row["ns_warnings"] = "|".join(ns["warnings"])
+        row["mx"] = "|".join(list(
+            map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
+                mx["hosts"])))
+        row["starttls"] = "|".join(list(
+            map(lambda r: "{0}".format(r["starttls"]),
+                mx["hosts"])))
+        row["mx_warnings"] = "|".join(mx["warnings"])
+        row["spf_record"] = spf["record"]
+        row["spf_valid"] = spf["valid"]
+        if "error" in spf:
+            row["spf_error"] = spf["error"]
+        else:
+            row["spf_warnings"] = "|".join(spf["warnings"])
+
+        row["dmarc_record"] = dmarc["record"]
+        row["dmarc_record_location"] = dmarc["location"]
+        if "error" in dmarc:
+            row["dmarc_error"] = dmarc["error"]
+        else:
+            row["dmarc_adkim"] = dmarc["tags"]["adkim"]["value"]
+            row["dmarc_aspf"] = dmarc["tags"]["aspf"]["value"]
+            row["dmarc_fo"] = ":".join(dmarc["tags"]["fo"]["value"])
+            row["dmarc_p"] = dmarc["tags"]["p"]["value"]
+            row["dmarc_pct"] = dmarc["tags"]["pct"]["value"]
+            row["dmarc_rf"] = ":".join(dmarc["tags"]["rf"]["value"])
+            row["dmarc_ri"] = dmarc["tags"]["ri"]["value"]
+            row["dmarc_sp"] = dmarc["tags"]["sp"]["value"]
+            if "rua" in dmarc["tags"]:
+                addresses = dmarc["tags"]["rua"]["value"]
+                addresses = list(map(lambda u: u["scheme"] + ":" +
+                                               u["address"], addresses))
+                row["dmarc_rua"] = "|".join(addresses)
+            if "ruf" in dmarc["tags"]:
+                addresses = dmarc["tags"]["ruf"]["value"]
+                addresses = list(map(lambda u: u["address"], addresses))
+                row["dmarc_ruf"] = "|".join(addresses)
+            row["dmarc_warnings"] = "|".join(dmarc["warnings"])
+        writer.writerow(row)
+    output.flush()
+    return output.getvalue()
+
+
+def output_to_file(path, content):
+    """
+    Write given content to the given path
+
+    Args:
+        path (str): A file path
+        content (str): JSON or CSV text
+    """
+    with open(path, "w", newline="\n", encoding="utf-8",
+              errors="ignore") as output_file:
+        output_file.write(content)
 
 
 def _main():
@@ -2287,10 +2281,11 @@ def _main():
                             help="include descriptions of DMARC tags in "
                                  "the JSON output")
     arg_parser.add_argument("-f", "--format", default="json",
-                            help="specify JSON or CSV output format")
-    arg_parser.add_argument("-o", "--output",
-                            help="output to a file path rather than "
-                                 "printing to the screen")
+                            help="specify JSON or CSV screen output format")
+    arg_parser.add_argument("-o", "--output", nargs="+",
+                            help="one or more file paths to output to "
+                                 "(must end in .json or .csv) "
+                                 "(silences screen output)")
     arg_parser.add_argument("-n", "--nameserver", nargs="+",
                             help="nameservers to query "
                                  "(Default is Cloudflare's")
@@ -2310,9 +2305,11 @@ def _main():
 
     args = arg_parser.parse_args()
 
+    logging_format = "%(levelname)s: %(message)s"
+    logging.basicConfig(level=logging.WARNING, format=logging_format)
+
     if args.debug:
-        logging.basicConfig(level=logging.DEBUG,
-                            format="%(asctime)s - %(levelname)s - %(message)s")
+        logging.basicConfig(level=logging.DEBUG, format=logging_format)
         logging.debug("Debug output enabled")
     domains = args.domain
     if len(domains) == 1 and os.path.exists(domains[0]):
@@ -2328,18 +2325,31 @@ def _main():
                 domains.remove(domain)
 
     results = check_domains(domains, parked=args.parked,
-                            output_format=args.format,
                             approved_nameservers=args.ns,
                             approved_mx_hostnames=args.mx,
-                            output_path=args.output,
                             include_dmarc_tag_descriptions=args.descriptions,
-                            nameservers=args.nameserver, timeout=args.timeout)
+                            nameservers=args.nameserver, timeout=args.timeout,
+                            wait=args.wait)
 
     if args.output is None:
         if args.format.lower() == "json":
-            results = json.dumps(results, ensure_ascii=False, indent=2)
-
+            results = results_to_json(results)
+        elif args.format.lower() == "csv":
+            results = results_to_csv(results)
         print(results)
+    else:
+        for path in args.output:
+            json_path = path.lower().endswith(".json")
+            csv_path = path.lower().endswith(".csv")
+
+            if not json_path and not csv_path:
+                logging.error(
+                    "Output path {0} must end in .json or .csv".format(path))
+            else:
+                if path.lower().endswith(".json"):
+                    output_to_file(path, results_to_json(results))
+                elif path.lower().endswith(".csv"):
+                    output_to_file(path, results_to_csv(results))
 
 
 if __name__ == "__main__":
