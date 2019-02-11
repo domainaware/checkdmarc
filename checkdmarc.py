@@ -705,7 +705,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     """
     hosts = []
     try:
-
+        logging.debug("Checking for MX records on {0}".format(domain))
         answers = _query_dns(domain, "MX", nameservers=nameservers,
                              timeout=timeout)
         for record in answers:
@@ -1896,7 +1896,6 @@ def get_mx_hosts(domain, skip_starttls=False,
                      - ``warnings`` - A ``list`` of MX resolution warnings
 
     """
-    logging.debug("Checking for MX records on {0}".format(domain))
     mx_records = []
     hosts = []
     warnings = []
