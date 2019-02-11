@@ -1956,7 +1956,7 @@ def get_mx_hosts(domain, skip_starttls=False,
                                         "{1}".format(hostname, address))
             if skip_starttls:
                 logging.debug("Skipping STARTTLS test on {0}".format(
-                    host[hostname]))
+                    host["hostname"]))
             else:
                 starttls = test_starttls(host["hostname"],
                                          cache=STARTTLS_CACHE)
@@ -2196,7 +2196,7 @@ def results_to_csv(results):
         spf = result["spf"]
         dmarc = result["dmarc"]
         row["domain"] = result["domain"]
-        row["base_domain"] = results["base_domain"]
+        row["base_domain"] = result["base_domain"]
         row["ns"] = "|".join(ns["hostnames"])
         row["ns_warnings"] = "|".join(ns["warnings"])
         row["mx"] = "|".join(list(
