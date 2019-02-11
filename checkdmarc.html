@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 4.0.0 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 4.0.1 documentation</title>
   
 
   
@@ -57,7 +57,7 @@
             
             
               <div class="version">
-                4.0.0
+                4.0.1
               </div>
             
           
@@ -378,7 +378,7 @@ that it accepts reports for the domain</p>
 
 <dl class="function">
 <dt id="checkdmarc.check_domains">
-<code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>parked=False</em>, <em>approved_nameservers=None</em>, <em>approved_mx_hostnames=None</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em>, <em>wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>parked=False</em>, <em>approved_nameservers=None</em>, <em>approved_mx_hostnames=None</em>, <em>skip_starttls=False</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em>, <em>wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the given domains for SPF and DMARC records, parse them, and return
 them</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -389,7 +389,8 @@ them</p>
 <li><strong>domains</strong> (<em>list</em>) – A list of domains to check</li>
 <li><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</li>
 <li><strong>approved_nameservers</strong> (<em>list</em>) – A list of approved nameservers</li>
-<li><strong>approved_mx_hostnames</strong> (<em>list</em>) – A list of approved MX hostnames</li>
+<li><strong>approved_mx_hostnames</strong> (<em>list</em>) – A list of approved MX hostname</li>
+<li><strong>(</strong><strong>bool</strong> (<em>skip_starttls</em>) – Skip STARTTLS testing</li>
 <li><strong>include_dmarc_tag_descriptions</strong> (<em>bool</em>) – Include descriptions of DMARC
 tags and/or tag values in the
 results</li>
@@ -400,7 +401,7 @@ results</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>If <code class="docutils literal notranslate"><span class="pre">output_format</span></code> is <code class="docutils literal notranslate"><span class="pre">json</span></code>, an <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> is returned</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> or <code class="docutils literal notranslate"><span class="pre">list</span></code> of  <cite>OrderedDict</cite> with the following keys</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">domain</span></code> - The domain name</li>
 <li><code class="docutils literal notranslate"><span class="pre">base_domain</span></code> The base domain</li>
@@ -410,8 +411,6 @@ results</li>
 <li><code class="docutils literal notranslate"><span class="pre">dmarc</span></code> - A <code class="docutils literal notranslate"><span class="pre">valid</span></code> flag, plus the output of
 <a class="reference internal" href="#checkdmarc.parse_dmarc_record" title="checkdmarc.parse_dmarc_record"><code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.parse_dmarc_record()</span></code></a> or an <code class="docutils literal notranslate"><span class="pre">error</span></code></li>
 </ul>
-<p>Or, if <code class="docutils literal notranslate"><span class="pre">output_format</span></code> is <code class="docutils literal notranslate"><span class="pre">csv</span></code>, the results are returned as a CSV
-string</p>
 </p>
 </td>
 </tr>
@@ -533,7 +532,7 @@ description for a tag value</p>
 
 <dl class="function">
 <dt id="checkdmarc.get_mx_hosts">
-<code class="descclassname">checkdmarc.</code><code class="descname">get_mx_hosts</code><span class="sig-paren">(</span><em>domain</em>, <em>approved_hostnames=None</em>, <em>parked=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">get_mx_hosts</code><span class="sig-paren">(</span><em>domain</em>, <em>skip_starttls=False</em>, <em>approved_hostnames=None</em>, <em>parked=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets MX hostname and their addresses</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -541,6 +540,7 @@ description for a tag value</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>domain</strong> (<em>str</em>) – A domain name</li>
+<li><strong>skip_starttls</strong> (<em>bool</em>) – Skip STARTTLS testing</li>
 <li><strong>approved_hostnames</strong> (<em>list</em>) – A list of approved MX hostname substrings</li>
 <li><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</li>
 <li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
