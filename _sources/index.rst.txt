@@ -12,46 +12,47 @@ Welcome to checkdmarc's documentation!
 
 ::
 
-   usage: checkdmarc [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d]
-                     [-f FORMAT] [-o OUTPUT] [-n NAMESERVER [NAMESERVER ...]]
-                     [-t TIMEOUT] [-v] [-w WAIT] [--debug]
+   usage: checkdmarc.py [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d]
+                     [-f FORMAT] [-o OUTPUT [OUTPUT ...]]
+                     [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
+                     [-w WAIT] [--debug]
                      domain [domain ...]
 
-   Validates and parses SPF amd DMARC DNS records
+    Validates and parses SPF amd DMARC DNS records
 
-   positional arguments:
-     domain                one or ore domains, or a single path to a file
-                           containing a list of domains
+    positional arguments:
+      domain                one or ore domains, or a single path to a file
+                            containing a list of domains
 
-   optional arguments:
-     -h, --help            show this help message and exit
-     -p, --parked          indicate that the domains are parked
-     --ns NS [NS ...]      approved nameservers
-     --mx MX [MX ...]      approved MX hostnames
-     -d, --descriptions    include descriptions of DMARC tags in the JSON output
-     -f FORMAT, --format FORMAT
-                           specify JSON or CSV output format
-     -o OUTPUT, --output OUTPUT
-                           output to a file path rather than printing to the
-                           screen
-     -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
-                           nameservers to query (Default is Cloudflare's
-     -t TIMEOUT, --timeout TIMEOUT
-                           number of seconds to wait for an answer from DNS
-                           (default 6.0)
-     -v, --version         show program's version number and exit
-     -w WAIT, --wait WAIT  number of seconds to wait between processing domains
-                           (default 0.0)
-     --debug               Enable debugging output
+    optional arguments:
+      -h, --help            show this help message and exit
+      -p, --parked          indicate that the domains are parked
+      --ns NS [NS ...]      approved nameserver substrings
+      --mx MX [MX ...]      approved MX hostname substrings
+      -d, --descriptions    include descriptions of DMARC tags in the JSON output
+      -f FORMAT, --format FORMAT
+                            specify JSON or CSV screen output format
+      -o OUTPUT [OUTPUT ...], --output OUTPUT [OUTPUT ...]
+                            one or more file paths to output to (must end in .json
+                            or .csv) (silences screen output)
+      -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
+                            nameservers to query (Default is Cloudflare's
+      -t TIMEOUT, --timeout TIMEOUT
+                            number of seconds to wait for an answer from DNS
+                            (default 6.0)
+      -v, --version         show program's version number and exit
+      -w WAIT, --wait WAIT  number of seconds to wait between processing domains
+                            (default 0.0)
+      --debug               enable debugging output
 
 .. warning::
 
-    It is **strongly recommended** to **not** use the ``--nameserver/-n`` setting.
+    It is **strongly recommended** to **not** use the ``--nameserver``/``-n`` setting.
     By default, ``checkdmarc`` uses `Cloudflare's public resolvers`_,
     which are much faster and more reliable than Google, Cisco OpenDNS, or
     even most local resolvers.
 
-    The ``--nameservers/-n`` option should only be used if your network blocks DNS
+    The ``--nameserver``/``-n`` option should only be used if your network blocks DNS
     requests to outside resolvers.
 
 
