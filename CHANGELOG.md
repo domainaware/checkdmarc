@@ -1,6 +1,13 @@
 Changelog
 =========
 
+4.0.1
+-----
+
+- Add option to CLI and API to skip STARTTLS testing
+- Fix debug logging
+- Documentation fixes
+
 4.0.0
 -----
 

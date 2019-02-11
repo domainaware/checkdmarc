@@ -48,7 +48,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.0.0"
+__version__ = "4.0.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1871,13 +1871,15 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         return starttls
 
 
-def get_mx_hosts(domain, approved_hostnames=None, parked=False,
+def get_mx_hosts(domain, skip_starttls=False,
+                 approved_hostnames=None, parked=False,
                  nameservers=None, timeout=6.0):
     """
     Gets MX hostname and their addresses
 
     Args:
         domain (str): A domain name
+        skip_starttls (bool): Skip STARTTLS testing
         approved_hostnames (list): A list of approved MX hostname substrings
         parked (bool): Indicates that the domains are parked
         nameservers (list): A list of nameservers to query
@@ -1894,7 +1896,7 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
                      - ``warnings`` - A ``list`` of MX resolution warnings
 
     """
-    logging.debug("Checking for MX hosts on {0}".format(domain))
+    logging.debug("Checking for MX records on {0}".format(domain))
     mx_records = []
     hosts = []
     warnings = []
@@ -1908,7 +1910,7 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
     for record in mx_records:
         hosts.append(OrderedDict([("preference", record["preference"]),
                                   ("hostname", record["hostname"].lower()),
-                                  ("addresses", []), ("starttls", False)]))
+                                  ("addresses", [])]))
     if parked and len(hosts) > 0:
         warnings.append("MX records found on parked domains")
     elif not parked and len(hosts) == 0:
@@ -1953,39 +1955,23 @@ def get_mx_hosts(domain, approved_hostnames=None, parked=False,
                                         "the A/AAAA DNS records for "
                                         "{0} do not resolve to "
                                         "{1}".format(hostname, address))
-            starttls = test_starttls(host["hostname"], cache=STARTTLS_CACHE)
-            if not starttls:
-                warnings.append("{0}: STARTTLS is not supported".format(
+            if skip_starttls:
+                logging.debug("Skipping STARTTLS test on {0}".format(
+                    host[hostname]))
+            else:
+                logging.debug("Testing STARTTLS on {0}".format(
                     host["hostname"]))
-
-            host["starttls"] = starttls
+                starttls = test_starttls(host["hostname"],
+                                         cache=STARTTLS_CACHE)
+                if not starttls:
+                    warnings.append("STARTTLS is not supported on {0}".format(
+                        host["hostname"]))
+                host["starttls"] = starttls
 
         except DNSException as warning:
             warnings.append(str(warning))
         except SMTPError as error:
             warnings.append("{0}: {1}".format(host["hostname"], error))
-
-        # Disable check for SPF records on MX hostnames - too noisy
-
-        """
-        correct_mx_spf_record = "v=spf1 a -all"
-
-        try:
-            mx_spf_record = query_spf_record(host["hostname"],
-                                             nameservers=nameservers,
-                                             timeout=timeout)["record"]
-            if mx_spf_record != correct_mx_spf_record:
-                warning = "{0} should have a SPF record of: {1} " \
-                          "instead of: {2}, so bouncebacks pass " \
-                          "SPF.".format(host["hostname"],
-                                        correct_mx_spf_record, mx_spf_record)
-                warnings.append(warning)
-
-        except Exception as e:
-            warning = "{0}. MX hosts should have a SPF record of: {1} so " \
-                      "bouncebacks pass SPF.".format(e, correct_mx_spf_record)
-            warnings.append(warning)
-        """
 
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
@@ -2039,6 +2025,7 @@ def get_nameservers(domain, approved_nameservers=None,
 def check_domains(domains, parked=False,
                   approved_nameservers=None,
                   approved_mx_hostnames=None,
+                  skip_starttls=False,
                   include_dmarc_tag_descriptions=False,
                   nameservers=None, timeout=6.0, wait=0.0):
     """
@@ -2049,7 +2036,8 @@ def check_domains(domains, parked=False,
         domains (list): A list of domains to check
         parked (bool): Indicates that the domains are parked
         approved_nameservers (list): A list of approved nameservers
-        approved_mx_hostnames (list): A list of approved MX hostnames
+        approved_mx_hostnames (list): A list of approved MX hostname
+        skip_starttls (bool: Skip STARTTLS testing
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC
                                                tags and/or tag values in the
                                                results
@@ -2059,7 +2047,7 @@ def check_domains(domains, parked=False,
         wait (float): number of seconds to wait between processing domains
 
     Returns:
-       If ``output_format`` is ``json``, an ``OrderedDict`` is returned
+       An ``OrderedDict`` or ``list`` of  `OrderedDict` with the following keys
 
        - ``domain`` - The domain name
        - ``base_domain`` The base domain
@@ -2068,9 +2056,6 @@ def check_domains(domains, parked=False,
          :func:`checkdmarc.parse_spf_record` or an ``error``
        - ``dmarc`` - A ``valid`` flag, plus the output of
          :func:`checkdmarc.parse_dmarc_record` or an ``error``
-
-       Or, if ``output_format`` is ``csv``, the results are returned as a CSV
-       string
     """
     domains = sorted(list(set(
         map(lambda d: d.rstrip(".\r\n").strip().lower().split(",")[0],
@@ -2085,6 +2070,8 @@ def check_domains(domains, parked=False,
         domains.remove("")
     results = []
     for domain in domains:
+        domain = domain.lower()
+        logging.debug("Checking: {0}".format(domain))
         domain_results = OrderedDict(
             [("domain", domain), ("base_domain", get_base_domain(domain)),
              ("ns", []), ("mx", [])])
@@ -2097,6 +2084,7 @@ def check_domains(domains, parked=False,
             timeout=timeout)
         domain_results["mx"] = get_mx_hosts(
             domain,
+            skip_starttls=skip_starttls,
             approved_hostnames=approved_mx_hostnames,
             nameservers=nameservers,
             timeout=timeout)
@@ -2130,6 +2118,7 @@ def check_domains(domains, parked=False,
                                                ("valid", True),
                                                ("location", None)])
         try:
+            logging.debug("Getting DMARC record on {0}".format(domain))
             dmarc_query = query_dmarc_record(domain,
                                              nameservers=nameservers,
                                              timeout=timeout)
@@ -2154,7 +2143,9 @@ def check_domains(domains, parked=False,
                 for key in error.data:
                     domain_results["dmarc"][key] = error.data[key]
         results.append(domain_results)
-        sleep(wait)
+        if wait > 0.0:
+            logging.debug("Sleeping for {0} seconds".format(wait))
+            sleep(wait)
     if len(results) == 1:
         results = results[0]
 
@@ -2212,9 +2203,13 @@ def results_to_csv(results):
         row["mx"] = "|".join(list(
             map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
                 mx["hosts"])))
-        row["starttls"] = "|".join(list(
-            map(lambda r: "{0}".format(r["starttls"]),
-                mx["hosts"])))
+        try:
+            row["starttls"] = "|".join(list(
+                map(lambda r: "{0}".format(r["starttls"]),
+                    mx["hosts"])))
+        except KeyError:
+            # The user might opt to skip the STARTTLS test
+            pass
         row["mx_warnings"] = "|".join(mx["warnings"])
         row["spf_record"] = spf["record"]
         row["spf_valid"] = spf["valid"]
@@ -2299,17 +2294,19 @@ def _main():
     arg_parser.add_argument("-w", "--wait", type=float,
                             help="number of seconds to wait between "
                                  "processing domains (default 0.0)",
-                            default=0.0)
+                            default=0.0),
+    arg_parser.add_argument("--skip-starttls", action="store_true",
+                            help="skip STARTTLS testing")
     arg_parser.add_argument("--debug", action="store_true",
                             help="enable debugging output")
 
     args = arg_parser.parse_args()
 
-    logging_format = "%(levelname)s: %(message)s"
+    logging_format = "%(asctime)s - %(levelname)s: %(message)s"
     logging.basicConfig(level=logging.WARNING, format=logging_format)
 
     if args.debug:
-        logging.basicConfig(level=logging.DEBUG, format=logging_format)
+        logging.getLogger().setLevel(logging.DEBUG)
         logging.debug("Debug output enabled")
     domains = args.domain
     if len(domains) == 1 and os.path.exists(domains[0]):
@@ -2324,7 +2321,8 @@ def _main():
             for domain in not_domains:
                 domains.remove(domain)
 
-    results = check_domains(domains, parked=args.parked,
+    results = check_domains(domains, skip_starttls=args.skip_starttls,
+                            parked=args.parked,
                             approved_nameservers=args.ns,
                             approved_mx_hostnames=args.mx,
                             include_dmarc_tag_descriptions=args.descriptions,
