@@ -48,7 +48,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.0.1"
+__version__ = "4.0.2"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1787,10 +1787,9 @@ def test_starttls(hostname, ssl_context=None, cache=None):
     try:
         server = smtplib.SMTP(hostname)
         server.ehlo_or_helo_if_needed()
-        if server.has_extn("starttls"):
-            server.starttls(context=ssl_context)
-            server.ehlo()
-            starttls = True
+        server.starttls(context=ssl_context)
+        server.ehlo()
+        starttls = True
         try:
             server.quit()
             server.close()
@@ -1861,6 +1860,11 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
     except OSError as e:
+        error = e.__str__()
+        if cache:
+            cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
+    except Exception as e:
         error = e.__str__()
         if cache:
             cache[hostname] = dict(starttls=False, error=error)

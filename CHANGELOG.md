@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.0.2
+-----
+
+- Improve `STARTTLS` test
+
 4.0.1
 -----
 
