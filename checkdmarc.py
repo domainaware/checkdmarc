@@ -48,7 +48,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.0.2"
+__version__ = "4.1.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -75,6 +75,7 @@ USER_AGENT = "Mozilla/5.0 ((0 {1})) parsedmarc/{2}".format(
         )
 
 DNS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
+TLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 STARTTLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 
 TMPDIR = tempfile.mkdtemp()
@@ -1762,6 +1763,118 @@ def get_spf_record(domain, nameservers=None, timeout=6.0):
     return parsed_record
 
 
+def test_tls(hostname, ssl_context=None, cache=None):
+    """
+    Attempt to connect to a SMTP server port 465 and validate TLS/SSL support
+
+    Args:
+        hostname (str): The hostname
+        cache (ExpiringDict): Cache storage
+        ssl_context: A SSL context
+
+    Returns:
+        bool: TLS supported
+
+    """
+    tls = False
+    if cache:
+        cached_result = cache.get(hostname, None)
+        if cached_result is not None:
+            if cached_result["error"] is not None:
+                raise SMTPError(cached_result["error"])
+            return cached_result["tls"]
+    if ssl_context is None:
+        ssl_context = create_default_context()
+    logging.debug("Testing TLS/SSLon {0}".format(hostname))
+    try:
+        server = smtplib.SMTP_SSL(hostname, context=ssl_context)
+        server.ehlo_or_helo_if_needed()
+        tls = True
+        try:
+            server.quit()
+            server.close()
+        except Exception as e:
+            logging.debug(e)
+        finally:
+            return tls
+
+    except socket.gaierror:
+        error = "DNS resolution failed"
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except ConnectionRefusedError:
+        error = "Connection refused"
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except ConnectionResetError:
+        error = "Connection reset"
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except ConnectionAbortedError:
+        error = "Connection aborted"
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except TimeoutError:
+        error = "Connection timed out"
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except BlockingIOError as e:
+        error = e.__str__()
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except SSLError as e:
+        error = "SSL error: {0}".format(e.__str__())
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except CertificateError as e:
+        error = "Certificate error: {0}".format(e.__str__())
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+    except smtplib.SMTPConnectError as e:
+        message = e.__str__()
+        error_code = int(message.lstrip("(").split(",")[0])
+        if error_code == 554:
+            message = " SMTP error code 554 - Not allowed"
+        else:
+            message = " SMTP error code {0}".format(error_code)
+        error = "Could not connect: {0}".format(message)
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except smtplib.SMTPHeloError as e:
+        error = "HELO error: {0}".format(e.__str__())
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+    except smtplib.SMTPException as e:
+        error = e.__str__()
+        error_code = error.lstrip("(").split(",")[0]
+        error = "SMTP error code {0}".format(error_code)
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except OSError as e:
+        error = e.__str__()
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    except Exception as e:
+        error = e.__str__()
+        if cache:
+            cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
+    finally:
+        if cache:
+            cache[hostname] = dict(tls=tls, error=None)
+        return tls
+
+
 def test_starttls(hostname, ssl_context=None, cache=None):
     """
     Attempt to connect to a SMTP server and validate STARTTLS support
@@ -1772,7 +1885,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         ssl_context: A SSL context
 
     Returns:
-
+        bool: STARTTLS supported
     """
     starttls = False
     if cache:
@@ -1797,6 +1910,8 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         except Exception as e:
             logging.debug(e)
         finally:
+            if cache:
+                cache[hostname] = dict(starttls=starttls, error=None)
             return starttls
 
     except socket.gaierror:
@@ -1870,13 +1985,10 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
-    finally:
-        if cache:
-            cache[hostname] = dict(starttls=starttls, error=None)
-        return starttls
 
 
-def get_mx_hosts(domain, skip_starttls=False,
+
+def get_mx_hosts(domain, skip_tls=False,
                  approved_hostnames=None, parked=False,
                  nameservers=None, timeout=6.0):
     """
@@ -1884,7 +1996,7 @@ def get_mx_hosts(domain, skip_starttls=False,
 
     Args:
         domain (str): A domain name
-        skip_starttls (bool): Skip STARTTLS testing
+        skip_tls (bool): Skip STARTTLS testing
         approved_hostnames (list): A list of approved MX hostname substrings
         parked (bool): Indicates that the domains are parked
         nameservers (list): A list of nameservers to query
@@ -1959,15 +2071,24 @@ def get_mx_hosts(domain, skip_starttls=False,
                                         "the A/AAAA DNS records for "
                                         "{0} do not resolve to "
                                         "{1}".format(hostname, address))
-            if skip_starttls:
-                logging.debug("Skipping STARTTLS test on {0}".format(
+            if skip_tls:
+                logging.debug("Skipping TLS/SSL tests on {0}".format(
                     host["hostname"]))
             else:
                 starttls = test_starttls(host["hostname"],
                                          cache=STARTTLS_CACHE)
+                if starttls:
+                    tls = True
+                else:
+                    tls = test_tls(host["hostname"], cache=TLS_CACHE)
+
+                if not tls:
+                    warnings.append("SSL/TLS is not supported on {0}".format(
+                        host["hostname"]))
                 if not starttls:
                     warnings.append("STARTTLS is not supported on {0}".format(
                         host["hostname"]))
+                host["tls"] = tls
                 host["starttls"] = starttls
 
         except DNSException as warning:
@@ -2027,7 +2148,7 @@ def get_nameservers(domain, approved_nameservers=None,
 def check_domains(domains, parked=False,
                   approved_nameservers=None,
                   approved_mx_hostnames=None,
-                  skip_starttls=False,
+                  skip_tls=False,
                   include_dmarc_tag_descriptions=False,
                   nameservers=None, timeout=6.0, wait=0.0):
     """
@@ -2039,7 +2160,7 @@ def check_domains(domains, parked=False,
         parked (bool): Indicates that the domains are parked
         approved_nameservers (list): A list of approved nameservers
         approved_mx_hostnames (list): A list of approved MX hostname
-        skip_starttls (bool: Skip STARTTLS testing
+        skip_tls (bool: Skip STARTTLS testing
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC
                                                tags and/or tag values in the
                                                results
@@ -2086,7 +2207,7 @@ def check_domains(domains, parked=False,
             timeout=timeout)
         domain_results["mx"] = get_mx_hosts(
             domain,
-            skip_starttls=skip_starttls,
+            skip_tls=skip_tls,
             approved_hostnames=approved_mx_hostnames,
             nameservers=nameservers,
             timeout=timeout)
@@ -2208,9 +2329,27 @@ def results_to_csv(results):
             map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
                 mx["hosts"])))
         try:
-            row["starttls"] = "|".join(list(
+            tls = True
+            tls_results = list(
                 map(lambda r: "{0}".format(r["starttls"]),
-                    mx["hosts"])))
+                    mx["hosts"]))
+            for tls_result in tls_results:
+                if tls_result is False:
+                    tls = False
+            row["tls"] = tls
+        except KeyError:
+            # The user might opt to skip the STARTTLS test
+            pass
+
+        try:
+            starttls = True
+            starttls_results = list(
+                map(lambda r: "{0}".format(r["starttls"]),
+                    mx["hosts"]))
+            for starttls_result in starttls_results:
+                if starttls_result is False:
+                    starttls = False
+            row["starttls"] = starttls
         except KeyError:
             # The user might opt to skip the STARTTLS test
             pass
@@ -2300,8 +2439,8 @@ def _main():
                             help="number of seconds to wait between "
                                  "checking domains (default 0.0)",
                             default=0.0),
-    arg_parser.add_argument("--skip-starttls", action="store_true",
-                            help="skip STARTTLS testing")
+    arg_parser.add_argument("--skip-tls", action="store_true",
+                            help="skip TLS/SSL testing")
     arg_parser.add_argument("--debug", action="store_true",
                             help="enable debugging output")
 
@@ -2326,7 +2465,7 @@ def _main():
             for domain in not_domains:
                 domains.remove(domain)
 
-    results = check_domains(domains, skip_starttls=args.skip_starttls,
+    results = check_domains(domains, skip_tls=args.skip_tls,
                             parked=args.parked,
                             approved_nameservers=args.ns,
                             approved_mx_hostnames=args.mx,
