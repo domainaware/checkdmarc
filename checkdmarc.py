@@ -1987,7 +1987,6 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         raise SMTPError(error)
 
 
-
 def get_mx_hosts(domain, skip_tls=False,
                  approved_hostnames=None, parked=False,
                  nameservers=None, timeout=6.0):
@@ -2304,7 +2303,7 @@ def results_to_csv(results):
               "dmarc_adkim", "dmarc_aspf",
               "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
               "dmarc_rua", "dmarc_ruf", "dmarc_sp",
-              "mx", "starttls", "spf_record", "dmarc_record",
+              "mx", "tls", "starttls", "spf_record", "dmarc_record",
               "dmarc_record_location",
               "mx_warnings", "spf_error",
               "spf_warnings", "dmarc_error", "dmarc_warnings",

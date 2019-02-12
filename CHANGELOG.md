@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.1.0
+-----
+
+- Test for SSL/TLS over port 465 if `STARTTLS` is not supported
+- Fix display of SSL/TLS errors
+
 4.0.2
 -----
 
