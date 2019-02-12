@@ -1787,9 +1787,10 @@ def test_starttls(hostname, ssl_context=None, cache=None):
     try:
         server = smtplib.SMTP(hostname)
         server.ehlo_or_helo_if_needed()
-        server.starttls(context=ssl_context)
-        server.ehlo()
-        starttls = True
+        if server.has_extn("starttls"):
+            server.starttls(context=ssl_context)
+            server.ehlo()
+            starttls = True
         try:
             server.quit()
             server.close()
