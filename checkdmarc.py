@@ -2080,13 +2080,12 @@ def get_mx_hosts(domain, skip_tls=False,
                 if starttls:
                     tls = True
                 else:
+                    warnings.append("STARTTLS is not supported on {0}".format(
+                        host["hostname"]))
                     tls = test_tls(host["hostname"], cache=TLS_CACHE)
 
                 if not tls:
                     warnings.append("SSL/TLS is not supported on {0}".format(
-                        host["hostname"]))
-                if not starttls:
-                    warnings.append("STARTTLS is not supported on {0}".format(
                         host["hostname"]))
 
         except DNSException as warning:
