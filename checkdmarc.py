@@ -2088,13 +2088,16 @@ def get_mx_hosts(domain, skip_tls=False,
                 if not starttls:
                     warnings.append("STARTTLS is not supported on {0}".format(
                         host["hostname"]))
-                host["tls"] = tls
-                host["starttls"] = starttls
 
         except DNSException as warning:
             warnings.append(str(warning))
         except SMTPError as error:
+            tls = False
+            starttls = False
             warnings.append("{0}: {1}".format(host["hostname"], error))
+
+        host["tls"] = tls
+        host["starttls"] = starttls
 
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
