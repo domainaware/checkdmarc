@@ -2334,8 +2334,8 @@ def results_to_csv(results):
             tls_results = list(
                 map(lambda r: "{0}".format(r["starttls"]),
                     mx["hosts"]))
-            tls = True
             for tls_result in tls_results:
+                tls = tls_result
                 if tls_result is False:
                     tls = False
                     break
@@ -2350,8 +2350,8 @@ def results_to_csv(results):
             starttls_results = list(
                 map(lambda r: "{0}".format(r["starttls"]),
                     mx["hosts"]))
-            starttls = True
             for starttls_result in starttls_results:
+                starttls = starttls_result
                 if starttls_result is False:
                     starttls = False
         except KeyError:
