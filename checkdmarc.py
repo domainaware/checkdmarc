@@ -48,7 +48,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.1.0"
+__version__ = "4.1.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -2329,31 +2329,37 @@ def results_to_csv(results):
         row["mx"] = "|".join(list(
             map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
                 mx["hosts"])))
+        tls = None
         try:
-            tls = True
             tls_results = list(
                 map(lambda r: "{0}".format(r["starttls"]),
                     mx["hosts"]))
+            tls = True
             for tls_result in tls_results:
                 if tls_result is False:
                     tls = False
-            row["tls"] = tls
+                    break
         except KeyError:
             # The user might opt to skip the STARTTLS test
             pass
+        finally:
+            row["tls"] = tls
 
+        starttls = None
         try:
-            starttls = True
             starttls_results = list(
                 map(lambda r: "{0}".format(r["starttls"]),
                     mx["hosts"]))
+            starttls = True
             for starttls_result in starttls_results:
                 if starttls_result is False:
                     starttls = False
-            row["starttls"] = starttls
         except KeyError:
             # The user might opt to skip the STARTTLS test
             pass
+        finally:
+            row["starttls"] = starttls
+
         row["mx_warnings"] = "|".join(mx["warnings"])
         row["spf_record"] = spf["record"]
         row["spf_valid"] = spf["valid"]

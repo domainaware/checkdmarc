@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.1.1
+-----
+
+- Fix `tls` and `starttls` CSV fields
+
 4.1.0
 -----
 
