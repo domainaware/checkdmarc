@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 4.0.2 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 4.1.1 documentation</title>
   
 
   
@@ -17,33 +17,35 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html" /> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -57,7 +59,7 @@
             
             
               <div class="version">
-                4.0.2
+                4.1.1
               </div>
             
           
@@ -378,7 +380,7 @@ that it accepts reports for the domain</p>
 
 <dl class="function">
 <dt id="checkdmarc.check_domains">
-<code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>parked=False</em>, <em>approved_nameservers=None</em>, <em>approved_mx_hostnames=None</em>, <em>skip_starttls=False</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em>, <em>wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>parked=False</em>, <em>approved_nameservers=None</em>, <em>approved_mx_hostnames=None</em>, <em>skip_tls=False</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em>, <em>wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the given domains for SPF and DMARC records, parse them, and return
 them</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -390,7 +392,7 @@ them</p>
 <li><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</li>
 <li><strong>approved_nameservers</strong> (<em>list</em>) – A list of approved nameservers</li>
 <li><strong>approved_mx_hostnames</strong> (<em>list</em>) – A list of approved MX hostname</li>
-<li><strong>(</strong><strong>bool</strong> (<em>skip_starttls</em>) – Skip STARTTLS testing</li>
+<li><strong>(</strong><strong>bool</strong> (<em>skip_tls</em>) – Skip STARTTLS testing</li>
 <li><strong>include_dmarc_tag_descriptions</strong> (<em>bool</em>) – Include descriptions of DMARC
 tags and/or tag values in the
 results</li>
@@ -532,7 +534,7 @@ description for a tag value</p>
 
 <dl class="function">
 <dt id="checkdmarc.get_mx_hosts">
-<code class="descclassname">checkdmarc.</code><code class="descname">get_mx_hosts</code><span class="sig-paren">(</span><em>domain</em>, <em>skip_starttls=False</em>, <em>approved_hostnames=None</em>, <em>parked=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">get_mx_hosts</code><span class="sig-paren">(</span><em>domain</em>, <em>skip_tls=False</em>, <em>approved_hostnames=None</em>, <em>parked=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets MX hostname and their addresses</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -540,7 +542,7 @@ description for a tag value</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>skip_starttls</strong> (<em>bool</em>) – Skip STARTTLS testing</li>
+<li><strong>skip_tls</strong> (<em>bool</em>) – Skip STARTTLS testing</li>
 <li><strong>approved_hostnames</strong> (<em>list</em>) – A list of approved MX hostname substrings</li>
 <li><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</li>
 <li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
@@ -967,16 +969,46 @@ mechanisms</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>hostname</strong> (<em>str</em>) – The hostname</li>
 <li><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</li>
 <li><strong>ssl_context</strong> – A SSL context</li>
 </ul>
 </td>
 </tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">STARTTLS supported</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">bool</p>
+</td>
+</tr>
 </tbody>
 </table>
-<p>Returns:</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.test_tls">
+<code class="descclassname">checkdmarc.</code><code class="descname">test_tls</code><span class="sig-paren">(</span><em>hostname</em>, <em>ssl_context=None</em>, <em>cache=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_tls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_tls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attempt to connect to a SMTP server port 465 and validate TLS/SSL support</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>hostname</strong> (<em>str</em>) – The hostname</li>
+<li><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</li>
+<li><strong>ssl_context</strong> – A SSL context</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">TLS supported</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">bool</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -1025,7 +1057,7 @@ domain</p>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="index.html" class="btn btn-neutral" title="Welcome to checkdmarc’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to checkdmarc’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -1051,26 +1083,16 @@ domain</p>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-    
-
-  
-
-  <script type="text/javascript" src="_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

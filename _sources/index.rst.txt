@@ -12,11 +12,11 @@ Welcome to checkdmarc's documentation!
 
 ::
 
-   usage: checkdmarc.py [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d]
-                        [-f FORMAT] [-o OUTPUT [OUTPUT ...]]
-                        [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
-                        [-w WAIT] [--skip-starttls] [--debug]
-                        domain [domain ...]
+  usage: checkdmarc  [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d]
+                     [-f FORMAT] [-o OUTPUT [OUTPUT ...]]
+                     [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
+                     [-w WAIT] [--skip-tls] [--debug]
+                     domain [domain ...]
 
    Validates and parses SPF amd DMARC DNS records
 
@@ -43,7 +43,7 @@ Welcome to checkdmarc's documentation!
      -v, --version         show program's version number and exit
      -w WAIT, --wait WAIT  number of seconds to wait between checking domains
                            (default 0.0)
-     --skip-starttls       skip STARTTLS testing
+     --skip-tls            skip TLS/SSL testing
      --debug               enable debugging output
 
 .. warning::
@@ -82,12 +82,11 @@ Welcome to checkdmarc's documentation!
            "addresses": [
              "153.31.160.5"
            ],
-           "starttls": false
+           "tls": true,
+           "starttls": true
          }
        ],
-       "warnings": [
-         "mx-east.fbi.gov: Connection refused"
-       ]
+       "warnings": []
      },
      "spf": {
        "record": "v=spf1 +mx ip4:153.31.0.0/16 -all",
@@ -188,6 +187,7 @@ Welcome to checkdmarc's documentation!
        }
      }
    }
+
 
 Installation
 ------------
