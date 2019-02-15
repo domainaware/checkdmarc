@@ -109,6 +109,7 @@ output/
 
 *.json
 *.csv
+*prod.ini
 
 # LibreOffice lock files
 .~*
