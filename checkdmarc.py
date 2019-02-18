@@ -594,7 +594,7 @@ def get_base_domain(domain, use_fresh_psl=False):
                 try:
                     download_psl()
                 except Exception as error:
-                    logger.warning(
+                    logging.warning(
                         "Failed to download an updated PSL {0}".format(error))
         with open(psl_path, encoding="utf-8") as psl_file:
             psl = publicsuffix2.PublicSuffixList(psl_file)
