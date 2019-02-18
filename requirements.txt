@@ -1,7 +1,7 @@
 dnspython
 expiringdict
 pyleri
-publicsuffix
+publicsuffix2
 requests
 sphinx
 sphinx_rtd_theme

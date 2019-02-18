@@ -15,8 +15,7 @@ from setuptools import setup
 from codecs import open
 from os import path
 
-__version__ = "4.1.1"
-
+__version__ = "4.1.2"
 desc = "A Python module and command line parser for SPF and DMARC records"
 
 here = path.abspath(path.dirname(__file__))
@@ -93,7 +92,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['dnspython', 'expiringdict', 'pyleri',
-                      'publicsuffix', 'requests'],
+                      'publicsuffix2', 'requests'],
 
     entry_points={
         'console_scripts': ['checkdmarc=checkdmarc:_main'],

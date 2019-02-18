@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.1.2
+-----
+
+- Fix `--skip-tls` option
+- Replace `publicsuffix` with `publicsuffix2`
+
 4.1.1
 -----
 

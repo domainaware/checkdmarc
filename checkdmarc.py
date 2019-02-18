@@ -24,7 +24,7 @@ from ssl import SSLError, CertificateError, create_default_context
 from io import StringIO
 from expiringdict import ExpiringDict
 
-import publicsuffix
+import publicsuffix2
 import dns.resolver
 import dns.exception
 from pyleri import (Grammar,
@@ -48,7 +48,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.1.1"
+__version__ = "4.1.2"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -558,7 +558,7 @@ bimi_tags = OrderedDict(
 )
 
 
-def get_base_domain(domain):
+def get_base_domain(domain, use_fresh_psl=False):
     """
     Gets the base domain name for the given domain
 
@@ -566,11 +566,9 @@ def get_base_domain(domain):
         Results are based on a list of public domain suffixes at
         https://publicsuffix.org/list/public_suffix_list.dat.
 
-        This file is saved to the current working directory,
-        where it is used as a cache file for 24 hours.
-
     Args:
         domain (str): A domain or subdomain
+        use_fresh_psl (bool): Download a fresh Public Suffix List
 
     Returns:
         str: The base domain of the given domain
@@ -586,21 +584,24 @@ def get_base_domain(domain):
         with open(psl_path, "w", encoding="utf-8") as fresh_psl_file:
             fresh_psl_file.write(fresh_psl)
 
-    if not os.path.exists(psl_path):
-        download_psl()
-    else:
-        psl_age = datetime.now() - datetime.fromtimestamp(
-            os.stat(psl_path).st_mtime)
-        if psl_age > timedelta(hours=24):
-            try:
-                download_psl()
-            except Exception as error:
-                logging.warning(
-                    "Failed to download an updated PSL {0}".format(error))
-    with open(psl_path, encoding="utf-8") as psl_file:
-        psl = publicsuffix.PublicSuffixList(psl_file)
+    if use_fresh_psl:
+        if not os.path.exists(psl_path):
+            download_psl()
+        else:
+            psl_age = datetime.now() - datetime.fromtimestamp(
+                os.stat(psl_path).st_mtime)
+            if psl_age > timedelta(hours=24):
+                try:
+                    download_psl()
+                except Exception as error:
+                    logger.warning(
+                        "Failed to download an updated PSL {0}".format(error))
+        with open(psl_path, encoding="utf-8") as psl_file:
+            psl = publicsuffix2.PublicSuffixList(psl_file)
 
-    return psl.get_public_suffix(domain)
+        return psl.get_public_suffix(domain)
+    else:
+        return publicsuffix2.get_public_suffix(domain)
 
 
 def _query_dns(domain, record_type, nameservers=None, timeout=6.0,
@@ -2086,7 +2087,8 @@ def get_mx_hosts(domain, skip_tls=False,
                 if not tls:
                     warnings.append("SSL/TLS is not supported on {0}".format(
                         host["hostname"]))
-
+                host["tls"] = tls
+                host["starttls"] = starttls
         except DNSException as warning:
             warnings.append(str(warning))
         except SMTPError as error:
@@ -2094,8 +2096,8 @@ def get_mx_hosts(domain, skip_tls=False,
             starttls = False
             warnings.append("{0}: {1}".format(host["hostname"], error))
 
-        host["tls"] = tls
-        host["starttls"] = starttls
+            host["tls"] = tls
+            host["starttls"] = starttls
 
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
