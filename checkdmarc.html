@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 4.1.1 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 4.1.2 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                4.1.1
+                4.1.2
               </div>
             
           
@@ -422,24 +422,28 @@ results</li>
 
 <dl class="function">
 <dt id="checkdmarc.get_base_domain">
-<code class="descclassname">checkdmarc.</code><code class="descname">get_base_domain</code><span class="sig-paren">(</span><em>domain</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_base_domain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_base_domain" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">checkdmarc.</code><code class="descname">get_base_domain</code><span class="sig-paren">(</span><em>domain</em>, <em>use_fresh_psl=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_base_domain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_base_domain" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the base domain name for the given domain</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p>Results are based on a list of public domain suffixes at
+<p class="last">Results are based on a list of public domain suffixes at
 <a class="reference external" href="https://publicsuffix.org/list/public_suffix_list.dat">https://publicsuffix.org/list/public_suffix_list.dat</a>.</p>
-<p class="last">This file is saved to the current working directory,
-where it is used as a cache file for 24 hours.</p>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>domain</strong> (<em>str</em>) – A domain or subdomain</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>domain</strong> (<em>str</em>) – A domain or subdomain</li>
+<li><strong>use_fresh_psl</strong> (<em>bool</em>) – Download a fresh Public Suffix List</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The base domain of the given domain</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The base domain of the given domain</p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">str</p>
+</td>
 </tr>
 </tbody>
 </table>

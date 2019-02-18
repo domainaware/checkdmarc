@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 4.1.1 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 4.1.2 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                4.1.1
+                4.1.2
               </div>
             
           
@@ -173,7 +173,7 @@
 <span class="kn">from</span> <span class="nn">io</span> <span class="k">import</span> <span class="n">StringIO</span>
 <span class="kn">from</span> <span class="nn">expiringdict</span> <span class="k">import</span> <span class="n">ExpiringDict</span>
 
-<span class="kn">import</span> <span class="nn">publicsuffix</span>
+<span class="kn">import</span> <span class="nn">publicsuffix2</span>
 <span class="kn">import</span> <span class="nn">dns.resolver</span>
 <span class="kn">import</span> <span class="nn">dns.exception</span>
 <span class="kn">from</span> <span class="nn">pyleri</span> <span class="k">import</span> <span class="p">(</span><span class="n">Grammar</span><span class="p">,</span>
@@ -197,7 +197,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.1.1&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.1.2&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -707,7 +707,7 @@
 <span class="p">)</span>
 
 
-<div class="viewcode-block" id="get_base_domain"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_base_domain">[docs]</a><span class="k">def</span> <span class="nf">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">):</span>
+<div class="viewcode-block" id="get_base_domain"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_base_domain">[docs]</a><span class="k">def</span> <span class="nf">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">use_fresh_psl</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Gets the base domain name for the given domain</span>
 
@@ -715,11 +715,9 @@
 <span class="sd">        Results are based on a list of public domain suffixes at</span>
 <span class="sd">        https://publicsuffix.org/list/public_suffix_list.dat.</span>
 
-<span class="sd">        This file is saved to the current working directory,</span>
-<span class="sd">        where it is used as a cache file for 24 hours.</span>
-
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain or subdomain</span>
+<span class="sd">        use_fresh_psl (bool): Download a fresh Public Suffix List</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: The base domain of the given domain</span>
@@ -735,21 +733,24 @@
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">psl_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fresh_psl_file</span><span class="p">:</span>
             <span class="n">fresh_psl_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fresh_psl</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">psl_path</span><span class="p">):</span>
-        <span class="n">download_psl</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">psl_age</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">psl_path</span><span class="p">)</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">psl_age</span> <span class="o">&gt;</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">24</span><span class="p">):</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">download_psl</span><span class="p">()</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;Failed to download an updated PSL </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">psl_path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">psl_file</span><span class="p">:</span>
-        <span class="n">psl</span> <span class="o">=</span> <span class="n">publicsuffix</span><span class="o">.</span><span class="n">PublicSuffixList</span><span class="p">(</span><span class="n">psl_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">use_fresh_psl</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">psl_path</span><span class="p">):</span>
+            <span class="n">download_psl</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">psl_age</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">psl_path</span><span class="p">)</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">psl_age</span> <span class="o">&gt;</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">24</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">download_psl</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot;Failed to download an updated PSL </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">psl_path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">psl_file</span><span class="p">:</span>
+            <span class="n">psl</span> <span class="o">=</span> <span class="n">publicsuffix2</span><span class="o">.</span><span class="n">PublicSuffixList</span><span class="p">(</span><span class="n">psl_file</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">psl</span><span class="o">.</span><span class="n">get_public_suffix</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">psl</span><span class="o">.</span><span class="n">get_public_suffix</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">publicsuffix2</span><span class="o">.</span><span class="n">get_public_suffix</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span></div>
 
 
 <span class="k">def</span> <span class="nf">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span>
@@ -2235,7 +2236,8 @@
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">tls</span><span class="p">:</span>
                     <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;SSL/TLS is not supported on </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                         <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]))</span>
-
+                <span class="n">host</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
+                <span class="n">host</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
         <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
         <span class="k">except</span> <span class="n">SMTPError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
@@ -2243,8 +2245,8 @@
             <span class="n">starttls</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span> <span class="n">error</span><span class="p">))</span>
 
-        <span class="n">host</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
-        <span class="n">host</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
+            <span class="n">host</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
+            <span class="n">host</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
 
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hosts&quot;</span><span class="p">,</span> <span class="n">hosts</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
