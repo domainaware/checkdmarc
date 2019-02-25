@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.1.3
+-----
+
+- Debug output fixes
+
 4.1.2
 -----
 

@@ -48,7 +48,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.1.2"
+__version__ = "4.1.3"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1786,7 +1786,7 @@ def test_tls(hostname, ssl_context=None, cache=None):
             return cached_result["tls"]
     if ssl_context is None:
         ssl_context = create_default_context()
-    logging.debug("Testing TLS/SSLon {0}".format(hostname))
+    logging.debug("Testing TLS/SSL on {0}".format(hostname))
     try:
         server = smtplib.SMTP_SSL(hostname, context=ssl_context)
         server.ehlo_or_helo_if_needed()
@@ -2244,7 +2244,6 @@ def check_domains(domains, parked=False,
                                                ("valid", True),
                                                ("location", None)])
         try:
-            logging.debug("Getting DMARC record on {0}".format(domain))
             dmarc_query = query_dmarc_record(domain,
                                              nameservers=nameservers,
                                              timeout=timeout)
