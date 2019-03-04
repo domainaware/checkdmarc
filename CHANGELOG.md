@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.1.5
+-----
+
+- Add warning if MX hosts are missing A or AAAA records
+- Fix TLS/STARTTLS failure output
+
 4.1.4
 -----
 
