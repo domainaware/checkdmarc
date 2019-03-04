@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.1.4
+-----
+
+- Timeout SMTP TLS check after 5 seconds
+
 4.1.3
 -----
 

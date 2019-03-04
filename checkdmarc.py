@@ -27,6 +27,7 @@ from expiringdict import ExpiringDict
 import publicsuffix2
 import dns.resolver
 import dns.exception
+import timeout_decorator
 from pyleri import (Grammar,
                     Regex,
                     Sequence,
@@ -48,7 +49,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.1.3"
+__version__ = "4.1.4"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1764,6 +1765,8 @@ def get_spf_record(domain, nameservers=None, timeout=6.0):
     return parsed_record
 
 
+@timeout_decorator.timeout(5, timeout_exception=SMTPError,
+                           exception_message="Connection timed out")
 def test_tls(hostname, ssl_context=None, cache=None):
     """
     Attempt to connect to a SMTP server port 465 and validate TLS/SSL support
@@ -1775,7 +1778,6 @@ def test_tls(hostname, ssl_context=None, cache=None):
 
     Returns:
         bool: TLS supported
-
     """
     tls = False
     if cache:

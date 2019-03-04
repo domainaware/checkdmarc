@@ -3,6 +3,7 @@ expiringdict
 pyleri
 publicsuffix2
 requests
+timeout-decorator
 sphinx
 sphinx_rtd_theme
 collective.checkdocs
