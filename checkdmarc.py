@@ -49,7 +49,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.1.5"
+__version__ = "4.1.6"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1840,6 +1840,7 @@ def test_tls(hostname, ssl_context=None, cache=None):
         error = "Certificate error: {0}".format(e.__str__())
         if cache:
             cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
     except smtplib.SMTPConnectError as e:
         message = e.__str__()
         error_code = int(message.lstrip("(").split(",")[0])
@@ -1855,6 +1856,7 @@ def test_tls(hostname, ssl_context=None, cache=None):
         error = "HELO error: {0}".format(e.__str__())
         if cache:
             cache[hostname] = dict(tls=False, error=error)
+        raise SMTPError(error)
     except smtplib.SMTPException as e:
         error = e.__str__()
         error_code = error.lstrip("(").split(",")[0]
