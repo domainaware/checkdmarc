@@ -1958,6 +1958,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         error = "Certificate error: {0}".format(e.__str__())
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     except smtplib.SMTPConnectError as e:
         message = e.__str__()
         error_code = int(message.lstrip("(").split(",")[0])
@@ -1973,6 +1974,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         error = "HELO error: {0}".format(e.__str__())
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
+        raise SMTPError(error)
     except smtplib.SMTPException as e:
         error = e.__str__()
         error_code = error.lstrip("(").split(",")[0]
