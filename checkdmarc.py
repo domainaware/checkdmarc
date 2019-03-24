@@ -2029,8 +2029,8 @@ def get_mx_hosts(domain, skip_tls=False,
     try:
         mx_records = _get_mx_hosts(domain, nameservers=nameservers,
                                    timeout=timeout)
-    except DNSException as warning:
-        warnings.append(str(warning))
+    except DNSException as error:
+        return OrderedDict([("hostnames", []), ("error", error)])
     for record in mx_records:
         hosts.append(OrderedDict([("preference", record["preference"]),
                                   ("hostname", record["hostname"].lower()),
@@ -2144,8 +2144,8 @@ def get_nameservers(domain, approved_nameservers=None,
         ns_records = _get_nameservers(domain, nameservers=nameservers,
                                       timeout=timeout)
 
-    except DNSException as warning:
-        warnings.append(str(warning))
+    except DNSException as error:
+        return OrderedDict([("hostnames", ns_records), ("error", error)])
 
     if approved_nameservers:
         approved_nameservers = list(map(lambda h: h.lower(),
@@ -2322,10 +2322,10 @@ def results_to_csv(results):
               "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
               "dmarc_rua", "dmarc_ruf", "dmarc_sp",
               "mx", "tls", "starttls", "spf_record", "dmarc_record",
-              "dmarc_record_location",
+              "dmarc_record_location", "mx_error",
               "mx_warnings", "spf_error",
               "spf_warnings", "dmarc_error", "dmarc_warnings",
-              "ns", "ns_warnings"]
+              "ns", "ns_error", "ns_warnings"]
 
     output = StringIO(newline="\n")
     writer = DictWriter(output, fieldnames=fields)
@@ -2343,7 +2343,10 @@ def results_to_csv(results):
         row["domain"] = result["domain"]
         row["base_domain"] = result["base_domain"]
         row["ns"] = "|".join(ns["hostnames"])
-        row["ns_warnings"] = "|".join(ns["warnings"])
+        if "error" in ns:
+            row["ns_error"] = ns["error"]
+        else:
+            row["ns_warnings"] = "|".join(ns["warnings"])
         row["mx"] = "|".join(list(
             map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
                 mx["hosts"])))
@@ -2378,7 +2381,10 @@ def results_to_csv(results):
         finally:
             row["starttls"] = starttls
 
-        row["mx_warnings"] = "|".join(mx["warnings"])
+        if "error" in mx:
+            row["mx_error"] = mx["error"]
+        else:
+            row["mx_warnings"] = "|".join(mx["warnings"])
         row["spf_record"] = spf["record"]
         row["spf_valid"] = spf["valid"]
         if "error" in spf:

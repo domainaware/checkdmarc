@@ -5,6 +5,8 @@ Changelog
 -----
 
 - Better DNS exception handling
+- Show errors instead of warnings when checking NS and MX records for 
+non-existent domains
 
 4.1.6
 ------
