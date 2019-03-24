@@ -2021,7 +2021,6 @@ def get_mx_hosts(domain, skip_tls=False,
                      - ``warnings`` - A ``list`` of MX resolution warnings
 
     """
-    mx_records = []
     hosts = []
     warnings = []
     hostnames = set()
@@ -2030,7 +2029,7 @@ def get_mx_hosts(domain, skip_tls=False,
         mx_records = _get_mx_hosts(domain, nameservers=nameservers,
                                    timeout=timeout)
     except DNSException as error:
-        return OrderedDict([("hostnames", []), ("error", error)])
+        return OrderedDict([("hosts", []), ("error", error)])
     for record in mx_records:
         hosts.append(OrderedDict([("preference", record["preference"]),
                                   ("hostname", record["hostname"].lower()),
@@ -2225,12 +2224,18 @@ def check_domains(domains, parked=False,
             approved_nameservers=approved_nameservers,
             nameservers=nameservers,
             timeout=timeout)
+        if "error" in domain_results["ns"]:
+            domain_results[
+                "ns"]["error"] = domain_results["ns"]["error"].__str__()
         domain_results["mx"] = get_mx_hosts(
             domain,
             skip_tls=skip_tls,
             approved_hostnames=approved_mx_hostnames,
             nameservers=nameservers,
             timeout=timeout)
+        if "error" in domain_results["mx"]:
+            domain_results[
+                "mx"]["error"] = domain_results["mx"]["error"].__str__()
         try:
             spf_query = query_spf_record(
                 domain,
