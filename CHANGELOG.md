@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.1.7
+-----
+
+- Better DNS exception handling
+
 4.1.6
 ------
 

@@ -684,7 +684,7 @@ def _get_nameservers(domain, nameservers=None, timeout=6.0):
         raise DNSException("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         pass
-    except dns.exception.DNSException as error:
+    except Exception as error:
         raise DNSException(error)
     return answers
 
@@ -722,7 +722,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
         raise DNSException("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         pass
-    except dns.exception.DNSException as error:
+    except Exception as error:
         raise DNSException(error)
     return hosts
 
@@ -755,7 +755,7 @@ def _get_a_records(domain, nameservers=None, timeout=6.0):
         except dns.resolver.NoAnswer:
             # Sometimes a domain will only have A or AAAA records, but not both
             pass
-        except dns.exception.DNSException as error:
+        except Exception as error:
             raise DNSException(error)
 
     addresses = sorted(addresses)
@@ -812,7 +812,7 @@ def _get_txt_records(domain, nameservers=None, timeout=6.0):
     except dns.resolver.NoAnswer:
         raise DNSException(
             "The domain {0} does not have any TXT records".format(domain))
-    except dns.exception.DNSException as error:
+    except Exception as error:
         raise DNSException(error)
 
     return records
@@ -872,12 +872,12 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
         except dns.resolver.NXDOMAIN:
             raise DMARCRecordNotFound(
                 "The domain {0} does not exist".format(domain))
-        except dns.exception.DNSException as error:
+        except Exception as error:
             DMARCRecordNotFound(error)
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         pass
-    except dns.exception.DNSException as error:
+    except Exception as error:
         raise DMARCRecordNotFound(error)
 
     return dmarc_record
@@ -938,12 +938,12 @@ def _query_bmi_record(domain, selector="default", nameservers=None,
         except dns.resolver.NXDOMAIN:
             raise BIMIRecordNotFound(
                 "The domain {0} does not exist".format(domain))
-        except dns.exception.DNSException as error:
+        except Exception as error:
             BIMIRecordNotFound(error)
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         pass
-    except dns.exception.DNSException as error:
+    except Exception as error:
         raise BIMIRecordNotFound(error)
 
     return bimi_record
@@ -986,7 +986,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
             if root_record.startswith("v=DMARC1"):
                 warnings.append("DMARC record at root of {0} "
                                 "has no effect".format(domain.lower()))
-    except dns.exception.DNSException:
+    except Exception:
         pass
 
     if record is None and domain != base_domain:
@@ -1039,7 +1039,7 @@ def query_bimi_record(domain, selector="default", nameservers=None,
             if root_record.startswith("v=BIMI1"):
                 warnings.append("BIMI record at root of {0} "
                                 "has no effect".format(domain.lower()))
-    except dns.exception.DNSException:
+    except Exception:
         pass
 
     if record is None and domain != base_domain and selector != "default":
@@ -1184,7 +1184,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
 
             if dmarc_record_count < 1:
                 raise UnverifiedDMARCURIDestination(message)
-        except dns.exception.DNSException:
+        except Exception:
             raise UnverifiedDMARCURIDestination(message)
 
     return True
@@ -1488,7 +1488,7 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
     try:
         spf_type_records += _query_dns(domain, "SPF", nameservers=nameservers,
                                        timeout=timeout)
-    except (dns.resolver.NoAnswer, dns.exception.DNSException):
+    except (dns.resolver.NoAnswer, Exception):
         pass
 
     if len(spf_type_records) > 0:
@@ -1524,7 +1524,7 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
                 domain, warnings_str))
     except dns.resolver.NXDOMAIN:
         raise SPFRecordNotFound("The domain {0} does not exist".format(domain))
-    except dns.exception.DNSException as error:
+    except Exception as error:
         raise SPFRecordNotFound(error)
 
     return OrderedDict([("record", spf_record), ("warnings", warnings)])
