@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.1.8
+-----
+
+- Still check STARTTLS when reverse DNS lookup fails
+- Disable STARTTLS/TLS checks when running on Windows to avoid `timeout_decorator` [Windows incompatibility](https://github.com/pnpnpn/timeout-decorator/issues/1)
+
 4.1.7
 -----
 

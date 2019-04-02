@@ -49,7 +49,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.1.6"
+__version__ = "4.1.8"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -2083,6 +2083,9 @@ def get_mx_hosts(domain, skip_tls=False,
                                     "the A/AAAA DNS records for "
                                     "{0} do not resolve to "
                                     "{1}".format(hostname, address))
+        if not skip_tls and platform.system() == "Windows":
+            logging.warning("Testing TLS is not supported on Windows")
+            skip_tls = True
         if skip_tls:
             logging.debug("Skipping TLS/SSL tests on {0}".format(
                 host["hostname"]))
