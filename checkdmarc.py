@@ -2048,42 +2048,46 @@ def get_mx_hosts(domain, skip_tls=False,
                 dupe_hostnames.add(host["hostname"])
             continue
         hostnames.add(host["hostname"])
-        try:
-            if approved_hostnames:
-                approved = False
-                for approved_hostname in approved_hostnames:
-                    if approved_hostname in host["hostname"]:
-                        approved = True
-                        break
-                if not approved:
-                    warnings.append("Unapproved MX hostname: {0}".format(
-                        host["hostname"]
-                    ))
-            host["addresses"] = _get_a_records(host["hostname"],
-                                               nameservers=nameservers,
-                                               timeout=timeout)
-            if len(host["addresses"]) == 0:
+        if approved_hostnames:
+            approved = False
+            for approved_hostname in approved_hostnames:
+                if approved_hostname in host["hostname"]:
+                    approved = True
+                    break
+            if not approved:
+                warnings.append("Unapproved MX hostname: {0}".format(
+                    host["hostname"]
+                ))
+        host["addresses"] = _get_a_records(host["hostname"],
+                                           nameservers=nameservers,
+                                           timeout=timeout)
+        if len(host["addresses"]) == 0:
+            warnings.append(
+                "{0} does not have any A or AAAA DNS records".format(
+                    host["hostname"]
+                ))
+        for address in host["addresses"]:
+            reverse_domain_hostnames = _get_reverse_dns(address)
+            if len(reverse_domain_hostnames) == 0:
                 warnings.append(
-                    "{0} does not have any A or AAAA DNS records".format(
-                        host["hostname"]
-                    ))
-            for address in host["addresses"]:
-                reverse_domain_hostnames = _get_reverse_dns(address)
-                if len(reverse_domain_hostnames) == 0:
-                    warnings.append(
-                        "{0} does not have any reverse DNS (PTR) "
-                        "records".format(address))
-                for hostname in reverse_domain_hostnames:
+                    "{0} does not have any reverse DNS (PTR) "
+                    "records".format(address))
+            for hostname in reverse_domain_hostnames:
+                try:
                     _addresses = _get_a_records(hostname)
-                    if address not in _addresses:
-                        warnings.append("The reverse DNS of {1} is {0}, but "
-                                        "the A/AAAA DNS records for "
-                                        "{0} do not resolve to "
-                                        "{1}".format(hostname, address))
-            if skip_tls:
-                logging.debug("Skipping TLS/SSL tests on {0}".format(
-                    host["hostname"]))
-            else:
+                except DNSException as warning:
+                    warnings.append(str(warning))
+                    _addresses = []
+                if address not in _addresses:
+                    warnings.append("The reverse DNS of {1} is {0}, but "
+                                    "the A/AAAA DNS records for "
+                                    "{0} do not resolve to "
+                                    "{1}".format(hostname, address))
+        if skip_tls:
+            logging.debug("Skipping TLS/SSL tests on {0}".format(
+                host["hostname"]))
+        else:
+            try:
                 starttls = test_starttls(host["hostname"],
                                          cache=STARTTLS_CACHE)
                 if starttls:
@@ -2098,19 +2102,19 @@ def get_mx_hosts(domain, skip_tls=False,
                         host["hostname"]))
                 host["tls"] = tls
                 host["starttls"] = starttls
-        except DNSException as warning:
-            warnings.append(str(warning))
-            tls = False
-            starttls = False
-            host["tls"] = tls
-            host["starttls"] = starttls
-        except SMTPError as error:
-            tls = False
-            starttls = False
-            warnings.append("{0}: {1}".format(host["hostname"], error))
+            except DNSException as warning:
+                warnings.append(str(warning))
+                tls = False
+                starttls = False
+                host["tls"] = tls
+                host["starttls"] = starttls
+            except SMTPError as error:
+                tls = False
+                starttls = False
+                warnings.append("{0}: {1}".format(host["hostname"], error))
 
-            host["tls"] = tls
-            host["starttls"] = starttls
+                host["tls"] = tls
+                host["starttls"] = starttls
 
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
