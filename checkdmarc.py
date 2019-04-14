@@ -1145,7 +1145,7 @@ def check_wildcard_dmarc_report_authorization(domain,
     Checks for a wildcard DMARC report authorization record, e.g.:
 
     ::
-        *._report.example.com IN TXT "v=DMARC1"
+      *._report.example.com IN TXT "v=DMARC1"
 
     Args:
         domain (str): The domain to check
