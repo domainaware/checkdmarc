@@ -2,7 +2,7 @@ language: python
 
 dist: xenial
 
-sudo: true
+sudo: false
 
 python:
   - '3.4'
