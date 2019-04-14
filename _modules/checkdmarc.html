@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 4.1.6 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 4.1.9 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                4.1.6
+                4.1.9
               </div>
             
           
@@ -198,7 +198,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.1.6&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.1.9&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -734,6 +734,15 @@
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">psl_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fresh_psl_file</span><span class="p">:</span>
             <span class="n">fresh_psl_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fresh_psl</span><span class="p">)</span>
 
+    <span class="n">domain</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">domain</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.test&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">domain</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span>
+            <span class="s2">&quot;.example&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">domain</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.invalid&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">domain</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span>
+           <span class="s2">&quot;.localhost&quot;</span><span class="p">):</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">::])</span>
     <span class="k">if</span> <span class="n">use_fresh_psl</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">psl_path</span><span class="p">):</span>
             <span class="n">download_psl</span><span class="p">()</span>
@@ -1278,6 +1287,55 @@
                         <span class="p">(</span><span class="s2">&quot;size_limit&quot;</span><span class="p">,</span> <span class="n">size_limit</span><span class="p">)])</span></div>
 
 
+<div class="viewcode-block" id="check_wildcard_dmarc_report_authorization"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.check_wildcard_dmarc_report_authorization">[docs]</a><span class="k">def</span> <span class="nf">check_wildcard_dmarc_report_authorization</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span>
+                                              <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                              <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks for a wildcard DMARC report authorization record, e.g.:</span>
+
+<span class="sd">    ::</span>
+<span class="sd">      *._report.example.com IN TXT &quot;v=DMARC1&quot;</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        domain (str): The domain to check</span>
+<span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        (Cloudflare&#39;s by default)</span>
+<span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: An indicator of the existence of a valid wildcard DMARC report</span>
+<span class="sd">        authorization record</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wildcard_target</span> <span class="o">=</span> <span class="s2">&quot;*._report._dmarc.</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+    <span class="n">dmarc_record_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">unrelated_records</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">wildcard_target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span>
+                             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=DMARC1&quot;</span><span class="p">):</span>
+                <span class="n">dmarc_record_count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unrelated_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unrelated_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">UnrelatedTXTRecordFoundAtDMARC</span><span class="p">(</span>
+                <span class="s2">&quot;Unrelated TXT records were discovered. &quot;</span>
+                <span class="s2">&quot;These should be removed, as some &quot;</span>
+                <span class="s2">&quot;receivers may not expect to find unrelated TXT records &quot;</span>
+                <span class="s2">&quot;at </span><span class="si">{0}</span><span class="se">\n\n</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wildcard_target</span><span class="p">,</span>
+                                       <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unrelated_records</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">dmarc_record_count</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
 <div class="viewcode-block" id="verify_dmarc_report_destination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.verify_dmarc_report_destination">[docs]</a><span class="k">def</span> <span class="nf">verify_dmarc_report_destination</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">,</span>
                                     <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">6.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1304,19 +1362,23 @@
     <span class="n">destination_domain</span> <span class="o">=</span> <span class="n">destination_domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">source_domain</span><span class="p">)</span> <span class="o">!=</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">check_wildcard_dmarc_report_authorization</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
         <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">._report._dmarc.</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span>
                                                  <span class="n">destination_domain</span><span class="p">)</span>
         <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not indicate that it accepts DMARC reports &quot;</span> \
                   <span class="s2">&quot;about </span><span class="si">{1}</span><span class="s2"> - &quot;</span> \
                   <span class="s2">&quot;Authorization record not found: &quot;</span> \
-                  <span class="s1">&#39;</span><span class="si">{2}</span><span class="s1"> IN TXT &quot;DMARC1&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
-                                               <span class="n">source_domain</span><span class="p">,</span>
-                                               <span class="n">target</span><span class="p">)</span>
+                  <span class="s1">&#39;</span><span class="si">{2}</span><span class="s1"> IN TXT &quot;v=DMARC1&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">destination_domain</span><span class="p">,</span>
+                                                 <span class="n">source_domain</span><span class="p">,</span>
+                                                 <span class="n">target</span><span class="p">)</span>
         <span class="n">dmarc_record_count</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">unrelated_records</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">records</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+            <span class="n">records</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span>
+                                 <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                                  <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
             <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=DMARC1&quot;</span><span class="p">):</span>
                     <span class="n">dmarc_record_count</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -2197,42 +2259,49 @@
                 <span class="n">dupe_hostnames</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">])</span>
             <span class="k">continue</span>
         <span class="n">hostnames</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">])</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">approved_hostnames</span><span class="p">:</span>
-                <span class="n">approved</span> <span class="o">=</span> <span class="kc">False</span>
-                <span class="k">for</span> <span class="n">approved_hostname</span> <span class="ow">in</span> <span class="n">approved_hostnames</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">approved_hostname</span> <span class="ow">in</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]:</span>
-                        <span class="n">approved</span> <span class="o">=</span> <span class="kc">True</span>
-                        <span class="k">break</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">approved</span><span class="p">:</span>
-                    <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Unapproved MX hostname: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
-                    <span class="p">))</span>
-            <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span>
-                                               <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                                               <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">approved_hostnames</span><span class="p">:</span>
+            <span class="n">approved</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">approved_hostname</span> <span class="ow">in</span> <span class="n">approved_hostnames</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">approved_hostname</span> <span class="ow">in</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]:</span>
+                    <span class="n">approved</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">approved</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Unapproved MX hostname: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
+                <span class="p">))</span>
+        <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span>
+                                           <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                                           <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have any A or AAAA DNS records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
+                <span class="p">))</span>
+        <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]:</span>
+            <span class="n">reverse_domain_hostnames</span> <span class="o">=</span> <span class="n">_get_reverse_dns</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reverse_domain_hostnames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have any A or AAAA DNS records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
-                    <span class="p">))</span>
-            <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]:</span>
-                <span class="n">reverse_domain_hostnames</span> <span class="o">=</span> <span class="n">_get_reverse_dns</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reverse_domain_hostnames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have any reverse DNS (PTR) &quot;</span>
-                        <span class="s2">&quot;records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
-                <span class="k">for</span> <span class="n">hostname</span> <span class="ow">in</span> <span class="n">reverse_domain_hostnames</span><span class="p">:</span>
+                    <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have any reverse DNS (PTR) &quot;</span>
+                    <span class="s2">&quot;records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">hostname</span> <span class="ow">in</span> <span class="n">reverse_domain_hostnames</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
                     <span class="n">_addresses</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">address</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_addresses</span><span class="p">:</span>
-                        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;The reverse DNS of </span><span class="si">{1}</span><span class="s2"> is </span><span class="si">{0}</span><span class="s2">, but &quot;</span>
-                                        <span class="s2">&quot;the A/AAAA DNS records for &quot;</span>
-                                        <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> do not resolve to &quot;</span>
-                                        <span class="s2">&quot;</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">address</span><span class="p">))</span>
-            <span class="k">if</span> <span class="n">skip_tls</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Skipping TLS/SSL tests on </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]))</span>
-            <span class="k">else</span><span class="p">:</span>
+                <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
+                    <span class="n">_addresses</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="n">address</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_addresses</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;The reverse DNS of </span><span class="si">{1}</span><span class="s2"> is </span><span class="si">{0}</span><span class="s2">, but &quot;</span>
+                                    <span class="s2">&quot;the A/AAAA DNS records for &quot;</span>
+                                    <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> do not resolve to &quot;</span>
+                                    <span class="s2">&quot;</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">address</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_tls</span> <span class="ow">and</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Windows&quot;</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Testing TLS is not supported on Windows&quot;</span><span class="p">)</span>
+            <span class="n">skip_tls</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">skip_tls</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Skipping TLS/SSL tests on </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
                 <span class="n">starttls</span> <span class="o">=</span> <span class="n">test_starttls</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span>
                                          <span class="n">cache</span><span class="o">=</span><span class="n">STARTTLS_CACHE</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">starttls</span><span class="p">:</span>
@@ -2247,19 +2316,19 @@
                         <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]))</span>
                 <span class="n">host</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
                 <span class="n">host</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
-        <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
-            <span class="n">tls</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="n">starttls</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="n">host</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
-            <span class="n">host</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
-        <span class="k">except</span> <span class="n">SMTPError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-            <span class="n">tls</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="n">starttls</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span> <span class="n">error</span><span class="p">))</span>
+            <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
+                <span class="n">tls</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">starttls</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">host</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
+                <span class="n">host</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
+            <span class="k">except</span> <span class="n">SMTPError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="n">tls</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">starttls</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span> <span class="n">error</span><span class="p">))</span>
 
-            <span class="n">host</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
-            <span class="n">host</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
+                <span class="n">host</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
+                <span class="n">host</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
 
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hosts&quot;</span><span class="p">,</span> <span class="n">hosts</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 

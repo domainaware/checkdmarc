@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 4.1.6 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 4.1.9 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                4.1.6
+                4.1.9
               </div>
             
           
@@ -383,41 +383,64 @@ that it accepts reports for the domain</p>
 <code class="descclassname">checkdmarc.</code><code class="descname">check_domains</code><span class="sig-paren">(</span><em>domains</em>, <em>parked=False</em>, <em>approved_nameservers=None</em>, <em>approved_mx_hostnames=None</em>, <em>skip_tls=False</em>, <em>include_dmarc_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em>, <em>wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the given domains for SPF and DMARC records, parse them, and return
 them</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domains</strong> (<em>list</em>) – A list of domains to check</li>
-<li><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</li>
-<li><strong>approved_nameservers</strong> (<em>list</em>) – A list of approved nameservers</li>
-<li><strong>approved_mx_hostnames</strong> (<em>list</em>) – A list of approved MX hostname</li>
-<li><strong>(</strong><strong>bool</strong> (<em>skip_tls</em>) – Skip STARTTLS testing</li>
-<li><strong>include_dmarc_tag_descriptions</strong> (<em>bool</em>) – Include descriptions of DMARC
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domains</strong> (<em>list</em>) – A list of domains to check</p></li>
+<li><p><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</p></li>
+<li><p><strong>approved_nameservers</strong> (<em>list</em>) – A list of approved nameservers</p></li>
+<li><p><strong>approved_mx_hostnames</strong> (<em>list</em>) – A list of approved MX hostname</p></li>
+<li><p><strong>(</strong><strong>bool</strong> (<em>skip_tls</em>) – Skip STARTTLS testing</p></li>
+<li><p><strong>include_dmarc_tag_descriptions</strong> (<em>bool</em>) – Include descriptions of DMARC
 tags and/or tag values in the
-results</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</li>
-<li><strong>wait</strong> (<em>float</em>) – number of seconds to wait between processing domains</li>
+results</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
+<li><p><strong>wait</strong> (<em>float</em>) – number of seconds to wait between processing domains</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> or <code class="docutils literal notranslate"><span class="pre">list</span></code> of  <cite>OrderedDict</cite> with the following keys</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> or <code class="docutils literal notranslate"><span class="pre">list</span></code> of  <cite>OrderedDict</cite> with the following keys</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">domain</span></code> - The domain name</li>
-<li><code class="docutils literal notranslate"><span class="pre">base_domain</span></code> The base domain</li>
-<li><code class="docutils literal notranslate"><span class="pre">mx</span></code> - See <a class="reference internal" href="#checkdmarc.get_mx_hosts" title="checkdmarc.get_mx_hosts"><code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.get_mx_hosts()</span></code></a></li>
-<li><code class="docutils literal notranslate"><span class="pre">spf</span></code> -  A <code class="docutils literal notranslate"><span class="pre">valid</span></code> flag, plus the output of
-<a class="reference internal" href="#checkdmarc.parse_spf_record" title="checkdmarc.parse_spf_record"><code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.parse_spf_record()</span></code></a> or an <code class="docutils literal notranslate"><span class="pre">error</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">dmarc</span></code> - A <code class="docutils literal notranslate"><span class="pre">valid</span></code> flag, plus the output of
-<a class="reference internal" href="#checkdmarc.parse_dmarc_record" title="checkdmarc.parse_dmarc_record"><code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.parse_dmarc_record()</span></code></a> or an <code class="docutils literal notranslate"><span class="pre">error</span></code></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">domain</span></code> - The domain name</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">base_domain</span></code> The base domain</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mx</span></code> - See <a class="reference internal" href="#checkdmarc.get_mx_hosts" title="checkdmarc.get_mx_hosts"><code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.get_mx_hosts()</span></code></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spf</span></code> -  A <code class="docutils literal notranslate"><span class="pre">valid</span></code> flag, plus the output of
+<a class="reference internal" href="#checkdmarc.parse_spf_record" title="checkdmarc.parse_spf_record"><code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.parse_spf_record()</span></code></a> or an <code class="docutils literal notranslate"><span class="pre">error</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dmarc</span></code> - A <code class="docutils literal notranslate"><span class="pre">valid</span></code> flag, plus the output of
+<a class="reference internal" href="#checkdmarc.parse_dmarc_record" title="checkdmarc.parse_dmarc_record"><code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.parse_dmarc_record()</span></code></a> or an <code class="docutils literal notranslate"><span class="pre">error</span></code></p></li>
 </ul>
 </p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="checkdmarc.check_wildcard_dmarc_report_authorization">
+<code class="descclassname">checkdmarc.</code><code class="descname">check_wildcard_dmarc_report_authorization</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_wildcard_dmarc_report_authorization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_wildcard_dmarc_report_authorization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks for a wildcard DMARC report authorization record, e.g.:</p>
+<dl class="simple">
+<dt>::</dt><dd><p><a href="#id1"><span class="problematic" id="id2">*</span></a>._report.example.com IN TXT “v=DMARC1”</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – The domain to check</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An indicator of the existence of a valid wildcard DMARC report
+authorization record</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -425,63 +448,55 @@ results</li>
 <code class="descclassname">checkdmarc.</code><code class="descname">get_base_domain</code><span class="sig-paren">(</span><em>domain</em>, <em>use_fresh_psl=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_base_domain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_base_domain" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the base domain name for the given domain</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Results are based on a list of public domain suffixes at
+<p class="admonition-title">Note</p>
+<p>Results are based on a list of public domain suffixes at
 <a class="reference external" href="https://publicsuffix.org/list/public_suffix_list.dat">https://publicsuffix.org/list/public_suffix_list.dat</a>.</p>
 </div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domain</strong> (<em>str</em>) – A domain or subdomain</li>
-<li><strong>use_fresh_psl</strong> (<em>bool</em>) – Download a fresh Public Suffix List</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain or subdomain</p></li>
+<li><p><strong>use_fresh_psl</strong> (<em>bool</em>) – Download a fresh Public Suffix List</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The base domain of the given domain</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">str</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The base domain of the given domain</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.get_dmarc_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">get_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>include_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves a DMARC record for a domain and parses it</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>include_tag_descriptions</strong> (<em>bool</em>) – Include descriptions in parsed results</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
+<li><p><strong>include_tag_descriptions</strong> (<em>bool</em>) – Include descriptions in parsed results</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">record</span></code> - The DMARC record string</li>
-<li><code class="docutils literal notranslate"><span class="pre">location</span></code> -  Where the DMARC was found</li>
-<li><code class="docutils literal notranslate"><span class="pre">parsed</span></code> - See <a class="reference internal" href="#checkdmarc.parse_dmarc_record" title="checkdmarc.parse_dmarc_record"><code class="xref py py-meth docutils literal notranslate"><span class="pre">checkdmarc.parse_dmarc_record()</span></code></a></li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - The DMARC record string</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">location</span></code> -  Where the DMARC was found</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">parsed</span></code> - See <a class="reference internal" href="#checkdmarc.parse_dmarc_record" title="checkdmarc.parse_dmarc_record"><code class="xref py py-meth docutils literal notranslate"><span class="pre">checkdmarc.parse_dmarc_record()</span></code></a></p></li>
 </ul>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p>OrderedDict</p>
-<dl class="docutils">
-<dt>Raises:</dt>
-<dd><p class="first last"><a class="reference internal" href="#checkdmarc.DMARCRecordNotFound" title="checkdmarc.DMARCRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCRecordNotFound</span></code></a>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><p>OrderedDict</p>
+<dl class="simple">
+<dt>Raises:</dt><dd><p><a class="reference internal" href="#checkdmarc.DMARCRecordNotFound" title="checkdmarc.DMARCRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCRecordNotFound</span></code></a>
 <a class="reference internal" href="#checkdmarc.DMARCRecordInWrongLocation" title="checkdmarc.DMARCRecordInWrongLocation"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCRecordInWrongLocation</span></code></a>
 <a class="reference internal" href="#checkdmarc.MultipleDMARCRecords" title="checkdmarc.MultipleDMARCRecords"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.MultipleDMARCRecords</span></code></a>
 <a class="reference internal" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe" title="checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe</span></code></a>
@@ -496,10 +511,8 @@ results</li>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -507,221 +520,195 @@ results</li>
 <code class="descclassname">checkdmarc.</code><code class="descname">get_dmarc_tag_description</code><span class="sig-paren">(</span><em>tag</em>, <em>value=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_tag_description"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_tag_description" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the name, default value, and description for a DMARC tag, amd/or a
 description for a tag value</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>tag</strong> (<em>str</em>) – A DMARC tag</li>
-<li><strong>value</strong> (<em>str</em>) – An optional value</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tag</strong> (<em>str</em>) – A DMARC tag</p></li>
+<li><p><strong>value</strong> (<em>str</em>) – An optional value</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">name</span></code> - the tag name</li>
-<li><code class="docutils literal notranslate"><span class="pre">default</span></code>- the tag’s default value</li>
-<li><code class="docutils literal notranslate"><span class="pre">description</span></code> - A description of the tag or value</li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code> - the tag name</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">default</span></code>- the tag’s default value</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code> - A description of the tag or value</p></li>
 </ul>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">OrderedDict</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.get_mx_hosts">
 <code class="descclassname">checkdmarc.</code><code class="descname">get_mx_hosts</code><span class="sig-paren">(</span><em>domain</em>, <em>skip_tls=False</em>, <em>approved_hostnames=None</em>, <em>parked=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets MX hostname and their addresses</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>skip_tls</strong> (<em>bool</em>) – Skip STARTTLS testing</li>
-<li><strong>approved_hostnames</strong> (<em>list</em>) – A list of approved MX hostname substrings</li>
-<li><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
+<li><p><strong>skip_tls</strong> (<em>bool</em>) – Skip STARTTLS testing</p></li>
+<li><p><strong>approved_hostnames</strong> (<em>list</em>) – A list of approved MX hostname substrings</p></li>
+<li><p><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">hosts</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with keys of<ul>
-<li><code class="docutils literal notranslate"><span class="pre">hostname</span></code> - A hostname</li>
-<li><code class="docutils literal notranslate"><span class="pre">addresses</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of IP addresses</li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">hosts</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with keys of</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">hostname</span></code> - A hostname</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">addresses</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of IP addresses</p></li>
 </ul>
 </li>
-<li><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of MX resolution warnings</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of MX resolution warnings</p></li>
 </ul>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">OrderedDict</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.get_nameservers">
 <code class="descclassname">checkdmarc.</code><code class="descname">get_nameservers</code><span class="sig-paren">(</span><em>domain</em>, <em>approved_nameservers=None</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_nameservers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_nameservers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets a list of nameservers for a given domain</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>approved_nameservers</strong> (<em>list</em>) – A list of approved nameserver substrings</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to qu+ery</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
+<li><p><strong>approved_nameservers</strong> (<em>list</em>) – A list of approved nameserver substrings</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to qu+ery</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>A dictionary with the following keys:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">hostnames</span></code> - A list of nameserver hostnames</li>
-<li><code class="docutils literal notranslate"><span class="pre">warnings</span></code>  - A list of warnings</li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A dictionary with the following keys:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">hostnames</span></code> - A list of nameserver hostnames</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code>  - A list of warnings</p></li>
 </ul>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Dict</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.get_spf_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">get_spf_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves and parses an SPF record</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – Number of seconds to wait for an answer from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – Number of seconds to wait for an answer from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An SPF record parsed by result</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">OrderedDict</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><a class="reference internal" href="#checkdmarc.SPFRecordNotFound" title="checkdmarc.SPFRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFRecordNotFound</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.SPFIncludeLoop" title="checkdmarc.SPFIncludeLoop"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFIncludeLoop</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.SPFRedirectLoop" title="checkdmarc.SPFRedirectLoop"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFRedirectLoop</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.SPFSyntaxError" title="checkdmarc.SPFSyntaxError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFSyntaxError</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.SPFTooManyDNSLookups" title="checkdmarc.SPFTooManyDNSLookups"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFTooManyDNSLookups</span></code></a></li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An SPF record parsed by result</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#checkdmarc.SPFRecordNotFound" title="checkdmarc.SPFRecordNotFound"><strong>checkdmarc.SPFRecordNotFound</strong></a> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.SPFIncludeLoop" title="checkdmarc.SPFIncludeLoop"><strong>checkdmarc.SPFIncludeLoop</strong></a> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.SPFRedirectLoop" title="checkdmarc.SPFRedirectLoop"><strong>checkdmarc.SPFRedirectLoop</strong></a> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.SPFSyntaxError" title="checkdmarc.SPFSyntaxError"><strong>checkdmarc.SPFSyntaxError</strong></a> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.SPFTooManyDNSLookups" title="checkdmarc.SPFTooManyDNSLookups"><strong>checkdmarc.SPFTooManyDNSLookups</strong></a> – </p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.output_to_file">
 <code class="descclassname">checkdmarc.</code><code class="descname">output_to_file</code><span class="sig-paren">(</span><em>path</em>, <em>content</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#output_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.output_to_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write given content to the given path</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>path</strong> (<em>str</em>) – A file path</li>
-<li><strong>content</strong> (<em>str</em>) – JSON or CSV text</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – A file path</p></li>
+<li><p><strong>content</strong> (<em>str</em>) – JSON or CSV text</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.parse_dmarc_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">parse_dmarc_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>parked=False</em>, <em>include_tag_descriptions=False</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a DMARC record</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>record</strong> (<em>str</em>) – A DMARC record</li>
-<li><strong>domain</strong> (<em>str</em>) – The domain where the record is found</li>
-<li><strong>parked</strong> (<em>bool</em>) – Indicates if a domain is parked</li>
-<li><strong>include_tag_descriptions</strong> (<em>bool</em>) – Include descriptions in parsed results</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>record</strong> (<em>str</em>) – A DMARC record</p></li>
+<li><p><strong>domain</strong> (<em>str</em>) – The domain where the record is found</p></li>
+<li><p><strong>parked</strong> (<em>bool</em>) – Indicates if a domain is parked</p></li>
+<li><p><strong>include_tag_descriptions</strong> (<em>bool</em>) – Include descriptions in parsed results</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt>
-<dd><ul class="first simple">
-<li><code class="docutils literal notranslate"><span class="pre">tags</span></code> - An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> of DMARC tags<ul>
-<li><code class="docutils literal notranslate"><span class="pre">value</span></code> - The DMARC tag value</li>
-<li><code class="docutils literal notranslate"><span class="pre">explicit</span></code> - <code class="docutils literal notranslate"><span class="pre">bool</span></code>: A value is explicitly set</li>
-<li><code class="docutils literal notranslate"><span class="pre">default</span></code> - The tag’s default value</li>
-<li><code class="docutils literal notranslate"><span class="pre">description</span></code> - A description of the tag/value</li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl>
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tags</span></code> - An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> of DMARC tags</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">value</span></code> - The DMARC tag value</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">explicit</span></code> - <code class="docutils literal notranslate"><span class="pre">bool</span></code>: A value is explicitly set</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">default</span></code> - The tag’s default value</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code> - A description of the tag/value</p></li>
 </ul>
 </li>
-<li><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of warnings</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of warnings</p></li>
 </ul>
-<div class="last admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last"><code class="docutils literal notranslate"><span class="pre">default</span></code> and <code class="docutils literal notranslate"><span class="pre">description</span></code> are only included if
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">default</span></code> and <code class="docutils literal notranslate"><span class="pre">description</span></code> are only included if
 <code class="docutils literal notranslate"><span class="pre">include_tag_descriptions</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
 </div>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">OrderedDict</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCSyntaxError</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.InvalidDMARCTag" title="checkdmarc.InvalidDMARCTag"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.InvalidDMARCTag</span></code></a></li>
-<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.InvaliddDMARCTagValue</span></code></li>
-<li><a class="reference internal" href="#checkdmarc.InvalidDMARCReportURI" title="checkdmarc.InvalidDMARCReportURI"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.InvalidDMARCReportURI</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination" title="checkdmarc.UnverifiedDMARCURIDestination"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnverifiedDMARCURIDestination</span></code></a></li>
-<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFound</span></code></li>
-<li><a class="reference internal" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="checkdmarc.DMARCReportEmailAddressMissingMXRecords"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCReportEmailAddressMissingMXRecords</span></code></a></li>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><strong>checkdmarc.DMARCSyntaxError</strong></a> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.InvalidDMARCTag" title="checkdmarc.InvalidDMARCTag"><strong>checkdmarc.InvalidDMARCTag</strong></a> – </p></li>
+<li><p><strong>checkdmarc.InvaliddDMARCTagValue</strong> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.InvalidDMARCReportURI" title="checkdmarc.InvalidDMARCReportURI"><strong>checkdmarc.InvalidDMARCReportURI</strong></a> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination" title="checkdmarc.UnverifiedDMARCURIDestination"><strong>checkdmarc.UnverifiedDMARCURIDestination</strong></a> – </p></li>
+<li><p><strong>checkdmarc.UnrelatedTXTRecordFound</strong> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="checkdmarc.DMARCReportEmailAddressMissingMXRecords"><strong>checkdmarc.DMARCReportEmailAddressMissingMXRecords</strong></a> – </p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -729,32 +716,31 @@ description for a tag value</p>
 <code class="descclassname">checkdmarc.</code><code class="descname">parse_dmarc_report_uri</code><span class="sig-paren">(</span><em>uri</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_report_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_report_uri" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a DMARC Reporting (i.e. <code class="docutils literal notranslate"><span class="pre">rua</span></code>/<code class="docutils literal notranslate"><span class="pre">ruf</span></code>) URI</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last"><code class="docutils literal notranslate"><span class="pre">mailto</span></code> is the only reporting URI scheme supported in DMARC1</p>
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">mailto</span></code> is the only reporting URI scheme supported in DMARC1</p>
 </div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>uri</strong> – A DMARC URI</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> of the URI’s components:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">scheme</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">address</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">size_limit</span></code></li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>uri</strong> – A DMARC URI</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> of the URI’s components:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">scheme</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">address</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">size_limit</span></code></p></li>
 </ul>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">OrderedDict</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference internal" href="#checkdmarc.InvalidDMARCReportURI" title="checkdmarc.InvalidDMARCReportURI"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.InvalidDMARCReportURI</span></code></a></td>
-</tr>
-</tbody>
-</table>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference internal" href="#checkdmarc.InvalidDMARCReportURI" title="checkdmarc.InvalidDMARCReportURI"><strong>checkdmarc.InvalidDMARCReportURI</strong></a> – </p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -762,257 +748,225 @@ description for a tag value</p>
 <code class="descclassname">checkdmarc.</code><code class="descname">parse_spf_record</code><span class="sig-paren">(</span><em>record</em>, <em>domain</em>, <em>parked=False</em>, <em>seen=None</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a SPF record, including resolving <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">mx</span></code>, and <code class="docutils literal notranslate"><span class="pre">include</span></code>
 mechanisms</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>record</strong> (<em>str</em>) – An SPF record</li>
-<li><strong>domain</strong> (<em>str</em>) – The domain that the SPF record came from</li>
-<li><strong>parked</strong> (<em>bool</em>) – indicated if a domain has been parked</li>
-<li><strong>seen</strong> (<em>list</em>) – A list of domains seen in past loops</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>record</strong> (<em>str</em>) – An SPF record</p></li>
+<li><p><strong>domain</strong> (<em>str</em>) – The domain that the SPF record came from</p></li>
+<li><p><strong>parked</strong> (<em>bool</em>) – indicated if a domain has been parked</p></li>
+<li><p><strong>seen</strong> (<em>list</em>) – A list of domains seen in past loops</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">dns_lookups</span></code> - Number of DNS lookups required by the record</li>
-<li><code class="docutils literal notranslate"><span class="pre">parsed</span></code> - An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> of a parsed SPF record values</li>
-<li><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of warnings</li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dns_lookups</span></code> - Number of DNS lookups required by the record</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">parsed</span></code> - An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> of a parsed SPF record values</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of warnings</p></li>
 </ul>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">OrderedDict</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><a class="reference internal" href="#checkdmarc.SPFIncludeLoop" title="checkdmarc.SPFIncludeLoop"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFIncludeLoop</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.SPFRedirectLoop" title="checkdmarc.SPFRedirectLoop"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFRedirectLoop</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.SPFSyntaxError" title="checkdmarc.SPFSyntaxError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFSyntaxError</span></code></a></li>
-<li><a class="reference internal" href="#checkdmarc.SPFTooManyDNSLookups" title="checkdmarc.SPFTooManyDNSLookups"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFTooManyDNSLookups</span></code></a></li>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#checkdmarc.SPFIncludeLoop" title="checkdmarc.SPFIncludeLoop"><strong>checkdmarc.SPFIncludeLoop</strong></a> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.SPFRedirectLoop" title="checkdmarc.SPFRedirectLoop"><strong>checkdmarc.SPFRedirectLoop</strong></a> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.SPFSyntaxError" title="checkdmarc.SPFSyntaxError"><strong>checkdmarc.SPFSyntaxError</strong></a> – </p></li>
+<li><p><a class="reference internal" href="#checkdmarc.SPFTooManyDNSLookups" title="checkdmarc.SPFTooManyDNSLookups"><strong>checkdmarc.SPFTooManyDNSLookups</strong></a> – </p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.query_bimi_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">query_bimi_record</code><span class="sig-paren">(</span><em>domain</em>, <em>selector='default'</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_bimi_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_bimi_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a BIMI record</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>selector</strong> (<em>str</em>) – The BMI selector</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
+<li><p><strong>selector</strong> (<em>str</em>) – The BMI selector</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">record</span></code> - the unparsed DMARC record string</li>
-<li><code class="docutils literal notranslate"><span class="pre">location</span></code> - the domain where the record was found</li>
-<li><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - warning conditions found</li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - the unparsed DMARC record string</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">location</span></code> - the domain where the record was found</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - warning conditions found</p></li>
 </ul>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p>OrderedDict</p>
-<dl class="docutils">
-<dt>Raises:</dt>
-<dd><p class="first last"><a class="reference internal" href="#checkdmarc.BIMIRecordNotFound" title="checkdmarc.BIMIRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.BIMIRecordNotFound</span></code></a>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><p>OrderedDict</p>
+<dl class="simple">
+<dt>Raises:</dt><dd><p><a class="reference internal" href="#checkdmarc.BIMIRecordNotFound" title="checkdmarc.BIMIRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.BIMIRecordNotFound</span></code></a>
 <a class="reference internal" href="#checkdmarc.BIMIRecordInWrongLocation" title="checkdmarc.BIMIRecordInWrongLocation"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.BIMIRecordInWrongLocation</span></code></a>
 <a class="reference internal" href="#checkdmarc.MultipleBIMIRecords" title="checkdmarc.MultipleBIMIRecords"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.MultipleBIMIRecords</span></code></a></p>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.query_dmarc_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">query_dmarc_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a DMARC record</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">record</span></code> - the unparsed DMARC record string</li>
-<li><code class="docutils literal notranslate"><span class="pre">location</span></code> - the domain where the record was found</li>
-<li><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - warning conditions found</li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - the unparsed DMARC record string</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">location</span></code> - the domain where the record was found</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - warning conditions found</p></li>
 </ul>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p>OrderedDict</p>
-<dl class="docutils">
-<dt>Raises:</dt>
-<dd><p class="first last"><a class="reference internal" href="#checkdmarc.DMARCRecordNotFound" title="checkdmarc.DMARCRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCRecordNotFound</span></code></a>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><p>OrderedDict</p>
+<dl class="simple">
+<dt>Raises:</dt><dd><p><a class="reference internal" href="#checkdmarc.DMARCRecordNotFound" title="checkdmarc.DMARCRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCRecordNotFound</span></code></a>
 <a class="reference internal" href="#checkdmarc.DMARCRecordInWrongLocation" title="checkdmarc.DMARCRecordInWrongLocation"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCRecordInWrongLocation</span></code></a>
 <a class="reference internal" href="#checkdmarc.MultipleDMARCRecords" title="checkdmarc.MultipleDMARCRecords"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.MultipleDMARCRecords</span></code></a>
 <a class="reference internal" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe" title="checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe</span></code></a></p>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.query_spf_record">
 <code class="descclassname">checkdmarc.</code><code class="descname">query_spf_record</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a SPF record</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>domain</strong> (<em>str</em>) – A domain name</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">record</span></code> - The SPF record string</li>
-<li><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of warnings</li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - The SPF record string</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of warnings</p></li>
 </ul>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">OrderedDict</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#checkdmarc.SPFRecordNotFound" title="checkdmarc.SPFRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.SPFRecordNotFound</span></code></a></p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference internal" href="#checkdmarc.SPFRecordNotFound" title="checkdmarc.SPFRecordNotFound"><strong>checkdmarc.SPFRecordNotFound</strong></a> – </p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.results_to_csv">
 <code class="descclassname">checkdmarc.</code><code class="descname">results_to_csv</code><span class="sig-paren">(</span><em>results</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.results_to_csv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts a dictionary of results to a CSV string</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>results</strong> (<em>dict</em>) – A dictionary of results</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Results in CSV format</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>results</strong> (<em>dict</em>) – A dictionary of results</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Results in CSV format</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.results_to_json">
 <code class="descclassname">checkdmarc.</code><code class="descname">results_to_json</code><span class="sig-paren">(</span><em>results</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.results_to_json" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts a dictionary of results to a JSON string</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>results</strong> (<em>dict</em>) – A dictionary of results</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Results in JSON format</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>results</strong> (<em>dict</em>) – A dictionary of results</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Results in JSON format</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.test_starttls">
 <code class="descclassname">checkdmarc.</code><code class="descname">test_starttls</code><span class="sig-paren">(</span><em>hostname</em>, <em>ssl_context=None</em>, <em>cache=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_starttls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_starttls" title="Permalink to this definition">¶</a></dt>
 <dd><p>Attempt to connect to a SMTP server and validate STARTTLS support</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>hostname</strong> (<em>str</em>) – The hostname</li>
-<li><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</li>
-<li><strong>ssl_context</strong> – A SSL context</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hostname</strong> (<em>str</em>) – The hostname</p></li>
+<li><p><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</p></li>
+<li><p><strong>ssl_context</strong> – A SSL context</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">STARTTLS supported</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">bool</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>STARTTLS supported</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="checkdmarc.test_tls">
 <code class="descclassname">checkdmarc.</code><code class="descname">test_tls</code><span class="sig-paren">(</span><em>hostname</em>, <em>ssl_context=None</em>, <em>cache=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_tls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_tls" title="Permalink to this definition">¶</a></dt>
 <dd><p>Attempt to connect to a SMTP server port 465 and validate TLS/SSL support</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>hostname</strong> (<em>str</em>) – The hostname</li>
-<li><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</li>
-<li><strong>ssl_context</strong> – A SSL context</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hostname</strong> (<em>str</em>) – The hostname</p></li>
+<li><p><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</p></li>
+<li><p><strong>ssl_context</strong> – A SSL context</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">TLS supported</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">bool</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>TLS supported</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -1020,34 +974,30 @@ mechanisms</p>
 <code class="descclassname">checkdmarc.</code><code class="descname">verify_dmarc_report_destination</code><span class="sig-paren">(</span><em>source_domain</em>, <em>destination_domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#verify_dmarc_report_destination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.verify_dmarc_report_destination" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the report destination accepts reports for the source domain
 per RFC 7489, section 7.1</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>source_domain</strong> (<em>str</em>) – The source domain</li>
-<li><strong>destination_domain</strong> (<em>str</em>) – The destination domain</li>
-<li><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</li>
-<li><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </li>
-<li><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source_domain</strong> (<em>str</em>) – The source domain</p></li>
+<li><p><strong>destination_domain</strong> (<em>str</em>) – The destination domain</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>by default</strong><strong>)</strong> (<em>(</em><em>Cloudflare's</em>) – </p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Indicates if the report domain accepts reports from the given
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Indicates if the report domain accepts reports from the given
 domain</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">bool</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination" title="checkdmarc.UnverifiedDMARCURIDestination"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnverifiedDMARCURIDestination</span></code></a></li>
-<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFound</span></code></li>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination" title="checkdmarc.UnverifiedDMARCURIDestination"><strong>checkdmarc.UnverifiedDMARCURIDestination</strong></a> – </p></li>
+<li><p><strong>checkdmarc.UnrelatedTXTRecordFound</strong> – </p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
