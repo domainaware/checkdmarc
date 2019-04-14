@@ -589,11 +589,11 @@ def get_base_domain(domain, use_fresh_psl=False):
     if domain.endswith(".test") or domain.endswith(
             ".example") or domain.endswith(".invalid") or domain.endswith(
            ".localhost"):
-            parts = domain.strip(".").split(".")
-            if len(parts) == 1:
-                return parts[0]
-            else:
-                return ".".join(parts[-2::])
+        parts = domain.strip(".").split(".")
+        if len(parts) == 1:
+            return parts[0]
+        else:
+            return ".".join(parts[-2::])
     if use_fresh_psl:
         if not os.path.exists(psl_path):
             download_psl()
