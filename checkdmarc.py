@@ -1142,7 +1142,7 @@ def check_wildcard_dmarc_report_authorization(domain,
                                               nameservers=None,
                                               timeout=6.0):
     """
-    Checks for a wildcard DMARC report authorization record, e.g.:
+    Checks for a wildcard DMARC report authorization record, e.g.
     *._report.example.com IN TXT "v=DMARC1"
 
     Args:
