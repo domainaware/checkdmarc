@@ -49,7 +49,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.1.8"
+__version__ = "4.1.9"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -585,6 +585,15 @@ def get_base_domain(domain, use_fresh_psl=False):
         with open(psl_path, "w", encoding="utf-8") as fresh_psl_file:
             fresh_psl_file.write(fresh_psl)
 
+    domain = domain.lower()
+    if domain.endswith(".test") or domain.endswith(
+            ".example") or domain.endswith(".invalid") or domain.endswith(
+           ".localhost"):
+            parts = domain.strip(".").split(".")
+            if len(parts) == 1:
+                return parts[0]
+            else:
+                return ".".join(parts[-2::])
     if use_fresh_psl:
         if not os.path.exists(psl_path):
             download_psl()
@@ -1129,6 +1138,53 @@ def parse_dmarc_report_uri(uri):
                         ("size_limit", size_limit)])
 
 
+def check_wildcard_dmarc_report_authorization(domain,
+                                              nameservers=None,
+                                              timeout=6.0):
+    """
+    Checks for a wildcard DMARC report authorization record, e.g.:
+    *._report.example.com IN TXT "v=DMARC1"
+
+    Args:
+        domain (str): The domain to check
+        nameservers (list): A list of nameservers to query
+        (Cloudflare's by default)
+        timeout(float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        bool: An indicator of the existence of a valid wildcard DMARC report
+        authorization record
+    """
+    wildcard_target = "*._report._dmarc.{0}".format(domain)
+    dmarc_record_count = 0
+    unrelated_records = []
+    try:
+        records = _query_dns(wildcard_target, "TXT",
+                             nameservers=nameservers,
+                             timeout=timeout)
+
+        for record in records:
+            if record.startswith("v=DMARC1"):
+                dmarc_record_count += 1
+            else:
+                unrelated_records.append(record)
+
+        if len(unrelated_records) > 0:
+            raise UnrelatedTXTRecordFoundAtDMARC(
+                "Unrelated TXT records were discovered. "
+                "These should be removed, as some "
+                "receivers may not expect to find unrelated TXT records "
+                "at {0}\n\n{1}".format(wildcard_target,
+                                       "\n\n".join(unrelated_records)))
+
+        if dmarc_record_count < 1:
+            return False
+    except Exception:
+        return False
+
+    return True
+
+
 def verify_dmarc_report_destination(source_domain, destination_domain,
                                     nameservers=None, timeout=6.0):
     """
@@ -1155,19 +1211,23 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
     destination_domain = destination_domain.lower()
 
     if get_base_domain(source_domain) != get_base_domain(destination_domain):
+        if check_wildcard_dmarc_report_authorization(destination_domain):
+            return True
         target = "{0}._report._dmarc.{1}".format(source_domain,
                                                  destination_domain)
         message = "{0} does not indicate that it accepts DMARC reports " \
                   "about {1} - " \
                   "Authorization record not found: " \
-                  '{2} IN TXT "DMARC1"'.format(destination_domain,
-                                               source_domain,
-                                               target)
+                  '{2} IN TXT "v=DMARC1"'.format(destination_domain,
+                                                 source_domain,
+                                                 target)
         dmarc_record_count = 0
         unrelated_records = []
         try:
-            records = _query_dns(target, "TXT", nameservers=nameservers,
+            records = _query_dns(target, "TXT",
+                                 nameservers=nameservers,
                                  timeout=timeout)
+
             for record in records:
                 if record.startswith("v=DMARC1"):
                     dmarc_record_count += 1

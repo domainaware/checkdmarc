@@ -1,6 +1,13 @@
 Changelog
 =========
 
+4.1.9
+-----
+
+- Fix typo in DMARC authorization record warning (#38)
+- Add support for validating wildcard DMARC report authorization records
+- Support reserved TLDs in `get_base_domain()` (#39)
+
 4.1.8
 -----
 
