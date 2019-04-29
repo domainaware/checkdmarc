@@ -6,7 +6,7 @@
 Welcome to checkdmarc's documentation!
 ======================================
 
-|Build Status|
+|Build Status| |Code Coverage| |PyPI Package|
 
 ``checkdmarc`` is a Python module and command line parser for SPF and DMARC DNS records
 
@@ -257,6 +257,12 @@ Indices and tables
 
 .. |Build Status| image:: https://travis-ci.org/domainaware/checkdmarc.svg?branch=master
    :target: https://travis-ci.org/domainaware/checkdmarc
+
+.. |Code Coverage| image:: https://codecov.io/gh/domainaware/checkdmarc/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/domainaware/parsedmarc
+
+..  |PyPI Package| image:: https://img.shields.io/pypi/v/checkdmarc.svg
+    :target: https://pypi.org/project/checkdmarc/
 
 .. _Cloudflare's public resolvers: https://1.1.1.1/
 
