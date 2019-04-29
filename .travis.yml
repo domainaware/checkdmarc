@@ -25,3 +25,6 @@ script:
   - "python tests.py"
   - "python setup.py sdist"
   - "python setup.py bdist_wheel"
+
+after_success:
+  - "codecov"

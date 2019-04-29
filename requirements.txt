@@ -1,3 +1,16 @@
+nose
+flake8
+doc8
+jinja2
+packaging
+imagesize
+alabaster
+babel
+rstcheck>=3.3.1
+sphinx
+sphinx_rtd_theme
+wheel
+codecov
 dnspython
 expiringdict
 pyleri
@@ -9,5 +22,3 @@ sphinx_rtd_theme
 collective.checkdocs
 flake8
 wheel
-nose
-rstcheck>=3.3.1
