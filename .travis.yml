@@ -23,6 +23,7 @@ script:
   - "make html"
   - "cd .."
   - "python tests.py"
+  - "coverage run tests.py"
   - "python setup.py sdist"
   - "python setup.py bdist_wheel"
 
