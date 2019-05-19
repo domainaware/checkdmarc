@@ -37,7 +37,7 @@ class Test(unittest.TestCase):
     def testUppercaseSPFMechanism(self):
         """Treat uppercase SPF"SPF mechanisms as valid"""
         spf_record = "v=spf1 IP4:147.75.8.208 -ALL"
-        domain ="example.no"
+        domain = "example.no"
 
         results = checkdmarc.parse_spf_record(spf_record, domain)
 
