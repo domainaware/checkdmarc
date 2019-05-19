@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 4.1.9 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 4.1.10 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                4.1.9
+                4.1.10
               </div>
             
           
@@ -154,7 +154,7 @@
 
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span> <span class="nn">re</span> <span class="k">import</span> <span class="nb">compile</span>
+<span class="kn">from</span> <span class="nn">re</span> <span class="k">import</span> <span class="nb">compile</span><span class="p">,</span> <span class="n">IGNORECASE</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">from</span> <span class="nn">csv</span> <span class="k">import</span> <span class="n">DictWriter</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="k">import</span> <span class="n">ArgumentParser</span>
@@ -198,7 +198,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.1.9&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.1.10&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -215,7 +215,7 @@
 <span class="n">DMARC_TAG_VALUE_REGEX</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">DMARC_TAG_VALUE_REGEX_STRING</span><span class="p">)</span>
 <span class="n">BIMI_TAG_VALUE_REGEX</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">BIMI_TAG_VALUE_REGEX_STRING</span><span class="p">)</span>
 <span class="n">MAILTO_REGEX</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">MAILTO_REGEX_STRING</span><span class="p">)</span>
-<span class="n">SPF_MECHANISM_REGEX</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">SPF_MECHANISM_REGEX_STRING</span><span class="p">)</span>
+<span class="n">SPF_MECHANISM_REGEX</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">SPF_MECHANISM_REGEX_STRING</span><span class="p">,</span> <span class="n">IGNORECASE</span><span class="p">)</span>
 <span class="n">IPV4_REGEX</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">IPV4_REGEX_STRING</span><span class="p">)</span>
 
 <span class="n">USER_AGENT</span> <span class="o">=</span> <span class="s2">&quot;Mozilla/5.0 ((0 </span><span class="si">{1}</span><span class="s2">)) parsedmarc/</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -439,7 +439,7 @@
 <span class="k">class</span> <span class="nc">_SPFGrammar</span><span class="p">(</span><span class="n">Grammar</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Defines Pyleri grammar for SPF records&quot;&quot;&quot;</span>
     <span class="n">version_tag</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">SPF_VERSION_TAG_REGEX_STRING</span><span class="p">)</span>
-    <span class="n">mechanism</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">SPF_MECHANISM_REGEX_STRING</span><span class="p">)</span>
+    <span class="n">mechanism</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">SPF_MECHANISM_REGEX_STRING</span><span class="p">,</span> <span class="n">IGNORECASE</span><span class="p">)</span>
     <span class="n">START</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">(</span><span class="n">version_tag</span><span class="p">,</span> <span class="n">Repeat</span><span class="p">(</span><span class="n">mechanism</span><span class="p">))</span>
 
 
@@ -1294,6 +1294,7 @@
 <span class="sd">    Checks for a wildcard DMARC report authorization record, e.g.:</span>
 
 <span class="sd">    ::</span>
+
 <span class="sd">      *._report.example.com IN TXT &quot;v=DMARC1&quot;</span>
 
 <span class="sd">    Args:</span>
@@ -1803,7 +1804,7 @@
 
     <span class="n">lookup_mechanism_count</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
-        <span class="n">mechanism</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">mechanism</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">mechanism</span> <span class="ow">in</span> <span class="n">lookup_mechanisms</span><span class="p">:</span>
             <span class="n">lookup_mechanism_count</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="k">if</span> <span class="n">lookup_mechanism_count</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
@@ -2254,7 +2255,7 @@
         <span class="k">if</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">hostnames</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dupe_hostnames</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="s2">&quot;Hostname </span><span class="si">{0}</span><span class="s2"> is listed multiple MX records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="s2">&quot;Hostname </span><span class="si">{0}</span><span class="s2"> is listed in multiple MX records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                         <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]))</span>
                 <span class="n">dupe_hostnames</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">])</span>
             <span class="k">continue</span>
@@ -2269,14 +2270,25 @@
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Unapproved MX hostname: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                     <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
                 <span class="p">))</span>
-        <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span>
-                                           <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                                           <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have any A or AAAA DNS records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
-                <span class="p">))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span>
+                                               <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                                               <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have any A or AAAA DNS records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
+                    <span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.msv1.invalid&quot;</span><span class="p">):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">. Consider using s TXT record to validate &quot;</span>
+                                <span class="s2">&quot;domain ownership in Office 365 instead.&quot;</span>
+                                <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
+
         <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]:</span>
             <span class="n">reverse_domain_hostnames</span> <span class="o">=</span> <span class="n">_get_reverse_dns</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reverse_domain_hostnames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>

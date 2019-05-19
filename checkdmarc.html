@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 4.1.9 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 4.1.10 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                4.1.9
+                4.1.10
               </div>
             
           
@@ -420,10 +420,9 @@ results</p></li>
 <dt id="checkdmarc.check_wildcard_dmarc_report_authorization">
 <code class="descclassname">checkdmarc.</code><code class="descname">check_wildcard_dmarc_report_authorization</code><span class="sig-paren">(</span><em>domain</em>, <em>nameservers=None</em>, <em>timeout=6.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_wildcard_dmarc_report_authorization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_wildcard_dmarc_report_authorization" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks for a wildcard DMARC report authorization record, e.g.:</p>
-<dl class="simple">
-<dt>::</dt><dd><p><a href="#id1"><span class="problematic" id="id2">*</span></a>._report.example.com IN TXT “v=DMARC1”</p>
-</dd>
-</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*.</span><span class="n">_report</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span> <span class="n">IN</span> <span class="n">TXT</span> <span class="s2">&quot;v=DMARC1&quot;</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
