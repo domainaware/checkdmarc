@@ -1,6 +1,15 @@
 Changelog
 =========
 
+4.1.10
+------
+
+- Make SPF mechanisms and modifiers case insensitive, in compliance with 
+  RFC 7208, sections 4.6.1 and 12 (#42)
+- Raise a warning instead of an error when a MX hostname does not exist
+- Raise a specific warning when a Office 365 MX domain validation record is 
+  detected
+
 4.1.9
 -----
 
@@ -19,10 +28,10 @@ Changelog
 
 - Better DNS exception handling
 - Show errors instead of warnings when checking NS and MX records for 
-non-existent domains
+  non-existent domains
 
 4.1.6
-------
+-----
 
 - Fix TLS/STARTTLS failure output
 
@@ -83,7 +92,7 @@ non-existent domains
 -----
 
 - Save `public_suffix_list.dat` to a temporary folder instead of the current 
-working directory (CWD)
+  working directory (CWD)
 - Emulate a brouser HTTP `User-Agent` sting when downloading 
 `public_suffix_list.dat`
 - Add requirement `requests`

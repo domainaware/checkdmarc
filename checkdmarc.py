@@ -5,7 +5,7 @@
 
 import logging
 from collections import OrderedDict
-from re import compile
+from re import compile, IGNORECASE
 import json
 from csv import DictWriter
 from argparse import ArgumentParser
@@ -49,7 +49,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.1.9"
+__version__ = "4.1.10"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -66,7 +66,7 @@ IPV4_REGEX_STRING = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
 DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING)
 BIMI_TAG_VALUE_REGEX = compile(BIMI_TAG_VALUE_REGEX_STRING)
 MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
-SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING)
+SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING, IGNORECASE)
 IPV4_REGEX = compile(IPV4_REGEX_STRING)
 
 USER_AGENT = "Mozilla/5.0 ((0 {1})) parsedmarc/{2}".format(
@@ -290,7 +290,7 @@ class MultipleBIMIRecords(BIMIError):
 class _SPFGrammar(Grammar):
     """Defines Pyleri grammar for SPF records"""
     version_tag = Regex(SPF_VERSION_TAG_REGEX_STRING)
-    mechanism = Regex(SPF_MECHANISM_REGEX_STRING)
+    mechanism = Regex(SPF_MECHANISM_REGEX_STRING, IGNORECASE)
     START = Sequence(version_tag, Repeat(mechanism))
 
 
@@ -1654,7 +1654,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
 
     lookup_mechanism_count = 0
     for match in matches:
-        mechanism = match[1]
+        mechanism = match[1].lower()
         if mechanism in lookup_mechanisms:
             lookup_mechanism_count += 1
     if lookup_mechanism_count > 10:
@@ -2105,7 +2105,7 @@ def get_mx_hosts(domain, skip_tls=False,
         if host["hostname"] in hostnames:
             if host["hostname"] not in dupe_hostnames:
                 warnings.append(
-                    "Hostname {0} is listed multiple MX records".format(
+                    "Hostname {0} is listed in multiple MX records".format(
                         host["hostname"]))
                 dupe_hostnames.add(host["hostname"])
             continue
@@ -2120,14 +2120,25 @@ def get_mx_hosts(domain, skip_tls=False,
                 warnings.append("Unapproved MX hostname: {0}".format(
                     host["hostname"]
                 ))
-        host["addresses"] = _get_a_records(host["hostname"],
-                                           nameservers=nameservers,
-                                           timeout=timeout)
-        if len(host["addresses"]) == 0:
-            warnings.append(
-                "{0} does not have any A or AAAA DNS records".format(
-                    host["hostname"]
-                ))
+
+        try:
+            host["addresses"] = []
+            host["addresses"] = _get_a_records(host["hostname"],
+                                               nameservers=nameservers,
+                                               timeout=timeout)
+            if len(host["addresses"]) == 0:
+                warnings.append(
+                    "{0} does not have any A or AAAA DNS records".format(
+                        host["hostname"]
+                    ))
+        except Exception as e:
+            if host["hostname"].lower().endswith(".msv1.invalid"):
+                warnings.append("{0}. Consider using s TXT record to validate "
+                                "domain ownership in Office 365 instead."
+                                "".format(e.__str__()))
+            else:
+                warnings.append(e.__str__())
+
         for address in host["addresses"]:
             reverse_domain_hostnames = _get_reverse_dns(address)
             if len(reverse_domain_hostnames) == 0:

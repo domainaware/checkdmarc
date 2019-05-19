@@ -34,6 +34,15 @@ class Test(unittest.TestCase):
                              "Known good domain {0} failed DMARC check:"
                              "\n\n{1}".format(result["domain"], dmarc_error))
 
+    def testUppercaseSPFMechanism(self):
+        """Treat uppercase SPF"SPF mechanisms as valid"""
+        spf_record = "v=spf1 IP4:147.75.8.208 -ALL"
+        domain ="example.no"
+
+        results = checkdmarc.parse_spf_record(spf_record, domain)
+
+        self.assertEqual(len(results["warnings"]), 0)
+
     def testSplitSPFRecord(self):
         """Split SPF records are parsed properly"""
 
