@@ -245,6 +245,8 @@ Module documentation
    :maxdepth: 2
    :caption: Contents:
 
+.. include::  modules.rst
+
 .. automodule:: checkdmarc
 
 Indices and tables
