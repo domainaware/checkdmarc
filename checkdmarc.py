@@ -49,7 +49,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.1.10"
+__version__ = "4.2.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -62,12 +62,14 @@ SPF_VERSION_TAG_REGEX_STRING = "v=spf1"
 SPF_MECHANISM_REGEX_STRING = r"([+\-~?])?(mx|ip4|ip6|exists|include|all|a|" \
                              r"redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)"
 IPV4_REGEX_STRING = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
+AFTER_ALL_REGEX_STRING = "all .*"
 
 DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING)
 BIMI_TAG_VALUE_REGEX = compile(BIMI_TAG_VALUE_REGEX_STRING)
 MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING, IGNORECASE)
 IPV4_REGEX = compile(IPV4_REGEX_STRING)
+AFTER_ALL_REGEX = compile(AFTER_ALL_REGEX_STRING, IGNORECASE)
 
 USER_AGENT = "Mozilla/5.0 ((0 {1})) parsedmarc/{2}".format(
             platform.system(),
@@ -614,7 +616,7 @@ def get_base_domain(domain, use_fresh_psl=False):
         return publicsuffix2.get_public_suffix(domain)
 
 
-def _query_dns(domain, record_type, nameservers=None, timeout=6.0,
+def _query_dns(domain, record_type, nameservers=None, timeout=2.0,
                cache=None):
     """
     Queries DNS
@@ -652,7 +654,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=6.0,
     if record_type == "TXT":
         resource_records = list(map(
             lambda r: r.strings,
-            resolver.query(domain, record_type, tcp=True)))
+            resolver.query(domain, record_type, lifetime=timeout)))
         _resource_record = [
             resource_record[0][:0].join(resource_record)
             for resource_record in resource_records if resource_record]
@@ -660,16 +662,16 @@ def _query_dns(domain, record_type, nameservers=None, timeout=6.0,
     else:
         records = list(map(
             lambda r: r.to_text().replace('"', '').rstrip("."),
-            resolver.query(domain, record_type, tcp=True)))
+            resolver.query(domain, record_type, lifetime=timeout)))
     if cache:
         cache[cache_key] = records
 
     return records
 
 
-def _get_nameservers(domain, nameservers=None, timeout=6.0):
+def _get_nameservers(domain, nameservers=None, timeout=2.0):
     """
-    Queries DNS for a list ofnameservers
+    Queries DNS for a list of nameservers
 
     Args:
         domain (str): A domain name
@@ -698,7 +700,7 @@ def _get_nameservers(domain, nameservers=None, timeout=6.0):
     return answers
 
 
-def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
+def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for a list of Mail Exchange hosts
 
@@ -736,7 +738,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=6.0):
     return hosts
 
 
-def _get_a_records(domain, nameservers=None, timeout=6.0):
+def _get_a_records(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for A and AAAA records
 
@@ -796,7 +798,7 @@ def _get_reverse_dns(ip_address):
     return hostnames
 
 
-def _get_txt_records(domain, nameservers=None, timeout=6.0):
+def _get_txt_records(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for TXT records
 
@@ -827,7 +829,7 @@ def _get_txt_records(domain, nameservers=None, timeout=6.0):
     return records
 
 
-def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
+def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for a DMARC record
 
@@ -893,7 +895,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=6.0):
 
 
 def _query_bmi_record(domain, selector="default", nameservers=None,
-                      timeout=6.0):
+                      timeout=2.0):
     """
     Queries DNS for a BIMI record
 
@@ -958,7 +960,7 @@ def _query_bmi_record(domain, selector="default", nameservers=None,
     return bimi_record
 
 
-def query_dmarc_record(domain, nameservers=None, timeout=6.0):
+def query_dmarc_record(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for a DMARC record
 
@@ -1011,7 +1013,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=6.0):
 
 
 def query_bimi_record(domain, selector="default", nameservers=None,
-                      timeout=6.0):
+                      timeout=2.0):
     """
     Queries DNS for a BIMI record
 
@@ -1140,7 +1142,7 @@ def parse_dmarc_report_uri(uri):
 
 def check_wildcard_dmarc_report_authorization(domain,
                                               nameservers=None,
-                                              timeout=6.0):
+                                              timeout=2.0):
     """
     Checks for a wildcard DMARC report authorization record, e.g.:
 
@@ -1189,7 +1191,7 @@ def check_wildcard_dmarc_report_authorization(domain,
 
 
 def verify_dmarc_report_destination(source_domain, destination_domain,
-                                    nameservers=None, timeout=6.0):
+                                    nameservers=None, timeout=2.0):
     """
       Checks if the report destination accepts reports for the source domain
       per RFC 7489, section 7.1
@@ -1255,7 +1257,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
 
 def parse_dmarc_record(record, domain, parked=False,
                        include_tag_descriptions=False,
-                       nameservers=None, timeout=6.0):
+                       nameservers=None, timeout=2.0):
     """
     Parses a DMARC record
 
@@ -1480,7 +1482,7 @@ def parse_dmarc_record(record, domain, parked=False,
 
 
 def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
-                     timeout=6.0):
+                     timeout=2.0):
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -1526,7 +1528,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
                         ("parsed", tags)])
 
 
-def query_spf_record(domain, nameservers=None, timeout=6.0):
+def query_spf_record(domain, nameservers=None, timeout=2.0):
     """
     Queries DNS for a SPF record
 
@@ -1594,7 +1596,7 @@ def query_spf_record(domain, nameservers=None, timeout=6.0):
 
 
 def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
-                     timeout=6.0):
+                     timeout=2.0):
     """
     Parses a SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
@@ -1632,6 +1634,9 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
         if record != correct_record:
             warnings.append("The SPF record for parked domains should be: "
                             "{0} not: {1}".format(correct_record, record))
+    if len(AFTER_ALL_REGEX.findall(record)) > 0:
+        warnings.append("Any text after the all mechanism is ignored")
+        record = AFTER_ALL_REGEX.sub("all", record)
     parsed_record = spf_syntax_checker.parse(record)
     if not parsed_record.is_valid:
         pos = parsed_record.pos
@@ -1798,7 +1803,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
          ("warnings", warnings)])
 
 
-def get_spf_record(domain, nameservers=None, timeout=6.0):
+def get_spf_record(domain, nameservers=None, timeout=2.0):
     """
     Retrieves and parses an SPF record
 
@@ -2061,7 +2066,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
 
 def get_mx_hosts(domain, skip_tls=False,
                  approved_hostnames=None, parked=False,
-                 nameservers=None, timeout=6.0):
+                 nameservers=None, timeout=2.0):
     """
     Gets MX hostname and their addresses
 
@@ -2197,7 +2202,7 @@ def get_mx_hosts(domain, skip_tls=False,
 
 
 def get_nameservers(domain, approved_nameservers=None,
-                    nameservers=None, timeout=6.0):
+                    nameservers=None, timeout=2.0):
     """
     Gets a list of nameservers for a given domain
 
@@ -2237,12 +2242,45 @@ def get_nameservers(domain, approved_nameservers=None,
     return OrderedDict([("hostnames", ns_records), ("warnings", warnings)])
 
 
+def test_dnssec(domain, nameservers=None, timeout=2.0):
+    """
+    Check for DNSSEC on the given domain
+
+    Args:
+        domain (str): The domain to check
+        nameservers (list): A list of nameservers to query
+        timeout (float): Timeout in seconds
+
+    Returns:
+        bool: DNSSEC status
+    """
+    if nameservers is None:
+        nameservers = ["1.1.1.1", "1.0.0.1",
+                       "2606:4700:4700::1111", "2606:4700:4700::1001",
+                       ]
+    request = dns.message.make_query(get_base_domain(domain),
+                                     dns.rdatatype.NS,
+                                     want_dnssec=True)
+    for nameserver in nameservers:
+        try:
+            response = dns.query.udp(request, nameserver, timeout=timeout)
+            if response is not None:
+                for record in response.answer:
+                    if record.rdtype == dns.rdatatype.RRSIG:
+                        if response.flags & dns.flags.AD:
+                            return True
+        except Exception as e:
+            logging.debug("DNSSEC query error: {0}".format(e))
+
+    return False
+
+
 def check_domains(domains, parked=False,
                   approved_nameservers=None,
                   approved_mx_hostnames=None,
                   skip_tls=False,
                   include_dmarc_tag_descriptions=False,
-                  nameservers=None, timeout=6.0, wait=0.0):
+                  nameservers=None, timeout=2.0, wait=0.0):
     """
     Check the given domains for SPF and DMARC records, parse them, and return
     them
@@ -2289,9 +2327,12 @@ def check_domains(domains, parked=False,
         logging.debug("Checking: {0}".format(domain))
         domain_results = OrderedDict(
             [("domain", domain), ("base_domain", get_base_domain(domain)),
-             ("ns", []), ("mx", [])])
+             ("dnssec", None), ("ns", []), ("mx", [])])
         domain_results["spf"] = OrderedDict(
             [("record", None), ("valid", True), ("dns_lookups", None)])
+        domain_results["dnssec"] = test_dnssec(domain,
+                                               nameservers=nameservers,
+                                               timeout=timeout)
         try:
             domain_results["ns"] = get_nameservers(
                 domain,
@@ -2387,29 +2428,17 @@ def results_to_json(results):
     return json.dumps(results, ensure_ascii=False, indent=2)
 
 
-def results_to_csv(results):
+def results_to_csv_rows(results):
     """
-    Converts a dictionary of results to a CSV string
+    Converts a dictionary of results list of CSV row dicts
 
     Args:
         results (dict): A dictionary of results
 
     Returns:
-        str: Results in CSV format
+        list: A list of CSV row dicts
     """
-    fields = ["domain", "base_domain", "spf_valid", "dmarc_valid",
-              "dmarc_adkim", "dmarc_aspf",
-              "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
-              "dmarc_rua", "dmarc_ruf", "dmarc_sp",
-              "mx", "tls", "starttls", "spf_record", "dmarc_record",
-              "dmarc_record_location", "mx_error",
-              "mx_warnings", "spf_error",
-              "spf_warnings", "dmarc_error", "dmarc_warnings",
-              "ns", "ns_error", "ns_warnings"]
-
-    output = StringIO(newline="\n")
-    writer = DictWriter(output, fieldnames=fields)
-    writer.writeheader()
+    rows = []
 
     if type(results) == OrderedDict:
         results = [results]
@@ -2422,6 +2451,7 @@ def results_to_csv(results):
         dmarc = result["dmarc"]
         row["domain"] = result["domain"]
         row["base_domain"] = result["base_domain"]
+        row["dnssec"] = result["dnssec"]
         row["ns"] = "|".join(ns["hostnames"])
         if "error" in ns:
             row["ns_error"] = ns["error"]
@@ -2496,8 +2526,36 @@ def results_to_csv(results):
                 addresses = list(map(lambda u: u["address"], addresses))
                 row["dmarc_ruf"] = "|".join(addresses)
             row["dmarc_warnings"] = "|".join(dmarc["warnings"])
-        writer.writerow(row)
+        rows.append(row)
+    return rows
+
+
+def results_to_csv(results):
+    """
+    Converts a dictionary of results to CSV
+
+    Args:
+        results (dict): A dictionary of results
+
+    Returns:
+        str: A CSV of results
+    """
+    fields = ["domain", "base_domain", "dnssec", "spf_valid", "dmarc_valid",
+              "dmarc_adkim", "dmarc_aspf",
+              "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
+              "dmarc_rua", "dmarc_ruf", "dmarc_sp",
+              "mx", "tls", "starttls", "spf_record", "dmarc_record",
+              "dmarc_record_location", "mx_error",
+              "mx_warnings", "spf_error",
+              "spf_warnings", "dmarc_error", "dmarc_warnings",
+              "ns", "ns_error", "ns_warnings"]
+    output = StringIO(newline="\n")
+    writer = DictWriter(output, fieldnames=fields)
+    writer.writeheader()
+    rows = results_to_csv_rows(results)
+    writer.writerows(rows)
     output.flush()
+
     return output.getvalue()
 
 
@@ -2541,9 +2599,9 @@ def _main():
                                  "(Default is Cloudflare's")
     arg_parser.add_argument("-t", "--timeout",
                             help="number of seconds to wait for an answer "
-                                 "from DNS (default 6.0)",
+                                 "from DNS (default 2.0)",
                             type=float,
-                            default=6.0)
+                            default=2.0)
     arg_parser.add_argument("-v", "--version", action="version",
                             version=__version__)
     arg_parser.add_argument("-w", "--wait", type=float,

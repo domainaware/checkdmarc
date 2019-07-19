@@ -52,6 +52,18 @@ class Test(unittest.TestCase):
 
         self.assertEqual(parsed_record["parsed"]["all"], "fail")
 
+    def testJunkAfterAll(self):
+        """Ignore any mechanisms after the all mechanism, but warn about it"""
+        rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"
+        domain = "avd.dk"
+
+        parsed_record = checkdmarc.parse_spf_record(rec, domain)
+        self.assertEqual(len(parsed_record["warnings"]), 1)
+
+    def TestDNSSEC(self):
+        """Test known good DNSSEC"""
+        self.assertEqual(checkdmarc.test_dnssec("whalensolutions.com"), True)
+
     def testIncludeMissingSPF(self):
         """SPF records that include domains that are missing SPF records
         raise SPFRecordNotFound"""
@@ -109,10 +121,10 @@ class Test(unittest.TestCase):
         """A warning is issued if a SPF record contains a mx mechanism
         pointing to a domain that has no MX records"""
 
-        spf_record = '"v=spf1 mx a mx:mail.hhj.no ~all"'
-        domain = "pario.no"
+        spf_record = '"v=spf1 mx ~all"'
+        domain = "seanthegeek.net"
         results = checkdmarc.parse_spf_record(spf_record, domain)
-        self.assertIn("mail.hhj.no does not have any MX records",
+        self.assertIn("{0} does not have any MX records".format(domain),
                       results["warnings"])
 
     def testSPFMissingARecord(self):

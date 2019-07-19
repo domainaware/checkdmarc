@@ -1,6 +1,15 @@
 Changelog
 =========
 
+4.2.0
+------
+
+- Add test for DNSSEC (closes issue #44)
+- Ignore SPF record content after the `all` mechanism (closes issue #45)
+- Use UDP instead of TCP for DNS queries
+- Reduce default DNS timeout from `6.0` seconds to `2.0` seconds
+- Require `dnspython>=1.16.0`
+
 4.1.10
 ------
 
