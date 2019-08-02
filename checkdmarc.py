@@ -35,7 +35,7 @@ from pyleri import (Grammar,
                     Repeat
                     )
 
-"""Copyright 2017 Sean Whalen
+"""Copyright 2019 Sean Whalen
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.2.0"
+__version__ = "4.2.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -2139,7 +2139,7 @@ def get_mx_hosts(domain, skip_tls=False,
                     ))
         except Exception as e:
             if host["hostname"].lower().endswith(".msv1.invalid"):
-                warnings.append("{0}. Consider using s TXT record to validate "
+                warnings.append("{0}. Consider using a TXT record to validate "
                                 "domain ownership in Office 365 instead."
                                 "".format(e.__str__()))
             else:

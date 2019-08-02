@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.2.1
+-----
+
+- Fix typo in Office 365 MX record verification warning
+
 4.2.0
 ------
 
