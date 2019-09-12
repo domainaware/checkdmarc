@@ -93,7 +93,7 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['dnspython>=1.16.0', 'expiringdict>=1.1.4',
                       'pyleri>=1.3.2', 'publicsuffix2>=1.1.0',
-                      'requests=>2.22.0',
+                      'requests>=2.22.0',
                       'timeout-decorator>=0.4.1'],
 
     entry_points={
