@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.2.2
+-----
+
+- Fix warning introduced in newer versions of `publicsuffix2` (closes issue #46)
+- Set minimum dependancy requirements (closes issue #47)
+
 4.2.1
 -----
 

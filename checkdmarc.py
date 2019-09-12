@@ -49,7 +49,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.2.1"
+__version__ = "4.2.2"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -613,7 +613,7 @@ def get_base_domain(domain, use_fresh_psl=False):
 
         return psl.get_public_suffix(domain)
     else:
-        return publicsuffix2.get_public_suffix(domain)
+        return publicsuffix2.get_sld(domain)
 
 
 def _query_dns(domain, record_type, nameservers=None, timeout=2.0,
