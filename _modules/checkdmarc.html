@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc &mdash; checkdmarc 4.2.1 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 4.2.2 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                4.2.1
+                4.2.2
               </div>
             
           
@@ -198,7 +198,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.2.1&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.2.2&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -762,7 +762,7 @@
 
         <span class="k">return</span> <span class="n">psl</span><span class="o">.</span><span class="n">get_public_suffix</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">publicsuffix2</span><span class="o">.</span><span class="n">get_public_suffix</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">publicsuffix2</span><span class="o">.</span><span class="n">get_sld</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span></div>
 
 
 <span class="k">def</span> <span class="nf">_query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
