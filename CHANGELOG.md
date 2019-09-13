@@ -1,6 +1,10 @@
 Changelog
 =========
 
+4.2.3
+-----
+- Fix Python 3.4 support
+
 4.2.2
 -----
 
