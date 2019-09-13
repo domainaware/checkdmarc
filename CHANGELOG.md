@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.2.4
+-----
+
+- Fix `publicsuffix2` minimum version
+
 4.2.3
 -----
 - Fix Python 3.4 support
