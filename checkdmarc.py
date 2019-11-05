@@ -1834,7 +1834,8 @@ def get_spf_record(domain, nameservers=None, timeout=2.0):
 
 
 @timeout_decorator.timeout(5, timeout_exception=SMTPError,
-                           exception_message="Connection timed out")
+                           exception_message="Connection timed out",
+                           use_signals=False)
 def test_tls(hostname, ssl_context=None, cache=None):
     """
     Attempt to connect to a SMTP server port 465 and validate TLS/SSL support
@@ -1949,7 +1950,8 @@ def test_tls(hostname, ssl_context=None, cache=None):
 
 
 @timeout_decorator.timeout(5, timeout_exception=SMTPError,
-                           exception_message="Connection timed out")
+                           exception_message="Connection timed out",
+                           use_signals=False)
 def test_starttls(hostname, ssl_context=None, cache=None):
     """
     Attempt to connect to a SMTP server and validate STARTTLS support
