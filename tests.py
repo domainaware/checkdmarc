@@ -86,6 +86,7 @@ class Test(unittest.TestCase):
                      "include:spf.constantcontact.com " \
                      "include:_spf.elasticemail.com " \
                      "include:servers.mcsv.net " \
+                     "include:_spf.google.com " \
                      "~all"
         domain = "example.com"
         self.assertRaises(checkdmarc.SPFTooManyDNSLookups,
