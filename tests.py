@@ -60,7 +60,7 @@ class Test(unittest.TestCase):
         parsed_record = checkdmarc.parse_spf_record(rec, domain)
         self.assertEqual(len(parsed_record["warnings"]), 1)
 
-    def TestDNSSEC(self):
+    def testDNSSEC(self):
         """Test known good DNSSEC"""
         self.assertEqual(checkdmarc.test_dnssec("whalensolutions.com"), True)
 
@@ -101,11 +101,32 @@ class Test(unittest.TestCase):
         self.assertRaises(checkdmarc.SPFSyntaxError,
                           checkdmarc.parse_spf_record, spf_record, domain)
 
-    def TestSPFInvalidIPv4(self):
+    def testSPFInvalidIPv4(self):
         """Invalid ipv4 SPF mechanism values raise SPFSyntaxError"""
         spf_record = "v=spf1 ip4:78.46.96.236 +a +mx +ip4:138.201.239.158 " \
                      "+ip4:78.46.224.83 " \
                      "+ip4:relay.mailchannels.net +ip4:138.201.60.20 ~all"
+        domain = "surftown.dk"
+        self.assertRaises(checkdmarc.SPFSyntaxError,
+                          checkdmarc.parse_spf_record, spf_record, domain)
+
+    def testSPFInvalidIPv4Range(self):
+        """Invalid ipv4 SPF mechanism values raise SPFSyntaxError"""
+        spf_record = "v=spf1 ip4:78.46.96.236/99 ~all"
+        domain = "surftown.dk"
+        self.assertRaises(checkdmarc.SPFSyntaxError,
+                          checkdmarc.parse_spf_record, spf_record, domain)
+
+    def testSPFInvalidIPv6(self):
+        """Invalid ipv6 SPF mechanism values raise SPFSyntaxError"""
+        spf_record = "v=spf1 ip6:1200:0000:AB00:1234:O000:2552:7777:1313 ~all"
+        domain = "surftown.dk"
+        self.assertRaises(checkdmarc.SPFSyntaxError,
+                          checkdmarc.parse_spf_record, spf_record, domain)
+
+    def testSPFInvalidIPv6Range(self):
+        """Invalid ipv6 SPF mechanism values raise SPFSyntaxError"""
+        spf_record = "v=spf1 ip6:1200:0000:AB00:1234:0000:2552:7777:1313/99 ~all"
         domain = "surftown.dk"
         self.assertRaises(checkdmarc.SPFSyntaxError,
                           checkdmarc.parse_spf_record, spf_record, domain)

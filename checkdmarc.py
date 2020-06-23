@@ -34,6 +34,7 @@ from pyleri import (Grammar,
                     List,
                     Repeat
                     )
+import ipaddress
 
 """Copyright 2019 Sean Whalen
 
@@ -61,14 +62,12 @@ MAILTO_REGEX_STRING = r"^(mailto):" \
 SPF_VERSION_TAG_REGEX_STRING = "v=spf1"
 SPF_MECHANISM_REGEX_STRING = r"([+\-~?])?(mx|ip4|ip6|exists|include|all|a|" \
                              r"redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)"
-IPV4_REGEX_STRING = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$"
 AFTER_ALL_REGEX_STRING = "all .*"
 
 DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING)
 BIMI_TAG_VALUE_REGEX = compile(BIMI_TAG_VALUE_REGEX_STRING)
 MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING, IGNORECASE)
-IPV4_REGEX = compile(IPV4_REGEX_STRING)
 AFTER_ALL_REGEX = compile(AFTER_ALL_REGEX_STRING, IGNORECASE)
 
 USER_AGENT = "Mozilla/5.0 ((0 {1})) parsedmarc/{2}".format(
@@ -1676,15 +1675,12 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
         value = match[2]
 
         try:
-            if mechanism == "ip4":
-                if len(IPV4_REGEX.findall(value)) == 0:
-                    raise SPFSyntaxError("{0} is not a valid ipv4 "
+            if mechanism in ["ip4", "ip6"]:
+                try:
+                    ipaddress.ip_network(value)
+                except ValueError:
+                    raise SPFSyntaxError("{0} is not a valid ipv4/ipv6 "
                                          "value".format(value))
-                for octet in value.split("."):
-                    octet = int(octet.split("/")[0])
-                    if octet > 255:
-                        raise SPFSyntaxError("{0} is not a valid ipv4 "
-                                             "value".format(value))
 
             if mechanism == "a":
                 if value == "":
