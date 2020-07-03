@@ -1678,7 +1678,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
         try:
             if mechanism in ["ip4", "ip6"]:
                 try:
-                    ipaddress.ip_network(value)
+                    ipaddress.ip_network(value, strict=False)
                 except ValueError:
                     raise SPFSyntaxError("{0} is not a valid ipv4/ipv6 "
                                          "value".format(value))
