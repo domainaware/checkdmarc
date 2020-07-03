@@ -50,7 +50,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.3.1"
+__version__ = "4.3.0"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1678,7 +1678,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
         try:
             if mechanism in ["ip4", "ip6"]:
                 try:
-                    ipaddress.ip_network(value, strict=False)
+                    ipaddress.ip_network(value)
                 except ValueError:
                     raise SPFSyntaxError("{0} is not a valid ipv4/ipv6 "
                                          "value".format(value))
