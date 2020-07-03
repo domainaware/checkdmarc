@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.3.0
+-----
+
+- Include `nameservers` in call to `check_wildcard_dmarc_report_authorization` (PR #51)
+- Fix `ipv4` validation and add `ipv6` validation (PR #52)
+
 4.2.4
 -----
 
