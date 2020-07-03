@@ -20,7 +20,7 @@ class Test(unittest.TestCase):
             for mx in result["mx"]["hosts"]:
                 self.assertEqual(
                     mx["starttls"], True,
-                    "MX host of known good domain {0} failed STARTTLS check:"
+                    "Host of known good domain {0} failed STARTTLS check: {1}"
                     "\n\n{0}".format(result["domain"], mx["hostname"])
                 )
             if "error" in result["spf"]:
@@ -29,7 +29,7 @@ class Test(unittest.TestCase):
                 dmarc_error = result["dmarc"]["error"]
             self.assertEqual(result["spf"]["valid"], True,
                              "Known good domain {0} failed SPF check:"
-                             "\n\n{0}".format(result["domain"], spf_error))
+                             "\n\n{1}".format(result["domain"], spf_error))
             self.assertEqual(result["dmarc"]["valid"], True,
                              "Known good domain {0} failed DMARC check:"
                              "\n\n{1}".format(result["domain"], dmarc_error))
@@ -126,10 +126,10 @@ class Test(unittest.TestCase):
 
     def testSPFInvalidIPv6Range(self):
         """Invalid ipv6 SPF mechanism values raise SPFSyntaxError"""
-        spf_record = "v=spf1 ip6:1200:0000:AB00:1234:0000:2552:7777:1313/99 ~all"
+        record = "v=spf1 ip6:1200:0000:AB00:1234:0000:2552:7777:1313/99 ~all"
         domain = "surftown.dk"
         self.assertRaises(checkdmarc.SPFSyntaxError,
-                          checkdmarc.parse_spf_record, spf_record, domain)
+                          checkdmarc.parse_spf_record, record, domain)
 
     def testSPFIncludeLoop(self):
         """SPF record with include loop raises SPFIncludeLoop"""

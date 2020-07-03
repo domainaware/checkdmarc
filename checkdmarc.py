@@ -70,7 +70,7 @@ MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING, IGNORECASE)
 AFTER_ALL_REGEX = compile(AFTER_ALL_REGEX_STRING, IGNORECASE)
 
-USER_AGENT = "Mozilla/5.0 ((0 {1})) parsedmarc/{2}".format(
+USER_AGENT = "Mozilla/5.0 (({0} {1})) parsedmarc/{2}".format(
             platform.system(),
             platform.release(),
             __version__
