@@ -1218,7 +1218,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
     if get_base_domain(source_domain) != get_base_domain(destination_domain):
         if check_wildcard_dmarc_report_authorization(destination_domain,
                                                      nameservers=nameservers):
-          return True
+            return True
         target = "{0}._report._dmarc.{1}".format(source_domain,
                                                  destination_domain)
         message = "{0} does not indicate that it accepts DMARC reports " \
