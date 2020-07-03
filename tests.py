@@ -126,10 +126,10 @@ class Test(unittest.TestCase):
 
     def testSPFInvalidIPv6Range(self):
         """Invalid ipv6 SPF mechanism values raise SPFSyntaxError"""
-        spf_record = "v=spf1 ip6:1200:0000:AB00:1234:0000:2552:7777:1313/130 ~all"
+        record = "v=spf1 ip6:1200:0000:AB00:1234:0000:2552:7777:1313/130 ~all"
         domain = "surftown.dk"
         self.assertRaises(checkdmarc.SPFSyntaxError,
-                          checkdmarc.parse_spf_record, spf_record, domain)
+                          checkdmarc.parse_spf_record, record, domain)
 
     def testSPFIncludeLoop(self):
         """SPF record with include loop raises SPFIncludeLoop"""
