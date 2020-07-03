@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.3.1
+-----
+
+- Loosen IP address checks (PR # 53) 
+
 4.3.0
 -----
 
