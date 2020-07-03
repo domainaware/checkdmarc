@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.3.1
+-----
+
+- Fix IP address parsing
+
 4.3.0
 -----
 
