@@ -1215,7 +1215,8 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
     destination_domain = destination_domain.lower()
 
     if get_base_domain(source_domain) != get_base_domain(destination_domain):
-        if check_wildcard_dmarc_report_authorization(destination_domain):
+        if check_wildcard_dmarc_report_authorization(destination_domain,
+                                                     nameservers=nameservers):
             return True
         target = "{0}._report._dmarc.{1}".format(source_domain,
                                                  destination_domain)
