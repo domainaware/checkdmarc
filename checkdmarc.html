@@ -1,38 +1,39 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>checkdmarc module &mdash; checkdmarc 4.2.4 documentation</title>
+  <title>checkdmarc module &mdash; checkdmarc 4.3.0 documentation</title>
   
-
-  
-  
-  
-  
-
-  
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
 
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html" /> 
@@ -49,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> checkdmarc
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> checkdmarc
           
 
           
@@ -59,7 +60,7 @@
             
             
               <div class="version">
-                4.2.4
+                4.3.0
               </div>
             
           
@@ -76,6 +77,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -90,6 +92,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -128,7 +131,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>checkdmarc module</li>
     
@@ -152,165 +155,165 @@
   <div class="section" id="module-checkdmarc">
 <span id="checkdmarc-module"></span><h1>checkdmarc module<a class="headerlink" href="#module-checkdmarc" title="Permalink to this headline">¶</a></h1>
 <p>Validates and parses SPF amd DMARC DNS records</p>
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.BIMIError">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">BIMIError</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMIError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">BIMIError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMIError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raised when a fatal BIMI error occurs</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.BIMIRecordInWrongLocation">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">BIMIRecordInWrongLocation</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordInWrongLocation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMIRecordInWrongLocation" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">BIMIRecordInWrongLocation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordInWrongLocation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMIRecordInWrongLocation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
 <p>Raised when a BIMI record is found at the root of a domain</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.BIMIRecordNotFound">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">BIMIRecordNotFound</code><span class="sig-paren">(</span><em class="sig-param">error</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMIRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">BIMIRecordNotFound</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">error</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMIRecordNotFound" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
 <p>Raised when a BIMI record could not be found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.BIMISyntaxError">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">BIMISyntaxError</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMISyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMISyntaxError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">BIMISyntaxError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMISyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.BIMISyntaxError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
 <p>Raised when a BIMI syntax error is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.DMARCError">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCError</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raised when a fatal DMARC error occurs</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.DMARCRecordInWrongLocation">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCRecordInWrongLocation</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordInWrongLocation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordInWrongLocation" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCRecordInWrongLocation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordInWrongLocation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordInWrongLocation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a DMARC record is found at the root of a domain</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.DMARCRecordNotFound">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCRecordNotFound</code><span class="sig-paren">(</span><em class="sig-param">error</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCRecordNotFound</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">error</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCRecordNotFound" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a DMARC record could not be found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.DMARCReportEmailAddressMissingMXRecords">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCReportEmailAddressMissingMXRecords</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCReportEmailAddressMissingMXRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCReportEmailAddressMissingMXRecords</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCReportEmailAddressMissingMXRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a email address in a DMARC report URI is missing MX
 records</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.DMARCSyntaxError">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCSyntaxError</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCSyntaxError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DMARCSyntaxError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DMARCSyntaxError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a DMARC syntax error is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.DNSException">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DNSException</code><span class="sig-paren">(</span><em class="sig-param">error</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DNSException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DNSException" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">DNSException</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">error</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DNSException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.DNSException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raised when a general DNS error occurs</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.InvalidBIMIIndicatorURI">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidBIMIIndicatorURI</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMIIndicatorURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidBIMIIndicatorURI" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidBIMIIndicatorURI</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMIIndicatorURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidBIMIIndicatorURI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.InvalidBIMITagValue" title="checkdmarc.InvalidBIMITagValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.InvalidBIMITagValue</span></code></a></p>
 <p>Raised when an invalid BIMI indicator URI is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.InvalidBIMITag">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidBIMITag</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITag" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidBIMITag</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITag" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMISyntaxError" title="checkdmarc.BIMISyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMISyntaxError</span></code></a></p>
 <p>Raised when an invalid BIMI tag is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.InvalidBIMITagValue">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidBIMITagValue</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITagValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITagValue" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidBIMITagValue</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITagValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITagValue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMISyntaxError" title="checkdmarc.BIMISyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMISyntaxError</span></code></a></p>
 <p>Raised when an invalid BIMI tag value is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.InvalidDMARCReportURI">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidDMARCReportURI</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCReportURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCReportURI" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidDMARCReportURI</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCReportURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCReportURI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.InvalidDMARCTagValue" title="checkdmarc.InvalidDMARCTagValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.InvalidDMARCTagValue</span></code></a></p>
 <p>Raised when an invalid DMARC reporting URI is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.InvalidDMARCTag">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidDMARCTag</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTag" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidDMARCTag</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTag" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCSyntaxError</span></code></a></p>
 <p>Raised when an invalid DMARC tag is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.InvalidDMARCTagValue">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidDMARCTagValue</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTagValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTagValue" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">InvalidDMARCTagValue</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTagValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTagValue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCSyntaxError</span></code></a></p>
 <p>Raised when an invalid DMARC tag value is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.MultipleBIMIRecords">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">MultipleBIMIRecords</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleBIMIRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleBIMIRecords" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">MultipleBIMIRecords</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleBIMIRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleBIMIRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
 <p>Raised when multiple BIMI records are found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.MultipleDMARCRecords">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">MultipleDMARCRecords</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleDMARCRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleDMARCRecords" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">MultipleDMARCRecords</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleDMARCRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleDMARCRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when multiple DMARC records are found, in violation of
 RFC 7486, section 6.6.3</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.MultipleSPFRTXTRecords">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">MultipleSPFRTXTRecords</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleSPFRTXTRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleSPFRTXTRecords" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">MultipleSPFRTXTRecords</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleSPFRTXTRecords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.MultipleSPFRTXTRecords" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when multiple TXT spf1 records are found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.SMTPError">
 <em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SMTPError</code><a class="reference internal" href="_modules/checkdmarc.html#SMTPError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SMTPError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raised when n SMTP error occurs</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.SPFError">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFError</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raised when a fatal SPF error occurs</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.SPFIncludeLoop">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFIncludeLoop</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFIncludeLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFIncludeLoop" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFIncludeLoop</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFIncludeLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFIncludeLoop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when a SPF include loop is detected</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFRecordFoundWhereBIMIRecordShouldBe</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereBIMIRecordShouldBe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFRecordFoundWhereBIMIRecordShouldBe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereBIMIRecordShouldBe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI" title="checkdmarc.UnrelatedTXTRecordFoundAtBIMI"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFoundAtBIMI</span></code></a></p>
 <p>Raised when a SPF record is found where a BIMI record should be;
 most likely, the <code class="docutils literal notranslate"><span class="pre">selector_bimi</span></code> subdomain
@@ -318,9 +321,9 @@ record does not actually exist, and the request for <code class="docutils litera
 redirected to the base domain</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFRecordFoundWhereDMARCRecordShouldBe</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereDMARCRecordShouldBe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFRecordFoundWhereDMARCRecordShouldBe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereDMARCRecordShouldBe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC" title="checkdmarc.UnrelatedTXTRecordFoundAtDMARC"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.UnrelatedTXTRecordFoundAtDMARC</span></code></a></p>
 <p>Raised when a SPF record is found where a DMARC record should be;
 most likely, the <code class="docutils literal notranslate"><span class="pre">_dmarc</span></code> subdomain
@@ -328,59 +331,59 @@ record does not actually exist, and the request for <code class="docutils litera
 redirected to the base domain</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.SPFRecordNotFound">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFRecordNotFound</code><span class="sig-paren">(</span><em class="sig-param">error</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordNotFound" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFRecordNotFound</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">error</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRecordNotFound" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when an SPF record could not be found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.SPFRedirectLoop">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFRedirectLoop</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRedirectLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRedirectLoop" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFRedirectLoop</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRedirectLoop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFRedirectLoop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when a SPF redirect loop is detected</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.SPFSyntaxError">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFSyntaxError</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFSyntaxError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFSyntaxError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFSyntaxError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFSyntaxError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when an SPF syntax error is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.SPFTooManyDNSLookups">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFTooManyDNSLookups</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFTooManyDNSLookups"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFTooManyDNSLookups" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">SPFTooManyDNSLookups</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFTooManyDNSLookups"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.SPFTooManyDNSLookups" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.SPFError</span></code></a></p>
 <p>Raised when an SPF record requires too many DNS lookups (10 max)</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.UnrelatedTXTRecordFoundAtBIMI">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">UnrelatedTXTRecordFoundAtBIMI</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtBIMI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">UnrelatedTXTRecordFoundAtBIMI</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtBIMI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.BIMIError</span></code></a></p>
 <p>Raised when a TXT record unrelated to BIMI is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.UnrelatedTXTRecordFoundAtDMARC">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">UnrelatedTXTRecordFoundAtDMARC</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtDMARC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">UnrelatedTXTRecordFoundAtDMARC</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtDMARC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when a TXT record unrelated to DMARC is found</p>
 </dd></dl>
 
-<dl class="exception">
+<dl class="py exception">
 <dt id="checkdmarc.UnverifiedDMARCURIDestination">
-<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">UnverifiedDMARCURIDestination</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnverifiedDMARCURIDestination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnverifiedDMARCURIDestination" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">UnverifiedDMARCURIDestination</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnverifiedDMARCURIDestination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.UnverifiedDMARCURIDestination" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">checkdmarc.DMARCError</span></code></a></p>
 <p>Raised when the destination of a DMARC report URI does not indicate
 that it accepts reports for the domain</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.check_domains">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">check_domains</code><span class="sig-paren">(</span><em class="sig-param">domains</em>, <em class="sig-param">parked=False</em>, <em class="sig-param">approved_nameservers=None</em>, <em class="sig-param">approved_mx_hostnames=None</em>, <em class="sig-param">skip_tls=False</em>, <em class="sig-param">include_dmarc_tag_descriptions=False</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em>, <em class="sig-param">wait=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">check_domains</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domains</span></em>, <em class="sig-param"><span class="n">parked</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">approved_nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">approved_mx_hostnames</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip_tls</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">include_dmarc_tag_descriptions</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em>, <em class="sig-param"><span class="n">wait</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the given domains for SPF and DMARC records, parse them, and return
 them</p>
 <dl class="field-list simple">
@@ -416,9 +419,9 @@ results</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.check_wildcard_dmarc_report_authorization">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">check_wildcard_dmarc_report_authorization</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_wildcard_dmarc_report_authorization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_wildcard_dmarc_report_authorization" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">check_wildcard_dmarc_report_authorization</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_wildcard_dmarc_report_authorization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.check_wildcard_dmarc_report_authorization" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks for a wildcard DMARC report authorization record, e.g.:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*.</span><span class="n">_report</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span> <span class="n">IN</span> <span class="n">TXT</span> <span class="s2">&quot;v=DMARC1&quot;</span>
 </pre></div>
@@ -442,9 +445,9 @@ authorization record</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.get_base_domain">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_base_domain</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">use_fresh_psl=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_base_domain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_base_domain" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_base_domain</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">use_fresh_psl</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_base_domain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_base_domain" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the base domain name for the given domain</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -467,9 +470,9 @@ authorization record</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.get_dmarc_record">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_dmarc_record</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">include_tag_descriptions=False</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_dmarc_record</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">include_tag_descriptions</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves a DMARC record for a domain and parses it</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -514,9 +517,9 @@ authorization record</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.get_dmarc_tag_description">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_dmarc_tag_description</code><span class="sig-paren">(</span><em class="sig-param">tag</em>, <em class="sig-param">value=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_tag_description"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_tag_description" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_dmarc_tag_description</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tag</span></em>, <em class="sig-param"><span class="n">value</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_tag_description"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_dmarc_tag_description" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the name, default value, and description for a DMARC tag, amd/or a
 description for a tag value</p>
 <dl class="field-list simple">
@@ -543,9 +546,9 @@ description for a tag value</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.get_mx_hosts">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_mx_hosts</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">skip_tls=False</em>, <em class="sig-param">approved_hostnames=None</em>, <em class="sig-param">parked=False</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_mx_hosts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">skip_tls</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">approved_hostnames</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">parked</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets MX hostname and their addresses</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -580,9 +583,9 @@ description for a tag value</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.get_nameservers">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_nameservers</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">approved_nameservers=None</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_nameservers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_nameservers" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_nameservers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">approved_nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_nameservers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_nameservers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets a list of nameservers for a given domain</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -610,9 +613,9 @@ description for a tag value</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.get_spf_record">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_spf_record</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_spf_record" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">get_spf_record</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.get_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves and parses an SPF record</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -641,9 +644,9 @@ description for a tag value</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.output_to_file">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">output_to_file</code><span class="sig-paren">(</span><em class="sig-param">path</em>, <em class="sig-param">content</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#output_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.output_to_file" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">output_to_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em>, <em class="sig-param"><span class="n">content</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#output_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.output_to_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write given content to the given path</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -655,9 +658,9 @@ description for a tag value</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.parse_dmarc_record">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">parse_dmarc_record</code><span class="sig-paren">(</span><em class="sig-param">record</em>, <em class="sig-param">domain</em>, <em class="sig-param">parked=False</em>, <em class="sig-param">include_tag_descriptions=False</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">parse_dmarc_record</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">record</span></em>, <em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">parked</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">include_tag_descriptions</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a DMARC record</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -710,9 +713,9 @@ description for a tag value</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.parse_dmarc_report_uri">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">parse_dmarc_report_uri</code><span class="sig-paren">(</span><em class="sig-param">uri</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_report_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_report_uri" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">parse_dmarc_report_uri</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">uri</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_report_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_report_uri" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a DMARC Reporting (i.e. <code class="docutils literal notranslate"><span class="pre">rua</span></code>/<code class="docutils literal notranslate"><span class="pre">ruf</span></code>) URI</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -742,9 +745,9 @@ description for a tag value</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.parse_spf_record">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">parse_spf_record</code><span class="sig-paren">(</span><em class="sig-param">record</em>, <em class="sig-param">domain</em>, <em class="sig-param">parked=False</em>, <em class="sig-param">seen=None</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">parse_spf_record</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">record</span></em>, <em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">parked</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">seen</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a SPF record, including resolving <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">mx</span></code>, and <code class="docutils literal notranslate"><span class="pre">include</span></code>
 mechanisms</p>
 <dl class="field-list simple">
@@ -784,9 +787,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.query_bimi_record">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">query_bimi_record</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">selector='default'</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_bimi_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_bimi_record" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">query_bimi_record</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">selector</span><span class="o">=</span><span class="default_value">'default'</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_bimi_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_bimi_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a BIMI record</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -822,9 +825,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.query_dmarc_record">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">query_dmarc_record</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_dmarc_record" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">query_dmarc_record</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_dmarc_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_dmarc_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a DMARC record</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -860,9 +863,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.query_spf_record">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">query_spf_record</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_spf_record" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">query_spf_record</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_spf_record"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.query_spf_record" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queries DNS for a SPF record</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -892,9 +895,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.results_to_csv">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">results_to_csv</code><span class="sig-paren">(</span><em class="sig-param">results</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.results_to_csv" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">results_to_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.results_to_csv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts a dictionary of results to CSV</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -909,9 +912,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.results_to_csv_rows">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">results_to_csv_rows</code><span class="sig-paren">(</span><em class="sig-param">results</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_csv_rows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.results_to_csv_rows" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">results_to_csv_rows</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_csv_rows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.results_to_csv_rows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts a dictionary of results list of CSV row dicts</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -926,9 +929,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.results_to_json">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">results_to_json</code><span class="sig-paren">(</span><em class="sig-param">results</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.results_to_json" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">results_to_json</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.results_to_json" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts a dictionary of results to a JSON string</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -943,9 +946,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.test_dnssec">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">test_dnssec</code><span class="sig-paren">(</span><em class="sig-param">domain</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_dnssec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_dnssec" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">test_dnssec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">domain</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_dnssec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_dnssec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check for DNSSEC on the given domain</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -964,9 +967,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.test_starttls">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">test_starttls</code><span class="sig-paren">(</span><em class="sig-param">hostname</em>, <em class="sig-param">ssl_context=None</em>, <em class="sig-param">cache=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_starttls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_starttls" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">test_starttls</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_starttls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_starttls" title="Permalink to this definition">¶</a></dt>
 <dd><p>Attempt to connect to a SMTP server and validate STARTTLS support</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -985,9 +988,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.test_tls">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">test_tls</code><span class="sig-paren">(</span><em class="sig-param">hostname</em>, <em class="sig-param">ssl_context=None</em>, <em class="sig-param">cache=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_tls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_tls" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">test_tls</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_tls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.test_tls" title="Permalink to this definition">¶</a></dt>
 <dd><p>Attempt to connect to a SMTP server port 465 and validate TLS/SSL support</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1006,9 +1009,9 @@ mechanisms</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="checkdmarc.verify_dmarc_report_destination">
-<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">verify_dmarc_report_destination</code><span class="sig-paren">(</span><em class="sig-param">source_domain</em>, <em class="sig-param">destination_domain</em>, <em class="sig-param">nameservers=None</em>, <em class="sig-param">timeout=2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#verify_dmarc_report_destination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.verify_dmarc_report_destination" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">checkdmarc.</code><code class="sig-name descname">verify_dmarc_report_destination</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source_domain</span></em>, <em class="sig-param"><span class="n">destination_domain</span></em>, <em class="sig-param"><span class="n">nameservers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">2.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#verify_dmarc_report_destination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#checkdmarc.verify_dmarc_report_destination" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the report destination accepts reports for the source domain
 per RFC 7489, section 7.1</p>
 <dl class="field-list simple">
@@ -1057,11 +1060,19 @@ domain</p>
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2017, Sean Whalen
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -1072,7 +1083,6 @@ domain</p>
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
