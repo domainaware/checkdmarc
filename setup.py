@@ -65,15 +65,13 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.0',
-        'Programming Language :: Python :: 3.1',
-        'Programming Language :: Python :: 3.2',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+
     ],
 
     # What does your project relate to?
@@ -92,9 +90,9 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['dnspython>=1.16.0', 'expiringdict>=1.1.4',
-                      'pyleri>=1.3.2', 'publicsuffix2>=2.20190812',
-                      'requests>=2.21.0',
+    install_requires=['dnspython>=2.0.0', 'expiringdict>=1.1.4',
+                      'pyleri>=1.3.2', 'publicsuffix2>=2.20191221',
+                      'requests>=2.25.0',
                       'timeout-decorator>=0.4.1'],
 
     entry_points={
