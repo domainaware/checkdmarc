@@ -186,21 +186,6 @@ class Test(unittest.TestCase):
         self.assertRaises(checkdmarc.InvalidDMARCReportURI,
                           checkdmarc.parse_dmarc_record, dmarc_record, domain)
 
-    def testUnverifiedDMARCURIDestination(self):
-        """Unverified DMARC URI raises UnverifiedDMARCURIDestination"""
-        dmarc_record = "v=DMARC1; p=none; rua=mailto:dmarc@example.com"
-        domain = "example.net"
-        self.assertRaises(checkdmarc.UnverifiedDMARCURIDestination,
-                          checkdmarc.parse_dmarc_record,
-                          dmarc_record,
-                          domain)
-
-        dmarc_record = "v=DMARC1; p=none; rua=mailto:dmarc@fbi.mil"
-        self.assertRaises(checkdmarc.UnverifiedDMARCURIDestination,
-                          checkdmarc.parse_dmarc_record,
-                          dmarc_record,
-                          domain)
-
     def testInvalidDMARCPolicyValue(self):
         """An invalid DMARC policy value raises InvalidDMARCTagValue """
         dmarc_record = "v=DMARC1; p=foo; rua=mailto:dmarc@example.com"
