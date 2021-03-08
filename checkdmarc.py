@@ -25,6 +25,7 @@ from io import StringIO
 from expiringdict import ExpiringDict
 
 import publicsuffix2
+import dns
 import dns.resolver
 import dns.exception
 import timeout_decorator
@@ -219,12 +220,12 @@ class DMARCRecordInWrongLocation(DMARCError):
     """Raised when a DMARC record is found at the root of a domain"""
 
 
-class DMARCReportEmailAddressMissingMXRecords(DMARCError):
+class DMARCReportEmailAddressMissingMXRecords(_DMARCWarning):
     """Raised when a email address in a DMARC report URI is missing MX
     records"""
 
 
-class UnverifiedDMARCURIDestination(DMARCError):
+class UnverifiedDMARCURIDestination(_DMARCWarning):
     """Raised when the destination of a DMARC report URI does not indicate
     that it accepts reports for the domain"""
 
@@ -624,7 +625,6 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0,
         domain (str): The domain or subdomain to query about
         record_type (str): The record type to query for
         nameservers (list): A list of one or more nameservers to use
-        (Cloudflare's public DNS resolvers by default)
         timeout (float): Sets the DNS timeout in seconds
         cache (ExpiringDict): Cache storage
 
@@ -643,17 +643,14 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0,
 
     resolver = dns.resolver.Resolver()
     timeout = float(timeout)
-    if nameservers is None:
-        nameservers = ["1.1.1.1", "1.0.0.1",
-                       "2606:4700:4700::1111", "2606:4700:4700::1001",
-                       ]
-    resolver.nameservers = nameservers
+    if nameservers is not None:
+        resolver.nameservers = nameservers
     resolver.timeout = timeout
     resolver.lifetime = timeout
     if record_type == "TXT":
         resource_records = list(map(
             lambda r: r.strings,
-            resolver.query(domain, record_type, lifetime=timeout)))
+            resolver.resolve(domain, record_type, lifetime=timeout)))
         _resource_record = [
             resource_record[0][:0].join(resource_record)
             for resource_record in resource_records if resource_record]
@@ -661,7 +658,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0,
     else:
         records = list(map(
             lambda r: r.to_text().replace('"', '').rstrip("."),
-            resolver.query(domain, record_type, lifetime=timeout)))
+            resolver.resolve(domain, record_type, lifetime=timeout)))
     if cache:
         cache[cache_key] = records
 
@@ -675,7 +672,6 @@ def _get_nameservers(domain, nameservers=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
 
     Returns:
         list: A list of ``OrderedDicts``; each containing a ``preference``
@@ -706,7 +702,6 @@ def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
 
     Returns:
         list: A list of ``OrderedDicts``; each containing a ``preference``
@@ -744,8 +739,7 @@ def _get_a_records(domain, nameservers=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
         list: A sorted list of IPv4 and IPv6 addresses
@@ -772,7 +766,7 @@ def _get_a_records(domain, nameservers=None, timeout=2.0):
     return addresses
 
 
-def _get_reverse_dns(ip_address):
+def _get_reverse_dns(ip_address, nameservers=None, timeout=2.0):
     """
     Queries for an IP addresses reverse DNS hostname(s)
 
@@ -781,15 +775,17 @@ def _get_reverse_dns(ip_address):
 
     Returns:
         list: A list of reverse DNS hostnames
+        nameservers (list): A list of nameservers to query
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Raises:
         :exc:`checkdmarc.DNSException`
 
     """
     try:
-        results = socket.gethostbyaddr(ip_address)
-        hostnames = [results[0]] + results[1]
-    except socket.herror:
+        name = dns.reversename.from_address(ip_address)
+        hostnames = _query_dns(name, "PTR", nameservers=nameservers, timeout=timeout)
+    except dns.resolver.NXDOMAIN:
         return []
     except Exception as error:
         raise DNSException(error)
@@ -804,8 +800,7 @@ def _get_txt_records(domain, nameservers=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
         list: A list of TXT records
@@ -835,8 +830,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for an record from DNS
 
     Returns:
         str: A record string or None
@@ -902,8 +896,7 @@ def _query_bmi_record(domain, selector="default", nameservers=None,
         domain (str): A domain name
         selector: the BIMI selector
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for an record from DNS
 
     Returns:
         str: A record string or None
@@ -966,8 +959,7 @@ def query_dmarc_record(domain, nameservers=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for an record from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1020,8 +1012,7 @@ def query_bimi_record(domain, selector="default", nameservers=None,
         domain (str): A domain name
         selector (str): The BMI selector
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for an record from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1152,8 +1143,7 @@ def check_wildcard_dmarc_report_authorization(domain,
     Args:
         domain (str): The domain to check
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
         bool: An indicator of the existence of a valid wildcard DMARC report
@@ -1199,8 +1189,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
           source_domain (str): The source domain
           destination_domain (str): The destination domain
           nameservers (list): A list of nameservers to query
-          (Cloudflare's by default)
-          timeout(float): number of seconds to wait for an answer from DNS
+          timeout (float): number of seconds to wait for an answer from DNS
 
       Returns:
           bool: Indicates if the report domain accepts reports from the given
@@ -1248,7 +1237,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
                                            "\n\n".join(unrelated_records)))
 
             if dmarc_record_count < 1:
-                raise UnverifiedDMARCURIDestination(message)
+                return False
         except Exception:
             raise UnverifiedDMARCURIDestination(message)
 
@@ -1267,8 +1256,7 @@ def parse_dmarc_record(record, domain, parked=False,
         parked (bool): Indicates if a domain is parked
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1333,7 +1321,8 @@ def parse_dmarc_record(record, domain, parked=False,
     if "sp" not in tags:
         tags["sp"] = OrderedDict([("value", tags["p"]["value"]),
                                   ("explicit", False)])
-
+    if list(tags.keys())[1] != "p":
+        raise DMARCSyntaxError("the p tag must immediately follow the v tag")
     # Validate tag values
     for tag in tags:
         if tag not in tag_values:
@@ -1392,7 +1381,7 @@ def parse_dmarc_record(record, domain, parked=False,
                 try:
                     _get_mx_hosts(email_domain, nameservers=nameservers,
                                   timeout=timeout)
-                except _SPFWarning:
+                except _DMARCWarning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "The domain for rua email address "
                         "{0} has no MX records".format(
@@ -1490,8 +1479,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
         domain (str): A domain name
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1535,8 +1523,7 @@ def query_spf_record(domain, nameservers=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1607,8 +1594,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
         parked (bool): indicated if a domain has been parked
         seen (list): A list of domains seen in past loops
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1714,9 +1700,9 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
                         [("value", host["hostname"]),
                          ("mechanism", mechanism)]))
             elif mechanism == "redirect":
-                if value.lower() in seen:
+                if value.lower() == domain.lower():
                     raise SPFRedirectLoop(
-                        "Redirect loop: {0}".format(value.lower()))
+                        "Redirect loop: {0}".format(value.lower(), value.lower))
                 seen.append(value.lower())
                 try:
                     redirect_record = query_spf_record(value,
@@ -1807,8 +1793,7 @@ def get_spf_record(domain, nameservers=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): Number of seconds to wait for an answer from DNS
+        timeout (float): Number of seconds to wait for an answer from DNS
 
     Returns:
         OrderedDict: An SPF record parsed by result
@@ -2073,8 +2058,7 @@ def get_mx_hosts(domain, skip_tls=False,
         approved_hostnames (list): A list of approved MX hostname substrings
         parked (bool): Indicates that the domains are parked
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for an record from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -2169,12 +2153,10 @@ def get_mx_hosts(domain, skip_tls=False,
             try:
                 starttls = test_starttls(host["hostname"],
                                          cache=STARTTLS_CACHE)
-                if starttls:
-                    tls = True
-                else:
+                if not starttls:
                     warnings.append("STARTTLS is not supported on {0}".format(
                         host["hostname"]))
-                    tls = test_tls(host["hostname"], cache=TLS_CACHE)
+                tls = test_tls(host["hostname"], cache=TLS_CACHE)
 
                 if not tls:
                     warnings.append("SSL/TLS is not supported on {0}".format(
@@ -2206,9 +2188,8 @@ def get_nameservers(domain, approved_nameservers=None,
     Args:
         domain (str): A domain name
         approved_nameservers (list): A list of approved nameserver substrings
-        nameservers (list): A list of nameservers to qu+ery
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an record from DNS
+        nameservers (list): A list of nameservers to query
+        timeout (float): number of seconds to wait for an record from DNS
 
     Returns:
         Dict: A dictionary with the following keys:
@@ -2292,8 +2273,7 @@ def check_domains(domains, parked=False,
                                                tags and/or tag values in the
                                                results
         nameservers (list): A list of nameservers to query
-        (Cloudflare's by default)
-        timeout(float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         wait (float): number of seconds to wait between processing domains
 
     Returns:
@@ -2592,8 +2572,7 @@ def _main():
                                  "(must end in .json or .csv) "
                                  "(silences screen output)")
     arg_parser.add_argument("-n", "--nameserver", nargs="+",
-                            help="nameservers to query "
-                                 "(Default is Cloudflare's")
+                            help="nameservers to query")
     arg_parser.add_argument("-t", "--timeout",
                             help="number of seconds to wait for an answer "
                                  "from DNS (default 2.0)",

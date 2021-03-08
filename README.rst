@@ -31,7 +31,7 @@ A Python module and command line utility for validating SPF and DMARC DNS record
                            one or more file paths to output to (must end in .json
                            or .csv) (silences screen output)
      -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
-                           nameservers to query (Default is Cloudflare's
+                           nameservers to query
      -t TIMEOUT, --timeout TIMEOUT
                            number of seconds to wait for an answer from DNS
                            (default 2.0)
@@ -244,7 +244,5 @@ DMARC guides
 
 ..  |PyPI Package| image:: https://img.shields.io/pypi/v/checkdmarc.svg
     :target: https://pypi.org/project/checkdmarc/
-
-.. _Cloudflare's public resolvers: https://1.1.1.1/
 
 .. _Demystifying DMARC: https://seanthegeek.net/459/demystifying-dmarc/

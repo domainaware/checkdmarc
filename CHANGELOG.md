@@ -1,6 +1,16 @@
 Changelog
 =========
 
+4.4.0
+------
+
+- Use the system's DNS resolvers by default
+- Make DMARC report destination errors warnings instead of fatal errors (Closes issue #54)
+- Honor nameserver and DNS timeout settings when querying for PTR records (Closes issue #59)
+- Separate `TLS` and `STARTTLS` checks (Closes issue #56)
+- Fix false positive SPF redirect loop error (Closes issue #55)
+- Require the p tag to immediately follow the v tag (Closes issue #57)
+
 4.3.1
 -----
 
