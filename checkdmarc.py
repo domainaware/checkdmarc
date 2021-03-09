@@ -51,7 +51,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.4.0"
+__version__ = "4.4.1"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -2128,7 +2128,7 @@ def get_mx_hosts(domain, skip_tls=False,
                 warnings.append(e.__str__())
 
         for address in host["addresses"]:
-            reverse_domain_hostnames = _get_reverse_dns(address)
+            reverse_domain_hostnames = _get_reverse_dns(address, nameservers=nameservers, timeout=timeout)
             if len(reverse_domain_hostnames) == 0:
                 warnings.append(
                     "{0} does not have any reverse DNS (PTR) "

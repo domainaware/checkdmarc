@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.4.1
+-----
+
+- Pass in `nameserver` and `timeout` parameters when calling `get_reverse_dns()` (Actually close issue #59)
+
 4.4.0
 ------
 
