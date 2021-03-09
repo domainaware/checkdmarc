@@ -2233,9 +2233,8 @@ def test_dnssec(domain, nameservers=None, timeout=2.0):
         bool: DNSSEC status
     """
     if nameservers is None:
-        nameservers = ["1.1.1.1", "1.0.0.1",
-                       "2606:4700:4700::1111", "2606:4700:4700::1001",
-                       ]
+        nameservers = dns.resolver.Resolver().nameservers
+
     request = dns.message.make_query(get_base_domain(domain),
                                      dns.rdatatype.NS,
                                      want_dnssec=True)
