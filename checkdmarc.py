@@ -2128,14 +2128,14 @@ def get_mx_hosts(domain, skip_tls=False,
                 warnings.append(e.__str__())
 
         for address in host["addresses"]:
-            reverse_domain_hostnames = _get_reverse_dns(address,
-                                                        nameservers=nameservers,
-                                                        timeout=timeout)
-            if len(reverse_domain_hostnames) == 0:
+            reverse_hostnames = _get_reverse_dns(address,
+                                                 nameservers=nameservers,
+                                                 timeout=timeout)
+            if len(reverse_hostnames) == 0:
                 warnings.append(
                     "{0} does not have any reverse DNS (PTR) "
                     "records".format(address))
-            for hostname in reverse_domain_hostnames:
+            for hostname in reverse_hostnames:
                 try:
                     _addresses = _get_a_records(hostname)
                 except DNSException as warning:
