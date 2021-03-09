@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>checkdmarc &mdash; checkdmarc 4.3.0 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 4.4.1 documentation</title>
   
 
   
@@ -16,7 +16,10 @@
 
   
   
+
   
+  
+
   
 
   
@@ -29,7 +32,6 @@
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
@@ -49,7 +51,7 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> checkdmarc
+            <a href="../index.html" class="icon icon-home"> checkdmarc
           
 
           
@@ -59,7 +61,7 @@
             
             
               <div class="version">
-                4.3.0
+                4.4.1
               </div>
             
           
@@ -126,6 +128,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -177,6 +181,7 @@
 <span class="kn">from</span> <span class="nn">expiringdict</span> <span class="kn">import</span> <span class="n">ExpiringDict</span>
 
 <span class="kn">import</span> <span class="nn">publicsuffix2</span>
+<span class="kn">import</span> <span class="nn">dns</span>
 <span class="kn">import</span> <span class="nn">dns.resolver</span>
 <span class="kn">import</span> <span class="nn">dns.exception</span>
 <span class="kn">import</span> <span class="nn">timeout_decorator</span>
@@ -202,7 +207,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.3.0&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.4.1&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -371,12 +376,12 @@
     <span class="sd">&quot;&quot;&quot;Raised when a DMARC record is found at the root of a domain&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="DMARCReportEmailAddressMissingMXRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCReportEmailAddressMissingMXRecords">[docs]</a><span class="k">class</span> <span class="nc">DMARCReportEmailAddressMissingMXRecords</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+<div class="viewcode-block" id="DMARCReportEmailAddressMissingMXRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCReportEmailAddressMissingMXRecords">[docs]</a><span class="k">class</span> <span class="nc">DMARCReportEmailAddressMissingMXRecords</span><span class="p">(</span><span class="n">_DMARCWarning</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a email address in a DMARC report URI is missing MX</span>
 <span class="sd">    records&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="UnverifiedDMARCURIDestination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.UnverifiedDMARCURIDestination">[docs]</a><span class="k">class</span> <span class="nc">UnverifiedDMARCURIDestination</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+<div class="viewcode-block" id="UnverifiedDMARCURIDestination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.UnverifiedDMARCURIDestination">[docs]</a><span class="k">class</span> <span class="nc">UnverifiedDMARCURIDestination</span><span class="p">(</span><span class="n">_DMARCWarning</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when the destination of a DMARC report URI does not indicate</span>
 <span class="sd">    that it accepts reports for the domain&quot;&quot;&quot;</span></div>
 
@@ -776,7 +781,6 @@
 <span class="sd">        domain (str): The domain or subdomain to query about</span>
 <span class="sd">        record_type (str): The record type to query for</span>
 <span class="sd">        nameservers (list): A list of one or more nameservers to use</span>
-<span class="sd">        (Cloudflare&#39;s public DNS resolvers by default)</span>
 <span class="sd">        timeout (float): Sets the DNS timeout in seconds</span>
 <span class="sd">        cache (ExpiringDict): Cache storage</span>
 
@@ -795,17 +799,14 @@
 
     <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
     <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">nameservers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">nameservers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;1.1.1.1&quot;</span><span class="p">,</span> <span class="s2">&quot;1.0.0.1&quot;</span><span class="p">,</span>
-                       <span class="s2">&quot;2606:4700:4700::1111&quot;</span><span class="p">,</span> <span class="s2">&quot;2606:4700:4700::1001&quot;</span><span class="p">,</span>
-                       <span class="p">]</span>
-    <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
+    <span class="k">if</span> <span class="n">nameservers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="n">nameservers</span>
     <span class="n">resolver</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
     <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
     <span class="k">if</span> <span class="n">record_type</span> <span class="o">==</span> <span class="s2">&quot;TXT&quot;</span><span class="p">:</span>
         <span class="n">resource_records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">strings</span><span class="p">,</span>
-            <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">timeout</span><span class="p">)))</span>
+            <span class="n">resolver</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">timeout</span><span class="p">)))</span>
         <span class="n">_resource_record</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">resource_record</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">resource_record</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">resource_record</span> <span class="ow">in</span> <span class="n">resource_records</span> <span class="k">if</span> <span class="n">resource_record</span><span class="p">]</span>
@@ -813,7 +814,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
-            <span class="n">resolver</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">timeout</span><span class="p">)))</span>
+            <span class="n">resolver</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">timeout</span><span class="p">)))</span>
     <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
         <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">records</span>
 
@@ -827,7 +828,6 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of ``OrderedDicts``; each containing a ``preference``</span>
@@ -858,7 +858,6 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of ``OrderedDicts``; each containing a ``preference``</span>
@@ -896,8 +895,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A sorted list of IPv4 and IPv6 addresses</span>
@@ -924,7 +922,7 @@
     <span class="k">return</span> <span class="n">addresses</span>
 
 
-<span class="k">def</span> <span class="nf">_get_reverse_dns</span><span class="p">(</span><span class="n">ip_address</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_get_reverse_dns</span><span class="p">(</span><span class="n">ip_address</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries for an IP addresses reverse DNS hostname(s)</span>
 
@@ -933,15 +931,18 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of reverse DNS hostnames</span>
+<span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        :exc:`checkdmarc.DNSException`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyaddr</span><span class="p">(</span><span class="n">ip_address</span><span class="p">)</span>
-        <span class="n">hostnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">+</span> <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">herror</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">reversename</span><span class="o">.</span><span class="n">from_address</span><span class="p">(</span><span class="n">ip_address</span><span class="p">)</span>
+        <span class="n">hostnames</span> <span class="o">=</span> <span class="n">_query_dns</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;PTR&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                               <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
@@ -956,8 +957,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of TXT records</span>
@@ -987,8 +987,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: A record string or None</span>
@@ -1054,8 +1053,7 @@
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        selector: the BIMI selector</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: A record string or None</span>
@@ -1118,8 +1116,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
@@ -1172,8 +1169,7 @@
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        selector (str): The BMI selector</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
@@ -1304,8 +1300,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): The domain to check</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        bool: An indicator of the existence of a valid wildcard DMARC report</span>
@@ -1351,8 +1346,7 @@
 <span class="sd">          source_domain (str): The source domain</span>
 <span class="sd">          destination_domain (str): The destination domain</span>
 <span class="sd">          nameservers (list): A list of nameservers to query</span>
-<span class="sd">          (Cloudflare&#39;s by default)</span>
-<span class="sd">          timeout(float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">          timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">      Returns:</span>
 <span class="sd">          bool: Indicates if the report domain accepts reports from the given</span>
@@ -1400,7 +1394,7 @@
                                            <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unrelated_records</span><span class="p">)))</span>
 
             <span class="k">if</span> <span class="n">dmarc_record_count</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">UnverifiedDMARCURIDestination</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">UnverifiedDMARCURIDestination</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
 
@@ -1419,8 +1413,7 @@
 <span class="sd">        parked (bool): Indicates if a domain is parked</span>
 <span class="sd">        include_tag_descriptions (bool): Include descriptions in parsed results</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
@@ -1485,7 +1478,8 @@
     <span class="k">if</span> <span class="s2">&quot;sp&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]),</span>
                                   <span class="p">(</span><span class="s2">&quot;explicit&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)])</span>
-
+    <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">tags</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DMARCSyntaxError</span><span class="p">(</span><span class="s2">&quot;the p tag must immediately follow the v tag&quot;</span><span class="p">)</span>
     <span class="c1"># Validate tag values</span>
     <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tag_values</span><span class="p">:</span>
@@ -1544,7 +1538,7 @@
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">_get_mx_hosts</span><span class="p">(</span><span class="n">email_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                                   <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
-                <span class="k">except</span> <span class="n">_SPFWarning</span><span class="p">:</span>
+                <span class="k">except</span> <span class="n">_DMARCWarning</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">DMARCReportEmailAddressMissingMXRecords</span><span class="p">(</span>
                         <span class="s2">&quot;The domain for rua email address &quot;</span>
                         <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> has no MX records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -1642,8 +1636,7 @@
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        include_tag_descriptions (bool): Include descriptions in parsed results</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
@@ -1687,8 +1680,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
@@ -1759,8 +1751,7 @@
 <span class="sd">        parked (bool): indicated if a domain has been parked</span>
 <span class="sd">        seen (list): A list of domains seen in past loops</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
@@ -1830,7 +1821,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">mechanism</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ip4&quot;</span><span class="p">,</span> <span class="s2">&quot;ip6&quot;</span><span class="p">]:</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_network</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_network</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
                 <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is not a valid ipv4/ipv6 &quot;</span>
                                          <span class="s2">&quot;value&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
@@ -1866,7 +1857,7 @@
                         <span class="p">[(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]),</span>
                          <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">)]))</span>
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;redirect&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
                     <span class="k">raise</span> <span class="n">SPFRedirectLoop</span><span class="p">(</span>
                         <span class="s2">&quot;Redirect loop: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
                 <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
@@ -1959,8 +1950,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): Number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): Number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An SPF record parsed by result</span>
@@ -2225,8 +2215,7 @@
 <span class="sd">        approved_hostnames (list): A list of approved MX hostname substrings</span>
 <span class="sd">        parked (bool): Indicates that the domains are parked</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
@@ -2295,12 +2284,14 @@
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
 
         <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]:</span>
-            <span class="n">reverse_domain_hostnames</span> <span class="o">=</span> <span class="n">_get_reverse_dns</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reverse_domain_hostnames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">reverse_hostnames</span> <span class="o">=</span> <span class="n">_get_reverse_dns</span><span class="p">(</span><span class="n">address</span><span class="p">,</span>
+                                                 <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                                                 <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reverse_hostnames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> does not have any reverse DNS (PTR) &quot;</span>
                     <span class="s2">&quot;records&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
-            <span class="k">for</span> <span class="n">hostname</span> <span class="ow">in</span> <span class="n">reverse_domain_hostnames</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">hostname</span> <span class="ow">in</span> <span class="n">reverse_hostnames</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">_addresses</span> <span class="o">=</span> <span class="n">_get_a_records</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
                 <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
@@ -2321,12 +2312,10 @@
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">starttls</span> <span class="o">=</span> <span class="n">test_starttls</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span>
                                          <span class="n">cache</span><span class="o">=</span><span class="n">STARTTLS_CACHE</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">starttls</span><span class="p">:</span>
-                    <span class="n">tls</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">starttls</span><span class="p">:</span>
                     <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;STARTTLS is not supported on </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                         <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]))</span>
-                    <span class="n">tls</span> <span class="o">=</span> <span class="n">test_tls</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span> <span class="n">cache</span><span class="o">=</span><span class="n">TLS_CACHE</span><span class="p">)</span>
+                <span class="n">tls</span> <span class="o">=</span> <span class="n">test_tls</span><span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">],</span> <span class="n">cache</span><span class="o">=</span><span class="n">TLS_CACHE</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">tls</span><span class="p">:</span>
                     <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;SSL/TLS is not supported on </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -2358,9 +2347,8 @@
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
 <span class="sd">        approved_nameservers (list): A list of approved nameserver substrings</span>
-<span class="sd">        nameservers (list): A list of nameservers to qu+ery</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an record from DNS</span>
+<span class="sd">        nameservers (list): A list of nameservers to query</span>
+<span class="sd">        timeout (float): number of seconds to wait for an record from DNS</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Dict: A dictionary with the following keys:</span>
@@ -2404,9 +2392,8 @@
 <span class="sd">        bool: DNSSEC status</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">nameservers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">nameservers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;1.1.1.1&quot;</span><span class="p">,</span> <span class="s2">&quot;1.0.0.1&quot;</span><span class="p">,</span>
-                       <span class="s2">&quot;2606:4700:4700::1111&quot;</span><span class="p">,</span> <span class="s2">&quot;2606:4700:4700::1001&quot;</span><span class="p">,</span>
-                       <span class="p">]</span>
+        <span class="n">nameservers</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span><span class="o">.</span><span class="n">nameservers</span>
+
     <span class="n">request</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">make_query</span><span class="p">(</span><span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">),</span>
                                      <span class="n">dns</span><span class="o">.</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">NS</span><span class="p">,</span>
                                      <span class="n">want_dnssec</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -2444,8 +2431,7 @@
 <span class="sd">                                               tags and/or tag values in the</span>
 <span class="sd">                                               results</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
-<span class="sd">        (Cloudflare&#39;s by default)</span>
-<span class="sd">        timeout(float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 <span class="sd">        wait (float): number of seconds to wait between processing domains</span>
 
 <span class="sd">    Returns:</span>
@@ -2744,8 +2730,7 @@
                                  <span class="s2">&quot;(must end in .json or .csv) &quot;</span>
                                  <span class="s2">&quot;(silences screen output)&quot;</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="s2">&quot;--nameserver&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
-                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;nameservers to query &quot;</span>
-                                 <span class="s2">&quot;(Default is Cloudflare&#39;s&quot;</span><span class="p">)</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;nameservers to query&quot;</span><span class="p">)</span>
     <span class="n">arg_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-t&quot;</span><span class="p">,</span> <span class="s2">&quot;--timeout&quot;</span><span class="p">,</span>
                             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;number of seconds to wait for an answer &quot;</span>
                                  <span class="s2">&quot;from DNS (default 2.0)&quot;</span><span class="p">,</span>
@@ -2820,28 +2805,25 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2017, Sean Whalen
+        &#169; Copyright 2017, Sean Whalen.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

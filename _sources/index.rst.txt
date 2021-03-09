@@ -46,16 +46,6 @@ Welcome to checkdmarc's documentation!
      --skip-tls            skip TLS/SSL testing
      --debug               enable debugging output
 
-.. warning::
-
-    It is **strongly recommended** to **not** use the ``--nameserver``/``-n`` setting.
-    By default, ``checkdmarc`` uses `Cloudflare's public resolvers`_,
-    which are much faster and more reliable than Google, Cisco OpenDNS, or
-    even most local resolvers.
-
-    The ``--nameserver``/``-n`` option should only be used if your network blocks DNS
-    requests to outside resolvers.
-
 
 .. code-block:: bash
 
