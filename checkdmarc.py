@@ -784,7 +784,8 @@ def _get_reverse_dns(ip_address, nameservers=None, timeout=2.0):
     """
     try:
         name = dns.reversename.from_address(ip_address)
-        hostnames = _query_dns(name, "PTR", nameservers=nameservers, timeout=timeout)
+        hostnames = _query_dns(name, "PTR", nameservers=nameservers,
+                               timeout=timeout)
     except dns.resolver.NXDOMAIN:
         return []
     except Exception as error:
@@ -1702,7 +1703,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
             elif mechanism == "redirect":
                 if value.lower() == domain.lower():
                     raise SPFRedirectLoop(
-                        "Redirect loop: {0}".format(value.lower(), value.lower))
+                        "Redirect loop: {0}".format(value.lower()))
                 seen.append(value.lower())
                 try:
                     redirect_record = query_spf_record(value,
