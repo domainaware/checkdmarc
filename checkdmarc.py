@@ -2502,7 +2502,8 @@ def results_to_csv_rows(results):
                 row["dmarc_rua"] = "|".join(addresses)
             if "ruf" in dmarc["tags"]:
                 addresses = dmarc["tags"]["ruf"]["value"]
-                addresses = list(map(lambda u: u["address"], addresses))
+                addresses = list(map(lambda u: u["scheme"] + ":" +
+                                               u["address"], addresses))
                 row["dmarc_ruf"] = "|".join(addresses)
             row["dmarc_warnings"] = "|".join(dmarc["warnings"])
         rows.append(row)
