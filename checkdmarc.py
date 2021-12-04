@@ -2497,13 +2497,13 @@ def results_to_csv_rows(results):
             row["dmarc_sp"] = dmarc["tags"]["sp"]["value"]
             if "rua" in dmarc["tags"]:
                 addresses = dmarc["tags"]["rua"]["value"]
-                addresses = list(map(lambda u: u["scheme"] + ":" +
-                                               u["address"], addresses))
+                addresses = list(map(lambda u: ":".format(u["scheme"],
+                                                          u["address"], addresses)))
                 row["dmarc_rua"] = "|".join(addresses)
             if "ruf" in dmarc["tags"]:
                 addresses = dmarc["tags"]["ruf"]["value"]
-                addresses = list(map(lambda u: u["scheme"] + ":" +
-                                               u["address"], addresses))
+                addresses = list(map(lambda u: ":".format(u["scheme"],
+                                                          u["address"], addresses)))
                 row["dmarc_ruf"] = "|".join(addresses)
             row["dmarc_warnings"] = "|".join(dmarc["warnings"])
         rows.append(row)

@@ -153,10 +153,10 @@ class Test(unittest.TestCase):
         """A warning is issued if a SPF record contains a mx mechanism
         pointing to a domain that has no A records"""
 
-        spf_record = '"v=spf1 include:_spf.bibsyst.no a mx ~all"'
-        domain = "sogne.folkebibl.no"
+        spf_record = '"v=spf1 a ~all"'
+        domain = "cardinalhealth.net"
         results = checkdmarc.parse_spf_record(spf_record, domain)
-        self.assertIn("sogne.folkebibl.no does not have any A/AAAA records",
+        self.assertIn("cardinalhealth.net does not have any A/AAAA records",
                       results["warnings"])
 
     def testDMARCPctLessThan100Warning(self):
