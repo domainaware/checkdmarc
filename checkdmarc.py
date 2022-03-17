@@ -1366,11 +1366,11 @@ def parse_dmarc_record(record, domain, parked=False,
         raise InvalidDMARCTagValue(
             "The value of the ri tag must be an integer")
 
-    try:
-        if "rua" in tags:
-            parsed_uris = []
-            uris = tags["rua"]["value"].split(",")
-            for uri in uris:
+    if "rua" in tags:
+        parsed_uris = []
+        uris = tags["rua"]["value"].split(",")
+        for uri in uris:
+            try:
                 uri = parse_dmarc_report_uri(uri)
                 parsed_uris.append(uri)
                 email_address = uri["address"]
@@ -1394,17 +1394,17 @@ def parse_dmarc_record(record, domain, parked=False,
                         "rua email address "
                         "{0} - {1}".format(email_address, str(warning))
                     )
-                tags["rua"]["value"] = parsed_uris
-                if len(parsed_uris) > 2:
-                    raise _DMARCBestPracticeWarning("Some DMARC reporters "
-                                                    "might not send to more "
-                                                    "than two rua URIs")
-        else:
-            raise _DMARCBestPracticeWarning(
-                "rua tag (destination for aggregate reports) not found")
+            except _DMARCWarning as warning:
+                warnings.append(str(warning))
 
-    except _DMARCWarning as warning:
-        warnings.append(str(warning))
+        tags["rua"]["value"] = parsed_uris
+        if len(parsed_uris) > 2:
+            warnings.append(str(_DMARCBestPracticeWarning("Some DMARC reporters "
+                                            "might not send to more "
+                                            "than two rua URIs")))
+    else:
+        warnings.append(str(_DMARCBestPracticeWarning(
+            "rua tag (destination for aggregate reports) not found")))
 
     try:
         if "ruf" in tags.keys():
