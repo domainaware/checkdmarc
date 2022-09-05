@@ -1366,11 +1366,11 @@ def parse_dmarc_record(record, domain, parked=False,
         raise InvalidDMARCTagValue(
             "The value of the ri tag must be an integer")
 
-    try:
-        if "rua" in tags:
-            parsed_uris = []
-            uris = tags["rua"]["value"].split(",")
-            for uri in uris:
+    if "rua" in tags:
+        parsed_uris = []
+        uris = tags["rua"]["value"].split(",")
+        for uri in uris:
+            try:
                 uri = parse_dmarc_report_uri(uri)
                 parsed_uris.append(uri)
                 email_address = uri["address"]
@@ -1394,23 +1394,23 @@ def parse_dmarc_record(record, domain, parked=False,
                         "rua email address "
                         "{0} - {1}".format(email_address, str(warning))
                     )
-                tags["rua"]["value"] = parsed_uris
-                if len(parsed_uris) > 2:
-                    raise _DMARCBestPracticeWarning("Some DMARC reporters "
-                                                    "might not send to more "
-                                                    "than two rua URIs")
-        else:
-            raise _DMARCBestPracticeWarning(
-                "rua tag (destination for aggregate reports) not found")
+            except _DMARCWarning as warning:
+                warnings.append(str(warning))
 
-    except _DMARCWarning as warning:
-        warnings.append(str(warning))
+        tags["rua"]["value"] = parsed_uris
+        if len(parsed_uris) > 2:
+            warnings.append(str(_DMARCBestPracticeWarning("Some DMARC reporters "
+                                            "might not send to more "
+                                            "than two rua URIs")))
+    else:
+        warnings.append(str(_DMARCBestPracticeWarning(
+            "rua tag (destination for aggregate reports) not found")))
 
-    try:
-        if "ruf" in tags.keys():
-            parsed_uris = []
-            uris = tags["ruf"]["value"].split(",")
-            for uri in uris:
+    if "ruf" in tags.keys():
+        parsed_uris = []
+        uris = tags["ruf"]["value"].split(",")
+        for uri in uris:
+            try:
                 uri = parse_dmarc_report_uri(uri)
                 parsed_uris.append(uri)
                 email_address = uri["address"]
@@ -1434,30 +1434,32 @@ def parse_dmarc_record(record, domain, parked=False,
                         "ruf email address "
                         "{0} - {1}".format(email_address, str(warning))
                     )
-                tags["ruf"]["value"] = parsed_uris
-                if len(parsed_uris) > 2:
-                    raise _DMARCBestPracticeWarning("Some DMARC reporters "
-                                                    "might not send to more "
-                                                    "than two ruf URIs")
 
-        if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
-            raise InvalidDMARCTagValue(
-                "pct value must be an integer between 0 and 100")
-        elif tags["pct"]["value"] < 100:
-            warning_msg = "pct value is less than 100. This leads to " \
-                          "inconsistent and unpredictable policy " \
-                          "enforcement. Consider using p=none to " \
-                          "monitor results instead"
-            raise _DMARCBestPracticeWarning(warning_msg)
-        if parked and tags["p"] != "reject":
-            warning_msg = "Policy (p=) should be reject for parked domains"
-            raise _DMARCBestPracticeWarning(warning_msg)
-        if parked and tags["sp"] != "reject":
-            warning_msg = "Subdomain policy (sp=) should be reject for " \
-                          "parked domains"
-            raise _DMARCBestPracticeWarning(warning_msg)
-    except _DMARCWarning as warning:
-        warnings.append(str(warning))
+            except _DMARCWarning as warning:
+                warnings.append(str(warning))
+
+        tags["ruf"]["value"] = parsed_uris
+        if len(parsed_uris) > 2:
+            warnings.append(str(_DMARCBestPracticeWarning("Some DMARC reporters "
+                                            "might not send to more "
+                                            "than two ruf URIs")))
+
+    if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
+        warnings.append(str(InvalidDMARCTagValue(
+            "pct value must be an integer between 0 and 100")))
+    elif tags["pct"]["value"] < 100:
+        warning_msg = "pct value is less than 100. This leads to " \
+                      "inconsistent and unpredictable policy " \
+                      "enforcement. Consider using p=none to " \
+                      "monitor results instead"
+        warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
+    if parked and tags["p"] != "reject":
+        warning_msg = "Policy (p=) should be reject for parked domains"
+        warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
+    if parked and tags["sp"] != "reject":
+        warning_msg = "Subdomain policy (sp=) should be reject for " \
+                      "parked domains"
+        warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
 
     # Add descriptions if requested
     if include_tag_descriptions:
