@@ -1,72 +1,35 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <title>checkdmarc &mdash; checkdmarc 4.4.1 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+  <title>checkdmarc &mdash; checkdmarc 4.4.2 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../index.html" class="icon icon-home"> checkdmarc
-          
-
-          
           </a>
-
-          
-            
-            
               <div class="version">
-                4.4.1
+                4.4.2
               </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -74,85 +37,36 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../checkdmarc.html">checkdmarc module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">CLI</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">checkdmarc</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="index.html">Module code</a> &raquo;</li>
-        
       <li>checkdmarc</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <h1>Source code for checkdmarc</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python3</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
@@ -207,7 +121,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.4.1&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.4.2&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -248,11 +162,11 @@
 <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">_cleanup</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="SMTPError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SMTPError">[docs]</a><span class="k">class</span> <span class="nc">SMTPError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<div class="viewcode-block" id="SMTPError"><a class="viewcode-back" href="../api.html#checkdmarc.SMTPError">[docs]</a><span class="k">class</span> <span class="nc">SMTPError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when n SMTP error occurs&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="SPFError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFError">[docs]</a><span class="k">class</span> <span class="nc">SPFError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<div class="viewcode-block" id="SPFError"><a class="viewcode-back" href="../api.html#checkdmarc.SPFError">[docs]</a><span class="k">class</span> <span class="nc">SPFError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a fatal SPF error occurs&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -289,14 +203,14 @@
     <span class="sd">&quot;&quot;&quot;Raised when a DMARC record does not follow a best practice&quot;&quot;&quot;</span>
 
 
-<div class="viewcode-block" id="DNSException"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DNSException">[docs]</a><span class="k">class</span> <span class="nc">DNSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<div class="viewcode-block" id="DNSException"><a class="viewcode-back" href="../api.html#checkdmarc.DNSException">[docs]</a><span class="k">class</span> <span class="nc">DNSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a general DNS error occurs&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">Timeout</span><span class="p">):</span>
             <span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="DMARCError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCError">[docs]</a><span class="k">class</span> <span class="nc">DMARCError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<div class="viewcode-block" id="DMARCError"><a class="viewcode-back" href="../api.html#checkdmarc.DMARCError">[docs]</a><span class="k">class</span> <span class="nc">DMARCError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a fatal DMARC error occurs&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -308,90 +222,90 @@
         <span class="ne">Exception</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="SPFRecordNotFound"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFRecordNotFound">[docs]</a><span class="k">class</span> <span class="nc">SPFRecordNotFound</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
+<div class="viewcode-block" id="SPFRecordNotFound"><a class="viewcode-back" href="../api.html#checkdmarc.SPFRecordNotFound">[docs]</a><span class="k">class</span> <span class="nc">SPFRecordNotFound</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when an SPF record could not be found&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">Timeout</span><span class="p">):</span>
             <span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="MultipleSPFRTXTRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.MultipleSPFRTXTRecords">[docs]</a><span class="k">class</span> <span class="nc">MultipleSPFRTXTRecords</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
+<div class="viewcode-block" id="MultipleSPFRTXTRecords"><a class="viewcode-back" href="../api.html#checkdmarc.MultipleSPFRTXTRecords">[docs]</a><span class="k">class</span> <span class="nc">MultipleSPFRTXTRecords</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when multiple TXT spf1 records are found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="SPFSyntaxError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFSyntaxError">[docs]</a><span class="k">class</span> <span class="nc">SPFSyntaxError</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
+<div class="viewcode-block" id="SPFSyntaxError"><a class="viewcode-back" href="../api.html#checkdmarc.SPFSyntaxError">[docs]</a><span class="k">class</span> <span class="nc">SPFSyntaxError</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when an SPF syntax error is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="SPFTooManyDNSLookups"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFTooManyDNSLookups">[docs]</a><span class="k">class</span> <span class="nc">SPFTooManyDNSLookups</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
+<div class="viewcode-block" id="SPFTooManyDNSLookups"><a class="viewcode-back" href="../api.html#checkdmarc.SPFTooManyDNSLookups">[docs]</a><span class="k">class</span> <span class="nc">SPFTooManyDNSLookups</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when an SPF record requires too many DNS lookups (10 max)&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dns_lookups</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">])</span>
         <span class="n">SPFError</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="SPFRedirectLoop"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFRedirectLoop">[docs]</a><span class="k">class</span> <span class="nc">SPFRedirectLoop</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
+<div class="viewcode-block" id="SPFRedirectLoop"><a class="viewcode-back" href="../api.html#checkdmarc.SPFRedirectLoop">[docs]</a><span class="k">class</span> <span class="nc">SPFRedirectLoop</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a SPF redirect loop is detected&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="SPFIncludeLoop"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFIncludeLoop">[docs]</a><span class="k">class</span> <span class="nc">SPFIncludeLoop</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
+<div class="viewcode-block" id="SPFIncludeLoop"><a class="viewcode-back" href="../api.html#checkdmarc.SPFIncludeLoop">[docs]</a><span class="k">class</span> <span class="nc">SPFIncludeLoop</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a SPF include loop is detected&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="DMARCRecordNotFound"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCRecordNotFound">[docs]</a><span class="k">class</span> <span class="nc">DMARCRecordNotFound</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+<div class="viewcode-block" id="DMARCRecordNotFound"><a class="viewcode-back" href="../api.html#checkdmarc.DMARCRecordNotFound">[docs]</a><span class="k">class</span> <span class="nc">DMARCRecordNotFound</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a DMARC record could not be found&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">Timeout</span><span class="p">):</span>
             <span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="DMARCSyntaxError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCSyntaxError">[docs]</a><span class="k">class</span> <span class="nc">DMARCSyntaxError</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+<div class="viewcode-block" id="DMARCSyntaxError"><a class="viewcode-back" href="../api.html#checkdmarc.DMARCSyntaxError">[docs]</a><span class="k">class</span> <span class="nc">DMARCSyntaxError</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a DMARC syntax error is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="InvalidDMARCTag"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.InvalidDMARCTag">[docs]</a><span class="k">class</span> <span class="nc">InvalidDMARCTag</span><span class="p">(</span><span class="n">DMARCSyntaxError</span><span class="p">):</span>
+<div class="viewcode-block" id="InvalidDMARCTag"><a class="viewcode-back" href="../api.html#checkdmarc.InvalidDMARCTag">[docs]</a><span class="k">class</span> <span class="nc">InvalidDMARCTag</span><span class="p">(</span><span class="n">DMARCSyntaxError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when an invalid DMARC tag is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="InvalidDMARCTagValue"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.InvalidDMARCTagValue">[docs]</a><span class="k">class</span> <span class="nc">InvalidDMARCTagValue</span><span class="p">(</span><span class="n">DMARCSyntaxError</span><span class="p">):</span>
+<div class="viewcode-block" id="InvalidDMARCTagValue"><a class="viewcode-back" href="../api.html#checkdmarc.InvalidDMARCTagValue">[docs]</a><span class="k">class</span> <span class="nc">InvalidDMARCTagValue</span><span class="p">(</span><span class="n">DMARCSyntaxError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when an invalid DMARC tag value is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="InvalidDMARCReportURI"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.InvalidDMARCReportURI">[docs]</a><span class="k">class</span> <span class="nc">InvalidDMARCReportURI</span><span class="p">(</span><span class="n">InvalidDMARCTagValue</span><span class="p">):</span>
+<div class="viewcode-block" id="InvalidDMARCReportURI"><a class="viewcode-back" href="../api.html#checkdmarc.InvalidDMARCReportURI">[docs]</a><span class="k">class</span> <span class="nc">InvalidDMARCReportURI</span><span class="p">(</span><span class="n">InvalidDMARCTagValue</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when an invalid DMARC reporting URI is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="UnrelatedTXTRecordFoundAtDMARC"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.UnrelatedTXTRecordFoundAtDMARC">[docs]</a><span class="k">class</span> <span class="nc">UnrelatedTXTRecordFoundAtDMARC</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+<div class="viewcode-block" id="UnrelatedTXTRecordFoundAtDMARC"><a class="viewcode-back" href="../api.html#checkdmarc.UnrelatedTXTRecordFoundAtDMARC">[docs]</a><span class="k">class</span> <span class="nc">UnrelatedTXTRecordFoundAtDMARC</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a TXT record unrelated to DMARC is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="SPFRecordFoundWhereDMARCRecordShouldBe"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe">[docs]</a><span class="k">class</span> <span class="nc">SPFRecordFoundWhereDMARCRecordShouldBe</span><span class="p">(</span><span class="n">UnrelatedTXTRecordFoundAtDMARC</span><span class="p">):</span>
+<div class="viewcode-block" id="SPFRecordFoundWhereDMARCRecordShouldBe"><a class="viewcode-back" href="../api.html#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe">[docs]</a><span class="k">class</span> <span class="nc">SPFRecordFoundWhereDMARCRecordShouldBe</span><span class="p">(</span><span class="n">UnrelatedTXTRecordFoundAtDMARC</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a SPF record is found where a DMARC record should be;</span>
 <span class="sd">    most likely, the ``_dmarc`` subdomain</span>
 <span class="sd">    record does not actually exist, and the request for ``TXT`` records was</span>
 <span class="sd">    redirected to the base domain&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="DMARCRecordInWrongLocation"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCRecordInWrongLocation">[docs]</a><span class="k">class</span> <span class="nc">DMARCRecordInWrongLocation</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+<div class="viewcode-block" id="DMARCRecordInWrongLocation"><a class="viewcode-back" href="../api.html#checkdmarc.DMARCRecordInWrongLocation">[docs]</a><span class="k">class</span> <span class="nc">DMARCRecordInWrongLocation</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a DMARC record is found at the root of a domain&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="DMARCReportEmailAddressMissingMXRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.DMARCReportEmailAddressMissingMXRecords">[docs]</a><span class="k">class</span> <span class="nc">DMARCReportEmailAddressMissingMXRecords</span><span class="p">(</span><span class="n">_DMARCWarning</span><span class="p">):</span>
+<div class="viewcode-block" id="DMARCReportEmailAddressMissingMXRecords"><a class="viewcode-back" href="../api.html#checkdmarc.DMARCReportEmailAddressMissingMXRecords">[docs]</a><span class="k">class</span> <span class="nc">DMARCReportEmailAddressMissingMXRecords</span><span class="p">(</span><span class="n">_DMARCWarning</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a email address in a DMARC report URI is missing MX</span>
 <span class="sd">    records&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="UnverifiedDMARCURIDestination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.UnverifiedDMARCURIDestination">[docs]</a><span class="k">class</span> <span class="nc">UnverifiedDMARCURIDestination</span><span class="p">(</span><span class="n">_DMARCWarning</span><span class="p">):</span>
+<div class="viewcode-block" id="UnverifiedDMARCURIDestination"><a class="viewcode-back" href="../api.html#checkdmarc.UnverifiedDMARCURIDestination">[docs]</a><span class="k">class</span> <span class="nc">UnverifiedDMARCURIDestination</span><span class="p">(</span><span class="n">_DMARCWarning</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when the destination of a DMARC report URI does not indicate</span>
 <span class="sd">    that it accepts reports for the domain&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="MultipleDMARCRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.MultipleDMARCRecords">[docs]</a><span class="k">class</span> <span class="nc">MultipleDMARCRecords</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
+<div class="viewcode-block" id="MultipleDMARCRecords"><a class="viewcode-back" href="../api.html#checkdmarc.MultipleDMARCRecords">[docs]</a><span class="k">class</span> <span class="nc">MultipleDMARCRecords</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when multiple DMARC records are found, in violation of</span>
 <span class="sd">    RFC 7486, section 6.6.3&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="BIMIError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.BIMIError">[docs]</a><span class="k">class</span> <span class="nc">BIMIError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<div class="viewcode-block" id="BIMIError"><a class="viewcode-back" href="../api.html#checkdmarc.BIMIError">[docs]</a><span class="k">class</span> <span class="nc">BIMIError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a fatal BIMI error occurs&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -403,45 +317,45 @@
         <span class="ne">Exception</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="BIMIRecordNotFound"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.BIMIRecordNotFound">[docs]</a><span class="k">class</span> <span class="nc">BIMIRecordNotFound</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
+<div class="viewcode-block" id="BIMIRecordNotFound"><a class="viewcode-back" href="../api.html#checkdmarc.BIMIRecordNotFound">[docs]</a><span class="k">class</span> <span class="nc">BIMIRecordNotFound</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a BIMI record could not be found&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">Timeout</span><span class="p">):</span>
             <span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="BIMISyntaxError"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.BIMISyntaxError">[docs]</a><span class="k">class</span> <span class="nc">BIMISyntaxError</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
+<div class="viewcode-block" id="BIMISyntaxError"><a class="viewcode-back" href="../api.html#checkdmarc.BIMISyntaxError">[docs]</a><span class="k">class</span> <span class="nc">BIMISyntaxError</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a BIMI syntax error is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="InvalidBIMITag"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.InvalidBIMITag">[docs]</a><span class="k">class</span> <span class="nc">InvalidBIMITag</span><span class="p">(</span><span class="n">BIMISyntaxError</span><span class="p">):</span>
+<div class="viewcode-block" id="InvalidBIMITag"><a class="viewcode-back" href="../api.html#checkdmarc.InvalidBIMITag">[docs]</a><span class="k">class</span> <span class="nc">InvalidBIMITag</span><span class="p">(</span><span class="n">BIMISyntaxError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when an invalid BIMI tag is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="InvalidBIMITagValue"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.InvalidBIMITagValue">[docs]</a><span class="k">class</span> <span class="nc">InvalidBIMITagValue</span><span class="p">(</span><span class="n">BIMISyntaxError</span><span class="p">):</span>
+<div class="viewcode-block" id="InvalidBIMITagValue"><a class="viewcode-back" href="../api.html#checkdmarc.InvalidBIMITagValue">[docs]</a><span class="k">class</span> <span class="nc">InvalidBIMITagValue</span><span class="p">(</span><span class="n">BIMISyntaxError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when an invalid BIMI tag value is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="InvalidBIMIIndicatorURI"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.InvalidBIMIIndicatorURI">[docs]</a><span class="k">class</span> <span class="nc">InvalidBIMIIndicatorURI</span><span class="p">(</span><span class="n">InvalidBIMITagValue</span><span class="p">):</span>
+<div class="viewcode-block" id="InvalidBIMIIndicatorURI"><a class="viewcode-back" href="../api.html#checkdmarc.InvalidBIMIIndicatorURI">[docs]</a><span class="k">class</span> <span class="nc">InvalidBIMIIndicatorURI</span><span class="p">(</span><span class="n">InvalidBIMITagValue</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when an invalid BIMI indicator URI is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="UnrelatedTXTRecordFoundAtBIMI"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.UnrelatedTXTRecordFoundAtBIMI">[docs]</a><span class="k">class</span> <span class="nc">UnrelatedTXTRecordFoundAtBIMI</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
+<div class="viewcode-block" id="UnrelatedTXTRecordFoundAtBIMI"><a class="viewcode-back" href="../api.html#checkdmarc.UnrelatedTXTRecordFoundAtBIMI">[docs]</a><span class="k">class</span> <span class="nc">UnrelatedTXTRecordFoundAtBIMI</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a TXT record unrelated to BIMI is found&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="SPFRecordFoundWhereBIMIRecordShouldBe"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe">[docs]</a><span class="k">class</span> <span class="nc">SPFRecordFoundWhereBIMIRecordShouldBe</span><span class="p">(</span><span class="n">UnrelatedTXTRecordFoundAtBIMI</span><span class="p">):</span>
+<div class="viewcode-block" id="SPFRecordFoundWhereBIMIRecordShouldBe"><a class="viewcode-back" href="../api.html#checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe">[docs]</a><span class="k">class</span> <span class="nc">SPFRecordFoundWhereBIMIRecordShouldBe</span><span class="p">(</span><span class="n">UnrelatedTXTRecordFoundAtBIMI</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a SPF record is found where a BIMI record should be;</span>
 <span class="sd">    most likely, the ``selector_bimi`` subdomain</span>
 <span class="sd">    record does not actually exist, and the request for ``TXT`` records was</span>
 <span class="sd">    redirected to the base domain&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="BIMIRecordInWrongLocation"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.BIMIRecordInWrongLocation">[docs]</a><span class="k">class</span> <span class="nc">BIMIRecordInWrongLocation</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
+<div class="viewcode-block" id="BIMIRecordInWrongLocation"><a class="viewcode-back" href="../api.html#checkdmarc.BIMIRecordInWrongLocation">[docs]</a><span class="k">class</span> <span class="nc">BIMIRecordInWrongLocation</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when a BIMI record is found at the root of a domain&quot;&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="MultipleBIMIRecords"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.MultipleBIMIRecords">[docs]</a><span class="k">class</span> <span class="nc">MultipleBIMIRecords</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
+<div class="viewcode-block" id="MultipleBIMIRecords"><a class="viewcode-back" href="../api.html#checkdmarc.MultipleBIMIRecords">[docs]</a><span class="k">class</span> <span class="nc">MultipleBIMIRecords</span><span class="p">(</span><span class="n">BIMIError</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raised when multiple BIMI records are found&quot;&quot;&quot;</span></div>
 
 
@@ -717,7 +631,7 @@
 <span class="p">)</span>
 
 
-<div class="viewcode-block" id="get_base_domain"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_base_domain">[docs]</a><span class="k">def</span> <span class="nf">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">use_fresh_psl</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="get_base_domain"><a class="viewcode-back" href="../api.html#checkdmarc.get_base_domain">[docs]</a><span class="k">def</span> <span class="nf">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">use_fresh_psl</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Gets the base domain name for the given domain</span>
 
@@ -1109,7 +1023,7 @@
     <span class="k">return</span> <span class="n">bimi_record</span>
 
 
-<div class="viewcode-block" id="query_dmarc_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="query_dmarc_record"><a class="viewcode-back" href="../api.html#checkdmarc.query_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">query_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a DMARC record</span>
 
@@ -1160,7 +1074,7 @@
                         <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="query_bimi_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_bimi_record">[docs]</a><span class="k">def</span> <span class="nf">query_bimi_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">selector</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="query_bimi_record"><a class="viewcode-back" href="../api.html#checkdmarc.query_bimi_record">[docs]</a><span class="k">def</span> <span class="nf">query_bimi_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">selector</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a BIMI record</span>
@@ -1213,7 +1127,7 @@
                         <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="get_dmarc_tag_description"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_dmarc_tag_description">[docs]</a><span class="k">def</span> <span class="nf">get_dmarc_tag_description</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="get_dmarc_tag_description"><a class="viewcode-back" href="../api.html#checkdmarc.get_dmarc_tag_description">[docs]</a><span class="k">def</span> <span class="nf">get_dmarc_tag_description</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get the name, default value, and description for a DMARC tag, amd/or a</span>
 <span class="sd">    description for a tag value</span>
@@ -1252,7 +1166,7 @@
         <span class="p">[(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="n">default</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="n">description</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="parse_dmarc_report_uri"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.parse_dmarc_report_uri">[docs]</a><span class="k">def</span> <span class="nf">parse_dmarc_report_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">):</span>
+<div class="viewcode-block" id="parse_dmarc_report_uri"><a class="viewcode-back" href="../api.html#checkdmarc.parse_dmarc_report_uri">[docs]</a><span class="k">def</span> <span class="nf">parse_dmarc_report_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parses a DMARC Reporting (i.e. ``rua``/``ruf``) URI</span>
 
@@ -1287,7 +1201,7 @@
                         <span class="p">(</span><span class="s2">&quot;size_limit&quot;</span><span class="p">,</span> <span class="n">size_limit</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="check_wildcard_dmarc_report_authorization"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.check_wildcard_dmarc_report_authorization">[docs]</a><span class="k">def</span> <span class="nf">check_wildcard_dmarc_report_authorization</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span>
+<div class="viewcode-block" id="check_wildcard_dmarc_report_authorization"><a class="viewcode-back" href="../api.html#checkdmarc.check_wildcard_dmarc_report_authorization">[docs]</a><span class="k">def</span> <span class="nf">check_wildcard_dmarc_report_authorization</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span>
                                               <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                               <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1336,7 +1250,7 @@
     <span class="k">return</span> <span class="kc">True</span></div>
 
 
-<div class="viewcode-block" id="verify_dmarc_report_destination"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.verify_dmarc_report_destination">[docs]</a><span class="k">def</span> <span class="nf">verify_dmarc_report_destination</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">,</span>
+<div class="viewcode-block" id="verify_dmarc_report_destination"><a class="viewcode-back" href="../api.html#checkdmarc.verify_dmarc_report_destination">[docs]</a><span class="k">def</span> <span class="nf">verify_dmarc_report_destination</span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span> <span class="n">destination_domain</span><span class="p">,</span>
                                     <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">      Checks if the report destination accepts reports for the source domain</span>
@@ -1401,7 +1315,7 @@
     <span class="k">return</span> <span class="kc">True</span></div>
 
 
-<div class="viewcode-block" id="parse_dmarc_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.parse_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">parse_dmarc_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<div class="viewcode-block" id="parse_dmarc_record"><a class="viewcode-back" href="../api.html#checkdmarc.parse_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">parse_dmarc_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                        <span class="n">include_tag_descriptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                        <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1522,11 +1436,11 @@
         <span class="k">raise</span> <span class="n">InvalidDMARCTagValue</span><span class="p">(</span>
             <span class="s2">&quot;The value of the ri tag must be an integer&quot;</span><span class="p">)</span>
 
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">if</span> <span class="s2">&quot;rua&quot;</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
-            <span class="n">parsed_uris</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">uris</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;rua&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">uris</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">&quot;rua&quot;</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">parsed_uris</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">uris</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;rua&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">uris</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
                 <span class="n">uri</span> <span class="o">=</span> <span class="n">parse_dmarc_report_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
                 <span class="n">parsed_uris</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
                 <span class="n">email_address</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]</span>
@@ -1550,23 +1464,23 @@
                         <span class="s2">&quot;rua email address &quot;</span>
                         <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> - </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">email_address</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
                     <span class="p">)</span>
-                <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;rua&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_uris</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parsed_uris</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span><span class="s2">&quot;Some DMARC reporters &quot;</span>
-                                                    <span class="s2">&quot;might not send to more &quot;</span>
-                                                    <span class="s2">&quot;than two rua URIs&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span>
-                <span class="s2">&quot;rua tag (destination for aggregate reports) not found&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">_DMARCWarning</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
 
-    <span class="k">except</span> <span class="n">_DMARCWarning</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
+        <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;rua&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_uris</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parsed_uris</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span>
+                <span class="s2">&quot;Some DMARC reporters might not send to more than two rua URIs&quot;</span>
+                <span class="p">)))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span>
+            <span class="s2">&quot;rua tag (destination for aggregate reports) not found&quot;</span><span class="p">)))</span>
 
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">if</span> <span class="s2">&quot;ruf&quot;</span> <span class="ow">in</span> <span class="n">tags</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="n">parsed_uris</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">uris</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;ruf&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">uris</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">&quot;ruf&quot;</span> <span class="ow">in</span> <span class="n">tags</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">parsed_uris</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">uris</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;ruf&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">uris</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
                 <span class="n">uri</span> <span class="o">=</span> <span class="n">parse_dmarc_report_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
                 <span class="n">parsed_uris</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
                 <span class="n">email_address</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]</span>
@@ -1590,30 +1504,32 @@
                         <span class="s2">&quot;ruf email address &quot;</span>
                         <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> - </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">email_address</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
                     <span class="p">)</span>
-                <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;ruf&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_uris</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parsed_uris</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span><span class="s2">&quot;Some DMARC reporters &quot;</span>
-                                                    <span class="s2">&quot;might not send to more &quot;</span>
-                                                    <span class="s2">&quot;than two ruf URIs&quot;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;pct&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;pct&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">InvalidDMARCTagValue</span><span class="p">(</span>
-                <span class="s2">&quot;pct value must be an integer between 0 and 100&quot;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;pct&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
-            <span class="n">warning_msg</span> <span class="o">=</span> <span class="s2">&quot;pct value is less than 100. This leads to &quot;</span> \
-                          <span class="s2">&quot;inconsistent and unpredictable policy &quot;</span> \
-                          <span class="s2">&quot;enforcement. Consider using p=none to &quot;</span> \
-                          <span class="s2">&quot;monitor results instead&quot;</span>
-            <span class="k">raise</span> <span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span><span class="n">warning_msg</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">parked</span> <span class="ow">and</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;reject&quot;</span><span class="p">:</span>
-            <span class="n">warning_msg</span> <span class="o">=</span> <span class="s2">&quot;Policy (p=) should be reject for parked domains&quot;</span>
-            <span class="k">raise</span> <span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span><span class="n">warning_msg</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">parked</span> <span class="ow">and</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;reject&quot;</span><span class="p">:</span>
-            <span class="n">warning_msg</span> <span class="o">=</span> <span class="s2">&quot;Subdomain policy (sp=) should be reject for &quot;</span> \
-                          <span class="s2">&quot;parked domains&quot;</span>
-            <span class="k">raise</span> <span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span><span class="n">warning_msg</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">_DMARCWarning</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
+            <span class="k">except</span> <span class="n">_DMARCWarning</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
+
+        <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;ruf&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_uris</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parsed_uris</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span>
+                <span class="s2">&quot;Some DMARC reporters might not send to more than two ruf URIs&quot;</span>
+                <span class="p">)))</span>
+
+    <span class="k">if</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;pct&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;pct&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">InvalidDMARCTagValue</span><span class="p">(</span>
+            <span class="s2">&quot;pct value must be an integer between 0 and 100&quot;</span><span class="p">)))</span>
+    <span class="k">elif</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;pct&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
+        <span class="n">warning_msg</span> <span class="o">=</span> <span class="s2">&quot;pct value is less than 100. This leads to &quot;</span> \
+                      <span class="s2">&quot;inconsistent and unpredictable policy &quot;</span> \
+                      <span class="s2">&quot;enforcement. Consider using p=none to &quot;</span> \
+                      <span class="s2">&quot;monitor results instead&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span><span class="n">warning_msg</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">parked</span> <span class="ow">and</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;reject&quot;</span><span class="p">:</span>
+        <span class="n">warning_msg</span> <span class="o">=</span> <span class="s2">&quot;Policy (p=) should be reject for parked domains&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span><span class="n">warning_msg</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">parked</span> <span class="ow">and</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;reject&quot;</span><span class="p">:</span>
+        <span class="n">warning_msg</span> <span class="o">=</span> <span class="s2">&quot;Subdomain policy (sp=) should be reject for &quot;</span> \
+                      <span class="s2">&quot;parked domains&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_DMARCBestPracticeWarning</span><span class="p">(</span><span class="n">warning_msg</span><span class="p">)))</span>
 
     <span class="c1"># Add descriptions if requested</span>
     <span class="k">if</span> <span class="n">include_tag_descriptions</span><span class="p">:</span>
@@ -1627,7 +1543,7 @@
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;tags&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="get_dmarc_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">get_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">include_tag_descriptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="get_dmarc_record"><a class="viewcode-back" href="../api.html#checkdmarc.get_dmarc_record">[docs]</a><span class="k">def</span> <span class="nf">get_dmarc_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">include_tag_descriptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                      <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Retrieves a DMARC record for a domain and parses it</span>
@@ -1673,7 +1589,7 @@
                         <span class="p">(</span><span class="s2">&quot;parsed&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="query_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.query_spf_record">[docs]</a><span class="k">def</span> <span class="nf">query_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="query_spf_record"><a class="viewcode-back" href="../api.html#checkdmarc.query_spf_record">[docs]</a><span class="k">def</span> <span class="nf">query_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a SPF record</span>
 
@@ -1739,7 +1655,7 @@
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">spf_record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="parse_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.parse_spf_record">[docs]</a><span class="k">def</span> <span class="nf">parse_spf_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">seen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="parse_spf_record"><a class="viewcode-back" href="../api.html#checkdmarc.parse_spf_record">[docs]</a><span class="k">def</span> <span class="nf">parse_spf_record</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">seen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                      <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parses a SPF record, including resolving ``a``, ``mx``, and ``include``</span>
@@ -1943,7 +1859,7 @@
          <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="get_spf_record"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_spf_record">[docs]</a><span class="k">def</span> <span class="nf">get_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="get_spf_record"><a class="viewcode-back" href="../api.html#checkdmarc.get_spf_record">[docs]</a><span class="k">def</span> <span class="nf">get_spf_record</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Retrieves and parses an SPF record</span>
 
@@ -1972,7 +1888,7 @@
     <span class="k">return</span> <span class="n">parsed_record</span></div>
 
 
-<div class="viewcode-block" id="test_tls"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.test_tls">[docs]</a><span class="nd">@timeout_decorator</span><span class="o">.</span><span class="n">timeout</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>
+<div class="viewcode-block" id="test_tls"><a class="viewcode-back" href="../api.html#checkdmarc.test_tls">[docs]</a><span class="nd">@timeout_decorator</span><span class="o">.</span><span class="n">timeout</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>
                            <span class="n">exception_message</span><span class="o">=</span><span class="s2">&quot;Connection timed out&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">test_tls</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">ssl_context</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -2087,7 +2003,7 @@
         <span class="k">return</span> <span class="n">tls</span></div>
 
 
-<div class="viewcode-block" id="test_starttls"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.test_starttls">[docs]</a><span class="nd">@timeout_decorator</span><span class="o">.</span><span class="n">timeout</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>
+<div class="viewcode-block" id="test_starttls"><a class="viewcode-back" href="../api.html#checkdmarc.test_starttls">[docs]</a><span class="nd">@timeout_decorator</span><span class="o">.</span><span class="n">timeout</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>
                            <span class="n">exception_message</span><span class="o">=</span><span class="s2">&quot;Connection timed out&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">test_starttls</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">ssl_context</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -2203,7 +2119,7 @@
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_mx_hosts"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_mx_hosts">[docs]</a><span class="k">def</span> <span class="nf">get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">skip_tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<div class="viewcode-block" id="get_mx_hosts"><a class="viewcode-back" href="../api.html#checkdmarc.get_mx_hosts">[docs]</a><span class="k">def</span> <span class="nf">get_mx_hosts</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">skip_tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">approved_hostnames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -2339,7 +2255,7 @@
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hosts&quot;</span><span class="p">,</span> <span class="n">hosts</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="get_nameservers"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.get_nameservers">[docs]</a><span class="k">def</span> <span class="nf">get_nameservers</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">approved_nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="get_nameservers"><a class="viewcode-back" href="../api.html#checkdmarc.get_nameservers">[docs]</a><span class="k">def</span> <span class="nf">get_nameservers</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">approved_nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Gets a list of nameservers for a given domain</span>
@@ -2379,7 +2295,7 @@
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hostnames&quot;</span><span class="p">,</span> <span class="n">ns_records</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="test_dnssec"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.test_dnssec">[docs]</a><span class="k">def</span> <span class="nf">test_dnssec</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="test_dnssec"><a class="viewcode-back" href="../api.html#checkdmarc.test_dnssec">[docs]</a><span class="k">def</span> <span class="nf">test_dnssec</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check for DNSSEC on the given domain</span>
 
@@ -2411,7 +2327,7 @@
     <span class="k">return</span> <span class="kc">False</span></div>
 
 
-<div class="viewcode-block" id="check_domains"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.check_domains">[docs]</a><span class="k">def</span> <span class="nf">check_domains</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<div class="viewcode-block" id="check_domains"><a class="viewcode-back" href="../api.html#checkdmarc.check_domains">[docs]</a><span class="k">def</span> <span class="nf">check_domains</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">parked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">approved_nameservers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">approved_mx_hostnames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">skip_tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -2550,7 +2466,7 @@
     <span class="k">return</span> <span class="n">results</span></div>
 
 
-<div class="viewcode-block" id="results_to_json"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.results_to_json">[docs]</a><span class="k">def</span> <span class="nf">results_to_json</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+<div class="viewcode-block" id="results_to_json"><a class="viewcode-back" href="../api.html#checkdmarc.results_to_json">[docs]</a><span class="k">def</span> <span class="nf">results_to_json</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Converts a dictionary of results to a JSON string</span>
 
@@ -2563,7 +2479,7 @@
     <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="results_to_csv_rows"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.results_to_csv_rows">[docs]</a><span class="k">def</span> <span class="nf">results_to_csv_rows</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+<div class="viewcode-block" id="results_to_csv_rows"><a class="viewcode-back" href="../api.html#checkdmarc.results_to_csv_rows">[docs]</a><span class="k">def</span> <span class="nf">results_to_csv_rows</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Converts a dictionary of results list of CSV row dicts</span>
 
@@ -2653,19 +2569,22 @@
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_sp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;sp&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="s2">&quot;rua&quot;</span> <span class="ow">in</span> <span class="n">dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]:</span>
                 <span class="n">addresses</span> <span class="o">=</span> <span class="n">dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;rua&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
-                <span class="n">addresses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="n">u</span><span class="p">[</span><span class="s2">&quot;scheme&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span>
-                                               <span class="n">u</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">],</span> <span class="n">addresses</span><span class="p">))</span>
+                <span class="n">addresses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">u</span><span class="p">[</span><span class="s2">&quot;scheme&quot;</span><span class="p">],</span>
+                    <span class="n">u</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]),</span> <span class="n">addresses</span><span class="p">))</span>
                 <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_rua&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>
             <span class="k">if</span> <span class="s2">&quot;ruf&quot;</span> <span class="ow">in</span> <span class="n">dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]:</span>
                 <span class="n">addresses</span> <span class="o">=</span> <span class="n">dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;ruf&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
-                <span class="n">addresses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="n">u</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">],</span> <span class="n">addresses</span><span class="p">))</span>
+                <span class="n">addresses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">u</span><span class="p">[</span><span class="s2">&quot;scheme&quot;</span><span class="p">],</span>
+                    <span class="n">u</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]),</span> <span class="n">addresses</span><span class="p">))</span>
                 <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_ruf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dmarc</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">])</span>
         <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">rows</span></div>
 
 
-<div class="viewcode-block" id="results_to_csv"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.results_to_csv">[docs]</a><span class="k">def</span> <span class="nf">results_to_csv</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+<div class="viewcode-block" id="results_to_csv"><a class="viewcode-back" href="../api.html#checkdmarc.results_to_csv">[docs]</a><span class="k">def</span> <span class="nf">results_to_csv</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Converts a dictionary of results to CSV</span>
 
@@ -2694,7 +2613,7 @@
     <span class="k">return</span> <span class="n">output</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="output_to_file"><a class="viewcode-back" href="../checkdmarc.html#checkdmarc.output_to_file">[docs]</a><span class="k">def</span> <span class="nf">output_to_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+<div class="viewcode-block" id="output_to_file"><a class="viewcode-back" href="../api.html#checkdmarc.output_to_file">[docs]</a><span class="k">def</span> <span class="nf">output_to_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Write given content to the given path</span>
 
@@ -2802,46 +2721,30 @@
 </pre></div>
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2017, Sean Whalen.
-
-    </p>
+    <p>&#169; Copyright 2017, Sean Whalen.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

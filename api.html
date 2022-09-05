@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc module &mdash; checkdmarc 4.4.2 documentation</title>
+  <title>API &mdash; checkdmarc 4.4.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -19,7 +19,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Welcome to checkdmarc’s documentation!" href="index.html" /> 
+    <link rel="next" title="CLI" href="cli.html" />
+    <link rel="prev" title="Welcome to checkdmarc’s documentation" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -41,7 +42,8 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">checkdmarc module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
 </ul>
 
         </div>
@@ -58,9 +60,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>checkdmarc module</li>
+      <li>API</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/checkdmarc.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/api.md.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -69,13 +71,12 @@
            <div itemprop="articleBody">
              
   <section id="module-checkdmarc">
-<span id="checkdmarc-module"></span><h1>checkdmarc module<a class="headerlink" href="#module-checkdmarc" title="Permalink to this heading"></a></h1>
+<span id="api"></span><h1>API<a class="headerlink" href="#module-checkdmarc" title="Permalink to this heading"></a></h1>
 <p>Validates and parses SPF amd DMARC DNS records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.BIMIError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">BIMIError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.BIMIError" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -88,8 +89,7 @@
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.BIMIRecordInWrongLocation">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">BIMIRecordInWrongLocation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordInWrongLocation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.BIMIRecordInWrongLocation" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">BIMIError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -102,8 +102,7 @@
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.BIMIRecordNotFound">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">BIMIRecordNotFound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordNotFound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.BIMIRecordNotFound" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">BIMIError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -116,8 +115,7 @@
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.BIMISyntaxError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">BIMISyntaxError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMISyntaxError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.BIMISyntaxError" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">BIMIError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -130,8 +128,7 @@
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.DMARCError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DMARCError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DMARCError" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -144,8 +141,7 @@
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.DMARCRecordInWrongLocation">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DMARCRecordInWrongLocation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordInWrongLocation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DMARCRecordInWrongLocation" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DMARCError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -158,8 +154,7 @@
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.DMARCRecordNotFound">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DMARCRecordNotFound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordNotFound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DMARCRecordNotFound" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DMARCError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -172,16 +167,14 @@
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.DMARCReportEmailAddressMissingMXRecords">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DMARCReportEmailAddressMissingMXRecords</span></span><a class="reference internal" href="_modules/checkdmarc.html#DMARCReportEmailAddressMissingMXRecords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_DMARCWarning</span></code></p>
-<p>Raised when a email address in a DMARC report URI is missing MX
+<dd><p>Raised when a email address in a DMARC report URI is missing MX
 records</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.DMARCSyntaxError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DMARCSyntaxError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCSyntaxError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DMARCSyntaxError" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DMARCError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -194,15 +187,13 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.DNSException">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DNSException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DNSException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DNSException" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>Raised when a general DNS error occurs</p>
+<dd><p>Raised when a general DNS error occurs</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.InvalidBIMIIndicatorURI">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidBIMIIndicatorURI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMIIndicatorURI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidBIMIIndicatorURI" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.InvalidBIMITagValue" title="checkdmarc.InvalidBIMITagValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">InvalidBIMITagValue</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -215,8 +206,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.InvalidBIMITag">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidBIMITag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITag" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMISyntaxError" title="checkdmarc.BIMISyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">BIMISyntaxError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -229,8 +219,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.InvalidBIMITagValue">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidBIMITagValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITagValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITagValue" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMISyntaxError" title="checkdmarc.BIMISyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">BIMISyntaxError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -243,8 +232,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.InvalidDMARCReportURI">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidDMARCReportURI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCReportURI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCReportURI" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.InvalidDMARCTagValue" title="checkdmarc.InvalidDMARCTagValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">InvalidDMARCTagValue</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -257,8 +245,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.InvalidDMARCTag">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidDMARCTag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTag" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DMARCSyntaxError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -271,8 +258,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.InvalidDMARCTagValue">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidDMARCTagValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTagValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTagValue" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DMARCSyntaxError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -285,8 +271,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.MultipleBIMIRecords">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">MultipleBIMIRecords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleBIMIRecords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.MultipleBIMIRecords" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">BIMIError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -299,8 +284,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.MultipleDMARCRecords">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">MultipleDMARCRecords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleDMARCRecords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.MultipleDMARCRecords" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DMARCError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -313,8 +297,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.MultipleSPFRTXTRecords">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">MultipleSPFRTXTRecords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleSPFRTXTRecords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.MultipleSPFRTXTRecords" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SPFError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -327,15 +310,13 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.SMTPError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SMTPError</span></span><a class="reference internal" href="_modules/checkdmarc.html#SMTPError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SMTPError" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>Raised when n SMTP error occurs</p>
+<dd><p>Raised when n SMTP error occurs</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.SPFError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFError" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -348,8 +329,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.SPFIncludeLoop">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFIncludeLoop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFIncludeLoop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFIncludeLoop" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SPFError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -362,8 +342,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFRecordFoundWhereBIMIRecordShouldBe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereBIMIRecordShouldBe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI" title="checkdmarc.UnrelatedTXTRecordFoundAtBIMI"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnrelatedTXTRecordFoundAtBIMI</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -376,8 +355,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFRecordFoundWhereDMARCRecordShouldBe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereDMARCRecordShouldBe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC" title="checkdmarc.UnrelatedTXTRecordFoundAtDMARC"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnrelatedTXTRecordFoundAtDMARC</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -390,8 +368,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.SPFRecordNotFound">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFRecordNotFound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordNotFound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFRecordNotFound" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SPFError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -404,8 +381,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.SPFRedirectLoop">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFRedirectLoop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRedirectLoop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFRedirectLoop" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SPFError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -418,8 +394,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.SPFSyntaxError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFSyntaxError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFSyntaxError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFSyntaxError" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SPFError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -432,8 +407,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.SPFTooManyDNSLookups">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFTooManyDNSLookups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFTooManyDNSLookups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFTooManyDNSLookups" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.SPFError" title="checkdmarc.SPFError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SPFError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -446,8 +420,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.UnrelatedTXTRecordFoundAtBIMI">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">UnrelatedTXTRecordFoundAtBIMI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtBIMI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.BIMIError" title="checkdmarc.BIMIError"><code class="xref py py-class docutils literal notranslate"><span class="pre">BIMIError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -460,8 +433,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.UnrelatedTXTRecordFoundAtDMARC">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">UnrelatedTXTRecordFoundAtDMARC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtDMARC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#checkdmarc.DMARCError" title="checkdmarc.DMARCError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DMARCError</span></code></a></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
@@ -474,8 +446,7 @@ records</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.UnverifiedDMARCURIDestination">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">UnverifiedDMARCURIDestination</span></span><a class="reference internal" href="_modules/checkdmarc.html#UnverifiedDMARCURIDestination"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.UnverifiedDMARCURIDestination" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_DMARCWarning</span></code></p>
-<p>Raised when the destination of a DMARC report URI does not indicate
+<dd><p>Raised when the destination of a DMARC report URI does not indicate
 that it accepts reports for the domain</p>
 </dd></dl>
 
@@ -1132,7 +1103,8 @@ domain</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to checkdmarc’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to checkdmarc’s documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cli.html" class="btn btn-neutral float-right" title="CLI" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
