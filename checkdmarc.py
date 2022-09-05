@@ -51,7 +51,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.4.1"
+__version__ = "4.4.2"
 
 DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -2497,13 +2497,15 @@ def results_to_csv_rows(results):
             row["dmarc_sp"] = dmarc["tags"]["sp"]["value"]
             if "rua" in dmarc["tags"]:
                 addresses = dmarc["tags"]["rua"]["value"]
-                addresses = list(map(lambda u: ":".format(u["scheme"],
-                                                          u["address"], addresses)))
+                addresses = list(map(lambda u: "{}:{}".format(
+                    u["scheme"],
+                    u["address"]), addresses))
                 row["dmarc_rua"] = "|".join(addresses)
             if "ruf" in dmarc["tags"]:
                 addresses = dmarc["tags"]["ruf"]["value"]
-                addresses = list(map(lambda u: ":".format(u["scheme"],
-                                                          u["address"], addresses)))
+                addresses = list(map(lambda u: "{}:{}".format(
+                    u["scheme"],
+                    u["address"]), addresses))
                 row["dmarc_ruf"] = "|".join(addresses)
             row["dmarc_warnings"] = "|".join(dmarc["warnings"])
         rows.append(row)

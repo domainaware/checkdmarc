@@ -1,0 +1,55 @@
+[build-system]
+requires = [
+    "hatchling>=1.8.1",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "checkdmarc"
+dynamic = [
+    "version",
+]
+description = "A Python module and command line parser for SPF and DMARC records"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    { name = "Sean Whalen", email = "whalenster@gmail.com" },
+]
+keywords = [
+    "DMARC",
+    "DNS",
+    "SPF",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Security",
+    "Topic :: Communications :: Email",
+]
+dependencies = [
+    "dnspython>=2.0.0",
+    "expiringdict>=1.1.4",
+    "publicsuffix2>=2.20191221",
+    "pyleri>=1.3.2",
+    "requests>=2.25.0",
+    "timeout-decorator>=0.4.1",
+]
+
+[project.scripts]
+checkdmarc = "checkdmarc:_main"
+
+[project.urls]
+Homepage = "https://github.com/domainaware/checkdmarc"
+Documentation = "https://domainaware.github.io/checkdmarc/"
+Issues = "https://github.com/domainaware/checkdmarc/issues"
+Changelog = "https://github.com/domainaware/checkdmarc/blob/master/CHANGELOG.md"
+
+
+[tool.hatch.version]
+path = "checkdmarc.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/checkdmarc",
+]
