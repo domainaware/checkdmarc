@@ -1399,9 +1399,9 @@ def parse_dmarc_record(record, domain, parked=False,
 
         tags["rua"]["value"] = parsed_uris
         if len(parsed_uris) > 2:
-            warnings.append(str(_DMARCBestPracticeWarning("Some DMARC reporters "
-                                            "might not send to more "
-                                            "than two rua URIs")))
+            warnings.append(str(_DMARCBestPracticeWarning(
+                "Some DMARC reporters might not send to more than two rua URIs"
+                )))
     else:
         warnings.append(str(_DMARCBestPracticeWarning(
             "rua tag (destination for aggregate reports) not found")))
@@ -1440,9 +1440,9 @@ def parse_dmarc_record(record, domain, parked=False,
 
         tags["ruf"]["value"] = parsed_uris
         if len(parsed_uris) > 2:
-            warnings.append(str(_DMARCBestPracticeWarning("Some DMARC reporters "
-                                            "might not send to more "
-                                            "than two ruf URIs")))
+            warnings.append(str(_DMARCBestPracticeWarning(
+                "Some DMARC reporters might not send to more than two ruf URIs"
+                )))
 
     if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
         warnings.append(str(InvalidDMARCTagValue(

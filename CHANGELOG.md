@@ -5,6 +5,7 @@ Changelog
 -----
 
 - Fix CSV output
+- Always parse RUA and RUF fields, even if other parts of the record are invalid (PR #74)
 - Convert documentation to markdown
 - Migrate build from setuptools to hatch
 - Migrate automated testing from Travis CI to GitHub Actions
