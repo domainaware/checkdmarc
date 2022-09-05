@@ -60,7 +60,6 @@ class Test(unittest.TestCase):
         parsed_record = checkdmarc.parse_spf_record(rec, domain)
         self.assertEqual(len(parsed_record["warnings"]), 1)
 
-    @unittest.skip
     def testDNSSEC(self):
         """Test known good DNSSEC"""
         self.assertEqual(checkdmarc.test_dnssec("fbi.gov"), True)
