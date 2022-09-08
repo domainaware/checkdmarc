@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.4.3
+-----
+
+- Fix tarball build (#78)
+
 4.4.2
 -----
 

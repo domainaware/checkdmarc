@@ -37,7 +37,7 @@ dependencies = [
 ]
 
 [project.scripts]
-checkdmarc = "checkdmarc:_main"
+checkdmarc = "checkdmarc.py:_main"
 
 [project.urls]
 Homepage = "https://github.com/domainaware/checkdmarc"
@@ -51,5 +51,5 @@ path = "checkdmarc.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/checkdmarc",
+    "checkdmarc.py",
 ]
