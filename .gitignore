@@ -107,8 +107,8 @@ ENV/
 input/
 output/
 
-*.json
-*.csv
+./*.json
+./*.csv
 *prod.ini
 
 # LibreOffice lock files
