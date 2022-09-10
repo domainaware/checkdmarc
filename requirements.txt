@@ -5,9 +5,9 @@ publicsuffix2>=2.20191221
 requests>=2.25.0
 timeout-decorator>=0.5.0
 flake8>=3.8.4
-collective.checkdocs>=0.2
 sphinx>=3.3.1
 myst-parser>=0.18.0
+myst-parser[linkify]
 sphinx_rtd_theme>=0.5.0
 wheel>=0.35.1
 codecov>=2.1.10
