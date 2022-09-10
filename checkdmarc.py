@@ -93,7 +93,7 @@ atexit.register(_cleanup)
 
 
 class SMTPError(Exception):
-    """Raised whenn SMTP error occurs"""
+    """Raised when SMTP error occurs"""
 
 
 class SPFError(Exception):
@@ -1277,7 +1277,7 @@ def parse_dmarc_record(record, domain, parked=False,
     Raises:
         :exc:`checkdmarc.DMARCSyntaxError`
         :exc:`checkdmarc.InvalidDMARCTag`
-        :exc:`checkdmarc.InvaliddDMARCTagValue`
+        :exc:`checkdmarc.InvalidDMARCTagValue`
         :exc:`checkdmarc.InvalidDMARCReportURI`
         :exc:`checkdmarc.UnverifiedDMARCURIDestination`
         :exc:`checkdmarc.UnrelatedTXTRecordFound`
