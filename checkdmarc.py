@@ -626,7 +626,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0,
         record_type (str): The record type to query for
         nameservers (list): A list of one or more nameservers to use
         timeout (float): Sets the DNS timeout in seconds
-        cache (ExpiringDict): Cache storage
+        cache (ExpiringDict): Cache storage, or False if cache is not to be used
 
     Returns:
         list: A list of answers
@@ -636,7 +636,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0,
     cache_key = "{0}_{1}".format(domain, record_type)
     if cache is None:
         cache = DNS_CACHE
-    if cache:
+    if type(cache) is ExpiringDict:
         records = cache.get(cache_key, None)
         if records:
             return records
@@ -659,7 +659,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0,
         records = list(map(
             lambda r: r.to_text().replace('"', '').rstrip("."),
             resolver.resolve(domain, record_type, lifetime=timeout)))
-    if cache:
+    if type(cache) is ExpiringDict:
         cache[cache_key] = records
 
     return records
