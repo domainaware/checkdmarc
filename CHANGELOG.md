@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.4.4
+-----
+
+- Fix DNS caching (issue [#79](https://github.com/domainaware/checkdmarc/issues/79) PR [#80](https://github.com/domainaware/checkdmarc/pull/80))
+
 4.4.3
 -----
 
