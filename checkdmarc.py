@@ -626,7 +626,7 @@ def _query_dns(domain, record_type, nameservers=None, timeout=2.0,
         record_type (str): The record type to query for
         nameservers (list): A list of one or more nameservers to use
         timeout (float): Sets the DNS timeout in seconds
-        cache (ExpiringDict): Cache storage, or False if cache is not to be used
+        cache (ExpiringDict): Cache storage
 
     Returns:
         list: A list of answers
