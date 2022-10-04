@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; checkdmarc 4.4.3 documentation</title>
+  <title>API &mdash; checkdmarc 4.4.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -16,6 +16,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -31,7 +32,7 @@
             <a href="index.html" class="icon icon-home"> checkdmarc
           </a>
               <div class="version">
-                4.4.3
+                4.4.4
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -43,7 +44,62 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.BIMIError"><code class="docutils literal notranslate"><span class="pre">BIMIError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.BIMIRecordInWrongLocation"><code class="docutils literal notranslate"><span class="pre">BIMIRecordInWrongLocation</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.BIMIRecordNotFound"><code class="docutils literal notranslate"><span class="pre">BIMIRecordNotFound</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.BIMISyntaxError"><code class="docutils literal notranslate"><span class="pre">BIMISyntaxError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.DMARCError"><code class="docutils literal notranslate"><span class="pre">DMARCError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.DMARCRecordInWrongLocation"><code class="docutils literal notranslate"><span class="pre">DMARCRecordInWrongLocation</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.DMARCRecordNotFound"><code class="docutils literal notranslate"><span class="pre">DMARCRecordNotFound</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords"><code class="docutils literal notranslate"><span class="pre">DMARCReportEmailAddressMissingMXRecords</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.DMARCSyntaxError"><code class="docutils literal notranslate"><span class="pre">DMARCSyntaxError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.DNSException"><code class="docutils literal notranslate"><span class="pre">DNSException</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.InvalidBIMIIndicatorURI"><code class="docutils literal notranslate"><span class="pre">InvalidBIMIIndicatorURI</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.InvalidBIMITag"><code class="docutils literal notranslate"><span class="pre">InvalidBIMITag</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.InvalidBIMITagValue"><code class="docutils literal notranslate"><span class="pre">InvalidBIMITagValue</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.InvalidDMARCReportURI"><code class="docutils literal notranslate"><span class="pre">InvalidDMARCReportURI</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.InvalidDMARCTag"><code class="docutils literal notranslate"><span class="pre">InvalidDMARCTag</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.InvalidDMARCTagValue"><code class="docutils literal notranslate"><span class="pre">InvalidDMARCTagValue</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.MultipleBIMIRecords"><code class="docutils literal notranslate"><span class="pre">MultipleBIMIRecords</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.MultipleDMARCRecords"><code class="docutils literal notranslate"><span class="pre">MultipleDMARCRecords</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.MultipleSPFRTXTRecords"><code class="docutils literal notranslate"><span class="pre">MultipleSPFRTXTRecords</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.SMTPError"><code class="docutils literal notranslate"><span class="pre">SMTPError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.SPFError"><code class="docutils literal notranslate"><span class="pre">SPFError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.SPFIncludeLoop"><code class="docutils literal notranslate"><span class="pre">SPFIncludeLoop</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe"><code class="docutils literal notranslate"><span class="pre">SPFRecordFoundWhereBIMIRecordShouldBe</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe"><code class="docutils literal notranslate"><span class="pre">SPFRecordFoundWhereDMARCRecordShouldBe</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.SPFRecordNotFound"><code class="docutils literal notranslate"><span class="pre">SPFRecordNotFound</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.SPFRedirectLoop"><code class="docutils literal notranslate"><span class="pre">SPFRedirectLoop</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.SPFSyntaxError"><code class="docutils literal notranslate"><span class="pre">SPFSyntaxError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.SPFTooManyDNSLookups"><code class="docutils literal notranslate"><span class="pre">SPFTooManyDNSLookups</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI"><code class="docutils literal notranslate"><span class="pre">UnrelatedTXTRecordFoundAtBIMI</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC"><code class="docutils literal notranslate"><span class="pre">UnrelatedTXTRecordFoundAtDMARC</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination"><code class="docutils literal notranslate"><span class="pre">UnverifiedDMARCURIDestination</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.check_domains"><code class="docutils literal notranslate"><span class="pre">check_domains()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.check_wildcard_dmarc_report_authorization"><code class="docutils literal notranslate"><span class="pre">check_wildcard_dmarc_report_authorization()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.get_base_domain"><code class="docutils literal notranslate"><span class="pre">get_base_domain()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.get_dmarc_record"><code class="docutils literal notranslate"><span class="pre">get_dmarc_record()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.get_dmarc_tag_description"><code class="docutils literal notranslate"><span class="pre">get_dmarc_tag_description()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.get_mx_hosts"><code class="docutils literal notranslate"><span class="pre">get_mx_hosts()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.get_nameservers"><code class="docutils literal notranslate"><span class="pre">get_nameservers()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.get_spf_record"><code class="docutils literal notranslate"><span class="pre">get_spf_record()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.output_to_file"><code class="docutils literal notranslate"><span class="pre">output_to_file()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.parse_dmarc_record"><code class="docutils literal notranslate"><span class="pre">parse_dmarc_record()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.parse_dmarc_report_uri"><code class="docutils literal notranslate"><span class="pre">parse_dmarc_report_uri()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.parse_spf_record"><code class="docutils literal notranslate"><span class="pre">parse_spf_record()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.query_bimi_record"><code class="docutils literal notranslate"><span class="pre">query_bimi_record()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.query_dmarc_record"><code class="docutils literal notranslate"><span class="pre">query_dmarc_record()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.query_spf_record"><code class="docutils literal notranslate"><span class="pre">query_spf_record()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.results_to_csv"><code class="docutils literal notranslate"><span class="pre">results_to_csv()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.results_to_csv_rows"><code class="docutils literal notranslate"><span class="pre">results_to_csv_rows()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.results_to_json"><code class="docutils literal notranslate"><span class="pre">results_to_json()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.test_dnssec"><code class="docutils literal notranslate"><span class="pre">test_dnssec()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.test_starttls"><code class="docutils literal notranslate"><span class="pre">test_starttls()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.test_tls"><code class="docutils literal notranslate"><span class="pre">test_tls()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.verify_dmarc_report_destination"><code class="docutils literal notranslate"><span class="pre">verify_dmarc_report_destination()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
 </ul>
 

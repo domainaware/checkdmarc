@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc &mdash; checkdmarc 4.4.3 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 4.4.4 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -15,6 +15,7 @@
         <script src="../_static/underscore.js"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -28,7 +29,7 @@
             <a href="../index.html" class="icon icon-home"> checkdmarc
           </a>
               <div class="version">
-                4.4.3
+                4.4.4
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -122,7 +123,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.4.3&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.4.4&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -707,7 +708,7 @@
     <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">cache</span> <span class="o">=</span> <span class="n">DNS_CACHE</span>
-    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span> <span class="ow">is</span> <span class="n">ExpiringDict</span><span class="p">:</span>
         <span class="n">records</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">records</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">records</span>
@@ -730,7 +731,7 @@
         <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
             <span class="n">resolver</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">timeout</span><span class="p">)))</span>
-    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span> <span class="ow">is</span> <span class="n">ExpiringDict</span><span class="p">:</span>
         <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">records</span>
 
     <span class="k">return</span> <span class="n">records</span>
