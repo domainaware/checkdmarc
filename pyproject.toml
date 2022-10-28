@@ -37,7 +37,7 @@ dependencies = [
 ]
 
 [project.scripts]
-checkdmarc = "checkdmarc.py:_main"
+checkdmarc = "checkdmarc:_main"
 
 [project.urls]
 Homepage = "https://github.com/domainaware/checkdmarc"
