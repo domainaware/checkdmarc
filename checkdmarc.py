@@ -1585,8 +1585,8 @@ def query_spf_record(domain, nameservers=None, timeout=2.0):
     return OrderedDict([("record", spf_record), ("warnings", warnings)])
 
 
-def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
-                     timeout=2.0):
+def parse_spf_record(record, domain, parked=False, seen=None, recursion=None,
+                     nameservers=None, timeout=2.0):
     """
     Parses a SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
@@ -1615,6 +1615,8 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
     lookup_mechanisms = ["a", "mx", "include", "exists", "redirect"]
     if seen is None:
         seen = [domain]
+    if recursion is None:
+        recursion = [domain]
     record = record.replace('" ', '').replace('"', '')
     warnings = []
     spf_syntax_checker = _SPFGrammar()
@@ -1703,7 +1705,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
                         [("value", host["hostname"]),
                          ("mechanism", mechanism)]))
             elif mechanism == "redirect":
-                if value.lower() == domain.lower():
+                if value.lower() in recursion:
                     raise SPFRedirectLoop(
                         "Redirect loop: {0}".format(value.lower()))
                 seen.append(value.lower())
@@ -1714,6 +1716,8 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
                     redirect_record = redirect_record["record"]
                     redirect = parse_spf_record(redirect_record, value,
                                                 seen=seen,
+                                                recursion=recursion + [
+                                                    value.lower()],
                                                 nameservers=nameservers,
                                                 timeout=timeout)
                     lookup_mechanism_count += redirect["dns_lookups"]
@@ -1738,8 +1742,9 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
             elif mechanism == "all":
                 parsed["all"] = result
             elif mechanism == "include":
-                if value.lower() == domain.lower():
-                    raise SPFIncludeLoop("Include loop: {0}".format(value))
+                if value.lower() in recursion:
+                    raise SPFIncludeLoop("Include loop: {0}".format(
+                        " -> ".join(recursion + [value.lower()])))
                 if value.lower() in seen:
                     raise _SPFDuplicateInclude(
                         "Duplicate include: {0}".format(value.lower()))
@@ -1751,6 +1756,8 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
                     include_record = include_record["record"]
                     include = parse_spf_record(include_record, value,
                                                seen=seen,
+                                               recursion=recursion + [
+                                                   value.lower()],
                                                nameservers=nameservers,
                                                timeout=timeout)
                     lookup_mechanism_count += include["dns_lookups"]
