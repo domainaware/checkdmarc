@@ -878,7 +878,7 @@ def _query_dmarc_record(domain, nameservers=None, timeout=2.0):
             raise DMARCRecordNotFound(
                 "The domain {0} does not exist".format(domain))
         except Exception as error:
-            DMARCRecordNotFound(error)
+            raise DMARCRecordNotFound(error)
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         pass
