@@ -1665,11 +1665,25 @@ def parse_spf_record(record, domain, parked=False, seen=None, nameservers=None,
         value = match[2]
 
         try:
-            if mechanism in ["ip4", "ip6"]:
+            if mechanism == "ip4":
                 try:
-                    ipaddress.ip_network(value, strict=False)
+                    if not isinstance(ipaddress.ip_network(value,
+                                                           strict=False),
+                                      ipaddress.IPv4Network):
+                        raise SPFSyntaxError("{0} is not a valid ipv4 value. "
+                                             "Looks like ipv6".format(value))
                 except ValueError:
-                    raise SPFSyntaxError("{0} is not a valid ipv4/ipv6 "
+                    raise SPFSyntaxError("{0} is not a valid ipv4 "
+                                         "value".format(value))
+            elif mechanism == "ip6":
+                try:
+                    if not isinstance(ipaddress.ip_network(value,
+                                                           strict=False),
+                                      ipaddress.IPv6Network):
+                        raise SPFSyntaxError("{0} is not a valid ipv6 value. "
+                                             "Looks like ipv4".format(value))
+                except ValueError:
+                    raise SPFSyntaxError("{0} is not a valid ipv6 "
                                          "value".format(value))
 
             if mechanism == "a":
