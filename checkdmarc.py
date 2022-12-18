@@ -115,7 +115,7 @@ class _SPFWarning(Exception):
 
 class _SPFMissingRecords(_SPFWarning):
     """Raised when a mechanism in a ``SPF`` record is missing the requested
-    A/AAAA or MX records"""
+       A/AAAA or MX records"""
 
 
 class _SPFDuplicateInclude(_SPFWarning):
@@ -201,7 +201,6 @@ class SPFIncludeLoop(SPFError):
 
 class DMARCRecordNotFound(DMARCError):
     """Raised when a DMARC record could not be found"""
-
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
@@ -229,28 +228,28 @@ class UnrelatedTXTRecordFoundAtDMARC(DMARCError):
 
 class SPFRecordFoundWhereDMARCRecordShouldBe(UnrelatedTXTRecordFoundAtDMARC):
     """Raised when a SPF record is found where a DMARC record should be;
-    most likely, the ``_dmarc`` subdomain
-    record does not actually exist, and the request for ``TXT`` records was
-    redirected to the base domain"""
+        most likely, the ``_dmarc`` subdomain
+       record does not actually exist, and the request for ``TXT`` records was
+       redirected to the base domain"""
 
 
 class DMARCRecordInWrongLocation(DMARCError):
-    """""Raised when a DMARC record is found at the root of a domain"""
+    """Raised when a DMARC record is found at the root of a domain"""
 
 
 class DMARCReportEmailAddressMissingMXRecords(_DMARCWarning):
     """Raised when a email address in a DMARC report URI is missing MX
-    records"""
+       records"""
 
 
 class UnverifiedDMARCURIDestination(_DMARCWarning):
     """Raised when the destination of a DMARC report URI does not indicate
-    that it accepts reports for the domain"""
+       that it accepts reports for the domain"""
 
 
 class MultipleDMARCRecords(DMARCError):
     """Raised when multiple DMARC records are found, in violation of
-    RFC 7486, section 6.6.3"""
+       RFC 7486, section 6.6.3"""
 
 
 class BIMIError(Exception):
@@ -289,13 +288,13 @@ class UnrelatedTXTRecordFoundAtBIMI(BIMIError):
 
 class SPFRecordFoundWhereBIMIRecordShouldBe(UnrelatedTXTRecordFoundAtBIMI):
     """Raised when a SPF record is found where a BIMI record should be;
-    most likely, the ``selector_bimi`` subdomain
-    record does not actually exist, and the request for ``TXT`` records was
-    redirected to the base domain"""
+        most likely, the ``selector_bimi`` subdomain
+        record does not actually exist, and the request for ``TXT`` records was
+        redirected to the base domain"""
 
 
 class BIMIRecordInWrongLocation(BIMIError):
-    """Raised when a BIMI record is found at the root of a domain"""
+	"""Raised when a BIMI record is found at the root of a domain"""
 
 
 class MultipleBIMIRecords(BIMIError):
