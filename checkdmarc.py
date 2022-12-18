@@ -294,7 +294,7 @@ class SPFRecordFoundWhereBIMIRecordShouldBe(UnrelatedTXTRecordFoundAtBIMI):
 
 
 class BIMIRecordInWrongLocation(BIMIError):
-	"""Raised when a BIMI record is found at the root of a domain"""
+    """Raised when a BIMI record is found at the root of a domain"""
 
 
 class MultipleBIMIRecords(BIMIError):
