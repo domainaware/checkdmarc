@@ -93,6 +93,17 @@ class Test(unittest.TestCase):
         self.assertRaises(checkdmarc.SPFTooManyDNSLookups,
                           checkdmarc.parse_spf_record, spf_record, domain)
 
+    def testTooManySPFVoidDNSLookups(self):
+        """SPF records with > 2 void DNS lookups"""
+
+        spf_record = "v=spf1 a:13Mk4olS9VWhQqXRl90fKJrD.example.com " \
+                     "mx:SfGiqBnQfRbOMapQJhozxo2B.example.com " \
+                     "a:VAFeyU9N2KJX518aGsN3w6VS.example.com " \
+                     "~all"
+        domain = "example.com"
+        self.assertRaises(checkdmarc.SPFTooManyVoidDNSLookups,
+                          checkdmarc.parse_spf_record, spf_record, domain)
+
     def testSPFSyntaxErrors(self):
         """SPF record syntax errors raise SPFSyntaxError"""
 

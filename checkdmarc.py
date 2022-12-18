@@ -140,6 +140,10 @@ class DNSException(Exception):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
 
+class DNSExceptionNXDOMAIN(DNSException):
+    """Raised when a NXDOMAIN DNS error (RCODE:3) occurs"""
+
+
 class DMARCError(Exception):
     """Raised when a fatal DMARC error occurs"""
     def __init__(self, msg, data=None):
@@ -171,6 +175,13 @@ class SPFTooManyDNSLookups(SPFError):
     """Raised when an SPF record requires too many DNS lookups (10 max)"""
     def __init__(self, *args, **kwargs):
         data = dict(dns_lookups=kwargs["dns_lookups"])
+        SPFError.__init__(self, args[0], data=data)
+
+
+class SPFTooManyVoidDNSLookups(SPFError):
+    """Raised when an SPF record requires too many void DNS lookups (2 max)"""
+    def __init__(self, *args, **kwargs):
+        data = dict(dns_void_lookups=kwargs["dns_void_lookups"])
         SPFError.__init__(self, args[0], data=data)
 
 
@@ -687,7 +698,7 @@ def _get_nameservers(domain, nameservers=None, timeout=2.0):
         answers = _query_dns(domain, "NS", nameservers=nameservers,
                              timeout=timeout)
     except dns.resolver.NXDOMAIN:
-        raise DNSException("The domain {0} does not exist".format(domain))
+        raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
@@ -724,7 +735,7 @@ def _get_mx_hosts(domain, nameservers=None, timeout=2.0):
                 [("preference", preference), ("hostname", hostname)]))
         hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:
-        raise DNSException("The domain {0} does not exist".format(domain))
+        raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
@@ -755,7 +766,7 @@ def _get_a_records(domain, nameservers=None, timeout=2.0):
             addresses += _query_dns(domain, qt, nameservers=nameservers,
                                     timeout=timeout)
         except dns.resolver.NXDOMAIN:
-            raise DNSException("The domain {0} does not exist".format(domain))
+            raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(domain))
         except dns.resolver.NoAnswer:
             # Sometimes a domain will only have A or AAAA records, but not both
             pass
@@ -814,7 +825,7 @@ def _get_txt_records(domain, nameservers=None, timeout=2.0):
         records = _query_dns(domain, "TXT", nameservers=nameservers,
                              timeout=timeout)
     except dns.resolver.NXDOMAIN:
-        raise DNSException("The domain {0} does not exist".format(domain))
+        raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         raise DNSException(
             "The domain {0} does not have any TXT records".format(domain))
@@ -1650,6 +1661,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, recursion=None,
                           ("all", "neutral")])
 
     lookup_mechanism_count = 0
+    void_lookup_mechanism_count = 0
     for match in matches:
         mechanism = match[1].lower()
         if mechanism in lookup_mechanisms:
@@ -1694,6 +1706,15 @@ def parse_spf_record(record, domain, parked=False, seen=None, recursion=None,
                 a_records = _get_a_records(value, nameservers=nameservers,
                                            timeout=timeout)
                 if len(a_records) == 0:
+                    void_lookup_mechanism_count += 1
+                    if void_lookup_mechanism_count > 2:
+                        raise SPFTooManyVoidDNSLookups(
+                            "Parsing the SPF record has {0}/2 maximum void "
+                            "DNS lookups - "
+                            "https://tools.ietf.org/html/rfc7208#section-4.6.4"
+                            .format(
+                                void_lookup_mechanism_count),
+                            dns_void_lookups=void_lookup_mechanism_count)
                     raise _SPFMissingRecords(
                         "{0} does not have any A/AAAA records".format(
                             value.lower()))
@@ -1706,6 +1727,15 @@ def parse_spf_record(record, domain, parked=False, seen=None, recursion=None,
                 mx_hosts = _get_mx_hosts(value, nameservers=nameservers,
                                          timeout=timeout)
                 if len(mx_hosts) == 0:
+                    void_lookup_mechanism_count += 1
+                    if void_lookup_mechanism_count > 2:
+                        raise SPFTooManyVoidDNSLookups(
+                            "Parsing the SPF record has {0}/2 maximum void "
+                            "DNS lookups - "
+                            "https://tools.ietf.org/html/rfc7208#section-4.6.4"
+                            .format(
+                                void_lookup_mechanism_count),
+                            dns_void_lookups=void_lookup_mechanism_count)
                     raise _SPFMissingRecords(
                         "{0} does not have any MX records".format(
                             value.lower()))
@@ -1735,6 +1765,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, recursion=None,
                                                 nameservers=nameservers,
                                                 timeout=timeout)
                     lookup_mechanism_count += redirect["dns_lookups"]
+                    void_lookup_mechanism_count += redirect["dns_void_lookups"]
                     if lookup_mechanism_count > 10:
                         raise SPFTooManyDNSLookups(
                             "Parsing the SPF record requires {0}/10 maximum "
@@ -1743,13 +1774,24 @@ def parse_spf_record(record, domain, parked=False, seen=None, recursion=None,
                             "#section-4.6.4".format(
                                 lookup_mechanism_count),
                             dns_lookups=lookup_mechanism_count)
+                    if void_lookup_mechanism_count > 2:
+                        raise SPFTooManyVoidDNSLookups(
+                            "Parsing the SPF record has {0}/2 maximum void "
+                            "DNS lookups - "
+                            "https://tools.ietf.org/html/rfc7208#section-4.6.4"
+                            .format(
+                                void_lookup_mechanism_count),
+                            dns_void_lookups=void_lookup_mechanism_count)
                     parsed["redirect"] = OrderedDict(
                         [("domain", value), ("record", redirect_record),
                          ("dns_lookups", redirect["dns_lookups"]),
+                         ("dns_void_lookups", redirect["dns_void_lookups"]),
                          ("parsed", redirect["parsed"]),
                          ("warnings", redirect["warnings"])])
                     warnings += redirect["warnings"]
                 except DNSException as error:
+                    if isinstance(error, DNSExceptionNXDOMAIN):
+                        void_lookup_mechanism_count += 1
                     raise _SPFWarning(str(error))
             elif mechanism == "exp":
                 parsed["exp"] = _get_txt_records(value)[0]
@@ -1775,6 +1817,7 @@ def parse_spf_record(record, domain, parked=False, seen=None, recursion=None,
                                                nameservers=nameservers,
                                                timeout=timeout)
                     lookup_mechanism_count += include["dns_lookups"]
+                    void_lookup_mechanism_count += include["dns_void_lookups"]
                     if lookup_mechanism_count > 10:
                         raise SPFTooManyDNSLookups(
                             "Parsing the SPF record requires {0}/10 maximum "
@@ -1783,16 +1826,30 @@ def parse_spf_record(record, domain, parked=False, seen=None, recursion=None,
                             "#section-4.6.4".format(
                                 lookup_mechanism_count),
                             dns_lookups=lookup_mechanism_count)
+                    if void_lookup_mechanism_count > 2:
+                        raise SPFTooManyVoidDNSLookups(
+                            "Parsing the SPF record has {0}/2 maximum void "
+                            "DNS lookups - "
+                            "https://tools.ietf.org/html/rfc7208#section-4.6.4"
+                            .format(
+                                void_lookup_mechanism_count),
+                            dns_void_lookups=void_lookup_mechanism_count)
                     include = OrderedDict(
                         [("domain", value), ("record", include_record),
                          ("dns_lookups", include["dns_lookups"]),
+                         ("dns_void_lookups", include["dns_void_lookups"]),
                          ("parsed", include["parsed"]),
                          ("warnings", include["warnings"])])
                     parsed["include"].append(include)
                     warnings += include["warnings"]
 
                 except DNSException as error:
+                    if isinstance(error, DNSExceptionNXDOMAIN):
+                        void_lookup_mechanism_count += 1
                     raise _SPFWarning(str(error))
+                except SPFRecordNotFound as error:
+                    void_lookup_mechanism_count += 1
+                    raise error
             elif mechanism == "ptr":
                 parsed[result].append(
                     OrderedDict([("value", value), ("mechanism", mechanism)]))
@@ -1804,10 +1861,21 @@ def parse_spf_record(record, domain, parked=False, seen=None, recursion=None,
                     OrderedDict([("value", value), ("mechanism", mechanism)]))
 
         except (_SPFWarning, DNSException) as warning:
+            if isinstance(warning, (_SPFMissingRecords, DNSExceptionNXDOMAIN)):
+                void_lookup_mechanism_count += 1
+                if void_lookup_mechanism_count > 2:
+                    raise SPFTooManyVoidDNSLookups(
+                        "Parsing the SPF record has {0}/2 maximum void DNS "
+                        "lookups - "
+                        "https://tools.ietf.org/html/rfc7208#section-4.6.4"
+                        .format(
+                            void_lookup_mechanism_count),
+                        dns_void_lookups=void_lookup_mechanism_count)
             warnings.append(str(warning))
     return OrderedDict(
-        [('dns_lookups', lookup_mechanism_count), ("parsed", parsed),
-         ("warnings", warnings)])
+        [('dns_lookups', lookup_mechanism_count),
+         ('dns_void_lookups', void_lookup_mechanism_count),
+         ("parsed", parsed), ("warnings", warnings)])
 
 
 def get_spf_record(domain, nameservers=None, timeout=2.0):
@@ -2331,7 +2399,8 @@ def check_domains(domains, parked=False,
             [("domain", domain), ("base_domain", get_base_domain(domain)),
              ("dnssec", None), ("ns", []), ("mx", [])])
         domain_results["spf"] = OrderedDict(
-            [("record", None), ("valid", True), ("dns_lookups", None)])
+            [("record", None), ("valid", True), ("dns_lookups", None),
+             ("dns_void_lookups", None)])
         domain_results["dnssec"] = test_dnssec(domain,
                                                nameservers=nameservers,
                                                timeout=timeout)
@@ -2369,6 +2438,8 @@ def check_domains(domains, parked=False,
 
             domain_results["spf"]["dns_lookups"] = parsed_spf[
                 "dns_lookups"]
+            domain_results["spf"]["dns_void_lookups"] = parsed_spf[
+                "dns_void_lookups"]
             domain_results["spf"]["parsed"] = parsed_spf["parsed"]
             domain_results["spf"]["warnings"] += parsed_spf["warnings"]
         except SPFError as error:
