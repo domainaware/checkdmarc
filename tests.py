@@ -93,6 +93,17 @@ class Test(unittest.TestCase):
         self.assertRaises(checkdmarc.SPFTooManyDNSLookups,
                           checkdmarc.parse_spf_record, spf_record, domain)
 
+    def testTooManySPFVoidDNSLookups(self):
+        """SPF records with > 2 void DNS lookups"""
+
+        spf_record = "v=spf1 a:13Mk4olS9VWhQqXRl90fKJrD.example.com " \
+                     "mx:SfGiqBnQfRbOMapQJhozxo2B.example.com " \
+                     "a:VAFeyU9N2KJX518aGsN3w6VS.example.com " \
+                     "~all"
+        domain = "example.com"
+        self.assertRaises(checkdmarc.SPFTooManyVoidDNSLookups,
+                          checkdmarc.parse_spf_record, spf_record, domain)
+
     def testSPFSyntaxErrors(self):
         """SPF record syntax errors raise SPFSyntaxError"""
 
@@ -111,6 +122,13 @@ class Test(unittest.TestCase):
         self.assertRaises(checkdmarc.SPFSyntaxError,
                           checkdmarc.parse_spf_record, spf_record, domain)
 
+    def testSPFInvalidIPv6inIPv4(self):
+        """Invalid ipv4 SPF mechanism values raise SPFSyntaxError"""
+        spf_record = "v=spf1 ip4:1200:0000:AB00:1234:0000:2552:7777:1313 ~all"
+        domain = "surftown.dk"
+        self.assertRaises(checkdmarc.SPFSyntaxError,
+                          checkdmarc.parse_spf_record, spf_record, domain)
+
     def testSPFInvalidIPv4Range(self):
         """Invalid ipv4 SPF mechanism values raise SPFSyntaxError"""
         spf_record = "v=spf1 ip4:78.46.96.236/99 ~all"
@@ -121,6 +139,13 @@ class Test(unittest.TestCase):
     def testSPFInvalidIPv6(self):
         """Invalid ipv6 SPF mechanism values raise SPFSyntaxError"""
         spf_record = "v=spf1 ip6:1200:0000:AB00:1234:O000:2552:7777:1313 ~all"
+        domain = "surftown.dk"
+        self.assertRaises(checkdmarc.SPFSyntaxError,
+                          checkdmarc.parse_spf_record, spf_record, domain)
+
+    def testSPFInvalidIPv4inIPv6(self):
+        """Invalid ipv6 SPF mechanism values raise SPFSyntaxError"""
+        spf_record = "v=spf1 ip6:78.46.96.236 ~all"
         domain = "surftown.dk"
         self.assertRaises(checkdmarc.SPFSyntaxError,
                           checkdmarc.parse_spf_record, spf_record, domain)
