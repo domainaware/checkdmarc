@@ -776,7 +776,8 @@ def _get_a_records(domain, nameservers=None, resolver=None, timeout=2.0):
             addresses += _query_dns(domain, qt, nameservers=nameservers,
                                     resolver=resolver, timeout=timeout)
         except dns.resolver.NXDOMAIN:
-            raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(domain))
+            raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(
+				domain))
         except dns.resolver.NoAnswer:
             # Sometimes a domain will only have A or AAAA records, but not both
             pass
@@ -839,7 +840,8 @@ def _get_txt_records(domain, nameservers=None, resolver=None, timeout=2.0):
         records = _query_dns(domain, "TXT", nameservers=nameservers,
                              resolver=resolver, timeout=timeout)
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(domain))
+        raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(
+			domain))
     except dns.resolver.NoAnswer:
         raise DNSException(
             "The domain {0} does not have any TXT records".format(domain))
@@ -915,8 +917,8 @@ def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0):
     return dmarc_record
 
 
-def _query_bmi_record(domain, selector="default", nameservers=None, resolver=None,
-                      timeout=2.0):
+def _query_bmi_record(domain, selector="default", nameservers=None,
+                      resolver=None, timeout=2.0):
     """
     Queries DNS for a BIMI record
 
@@ -1635,7 +1637,8 @@ def query_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
 
 
 def parse_spf_record(record, domain, parked=False, seen=None,
-                     nameservers=None, resolver=None, recursion=None, timeout=2.0):
+                     nameservers=None, resolver=None,
+					 recursion=None, timeout=2.0):
     """
     Parses a SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
