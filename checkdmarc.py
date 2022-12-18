@@ -200,8 +200,10 @@ class SPFIncludeLoop(SPFError):
 
 
 class DMARCRecordNotFound(DMARCError):
-    """Raised when a DMARC record could not be found"""
     def __init__(self, error):
+        """
+        Raised when a DMARC record could not be found
+        """
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
@@ -228,7 +230,7 @@ class UnrelatedTXTRecordFoundAtDMARC(DMARCError):
 
 class SPFRecordFoundWhereDMARCRecordShouldBe(UnrelatedTXTRecordFoundAtDMARC):
     """Raised when a SPF record is found where a DMARC record should be;
-        most likely, the ``_dmarc`` subdomain
+       most likely, the ``_dmarc`` subdomain
        record does not actually exist, and the request for ``TXT`` records was
        redirected to the base domain"""
 
@@ -255,6 +257,11 @@ class MultipleDMARCRecords(DMARCError):
 class BIMIError(Exception):
     """Raised when a fatal BIMI error occurs"""
     def __init__(self, msg, data=None):
+        """
+       Args:
+           msg (str): The error message
+           data (dict): A dictionary of data to include in the results
+        """
         self.data = data
         Exception.__init__(self, msg)
 
