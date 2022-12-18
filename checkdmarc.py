@@ -72,10 +72,10 @@ SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING, IGNORECASE)
 AFTER_ALL_REGEX = compile(AFTER_ALL_REGEX_STRING, IGNORECASE)
 
 USER_AGENT = "Mozilla/5.0 (({0} {1})) parsedmarc/{2}".format(
-            platform.system(),
-            platform.release(),
-            __version__
-        )
+    platform.system(),
+    platform.release(),
+    __version__
+)
 
 DNS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 TLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
@@ -98,6 +98,7 @@ class SMTPError(Exception):
 
 class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
+
     def __init__(self, msg, data=None):
         """
         Args:
@@ -135,6 +136,7 @@ class _DMARCBestPracticeWarning(_DMARCWarning):
 
 class DNSException(Exception):
     """Raised when a general DNS error occurs"""
+
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
@@ -146,6 +148,7 @@ class DNSExceptionNXDOMAIN(DNSException):
 
 class DMARCError(Exception):
     """Raised when a fatal DMARC error occurs"""
+
     def __init__(self, msg, data=None):
         """
         Args:
@@ -158,6 +161,7 @@ class DMARCError(Exception):
 
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
+
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
@@ -173,6 +177,7 @@ class SPFSyntaxError(SPFError):
 
 class SPFTooManyDNSLookups(SPFError):
     """Raised when an SPF record requires too many DNS lookups (10 max)"""
+
     def __init__(self, *args, **kwargs):
         data = dict(dns_lookups=kwargs["dns_lookups"])
         SPFError.__init__(self, args[0], data=data)
@@ -180,6 +185,7 @@ class SPFTooManyDNSLookups(SPFError):
 
 class SPFTooManyVoidDNSLookups(SPFError):
     """Raised when an SPF record requires too many void DNS lookups (2 max)"""
+
     def __init__(self, *args, **kwargs):
         data = dict(dns_void_lookups=kwargs["dns_void_lookups"])
         SPFError.__init__(self, args[0], data=data)
@@ -195,6 +201,7 @@ class SPFIncludeLoop(SPFError):
 
 class DMARCRecordNotFound(DMARCError):
     """Raised when a DMARC record could not be found"""
+
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
@@ -228,7 +235,7 @@ class SPFRecordFoundWhereDMARCRecordShouldBe(UnrelatedTXTRecordFoundAtDMARC):
 
 
 class DMARCRecordInWrongLocation(DMARCError):
-    """Raised when a DMARC record is found at the root of a domain"""
+    """""Raised when a DMARC record is found at the root of a domain"""
 
 
 class DMARCReportEmailAddressMissingMXRecords(_DMARCWarning):
@@ -249,11 +256,6 @@ class MultipleDMARCRecords(DMARCError):
 class BIMIError(Exception):
     """Raised when a fatal BIMI error occurs"""
     def __init__(self, msg, data=None):
-        """
-        Args:
-            msg (str): The error message
-            data (dict): A dictionary of data to include in the results
-        """
         self.data = data
         Exception.__init__(self, msg)
 
@@ -391,7 +393,7 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                  'regardless of its alignment.'
                                                  ' SPF-specific reporting is '
                                                  'described in AFRF-SPF'
-                                            }
+                                        }
                                         ),
                          p=OrderedDict(name="Requested Mail Receiver Policy",
                                        description='Specifies the policy to '
@@ -436,7 +438,7 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                      'Rejection SHOULD '
                                                      'occur during the SMTP '
                                                      'transaction.'
-                                           }
+                                       }
                                        ),
                          pct=OrderedDict(name="Percentage",
                                          default=100,
@@ -600,8 +602,8 @@ def get_base_domain(domain, use_fresh_psl=False):
 
     domain = domain.lower()
     if domain.endswith(".test") or domain.endswith(
-            ".example") or domain.endswith(".invalid") or domain.endswith(
-           ".localhost"):
+        ".example") or domain.endswith(".invalid") or domain.endswith(
+            ".localhost"):
         parts = domain.strip(".").split(".")
         if len(parts) == 1:
             return parts[0]
@@ -636,7 +638,7 @@ def _query_dns(domain, record_type, nameservers=None, resolver=None,
         domain (str): The domain or subdomain to query about
         record_type (str): The record type to query for
         nameservers (list): A list of one or more nameservers to use
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): Sets the DNS timeout in seconds
         cache (ExpiringDict): Cache storage
@@ -685,7 +687,7 @@ def _get_nameservers(domain, nameservers=None, resolver=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -703,7 +705,8 @@ def _get_nameservers(domain, nameservers=None, resolver=None, timeout=2.0):
         answers = _query_dns(domain, "NS", nameservers=nameservers,
                              resolver=resolver, timeout=timeout)
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(domain))
+        raise DNSExceptionNXDOMAIN(
+            "The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
@@ -718,7 +721,7 @@ def _get_mx_hosts(domain, nameservers=None, resolver=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -743,7 +746,8 @@ def _get_mx_hosts(domain, nameservers=None, resolver=None, timeout=2.0):
                 [("preference", preference), ("hostname", hostname)]))
         hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(domain))
+        raise DNSExceptionNXDOMAIN(
+            "The domain {0} does not exist".format(domain))
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
@@ -758,7 +762,7 @@ def _get_a_records(domain, nameservers=None, resolver=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -777,7 +781,7 @@ def _get_a_records(domain, nameservers=None, resolver=None, timeout=2.0):
                                     resolver=resolver, timeout=timeout)
         except dns.resolver.NXDOMAIN:
             raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(
-				domain))
+                domain))
         except dns.resolver.NoAnswer:
             # Sometimes a domain will only have A or AAAA records, but not both
             pass
@@ -798,7 +802,7 @@ def _get_reverse_dns(ip_address, nameservers=None, resolver=None, timeout=2.0):
     Returns:
         list: A list of reverse DNS hostnames
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -825,7 +829,7 @@ def _get_txt_records(domain, nameservers=None, resolver=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -841,7 +845,7 @@ def _get_txt_records(domain, nameservers=None, resolver=None, timeout=2.0):
                              resolver=resolver, timeout=timeout)
     except dns.resolver.NXDOMAIN:
         raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(
-			domain))
+            domain))
     except dns.resolver.NoAnswer:
         raise DNSException(
             "The domain {0} does not have any TXT records".format(domain))
@@ -858,7 +862,7 @@ def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an record from DNS
 
@@ -926,7 +930,7 @@ def _query_bmi_record(domain, selector="default", nameservers=None,
         domain (str): A domain name
         selector: the BIMI selector
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an record from DNS
 
@@ -991,7 +995,7 @@ def query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an record from DNS
 
@@ -1046,7 +1050,7 @@ def query_bimi_record(domain, selector="default", nameservers=None,
         domain (str): A domain name
         selector (str): The BMI selector
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an record from DNS
 
@@ -1180,7 +1184,7 @@ def check_wildcard_dmarc_report_authorization(domain,
     Args:
         domain (str): The domain to check
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -1229,7 +1233,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
           source_domain (str): The source domain
           destination_domain (str): The destination domain
           nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
           timeout (float): number of seconds to wait for an answer from DNS
 
@@ -1299,7 +1303,7 @@ def parse_dmarc_record(record, domain, parked=False,
         parked (bool): Indicates if a domain is parked
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -1446,7 +1450,7 @@ def parse_dmarc_record(record, domain, parked=False,
         if len(parsed_uris) > 2:
             warnings.append(str(_DMARCBestPracticeWarning(
                 "Some DMARC reporters might not send to more than two rua URIs"
-                )))
+            )))
     else:
         warnings.append(str(_DMARCBestPracticeWarning(
             "rua tag (destination for aggregate reports) not found")))
@@ -1488,7 +1492,7 @@ def parse_dmarc_record(record, domain, parked=False,
         if len(parsed_uris) > 2:
             warnings.append(str(_DMARCBestPracticeWarning(
                 "Some DMARC reporters might not send to more than two ruf URIs"
-                )))
+            )))
 
     if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
         warnings.append(str(InvalidDMARCTagValue(
@@ -1528,7 +1532,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
         domain (str): A domain name
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -1575,7 +1579,7 @@ def query_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -1638,7 +1642,7 @@ def query_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
 
 def parse_spf_record(record, domain, parked=False, seen=None,
                      nameservers=None, resolver=None,
-					 recursion=None, timeout=2.0):
+                     recursion=None, timeout=2.0):
     """
     Parses a SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
@@ -1649,7 +1653,7 @@ def parse_spf_record(record, domain, parked=False, seen=None,
         parked (bool): indicated if a domain has been parked
         seen (list): A list of domains seen in past loops
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -1932,7 +1936,7 @@ def get_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): Number of seconds to wait for an answer from DNS
 
@@ -2200,7 +2204,7 @@ def get_mx_hosts(domain, skip_tls=False,
         approved_hostnames (list): A list of approved MX hostname substrings
         parked (bool): Indicates that the domains are parked
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an record from DNS
 
@@ -2337,7 +2341,7 @@ def get_nameservers(domain, approved_nameservers=None,
         domain (str): A domain name
         approved_nameservers (list): A list of approved nameserver substrings
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an record from DNS
 
@@ -2422,7 +2426,7 @@ def check_domains(domains, parked=False,
                                                tags and/or tag values in the
                                                results
         nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS 
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
         wait (float): number of seconds to wait between processing domains

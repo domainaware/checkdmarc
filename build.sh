@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 
+set -e
+
+if [ ! -d "venv" ]; then
+  virtualenv venv || exit
+fi
+
 . venv/bin/activate
-pip3 install -U -r requirements.txt && cd docs && make html && cp -r build/html/* ../../checkdmarc-docs/ && cd .. && flake8 checkdmarc.py && flake8 tests.py && python3 tests.py && rm -rf dist/ build/ && hatch build
-
-
+pip install -U -r requirements.txt
+flake8 checkdmarc.py
+flake8 tests.py
+cd docs
+make clean
+make html
+touch build/html/.nojekyll
+cp -rf build/html/* ../../checkdmarc-docs/
+cd ..
+rm -rf dist/ build/
+hatch build
