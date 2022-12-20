@@ -1,6 +1,16 @@
 Changelog
 =========
 
+4.5.0
+-----
+
+- Detect non-trivial loops (PR [#88](https://github.com/domainaware/checkdmarc/pull/88))
+- Raise a `SPFSyntaxError` exception when an IP address and IP version do not match (PR [#87](https://github.com/domainaware/checkdmarc/pull/87))
+- Fix raising the `DMARCRecordNotFound` exception when a DMARC record does not exist (PR [#86](https://github.com/domainaware/checkdmarc/pull/86) closes issue [#72](https://github.com/domainaware/checkdmarc/issues/72))
+- Add void lookup limit (PR [#85](https://github.com/domainaware/checkdmarc/pull/85))
+- Add Support for User Defined DNS Resolver Object (PR [#83](https://github.com/domainaware/checkdmarc/pull/83))
+
+
 4.4.4
 -----
 
