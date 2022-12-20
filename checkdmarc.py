@@ -93,14 +93,14 @@ atexit.register(_cleanup)
 
 
 class SMTPError(Exception):
-    """Raised when a fatal SMTP error occurs"""
+    """Raised when SMTP error occurs"""
 
 
 class SPFError(Exception):
+    """Raised when a fatal SPF error occurs"""
+
     def __init__(self, msg, data=None):
         """
-        Raised when a fatal SPF error occurs
-
         Args:
             msg (str): The error message
             data (dict): A dictionary of data to include in the output
@@ -135,23 +135,22 @@ class _DMARCBestPracticeWarning(_DMARCWarning):
 
 
 class DNSException(Exception):
+    """Raised when a general DNS error occurs"""
+
     def __init__(self, error):
-        """Raised when a general DNS error occurs"""
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
 
 class DNSExceptionNXDOMAIN(DNSException):
-    def __int__(self, *args, **kwargs):
-        """Raised when a NXDOMAIN DNS error (RCODE:3) occurs"""
-        DNSException.__init__(*args, **kwargs)
+    """Raised when a NXDOMAIN DNS error (RCODE:3) occurs"""
 
 
 class DMARCError(Exception):
+    """Raised when a fatal DMARC error occurs"""
+
     def __init__(self, msg, data=None):
         """
-        Raised when a fatal DMARC error occurs
-
         Args:
             msg (str): The error message
             data (dict): A dictionary of data to include in the results
@@ -161,46 +160,33 @@ class DMARCError(Exception):
 
 
 class SPFRecordNotFound(SPFError):
+    """Raised when an SPF record could not be found"""
+
     def __init__(self, error):
-        """Raised when an SPF record could not be found"""
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
 
 class MultipleSPFRTXTRecords(SPFError):
-    def __int__(self, msg, data=None):
-        """
-        Raised when multiple TXT spf1 records are found
-
-        Args:
-            msg (str): The error message
-            data (dict): A dictionary of data to include in the output
-        """
-        SPFError.__init__(msg, data=data)
+    """Raised when multiple TXT spf1 records are found"""
 
 
 class SPFSyntaxError(SPFError):
-    def __int__(self, msg, data=None):
-        """
-        Raised when an SPF syntax error is found
-
-        Args:
-            msg (str): The error message
-            data (dict): A dictionary of data to include in the output
-        """
-        SPFError.__init__(msg, data=data)
+    """Raised when an SPF syntax error is found"""
 
 
 class SPFTooManyDNSLookups(SPFError):
+    """Raised when an SPF record requires too many DNS lookups (10 max)"""
+
     def __init__(self, *args, **kwargs):
-        """Raised when an SPF record requires too many DNS lookups (10 max)"""
         data = dict(dns_lookups=kwargs["dns_lookups"])
         SPFError.__init__(self, args[0], data=data)
 
 
 class SPFTooManyVoidDNSLookups(SPFError):
+    """Raised when an SPF record requires too many void DNS lookups (2 max)"""
+
     def __init__(self, *args, **kwargs):
-        """Raised when an SPF record requires too many void DNS lookups (2 max)"""
         data = dict(dns_void_lookups=kwargs["dns_void_lookups"])
         SPFError.__init__(self, args[0], data=data)
 
@@ -269,10 +255,9 @@ class MultipleDMARCRecords(DMARCError):
 
 
 class BIMIError(Exception):
+    """Raised when a fatal BIMI error occurs"""
     def __init__(self, msg, data=None):
         """
-        Raised when a fatal BIMI error occurs
-
        Args:
            msg (str): The error message
            data (dict): A dictionary of data to include in the results
