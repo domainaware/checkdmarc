@@ -1,6 +1,13 @@
 Changelog
 =========
 
+4.5.1
+-----
+
+- Ignore case and whitespace when parsing DMARC and BIMI key=value pairs (Closes [#75](https://github.com/domainaware/checkdmarc/issues/75))
+- Handle missing `PTR` records more gracefully (Closes [#64](https://github.com/domainaware/checkdmarc/issues/64))
+- reindent DMARC `fo` tag values now result in a warning instead of a syntax error (Closes [#71](https://github.com/domainaware/checkdmarc/issues/71))
+
 4.5.0
 -----
 

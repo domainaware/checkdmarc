@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+from collections import OrderedDict
 
 import checkdmarc
 
@@ -36,6 +37,19 @@ class Test(unittest.TestCase):
             self.assertEqual(result["dmarc"]["valid"], True,
                              "Known good domain {0} failed DMARC check:"
                              "\n\n{1}".format(result["domain"], dmarc_error))
+
+    def testDMARCMixedFormatting(self):
+        """DMARC records with extra spaces and mixed case are still valid"""
+        examples = [
+            "v=DMARC1;p=ReJect",
+            "v = DMARC1;p=reject;",
+            "V=DMARC1;p=reject;"
+        ]
+
+        for example in examples:
+            parsed_record = checkdmarc.parse_dmarc_record(example, "")
+            self.assertIsInstance(parsed_record, OrderedDict)
+            self.assertIsInstance(parsed_record, OrderedDict)
 
     def testUppercaseSPFMechanism(self):
         """Treat uppercase SPF"SPF mechanisms as valid"""

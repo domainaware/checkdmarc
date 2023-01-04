@@ -43,7 +43,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+   https://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -53,10 +53,10 @@ limitations under the License."""
 
 __version__ = "4.5.0"
 
-DMARC_VERSION_REGEX_STRING = r"v=DMARC1;"
+DMARC_VERSION_REGEX_STRING = r"v *= *DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
-DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5})=([\w.:@/+!,_\- ]+)"
-BIMI_TAG_VALUE_REGEX_STRING = r"([a-z]{1})=(.*)"
+DMARC_TAG_VALUE_REGEX_STRING = r"([a-z]{1,5}) *= *([\w.:@/+!,_\- ]+)"
+BIMI_TAG_VALUE_REGEX_STRING = r"([a-z]{1}) *= *(.*)"
 MAILTO_REGEX_STRING = r"^(mailto):" \
                       r"([\w\-!#$%&'*+-/=?^_`{|}~]" \
                       r"[\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?"
@@ -65,9 +65,9 @@ SPF_MECHANISM_REGEX_STRING = r"([+\-~?])?(mx|ip4|ip6|exists|include|all|a|" \
                              r"redirect|exp|ptr)[:=]?([\w+/_.:\-{%}]*)"
 AFTER_ALL_REGEX_STRING = "all .*"
 
-DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING)
-BIMI_TAG_VALUE_REGEX = compile(BIMI_TAG_VALUE_REGEX_STRING)
-MAILTO_REGEX = compile(MAILTO_REGEX_STRING)
+DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING, IGNORECASE)
+BIMI_TAG_VALUE_REGEX = compile(BIMI_TAG_VALUE_REGEX_STRING, IGNORECASE)
+MAILTO_REGEX = compile(MAILTO_REGEX_STRING, IGNORECASE)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING, IGNORECASE)
 AFTER_ALL_REGEX = compile(AFTER_ALL_REGEX_STRING, IGNORECASE)
 
@@ -317,15 +317,15 @@ class _SPFGrammar(Grammar):
 
 class _DMARCGrammar(Grammar):
     """Defines Pyleri grammar for DMARC records"""
-    version_tag = Regex(DMARC_VERSION_REGEX_STRING)
-    tag_value = Regex(DMARC_TAG_VALUE_REGEX_STRING)
+    version_tag = Regex(DMARC_VERSION_REGEX_STRING, IGNORECASE)
+    tag_value = Regex(DMARC_TAG_VALUE_REGEX_STRING, IGNORECASE)
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
 
 
 class _BIMIGrammar(Grammar):
     """Defines Pyleri grammar for BIMI records"""
-    version_tag = Regex(BIMI_VERSION_REGEX_STRING)
-    tag_value = Regex(BIMI_TAG_VALUE_REGEX_STRING)
+    version_tag = Regex(BIMI_VERSION_REGEX_STRING, IGNORECASE)
+    tag_value = Regex(BIMI_TAG_VALUE_REGEX_STRING, IGNORECASE)
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
 
 
@@ -488,7 +488,7 @@ tag_values = OrderedDict(adkim=OrderedDict(name="DKIM Alignment Mode",
                                                     'Reporting Using the '
                                                     'Abuse Reporting Format", '
                                                     'RFC 6591, April 2012,'
-                                                    '<http://www.rfc-'
+                                                    '<https://www.rfc-'
                                                     'editor.org/info/rfc6591>'
                                         }
                                         ),
@@ -1241,7 +1241,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
           nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-          timeout (float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
 
       Returns:
           bool: Indicates if the report domain accepts reports from the given
@@ -1345,7 +1345,7 @@ def parse_dmarc_record(record, domain, parked=False,
                              "and the request for TXT records was " \
                              "redirected to the base domain"
     warnings = []
-    record = record.strip('"')
+    record = record.strip('"').lower()
     if record.startswith("v=spf1"):
         raise SPFRecordFoundWhereDMARCRecordShouldBe(spf_in_dmarc_error_msg)
     dmarc_syntax_checker = _DMARCGrammar()
@@ -1385,8 +1385,7 @@ def parse_dmarc_record(record, domain, parked=False,
         if tag == "fo":
             tags[tag]["value"] = tags[tag]["value"].split(":")
             if "0" in tags[tag]["value"] and "1" in tags[tag]["value"]:
-                raise InvalidDMARCTagValue(
-                    "fo DMARC tag options 0 and 1 are mutually exclusive")
+                warnings.append("Including 0 and 1 fo tag values is redundant")
             for value in tags[tag]["value"]:
                 if value not in tag_values[tag]["values"]:
                     raise InvalidDMARCTagValue(
@@ -2282,10 +2281,13 @@ def get_mx_hosts(domain, skip_tls=False,
                 warnings.append(e.__str__())
 
         for address in host["addresses"]:
-            reverse_hostnames = _get_reverse_dns(address,
-                                                 nameservers=nameservers,
-                                                 resolver=resolver,
-                                                 timeout=timeout)
+            try:
+                reverse_hostnames = _get_reverse_dns(address,
+                                                     nameservers=nameservers,
+                                                     resolver=resolver,
+                                                     timeout=timeout)
+            except DNSException:
+                reverse_hostnames = []
             if len(reverse_hostnames) == 0:
                 warnings.append(
                     "{0} does not have any reverse DNS (PTR) "
