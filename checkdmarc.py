@@ -192,11 +192,11 @@ class SPFTooManyVoidDNSLookups(SPFError):
 
 
 class SPFRedirectLoop(SPFError):
-    """Raised when a SPF redirect loop is detected"""
+    """Raised when an SPF redirect loop is detected"""
 
 
 class SPFIncludeLoop(SPFError):
-    """Raised when a SPF include loop is detected"""
+    """Raised when an SPF include loop is detected"""
 
 
 class DMARCRecordNotFound(DMARCError):
@@ -229,7 +229,7 @@ class UnrelatedTXTRecordFoundAtDMARC(DMARCError):
 
 
 class SPFRecordFoundWhereDMARCRecordShouldBe(UnrelatedTXTRecordFoundAtDMARC):
-    """Raised when a SPF record is found where a DMARC record should be;
+    """Raised when an SPF record is found where a DMARC record should be;
        most likely, the ``_dmarc`` subdomain
        record does not actually exist, and the request for ``TXT`` records was
        redirected to the base domain"""
@@ -240,7 +240,7 @@ class DMARCRecordInWrongLocation(DMARCError):
 
 
 class DMARCReportEmailAddressMissingMXRecords(_DMARCWarning):
-    """Raised when a email address in a DMARC report URI is missing MX
+    """Raised when an email address in a DMARC report URI is missing MX
        records"""
 
 
@@ -294,7 +294,7 @@ class UnrelatedTXTRecordFoundAtBIMI(BIMIError):
 
 
 class SPFRecordFoundWhereBIMIRecordShouldBe(UnrelatedTXTRecordFoundAtBIMI):
-    """Raised when a SPF record is found where a BIMI record should be;
+    """Raised when an SPF record is found where a BIMI record should be;
         most likely, the ``selector_bimi`` subdomain
         record does not actually exist, and the request for ``TXT`` records was
         redirected to the base domain"""
@@ -870,7 +870,7 @@ def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0):
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for a record from DNS
 
     Returns:
         str: A record string or None
@@ -938,7 +938,7 @@ def _query_bmi_record(domain, selector="default", nameservers=None,
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for a record from DNS
 
     Returns:
         str: A record string or None
@@ -1003,7 +1003,7 @@ def query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0):
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for a record from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1058,7 +1058,7 @@ def query_bimi_record(domain, selector="default", nameservers=None,
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for a record from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1579,7 +1579,7 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
 
 def query_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
     """
-    Queries DNS for a SPF record
+    Queries DNS for an SPF record
 
     Args:
         domain (str): A domain name
@@ -1649,7 +1649,7 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                      nameservers=None, resolver=None,
                      recursion=None, timeout=2.0):
     """
-    Parses a SPF record, including resolving ``a``, ``mx``, and ``include``
+    Parses an SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
 
     Args:
@@ -1660,6 +1660,7 @@ def parse_spf_record(record, domain, parked=False, seen=None,
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
+        recursion (OrderedDict): Results from a previous call
         timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
@@ -1970,7 +1971,7 @@ def get_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
                            exception_message="Connection timed out")
 def test_tls(hostname, ssl_context=None, cache=None):
     """
-    Attempt to connect to a SMTP server port 465 and validate TLS/SSL support
+    Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
 
     Args:
         hostname (str): The hostname
@@ -2085,7 +2086,7 @@ def test_tls(hostname, ssl_context=None, cache=None):
                            exception_message="Connection timed out")
 def test_starttls(hostname, ssl_context=None, cache=None):
     """
-    Attempt to connect to a SMTP server and validate STARTTLS support
+    Attempt to connect to an SMTP server and validate STARTTLS support
 
     Args:
         hostname (str): The hostname
@@ -2211,7 +2212,7 @@ def get_mx_hosts(domain, skip_tls=False,
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for a record from DNS
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -2351,7 +2352,7 @@ def get_nameservers(domain, approved_nameservers=None,
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for an record from DNS
+        timeout (float): number of seconds to wait for a record from DNS
 
     Returns:
         Dict: A dictionary with the following keys:
@@ -2429,7 +2430,7 @@ def check_domains(domains, parked=False,
         parked (bool): Indicates that the domains are parked
         approved_nameservers (list): A list of approved nameservers
         approved_mx_hostnames (list): A list of approved MX hostname
-        skip_tls (bool: Skip STARTTLS testing
+        skip_tls (bool): Skip STARTTLS testing
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC
                                                tags and/or tag values in the
                                                results
