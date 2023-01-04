@@ -219,7 +219,7 @@
 <dl class="py exception">
 <dt class="sig sig-object py" id="checkdmarc.DMARCReportEmailAddressMissingMXRecords">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DMARCReportEmailAddressMissingMXRecords</span></span><a class="reference internal" href="_modules/checkdmarc.html#DMARCReportEmailAddressMissingMXRecords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DMARCReportEmailAddressMissingMXRecords" title="Permalink to this definition"></a></dt>
-<dd><p>Raised when a email address in a DMARC report URI is missing MX
+<dd><p>Raised when an email address in a DMARC report URI is missing MX
 records</p>
 </dd></dl>
 
@@ -533,7 +533,7 @@ them</p>
 <li><p><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</p></li>
 <li><p><strong>approved_nameservers</strong> (<em>list</em>) – A list of approved nameservers</p></li>
 <li><p><strong>approved_mx_hostnames</strong> (<em>list</em>) – A list of approved MX hostname</p></li>
-<li><p><strong>(</strong><strong>bool</strong> (<em>skip_tls</em>) – Skip STARTTLS testing</p></li>
+<li><p><strong>skip_tls</strong> (<em>bool</em>) – Skip STARTTLS testing</p></li>
 <li><p><strong>include_dmarc_tag_descriptions</strong> (<em>bool</em>) – Include descriptions of DMARC
 tags and/or tag values in the
 results</p></li>
@@ -703,7 +703,7 @@ description for a tag value</p>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
 <li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
 requests</p></li>
-<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -739,7 +739,7 @@ requests</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
 <li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
 requests</p></li>
-<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -895,7 +895,7 @@ requests</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.parse_spf_record">
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">parse_spf_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_spf_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.parse_spf_record" title="Permalink to this definition"></a></dt>
-<dd><p>Parses a SPF record, including resolving <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">mx</span></code>, and <code class="docutils literal notranslate"><span class="pre">include</span></code>
+<dd><p>Parses an SPF record, including resolving <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">mx</span></code>, and <code class="docutils literal notranslate"><span class="pre">include</span></code>
 mechanisms</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -907,6 +907,7 @@ mechanisms</p>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
 <li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
 requests</p></li>
+<li><p><strong>recursion</strong> (<em>OrderedDict</em>) – Results from a previous call</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
@@ -947,7 +948,7 @@ requests</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
 <li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
 requests</p></li>
-<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -985,7 +986,7 @@ requests</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
 <li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
 requests</p></li>
-<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an record from DNS</p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1016,7 +1017,7 @@ requests</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.query_spf_record">
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">query_spf_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_spf_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.query_spf_record" title="Permalink to this definition"></a></dt>
-<dd><p>Queries DNS for a SPF record</p>
+<dd><p>Queries DNS for an SPF record</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1121,7 +1122,7 @@ requests</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.test_starttls">
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">test_starttls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssl_context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_starttls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.test_starttls" title="Permalink to this definition"></a></dt>
-<dd><p>Attempt to connect to a SMTP server and validate STARTTLS support</p>
+<dd><p>Attempt to connect to an SMTP server and validate STARTTLS support</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1142,7 +1143,7 @@ requests</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.test_tls">
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">test_tls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssl_context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_tls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.test_tls" title="Permalink to this definition"></a></dt>
-<dd><p>Attempt to connect to a SMTP server port 465 and validate TLS/SSL support</p>
+<dd><p>Attempt to connect to an SMTP server port 465 and validate TLS/SSL support</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
