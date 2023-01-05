@@ -51,7 +51,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.5.1"
+__version__ = "4.5.2"
 
 DMARC_VERSION_REGEX_STRING = r"v *= *DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1167,7 +1167,7 @@ def parse_dmarc_report_uri(uri):
         raise InvalidDMARCReportURI(
             "{0} is not a valid DMARC report URI".format(uri))
     match = mailto_matches[0]
-    scheme = match[0]
+    scheme = match[0].lower()
     email_address = match[1]
     size_limit = match[2].lstrip("!")
     if size_limit == "":
@@ -1345,8 +1345,8 @@ def parse_dmarc_record(record, domain, parked=False,
                              "and the request for TXT records was " \
                              "redirected to the base domain"
     warnings = []
-    record = record.strip('"').lower()
-    if record.startswith("v=spf1"):
+    record = record.strip('"')
+    if record.lower().startswith("v=spf1"):
         raise SPFRecordFoundWhereDMARCRecordShouldBe(spf_in_dmarc_error_msg)
     dmarc_syntax_checker = _DMARCGrammar()
     parsed_record = dmarc_syntax_checker.parse(record)
@@ -1362,7 +1362,7 @@ def parse_dmarc_record(record, domain, parked=False,
 
     # Find explicit tags
     for pair in pairs:
-        tags[pair[0]] = OrderedDict(
+        tags[pair[0].lower()] = OrderedDict(
             [("value", str(pair[1])), ("explicit", True)])
 
     # Include implicit tags and their defaults
@@ -1373,11 +1373,13 @@ def parse_dmarc_record(record, domain, parked=False,
     if "p" not in tags:
         raise DMARCSyntaxError(
             'The record is missing the required policy ("p") tag')
+    tags["p"]["value"] = tags["p"]["value"].lower()
     if "sp" not in tags:
         tags["sp"] = OrderedDict([("value", tags["p"]["value"]),
                                   ("explicit", False)])
     if list(tags.keys())[1] != "p":
         raise DMARCSyntaxError("the p tag must immediately follow the v tag")
+    tags["v"]["value"] = tags["v"]["value"].upper()
     # Validate tag values
     for tag in tags:
         if tag not in tag_values:
@@ -1392,7 +1394,7 @@ def parse_dmarc_record(record, domain, parked=False,
                         "{0} is not a valid option for the DMARC "
                         "fo tag".format(value))
         elif tag == "rf":
-            tags[tag]["value"] = tags[tag]["value"].split(":")
+            tags[tag]["value"] = tags[tag]["value"].lower().split(":")
             for value in tags[tag]["value"]:
                 if value not in tag_values[tag]["values"]:
                     raise InvalidDMARCTagValue(

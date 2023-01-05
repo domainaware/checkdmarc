@@ -1,6 +1,17 @@
 Changelog
 =========
 
+5.4.2
+-----
+
+- Maintain the original character case of the DMARC record
+- Always treat tag names as lowercase
+- Always treat the DMARC `v` tag value as if it was uppercase
+- Always treat the DMARC `p`, and `fo` tag values as if they were lowercase
+- Always treat URI schemes as lowercase, but maintain the case of the address
+- Remove inaccurate `testInvalidDMARCfo` test
+
+
 4.5.1
 -----
 

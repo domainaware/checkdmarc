@@ -49,7 +49,6 @@ class Test(unittest.TestCase):
         for example in examples:
             parsed_record = checkdmarc.parse_dmarc_record(example, "")
             self.assertIsInstance(parsed_record, OrderedDict)
-            self.assertIsInstance(parsed_record, OrderedDict)
 
     def testUppercaseSPFMechanism(self):
         """Treat uppercase SPF"SPF mechanisms as valid"""
@@ -237,16 +236,6 @@ class Test(unittest.TestCase):
                           checkdmarc.parse_dmarc_record,
                           dmarc_record,
                           domain)
-
-    def testInvalidDMARCfo(self):
-        """An invalid DMARC fo tag value raises InvalidDMARCTagValue"""
-
-        dmarc_record = "v=DMARC1;p=none;aspf=s;adkim=s;fo=0:1:d:s;" \
-                       "ruf=mailto:dmarcreports@omb.gov;" \
-                       "rua=mailto:dmarcreports@omb.gov"
-        domain = "omb.gov"
-        self.assertRaises(checkdmarc.InvalidDMARCTagValue,
-                          checkdmarc.parse_dmarc_record, dmarc_record, domain)
 
 
 if __name__ == "__main__":
