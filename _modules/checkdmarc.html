@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc &mdash; checkdmarc 4.5.1 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 4.5.2 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -29,7 +29,7 @@
             <a href="../index.html" class="icon icon-home"> checkdmarc
           </a>
               <div class="version">
-                4.5.1
+                4.5.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -123,7 +123,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.5.1&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.5.2&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v *= *DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -1239,7 +1239,7 @@
         <span class="k">raise</span> <span class="n">InvalidDMARCReportURI</span><span class="p">(</span>
             <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is not a valid DMARC report URI&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">uri</span><span class="p">))</span>
     <span class="n">match</span> <span class="o">=</span> <span class="n">mailto_matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">scheme</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">scheme</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="n">email_address</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">size_limit</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;!&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">size_limit</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
@@ -1417,8 +1417,8 @@
                              <span class="s2">&quot;and the request for TXT records was &quot;</span> \
                              <span class="s2">&quot;redirected to the base domain&quot;</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=spf1&quot;</span><span class="p">):</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=spf1&quot;</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">SPFRecordFoundWhereDMARCRecordShouldBe</span><span class="p">(</span><span class="n">spf_in_dmarc_error_msg</span><span class="p">)</span>
     <span class="n">dmarc_syntax_checker</span> <span class="o">=</span> <span class="n">_DMARCGrammar</span><span class="p">()</span>
     <span class="n">parsed_record</span> <span class="o">=</span> <span class="n">dmarc_syntax_checker</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
@@ -1434,7 +1434,7 @@
 
     <span class="c1"># Find explicit tags</span>
     <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
-        <span class="n">tags</span><span class="p">[</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+        <span class="n">tags</span><span class="p">[</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
             <span class="p">[(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="p">(</span><span class="s2">&quot;explicit&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)])</span>
 
     <span class="c1"># Include implicit tags and their defaults</span>
@@ -1445,11 +1445,13 @@
     <span class="k">if</span> <span class="s2">&quot;p&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DMARCSyntaxError</span><span class="p">(</span>
             <span class="s1">&#39;The record is missing the required policy (&quot;p&quot;) tag&#39;</span><span class="p">)</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="k">if</span> <span class="s2">&quot;sp&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]),</span>
                                   <span class="p">(</span><span class="s2">&quot;explicit&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)])</span>
     <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">tags</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DMARCSyntaxError</span><span class="p">(</span><span class="s2">&quot;the p tag must immediately follow the v tag&quot;</span><span class="p">)</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;v&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;v&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
     <span class="c1"># Validate tag values</span>
     <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tag_values</span><span class="p">:</span>
@@ -1464,7 +1466,7 @@
                         <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is not a valid option for the DMARC &quot;</span>
                         <span class="s2">&quot;fo tag&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
         <span class="k">elif</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;rf&quot;</span><span class="p">:</span>
-            <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+            <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]:</span>
                 <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tag_values</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;values&quot;</span><span class="p">]:</span>
                     <span class="k">raise</span> <span class="n">InvalidDMARCTagValue</span><span class="p">(</span>
