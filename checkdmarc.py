@@ -11,14 +11,12 @@ from csv import DictWriter
 from argparse import ArgumentParser
 import os
 from time import sleep
-from datetime import datetime, timedelta
 import socket
 import smtplib
 import tempfile
 import platform
 import shutil
 import atexit
-import requests
 from ssl import SSLError, CertificateError, create_default_context
 
 from io import StringIO

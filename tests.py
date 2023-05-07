@@ -76,7 +76,7 @@ class Test(unittest.TestCase):
         subdomain = "e3191.c.akamaiedge.net"
         result = checkdmarc.get_base_domain(subdomain)
         assert result == "c.akamaiedge.net"
-        
+
     def testUppercaseSPFMechanism(self):
         """Treat uppercase SPF"SPF mechanisms as valid"""
         spf_record = "v=spf1 IP4:147.75.8.208 -ALL"
