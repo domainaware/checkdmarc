@@ -596,20 +596,6 @@ def get_base_domain(domain):
 
     """
 
-    reserved_domains = [
-        ".test",
-        ".example",
-        ".invalid",
-        ".localhost",
-    ]
-    for reserved_domain in reserved_domains:
-        if domain.lower().endswith(reserved_domain):
-            parts = domain.strip(".").split(".")
-            if len(parts) == 1:
-                return parts[0]
-            else:
-                return ".".join(parts[-2::])
-    
     psl = publicsuffixlist.PublicSuffixList()
     return psl.privatesuffix(domain)
 
