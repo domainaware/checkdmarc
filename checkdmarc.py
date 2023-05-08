@@ -11,20 +11,18 @@ from csv import DictWriter
 from argparse import ArgumentParser
 import os
 from time import sleep
-from datetime import datetime, timedelta
 import socket
 import smtplib
 import tempfile
 import platform
 import shutil
 import atexit
-import requests
 from ssl import SSLError, CertificateError, create_default_context
 
 from io import StringIO
 from expiringdict import ExpiringDict
 
-import publicsuffix2
+import publicsuffixlist
 import dns
 import dns.resolver
 import dns.exception
@@ -580,7 +578,7 @@ bimi_tags = OrderedDict(
 )
 
 
-def get_base_domain(domain, use_fresh_psl=False):
+def get_base_domain(domain):
     """
     Gets the base domain name for the given domain
 
@@ -590,49 +588,14 @@ def get_base_domain(domain, use_fresh_psl=False):
 
     Args:
         domain (str): A domain or subdomain
-        use_fresh_psl (bool): Download a fresh Public Suffix List
 
     Returns:
         str: The base domain of the given domain
 
     """
-    psl_path = os.path.join(TMPDIR, "public_suffix_list.dat")
 
-    def download_psl():
-        url = "https://publicsuffix.org/list/public_suffix_list.dat"
-        # Use a browser-like user agent string to bypass some proxy blocks
-        headers = {"User-Agent": USER_AGENT}
-        fresh_psl = requests.get(url, headers=headers).text
-        with open(psl_path, "w", encoding="utf-8") as fresh_psl_file:
-            fresh_psl_file.write(fresh_psl)
-
-    domain = domain.lower()
-    if domain.endswith(".test") or domain.endswith(
-        ".example") or domain.endswith(".invalid") or domain.endswith(
-            ".localhost"):
-        parts = domain.strip(".").split(".")
-        if len(parts) == 1:
-            return parts[0]
-        else:
-            return ".".join(parts[-2::])
-    if use_fresh_psl:
-        if not os.path.exists(psl_path):
-            download_psl()
-        else:
-            psl_age = datetime.now() - datetime.fromtimestamp(
-                os.stat(psl_path).st_mtime)
-            if psl_age > timedelta(hours=24):
-                try:
-                    download_psl()
-                except Exception as error:
-                    logging.warning(
-                        "Failed to download an updated PSL {0}".format(error))
-        with open(psl_path, encoding="utf-8") as psl_file:
-            psl = publicsuffix2.PublicSuffixList(psl_file)
-
-        return psl.get_public_suffix(domain)
-    else:
-        return publicsuffix2.get_sld(domain)
+    psl = publicsuffixlist.PublicSuffixList()
+    return psl.privatesuffix(domain)
 
 
 def _query_dns(domain, record_type, nameservers=None, resolver=None,

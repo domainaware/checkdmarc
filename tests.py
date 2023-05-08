@@ -50,6 +50,33 @@ class Test(unittest.TestCase):
             parsed_record = checkdmarc.parse_dmarc_record(example, "")
             self.assertIsInstance(parsed_record, OrderedDict)
 
+    def testGetBaseDomain(self):
+        subdomain = "foo.example.com"
+        result = checkdmarc.get_base_domain(subdomain)
+        assert result == "example.com"
+
+        # Test reserved domains
+        subdomain = "_dmarc.nonauth-rua.invalid.example"
+        result = checkdmarc.get_base_domain(subdomain)
+        assert result == "invalid.example"
+
+        subdomain = "_dmarc.nonauth-rua.invalid.test"
+        result = checkdmarc.get_base_domain(subdomain)
+        assert result == "invalid.test"
+
+        subdomain = "_dmarc.nonauth-rua.invalid.invalid"
+        result = checkdmarc.get_base_domain(subdomain)
+        assert result == "invalid.invalid"
+
+        subdomain = "_dmarc.nonauth-rua.invalid.localhost"
+        result = checkdmarc.get_base_domain(subdomain)
+        assert result == "invalid.localhost"
+
+        # Test newer PSL entries
+        subdomain = "e3191.c.akamaiedge.net"
+        result = checkdmarc.get_base_domain(subdomain)
+        assert result == "c.akamaiedge.net"
+
     def testUppercaseSPFMechanism(self):
         """Treat uppercase SPF"SPF mechanisms as valid"""
         spf_record = "v=spf1 IP4:147.75.8.208 -ALL"
