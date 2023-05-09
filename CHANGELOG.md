@@ -1,7 +1,12 @@
 Changelog
 =========
 
-5.4.2
+4.6.0
+-----
+
+- Replace publicsuffix2 with publicsuffixlist (PR #92)
+
+4.5.2
 -----
 
 - Maintain the original character case of the DMARC record
@@ -10,7 +15,6 @@ Changelog
 - Always treat the DMARC `p`, and `fo` tag values as if they were lowercase
 - Always treat URI schemes as lowercase, but maintain the case of the address
 - Remove inaccurate `testInvalidDMARCfo` test
-
 
 4.5.1
 -----
