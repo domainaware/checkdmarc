@@ -21,7 +21,7 @@ Changelog
 
 - Ignore case and whitespace when parsing DMARC and BIMI key=value pairs (Closes [#75](https://github.com/domainaware/checkdmarc/issues/75))
 - Handle missing `PTR` records more gracefully (Closes [#64](https://github.com/domainaware/checkdmarc/issues/64))
-- reindent DMARC `fo` tag values now result in a warning instead of a syntax error (Closes [#71](https://github.com/domainaware/checkdmarc/issues/71))
+- Redundant DMARC `fo` tag values now result in a warning instead of a syntax error (Closes [#71](https://github.com/domainaware/checkdmarc/issues/71))
 
 4.5.0
 -----
@@ -31,7 +31,6 @@ Changelog
 - Fix raising the `DMARCRecordNotFound` exception when a DMARC record does not exist (PR [#86](https://github.com/domainaware/checkdmarc/pull/86) closes issue [#72](https://github.com/domainaware/checkdmarc/issues/72))
 - Add void lookup limit (PR [#85](https://github.com/domainaware/checkdmarc/pull/85))
 - Add Support for User Defined DNS Resolver Object (PR [#83](https://github.com/domainaware/checkdmarc/pull/83))
-
 
 4.4.4
 -----
