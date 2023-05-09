@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; checkdmarc 4.5.2 documentation</title>
+  <title>API &mdash; checkdmarc 4.6.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -12,9 +12,6 @@
   <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -29,14 +26,18 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> checkdmarc
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            checkdmarc
           </a>
               <div class="version">
-                4.5.2
+                4.6.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -118,7 +119,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">API</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/api.md.txt" rel="nofollow"> View page source</a>
@@ -136,7 +137,7 @@
 <dt class="sig sig-object py" id="checkdmarc.BIMIError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">BIMIError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.BIMIError" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -149,7 +150,7 @@
 <dt class="sig sig-object py" id="checkdmarc.BIMIRecordInWrongLocation">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">BIMIRecordInWrongLocation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordInWrongLocation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.BIMIRecordInWrongLocation" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -162,7 +163,7 @@
 <dt class="sig sig-object py" id="checkdmarc.BIMIRecordNotFound">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">BIMIRecordNotFound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMIRecordNotFound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.BIMIRecordNotFound" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -175,7 +176,7 @@
 <dt class="sig sig-object py" id="checkdmarc.BIMISyntaxError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">BIMISyntaxError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#BIMISyntaxError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.BIMISyntaxError" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -188,7 +189,7 @@
 <dt class="sig sig-object py" id="checkdmarc.DMARCError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DMARCError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DMARCError" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -201,7 +202,7 @@
 <dt class="sig sig-object py" id="checkdmarc.DMARCRecordInWrongLocation">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DMARCRecordInWrongLocation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCRecordInWrongLocation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DMARCRecordInWrongLocation" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -227,7 +228,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.DMARCSyntaxError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">DMARCSyntaxError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#DMARCSyntaxError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.DMARCSyntaxError" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -252,7 +253,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.InvalidBIMIIndicatorURI">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidBIMIIndicatorURI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMIIndicatorURI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidBIMIIndicatorURI" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -265,7 +266,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.InvalidBIMITag">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidBIMITag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITag" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -278,7 +279,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.InvalidBIMITagValue">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidBIMITagValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidBIMITagValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidBIMITagValue" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -291,7 +292,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.InvalidDMARCReportURI">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidDMARCReportURI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCReportURI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCReportURI" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -304,7 +305,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.InvalidDMARCTag">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidDMARCTag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTag" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -317,7 +318,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.InvalidDMARCTagValue">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">InvalidDMARCTagValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#InvalidDMARCTagValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.InvalidDMARCTagValue" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -330,7 +331,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.MultipleBIMIRecords">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">MultipleBIMIRecords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleBIMIRecords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.MultipleBIMIRecords" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -343,7 +344,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.MultipleDMARCRecords">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">MultipleDMARCRecords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleDMARCRecords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.MultipleDMARCRecords" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -356,7 +357,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.MultipleSPFRTXTRecords">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">MultipleSPFRTXTRecords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#MultipleSPFRTXTRecords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.MultipleSPFRTXTRecords" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the output</p></li>
@@ -375,7 +376,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.SPFError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFError" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the output</p></li>
@@ -388,7 +389,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.SPFIncludeLoop">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFIncludeLoop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFIncludeLoop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFIncludeLoop" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the output</p></li>
@@ -401,7 +402,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFRecordFoundWhereBIMIRecordShouldBe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereBIMIRecordShouldBe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereBIMIRecordShouldBe" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -414,7 +415,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFRecordFoundWhereDMARCRecordShouldBe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordFoundWhereDMARCRecordShouldBe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -427,7 +428,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.SPFRecordNotFound">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFRecordNotFound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRecordNotFound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFRecordNotFound" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the output</p></li>
@@ -440,7 +441,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.SPFRedirectLoop">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFRedirectLoop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFRedirectLoop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFRedirectLoop" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the output</p></li>
@@ -453,7 +454,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.SPFSyntaxError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFSyntaxError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFSyntaxError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFSyntaxError" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the output</p></li>
@@ -466,7 +467,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.SPFTooManyDNSLookups">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFTooManyDNSLookups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFTooManyDNSLookups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFTooManyDNSLookups" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the output</p></li>
@@ -479,7 +480,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.SPFTooManyVoidDNSLookups">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">SPFTooManyVoidDNSLookups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#SPFTooManyVoidDNSLookups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.SPFTooManyVoidDNSLookups" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the output</p></li>
@@ -492,7 +493,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.UnrelatedTXTRecordFoundAtBIMI">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">UnrelatedTXTRecordFoundAtBIMI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtBIMI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -505,7 +506,7 @@ records</p>
 <dt class="sig sig-object py" id="checkdmarc.UnrelatedTXTRecordFoundAtDMARC">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">UnrelatedTXTRecordFoundAtDMARC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#UnrelatedTXTRecordFoundAtDMARC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>msg</strong> (<em>str</em>) – The error message</p></li>
 <li><p><strong>data</strong> (<em>dict</em>) – A dictionary of data to include in the results</p></li>
@@ -527,7 +528,7 @@ that it accepts reports for the domain</p>
 <dd><p>Check the given domains for SPF and DMARC records, parse them, and return
 them</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domains</strong> (<em>list</em>) – A list of domains to check</p></li>
 <li><p><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</p></li>
@@ -544,7 +545,7 @@ requests</p></li>
 <li><p><strong>wait</strong> (<em>float</em>) – number of seconds to wait between processing domains</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><p>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> or <code class="docutils literal notranslate"><span class="pre">list</span></code> of  <cite>OrderedDict</cite> with the following keys</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">domain</span></code> - The domain name</p></li>
@@ -568,7 +569,7 @@ requests</p></li>
 </pre></div>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – The domain to check</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
@@ -577,11 +578,11 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>An indicator of the existence of a valid wildcard DMARC report
 authorization record</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
@@ -589,7 +590,7 @@ authorization record</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.get_base_domain">
-<span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">get_base_domain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fresh_psl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_base_domain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.get_base_domain" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">get_base_domain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_base_domain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.get_base_domain" title="Permalink to this definition"></a></dt>
 <dd><p>Gets the base domain name for the given domain</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -597,16 +598,13 @@ authorization record</p>
 <a class="reference external" href="https://publicsuffix.org/list/public_suffix_list.dat">https://publicsuffix.org/list/public_suffix_list.dat</a>.</p>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>domain</strong> (<em>str</em>) – A domain or subdomain</p></li>
-<li><p><strong>use_fresh_psl</strong> (<em>bool</em>) – Download a fresh Public Suffix List</p></li>
-</ul>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>domain</strong> (<em>str</em>) – A domain or subdomain</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The base domain of the given domain</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -617,7 +615,7 @@ authorization record</p>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">get_dmarc_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_tag_descriptions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_dmarc_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.get_dmarc_record" title="Permalink to this definition"></a></dt>
 <dd><p>Retrieves a DMARC record for a domain and parses it</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>include_tag_descriptions</strong> (<em>bool</em>) – Include descriptions in parsed results</p></li>
@@ -627,7 +625,7 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - The DMARC record string</p></li>
@@ -638,7 +636,7 @@ requests</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><p>OrderedDict</p>
 <dl class="simple">
 <dt>Raises:</dt><dd><p><a class="reference internal" href="#checkdmarc.DMARCRecordNotFound" title="checkdmarc.DMARCRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCRecordNotFound</span></code></a>
@@ -666,13 +664,13 @@ requests</p></li>
 <dd><p>Get the name, default value, and description for a DMARC tag, amd/or a
 description for a tag value</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>tag</strong> (<em>str</em>) – A DMARC tag</p></li>
 <li><p><strong>value</strong> (<em>str</em>) – An optional value</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">name</span></code> - the tag name</p></li>
@@ -683,7 +681,7 @@ description for a tag value</p>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>OrderedDict</p>
 </dd>
 </dl>
@@ -694,7 +692,7 @@ description for a tag value</p>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">get_mx_hosts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_tls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approved_hostnames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_mx_hosts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.get_mx_hosts" title="Permalink to this definition"></a></dt>
 <dd><p>Gets MX hostname and their addresses</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>skip_tls</strong> (<em>bool</em>) – Skip STARTTLS testing</p></li>
@@ -706,7 +704,7 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">hosts</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with keys of</p>
@@ -721,7 +719,7 @@ requests</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>OrderedDict</p>
 </dd>
 </dl>
@@ -732,7 +730,7 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">get_nameservers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approved_nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_nameservers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.get_nameservers" title="Permalink to this definition"></a></dt>
 <dd><p>Gets a list of nameservers for a given domain</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>approved_nameservers</strong> (<em>list</em>) – A list of approved nameserver substrings</p></li>
@@ -742,7 +740,7 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>A dictionary with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">hostnames</span></code> - A list of nameserver hostnames</p></li>
@@ -752,7 +750,7 @@ requests</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Dict</p>
 </dd>
 </dl>
@@ -763,7 +761,7 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">get_spf_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#get_spf_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.get_spf_record" title="Permalink to this definition"></a></dt>
 <dd><p>Retrieves and parses an SPF record</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
@@ -772,13 +770,13 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – Number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>An SPF record parsed by result</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>OrderedDict</p>
 </dd>
-<dt class="field-even">Raises</dt>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference internal" href="#checkdmarc.SPFRecordNotFound" title="checkdmarc.SPFRecordNotFound"><strong>checkdmarc.SPFRecordNotFound</strong></a> – </p></li>
 <li><p><a class="reference internal" href="#checkdmarc.SPFIncludeLoop" title="checkdmarc.SPFIncludeLoop"><strong>checkdmarc.SPFIncludeLoop</strong></a> – </p></li>
@@ -795,7 +793,7 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">output_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#output_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.output_to_file" title="Permalink to this definition"></a></dt>
 <dd><p>Write given content to the given path</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> (<em>str</em>) – A file path</p></li>
 <li><p><strong>content</strong> (<em>str</em>) – JSON or CSV text</p></li>
@@ -809,7 +807,7 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">parse_dmarc_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_tag_descriptions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#parse_dmarc_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.parse_dmarc_record" title="Permalink to this definition"></a></dt>
 <dd><p>Parses a DMARC record</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>record</strong> (<em>str</em>) – A DMARC record</p></li>
 <li><p><strong>domain</strong> (<em>str</em>) – The domain where the record is found</p></li>
@@ -821,7 +819,7 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl>
 <dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">tags</span></code> - An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> of DMARC tags</p>
@@ -843,10 +841,10 @@ requests</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>OrderedDict</p>
 </dd>
-<dt class="field-even">Raises</dt>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference internal" href="#checkdmarc.DMARCSyntaxError" title="checkdmarc.DMARCSyntaxError"><strong>checkdmarc.DMARCSyntaxError</strong></a> – </p></li>
 <li><p><a class="reference internal" href="#checkdmarc.InvalidDMARCTag" title="checkdmarc.InvalidDMARCTag"><strong>checkdmarc.InvalidDMARCTag</strong></a> – </p></li>
@@ -869,10 +867,10 @@ requests</p></li>
 <p><code class="docutils literal notranslate"><span class="pre">mailto</span></code> is the only reporting URI scheme supported in DMARC1</p>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>uri</strong> – A DMARC URI</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> of the URI’s components:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">scheme</span></code></p></li>
@@ -883,10 +881,10 @@ requests</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>OrderedDict</p>
 </dd>
-<dt class="field-even">Raises</dt>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference internal" href="#checkdmarc.InvalidDMARCReportURI" title="checkdmarc.InvalidDMARCReportURI"><strong>checkdmarc.InvalidDMARCReportURI</strong></a> – </p>
 </dd>
 </dl>
@@ -898,7 +896,7 @@ requests</p></li>
 <dd><p>Parses an SPF record, including resolving <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">mx</span></code>, and <code class="docutils literal notranslate"><span class="pre">include</span></code>
 mechanisms</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>record</strong> (<em>str</em>) – An SPF record</p></li>
 <li><p><strong>domain</strong> (<em>str</em>) – The domain that the SPF record came from</p></li>
@@ -911,7 +909,7 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">dns_lookups</span></code> - Number of DNS lookups required by the record</p></li>
@@ -922,10 +920,10 @@ requests</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>OrderedDict</p>
 </dd>
-<dt class="field-even">Raises</dt>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference internal" href="#checkdmarc.SPFIncludeLoop" title="checkdmarc.SPFIncludeLoop"><strong>checkdmarc.SPFIncludeLoop</strong></a> – </p></li>
 <li><p><a class="reference internal" href="#checkdmarc.SPFRedirectLoop" title="checkdmarc.SPFRedirectLoop"><strong>checkdmarc.SPFRedirectLoop</strong></a> – </p></li>
@@ -941,7 +939,7 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">query_bimi_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selector</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_bimi_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.query_bimi_record" title="Permalink to this definition"></a></dt>
 <dd><p>Queries DNS for a BIMI record</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>selector</strong> (<em>str</em>) – The BMI selector</p></li>
@@ -951,7 +949,7 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - the unparsed DMARC record string</p></li>
@@ -962,7 +960,7 @@ requests</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><p>OrderedDict</p>
 <dl class="simple">
 <dt>Raises:</dt><dd><p><a class="reference internal" href="#checkdmarc.BIMIRecordNotFound" title="checkdmarc.BIMIRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.BIMIRecordNotFound</span></code></a>
@@ -980,7 +978,7 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">query_dmarc_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_dmarc_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.query_dmarc_record" title="Permalink to this definition"></a></dt>
 <dd><p>Queries DNS for a DMARC record</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
@@ -989,7 +987,7 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - the unparsed DMARC record string</p></li>
@@ -1000,7 +998,7 @@ requests</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><p>OrderedDict</p>
 <dl class="simple">
 <dt>Raises:</dt><dd><p><a class="reference internal" href="#checkdmarc.DMARCRecordNotFound" title="checkdmarc.DMARCRecordNotFound"><code class="xref py py-exc docutils literal notranslate"><span class="pre">checkdmarc.DMARCRecordNotFound</span></code></a>
@@ -1019,7 +1017,7 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">query_spf_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#query_spf_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.query_spf_record" title="Permalink to this definition"></a></dt>
 <dd><p>Queries DNS for an SPF record</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
@@ -1028,7 +1026,7 @@ requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - The SPF record string</p></li>
@@ -1038,10 +1036,10 @@ requests</p></li>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>OrderedDict</p>
 </dd>
-<dt class="field-even">Raises</dt>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference internal" href="#checkdmarc.SPFRecordNotFound" title="checkdmarc.SPFRecordNotFound"><strong>checkdmarc.SPFRecordNotFound</strong></a> – </p>
 </dd>
 </dl>
@@ -1052,13 +1050,13 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">results_to_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.results_to_csv" title="Permalink to this definition"></a></dt>
 <dd><p>Converts a dictionary of results to CSV</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>results</strong> (<em>dict</em>) – A dictionary of results</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A CSV of results</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -1069,13 +1067,13 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">results_to_csv_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_csv_rows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.results_to_csv_rows" title="Permalink to this definition"></a></dt>
 <dd><p>Converts a dictionary of results list of CSV row dicts</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>results</strong> (<em>dict</em>) – A dictionary of results</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A list of CSV row dicts</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list</p>
 </dd>
 </dl>
@@ -1086,13 +1084,13 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">results_to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#results_to_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.results_to_json" title="Permalink to this definition"></a></dt>
 <dd><p>Converts a dictionary of results to a JSON string</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>results</strong> (<em>dict</em>) – A dictionary of results</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Results in JSON format</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -1103,17 +1101,17 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">test_dnssec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_dnssec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.test_dnssec" title="Permalink to this definition"></a></dt>
 <dd><p>Check for DNSSEC on the given domain</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – The domain to check</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – Timeout in seconds</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>DNSSEC status</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
@@ -1124,17 +1122,17 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">test_starttls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssl_context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_starttls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.test_starttls" title="Permalink to this definition"></a></dt>
 <dd><p>Attempt to connect to an SMTP server and validate STARTTLS support</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>hostname</strong> (<em>str</em>) – The hostname</p></li>
 <li><p><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</p></li>
 <li><p><strong>ssl_context</strong> – A SSL context</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>STARTTLS supported</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
@@ -1145,17 +1143,17 @@ requests</p></li>
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">test_tls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssl_context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#test_tls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.test_tls" title="Permalink to this definition"></a></dt>
 <dd><p>Attempt to connect to an SMTP server port 465 and validate TLS/SSL support</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>hostname</strong> (<em>str</em>) – The hostname</p></li>
 <li><p><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</p></li>
 <li><p><strong>ssl_context</strong> – A SSL context</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>TLS supported</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
@@ -1167,21 +1165,21 @@ requests</p></li>
 <dd><p>Checks if the report destination accepts reports for the source domain
 per RFC 7489, section 7.1</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>source_domain</strong> (<em>str</em>) – The source domain</p></li>
 <li><p><strong>destination_domain</strong> (<em>str</em>) – The destination domain</p></li>
 <li><p><strong>nameservers</strong> – A list of nameservers to query</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Indicates if the report domain accepts reports from the given
 domain</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
 </dd>
-<dt class="field-even">Raises</dt>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination" title="checkdmarc.UnverifiedDMARCURIDestination"><strong>checkdmarc.UnverifiedDMARCURIDestination</strong></a> – </p></li>
 <li><p><strong>checkdmarc.UnrelatedTXTRecordFound</strong> – </p></li>
