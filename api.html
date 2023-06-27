@@ -4,13 +4,15 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; checkdmarc 4.6.0 documentation</title>
+  <title>API &mdash; checkdmarc 4.7.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
@@ -33,7 +35,7 @@
             checkdmarc
           </a>
               <div class="version">
-                4.6.0
+                4.7.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -79,7 +81,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtBIMI"><code class="docutils literal notranslate"><span class="pre">UnrelatedTXTRecordFoundAtBIMI</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checkdmarc.UnrelatedTXTRecordFoundAtDMARC"><code class="docutils literal notranslate"><span class="pre">UnrelatedTXTRecordFoundAtDMARC</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checkdmarc.UnverifiedDMARCURIDestination"><code class="docutils literal notranslate"><span class="pre">UnverifiedDMARCURIDestination</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.check_dmarc"><code class="docutils literal notranslate"><span class="pre">check_dmarc()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checkdmarc.check_domains"><code class="docutils literal notranslate"><span class="pre">check_domains()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.check_mx"><code class="docutils literal notranslate"><span class="pre">check_mx()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.check_ns"><code class="docutils literal notranslate"><span class="pre">check_ns()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc.check_spf"><code class="docutils literal notranslate"><span class="pre">check_spf()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checkdmarc.check_wildcard_dmarc_report_authorization"><code class="docutils literal notranslate"><span class="pre">check_wildcard_dmarc_report_authorization()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checkdmarc.get_base_domain"><code class="docutils literal notranslate"><span class="pre">get_base_domain()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checkdmarc.get_dmarc_record"><code class="docutils literal notranslate"><span class="pre">get_dmarc_record()</span></code></a></li>
@@ -523,6 +529,11 @@ that it accepts reports for the domain</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.check_dmarc">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">check_dmarc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_dmarc_tag_descriptions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_dmarc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.check_dmarc" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.check_domains">
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">check_domains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domains</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approved_nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approved_mx_hostnames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_tls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_dmarc_tag_descriptions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_domains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.check_domains" title="Permalink to this definition"></a></dt>
 <dd><p>Check the given domains for SPF and DMARC records, parse them, and return
@@ -560,6 +571,21 @@ requests</p></li>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.check_mx">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">check_mx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approved_mx_hostnames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_tls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_mx"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.check_mx" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.check_ns">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">check_ns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approved_nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_ns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.check_ns" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.check_spf">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.</span></span><span class="sig-name descname"><span class="pre">check_spf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc.html#check_spf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.check_spf" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.check_wildcard_dmarc_report_authorization">
