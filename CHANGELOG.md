@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.7.0
+-----
+
+- Break up code into smaller methods (PR #93)
+
 4.6.0
 -----
 

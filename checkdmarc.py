@@ -49,7 +49,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.6.0"
+__version__ = "4.7.0"
 
 DMARC_VERSION_REGEX_STRING = r"v *= *DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -2436,34 +2436,44 @@ def check_domains(domains, parked=False,
             [("domain", domain), ("base_domain", get_base_domain(domain)),
              ("dnssec", None), ("ns", []), ("mx", [])])
 
-        domain_results["dnssec"] = test_dnssec(domain,
-                                               nameservers=nameservers,
-                                               timeout=timeout)
+        domain_results["dnssec"] = test_dnssec(
+            domain,
+            nameservers=nameservers,
+            timeout=timeout
+            )
 
-        domain_results["ns"] = check_ns(domain,
-                                        approved_nameservers=approved_nameservers,
-                                        nameservers=nameservers,
-                                        resolver=resolver, timeout=timeout)
+        domain_results["ns"] = check_ns(
+            domain,
+            approved_nameservers=approved_nameservers,
+            nameservers=nameservers,
+            resolver=resolver, timeout=timeout
+            )
 
-        domain_results["mx"] = check_mx(domain,
-                                        approved_mx_hostnames=approved_mx_hostnames,
-                                        skip_tls=skip_tls,
-                                        nameservers=nameservers,
-                                        resolver=resolver,
-                                        timeout=timeout)
+        domain_results["mx"] = check_mx(
+            domain,
+            approved_mx_hostnames=approved_mx_hostnames,
+            skip_tls=skip_tls,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout
+            )
 
-        domain_results["spf"] = check_spf(domain,
-                                          parked=parked,
-                                          nameservers=nameservers,
-                                          resolver=resolver,
-                                          timeout=timeout)
+        domain_results["spf"] = check_spf(
+            domain,
+            parked=parked,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout
+            )
 
-        domain_results["dmarc"] = check_dmarc(domain,
-                                              parked=parked,
-                                              include_dmarc_tag_descriptions=include_dmarc_tag_descriptions,
-                                              nameservers=nameservers,
-                                              resolver=resolver,
-                                              timeout=timeout)
+        domain_results["dmarc"] = check_dmarc(
+            domain,
+            parked=parked,
+            include_dmarc_tag_descriptions=include_dmarc_tag_descriptions,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout
+            )
 
         results.append(domain_results)
         if wait > 0.0:
@@ -2507,7 +2517,8 @@ def check_mx(domain, approved_mx_hostnames=None, skip_tls=False,
 def check_dmarc(domain, parked=False,
                 include_dmarc_tag_descriptions=False,
                 nameservers=None, resolver=None, timeout=2.0):
-    dmarc_results = OrderedDict([("record", None), ("valid", True), ("location", None)])
+    dmarc_results = OrderedDict([("record", None), ("valid", True),
+                                 ("location", None)])
     try:
         dmarc_query = query_dmarc_record(domain,
                                          nameservers=nameservers,
@@ -2536,9 +2547,11 @@ def check_dmarc(domain, parked=False,
     return dmarc_results
 
 
-def check_spf(domain, parked=False, nameservers=None, resolver=None, timeout=2.0):
+def check_spf(domain, parked=False, nameservers=None, resolver=None,
+              timeout=2.0):
     spf_results = OrderedDict(
-        [("record", None), ("valid", True), ("dns_lookups", None), ("dns_void_lookups", None)])
+        [("record", None), ("valid", True), ("dns_lookups", None),
+         ("dns_void_lookups", None)])
     try:
         spf_query = query_spf_record(
             domain,
@@ -2567,6 +2580,7 @@ def check_spf(domain, parked=False, nameservers=None, resolver=None, timeout=2.0
             for key in error.data:
                 spf_results[key] = error.data[key]
     return spf_results
+
 
 def results_to_json(results):
     """
