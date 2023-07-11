@@ -1724,15 +1724,6 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                 a_records = _get_a_records(value, nameservers=nameservers,
                                            resolver=resolver, timeout=timeout)
                 if len(a_records) == 0:
-                    void_lookup_mechanism_count += 1
-                    if void_lookup_mechanism_count > 2:
-                        raise SPFTooManyVoidDNSLookups(
-                            "Parsing the SPF record has {0}/2 maximum void "
-                            "DNS lookups - "
-                            "https://tools.ietf.org/html/rfc7208#section-4.6.4"
-                            .format(
-                                void_lookup_mechanism_count),
-                            dns_void_lookups=void_lookup_mechanism_count)
                     raise _SPFMissingRecords(
                         "{0} does not have any A/AAAA records".format(
                             value.lower()))
@@ -1745,15 +1736,6 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                 mx_hosts = _get_mx_hosts(value, nameservers=nameservers,
                                          resolver=resolver, timeout=timeout)
                 if len(mx_hosts) == 0:
-                    void_lookup_mechanism_count += 1
-                    if void_lookup_mechanism_count > 2:
-                        raise SPFTooManyVoidDNSLookups(
-                            "Parsing the SPF record has {0}/2 maximum void "
-                            "DNS lookups - "
-                            "https://tools.ietf.org/html/rfc7208#section-4.6.4"
-                            .format(
-                                void_lookup_mechanism_count),
-                            dns_void_lookups=void_lookup_mechanism_count)
                     raise _SPFMissingRecords(
                         "{0} does not have any MX records".format(
                             value.lower()))
