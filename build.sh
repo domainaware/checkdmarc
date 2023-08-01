@@ -7,6 +7,7 @@ if [ ! -d "venv" ]; then
 fi
 
 . venv/bin/activate
+pip install -U pip
 pip install -U -r requirements.txt
 flake8 checkdmarc.py
 flake8 tests.py
