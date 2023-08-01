@@ -1086,10 +1086,10 @@ def get_dmarc_tag_description(tag, value=None):
     default = None
     if "default" in tag_values[tag]:
         default = tag_values[tag]["default"]
-    if type(value) == str and "values" in tag_values[tag] and value in \
+    if type(value) is str and "values" in tag_values[tag] and value in \
             tag_values[tag]["values"][value]:
         description = tag_values[tag]["values"][value]
-    elif type(value) == list and "values" in tag_values[tag]:
+    elif type(value) is list and "values" in tag_values[tag]:
         new_description = ""
         for value_value in value:
             if value_value in tag_values[tag]["values"]:
