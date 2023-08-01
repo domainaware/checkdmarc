@@ -2589,7 +2589,7 @@ def results_to_csv_rows(results):
     """
     rows = []
 
-    if type(results) == OrderedDict:
+    if type(results) is OrderedDict:
         results = [results]
 
     for result in results:
