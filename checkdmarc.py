@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """Validates and parses SPF amd DMARC DNS records"""
@@ -216,6 +216,10 @@ class InvalidDMARCTag(DMARCSyntaxError):
 
 class InvalidDMARCTagValue(DMARCSyntaxError):
     """Raised when an invalid DMARC tag value is found"""
+
+
+class DMARCRecordStartsWithWhitespace(DMARCSyntaxError):
+    """Raised when DMARC tag starts with whitespace"""
 
 
 class InvalidDMARCReportURI(InvalidDMARCTagValue):
@@ -848,6 +852,13 @@ def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0):
                              resolver=resolver, timeout=timeout)
         for record in records:
             if record.startswith("v=DMARC1"):
+                dmarc_record_count += 1
+            elif record.strip().startswith("v=DMARC1"):
+                raise DMARCRecordStartsWithWhitespace(
+                    "Found a DMARC record that starts with whitespace. "
+                    "Please remove the whitespace, as some implementations may not "
+                    "process it correctly."
+                )
                 dmarc_record_count += 1
             else:
                 unrelated_records.append(record)
