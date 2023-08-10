@@ -219,7 +219,7 @@ class InvalidDMARCTagValue(DMARCSyntaxError):
 
 
 class DMARCRecordStartsWithWhitespace(DMARCSyntaxError):
-    """Raised when DMARC tag starts with whitespace"""
+    """Raised when DMARC record starts with whitespace"""
 
 
 class InvalidDMARCReportURI(InvalidDMARCTagValue):
