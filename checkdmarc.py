@@ -79,6 +79,8 @@ DNS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 TLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 STARTTLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 
+SYNTAX_ERROR_MARK_SIGN = "➞"
+
 TMPDIR = tempfile.mkdtemp()
 
 
@@ -1262,7 +1264,8 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
 
 def parse_dmarc_record(record, domain, parked=False,
                        include_tag_descriptions=False,
-                       nameservers=None, resolver=None, timeout=2.0):
+                       nameservers=None, resolver=None, timeout=2.0,
+                       syntax_error_mark_sign=SYNTAX_ERROR_MARK_SIGN):
     """
     Parses a DMARC record
 
@@ -1316,9 +1319,13 @@ def parse_dmarc_record(record, domain, parked=False,
     if not parsed_record.is_valid:
         expecting = list(
             map(lambda x: str(x).strip('"'), list(parsed_record.expecting)))
-        raise DMARCSyntaxError("Error: Expected {0} at position {1} in: "
-                               "{2}".format(" or ".join(expecting),
-                                            parsed_record.pos, record))
+        record_marked = record[:parsed_record.pos] + syntax_error_mark_sign + record[parsed_record.pos:]
+        raise DMARCSyntaxError("Error: Expected {0} at position {1} (marked with {2}) in: "
+                               "{3}".format(
+                                    " or ".join(expecting),
+                                    parsed_record.pos,
+                                    syntax_error_mark_sign,
+                                    record_marked))
 
     pairs = DMARC_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
@@ -1612,7 +1619,8 @@ def query_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
 
 def parse_spf_record(record, domain, parked=False, seen=None,
                      nameservers=None, resolver=None,
-                     recursion=None, timeout=2.0):
+                     recursion=None, timeout=2.0,
+                     syntax_error_mark_sign=SYNTAX_ERROR_MARK_SIGN):
     """
     Parses an SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
@@ -1663,11 +1671,14 @@ def parse_spf_record(record, domain, parked=False, seen=None,
         expecting = list(
             map(lambda x: str(x).strip('"'), list(parsed_record.expecting)))
         expecting = " or ".join(expecting)
+        record_marked = record[:pos] + syntax_error_mark_sign + record[pos:]
         raise SPFSyntaxError(
-            "{0}: Expected {1} at position {2} in: {3}".format(domain,
+            "{0}: Expected {1} at position {2} (marked with {3}) in: {4}".format(
+                                                               domain,
                                                                expecting,
                                                                pos,
-                                                               record))
+                                                               syntax_error_mark_sign,
+                                                               record_marked))
     matches = SPF_MECHANISM_REGEX.findall(record.lower())
     parsed = OrderedDict([("pass", []),
                           ("neutral", []),
