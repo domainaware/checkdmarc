@@ -1305,7 +1305,7 @@ def parse_dmarc_record(record, domain, parked=False,
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
-        syntax_error_marker (str): The maker for  
+        syntax_error_marker (str): The maker for pointing out syntax errors
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1347,7 +1347,7 @@ def parse_dmarc_record(record, domain, parked=False,
     if not parsed_record.is_valid:
         expecting = list(
             map(lambda x: str(x).strip('"'), list(parsed_record.expecting)))
-        marked_record = (record[:parsed_record.pos] + syntax_error_marker + 
+        marked_record = (record[:parsed_record.pos] + syntax_error_marker +
                          record[parsed_record.pos:])
         raise DMARCSyntaxError("Error: Expected {0} at position {1} "
                                "(marked with {2}) in: "
