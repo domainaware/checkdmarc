@@ -1144,7 +1144,11 @@ def parse_dmarc_report_uri(uri):
     mailto_matches = MAILTO_REGEX.findall(uri)
     if len(mailto_matches) != 1:
         raise InvalidDMARCReportURI(
-            "{0} is not a valid DMARC report URI".format(uri))
+            (
+                "{0} is not a valid DMARC report URI - please make "
+                "sure that the URI begins with a schema such as mailto:"
+            ).format(uri)
+        )
     match = mailto_matches[0]
     scheme = match[0].lower()
     email_address = match[1]
