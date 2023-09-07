@@ -1010,7 +1010,7 @@ def query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0):
     except Exception:
         pass
 
-    if record is None and domain != base_domain:
+    if record is None and base_domain and domain != base_domain:
         record = _query_dmarc_record(base_domain, nameservers=nameservers,
                                      resolver=resolver, timeout=timeout)
         location = base_domain
@@ -1065,7 +1065,7 @@ def query_bimi_record(domain, selector="default", nameservers=None,
     except Exception:
         pass
 
-    if record is None and domain != base_domain and selector != "default":
+    if record is None and base_domain and domain != base_domain and selector != "default":
         record = _query_bmi_record(base_domain, selector="default",
                                    nameservers=nameservers, resolver=resolver,
                                    timeout=timeout)
