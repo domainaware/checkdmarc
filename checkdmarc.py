@@ -218,6 +218,10 @@ class InvalidDMARCTagValue(DMARCSyntaxError):
     """Raised when an invalid DMARC tag value is found"""
 
 
+class DMARCRecordStartsWithWhitespace(DMARCSyntaxError):
+    """Raised when DMARC record starts with whitespace"""
+
+
 class InvalidDMARCReportURI(InvalidDMARCTagValue):
     """Raised when an invalid DMARC reporting URI is found"""
 
@@ -849,6 +853,12 @@ def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0):
         for record in records:
             if record.startswith("v=DMARC1"):
                 dmarc_record_count += 1
+            elif record.strip().startswith("v=DMARC1"):
+                raise DMARCRecordStartsWithWhitespace(
+                    "Found a DMARC record that starts with whitespace. "
+                    "Please remove the whitespace, as some implementations may not "
+                    "process it correctly."
+                )
             else:
                 unrelated_records.append(record)
 
@@ -884,6 +894,8 @@ def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0):
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         pass
+    except DMARCRecordStartsWithWhitespace as error:
+        raise error
     except Exception as error:
         raise DMARCRecordNotFound(error)
 
