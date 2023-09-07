@@ -5,6 +5,7 @@ Changelog
 -----
 
 - Fix DNSSEC test
+- Do not treat `include` mechanisms with macros as domains (Close issue #81)
 - Add `DMARCRecordStartsWithWhitespace` exception (PR #97)
 - Properly parse DMARC and BIMI records for domains that do not have an identified base domain (PR #98)
 - Add `ignore_unrelated_records` argument to `query_dmarc_record()` (Slight modification of PR #99 - Close issue #91)

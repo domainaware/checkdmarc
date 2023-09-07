@@ -324,7 +324,7 @@ class _DMARCGrammar(Grammar):
     """Defines Pyleri grammar for DMARC records"""
     version_tag = Regex(DMARC_VERSION_REGEX_STRING, IGNORECASE)
     tag_value = Regex(DMARC_TAG_VALUE_REGEX_STRING, IGNORECASE)
-    START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
+    START = Sequence(version_tag, List(tag_value, delimiter=";",opt=True))
 
 
 class _BIMIGrammar(Grammar):
@@ -1665,6 +1665,7 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                                           requests
         recursion (OrderedDict): Results from a previous call
         timeout (float): number of seconds to wait for an answer from DNS
+        syntax_error_marker (str): The maker for pointing out syntax errors
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1848,6 +1849,11 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                     raise _SPFDuplicateInclude(
                         "Duplicate include: {0}".format(value.lower()))
                 seen.append(value.lower())
+                if "%{" in value:
+                    include = OrderedDict(
+                        [("domain", value)])
+                    parsed["include"].append(include)
+                    continue
                 try:
                     include_record = query_spf_record(value,
                                                       nameservers=nameservers,
