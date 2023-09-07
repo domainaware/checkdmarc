@@ -29,6 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "dnspython>=2.0.0",
+    "cryptography>=41.0.3",
     "expiringdict>=1.1.4",
     "publicsuffixlist>=0.10.0",
     "pyleri>=1.3.2",

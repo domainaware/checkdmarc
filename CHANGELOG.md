@@ -1,6 +1,15 @@
 Changelog
 =========
 
+4.8.0
+-----
+
+- Fix DNSSEC test
+- Add `DMARCRecordStartsWithWhitespace` exception (PR #97)
+- Properly parse DMARC and BIMI records for domains that do not have an identified base domain (PR #98)
+- Add `ignore_unrelated_records` argument to `query_dmarc_record()` (Slight modification of PR #99 - Close issue #91)
+- Mark syntax error positions (Slight modification of PR #100)
+
 4.7.0
 -----
 
