@@ -324,7 +324,7 @@ class _DMARCGrammar(Grammar):
     """Defines Pyleri grammar for DMARC records"""
     version_tag = Regex(DMARC_VERSION_REGEX_STRING, IGNORECASE)
     tag_value = Regex(DMARC_TAG_VALUE_REGEX_STRING, IGNORECASE)
-    START = Sequence(version_tag, List(tag_value, delimiter=";",opt=True))
+    START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
 
 
 class _BIMIGrammar(Grammar):
