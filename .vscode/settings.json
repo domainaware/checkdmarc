@@ -27,6 +27,7 @@
         "maxdepth",
         "modindex",
         "NAMESERVER",
+        "nojekyll",
         "NXDOMAIN",
         "parsedmarc",
         "privatesuffix",
