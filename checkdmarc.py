@@ -50,7 +50,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.8.0"
+__version__ = "4.8.1"
 
 DMARC_VERSION_REGEX_STRING = r"v *= *DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -602,7 +602,8 @@ def get_base_domain(domain):
     """
 
     psl = publicsuffixlist.PublicSuffixList()
-    return psl.privatesuffix(domain)
+    domain = domain.lower()
+    return psl.privatesuffix(domain) or domain
 
 
 def _query_dns(domain, record_type, nameservers=None, resolver=None,
@@ -1022,7 +1023,7 @@ def query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0,
     except Exception:
         pass
 
-    if record is None and base_domain and domain != base_domain:
+    if record is None and domain != base_domain:
         record = _query_dmarc_record(base_domain, nameservers=nameservers,
                                      resolver=resolver, timeout=timeout)
         location = base_domain
@@ -1077,8 +1078,7 @@ def query_bimi_record(domain, selector="default", nameservers=None,
     except Exception:
         pass
 
-    if (record is None and base_domain
-            and domain != base_domain and selector != "default"):
+    if (record is None and domain != base_domain and selector != "default"):
         record = _query_bmi_record(base_domain,
                                    nameservers=nameservers, resolver=resolver,
                                    timeout=timeout)
@@ -2382,7 +2382,9 @@ def test_dnssec(domain, nameservers=None, timeout=2.0):
     if nameservers is None:
         nameservers = dns.resolver.Resolver().nameservers
 
-    request = dns.message.make_query(get_base_domain(domain),
+    domain = get_base_domain(domain)
+
+    request = dns.message.make_query(domain,
                                      dns.rdatatype.DNSKEY,
                                      want_dnssec=True)
     for nameserver in nameservers:
@@ -2392,8 +2394,10 @@ def test_dnssec(domain, nameservers=None, timeout=2.0):
                 answer = response.answer
                 if len(answer) != 2:
                     return False
+                rrset = answer[0]
+                rrsig = answer[1]
                 name = dns.name.from_text(f'{domain.lower()}.')
-                dns.dnssec.validate(answer[0], answer[1], {name: answer[0]})
+                dns.dnssec.validate(rrset, rrsig, {name: rrset})
                 return True
         except Exception as e:
             logging.debug("DNSSEC query error: {0}".format(e))

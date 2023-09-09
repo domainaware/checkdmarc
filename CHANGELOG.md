@@ -1,6 +1,12 @@
 Changelog
 =========
 
+4.8.1
+-----
+
+- `get_base_domain()` will return the input sting instead of `None` if it can't parse a domain
+- Always use the base domain when testing DNSSEC
+
 4.8.0
 -----
 
