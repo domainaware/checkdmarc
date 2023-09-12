@@ -2557,11 +2557,13 @@ def check_ns(domain: str,
         timeout (float): number of seconds to wait for a record from DNS
     Returns:
         OrderedDict: A dictionary with the following keys:
+
               - ``hostnames`` - A list of nameserver hostnames
               - ``warnings``  - A list of warnings
 
              If a DNS error occurs, the dictionary will have the following
              keys:
+
               - ``hostnames`` - An empty list
               - ``error``  - An error message
     """
@@ -2597,18 +2599,19 @@ def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
+
                      - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of
 
                        - ``hostname`` - A hostname
                        - ``addresses`` - A ``list`` of IP addresses
 
                      - ``warnings`` - A ``list`` of MX resolution warnings
+
                     If a DNS error occurs, the dictionary will have the
                     following keys:
 
                       - ``hosts`` - An empty list
                       - ``error``  - An error message
-
     """
     try:
         mx_results = get_mx_hosts(
@@ -2644,6 +2647,7 @@ def check_dmarc(domain: str, parked: bool = False,
 
         Returns:
             OrderedDict: An ``OrderedDict`` with the following keys:
+
                          - ``record`` - the unparsed DMARC record string
                          - ``location`` - the domain where the record was found
                          - ``warnings`` - warning conditions found
@@ -2704,6 +2708,7 @@ def check_spf(domain: str, parked: bool = False,
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
+
                        - ``record`` - The SPF record string
                        - ``parsed`` - The parsed SPF record
                        - ``dns_lookups`` - The number of DNS lookups
@@ -2713,6 +2718,7 @@ def check_spf(domain: str, parked: bool = False,
 
                     If a DNS error occurs, the dictionary will have the
                     following keys:
+
                       - ``error`` - Tne error message
                       - ``valid`` - False
     """
