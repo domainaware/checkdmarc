@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; checkdmarc 4.8.1 documentation</title>
+  <title>API &mdash; checkdmarc 4.8.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -13,7 +13,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=af3423b7"></script>
+        <script src="_static/documentation_options.js?v=98cca9dd"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -35,7 +35,7 @@
             checkdmarc
           </a>
               <div class="version">
-                4.8.1
+                4.8.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -560,8 +560,9 @@ requests</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl>
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><blockquote>
+<dd class="field-even"><p><p>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</p>
+<blockquote>
+<div><blockquote>
 <div><blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - the unparsed DMARC record string</p></li>
@@ -576,8 +577,7 @@ following keys:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">error</span></code>  - An error message</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">valid</span></code> - False</p></li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -643,12 +643,16 @@ requests</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl>
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><blockquote>
+<dd class="field-even"><p><p>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</p>
+<blockquote>
+<div><blockquote>
 <div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">hosts</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with keys of
-- <code class="docutils literal notranslate"><span class="pre">hostname</span></code> - A hostname
-- <code class="docutils literal notranslate"><span class="pre">addresses</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of IP addresses</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hosts</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with keys of</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">hostname</span></code> - A hostname</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">addresses</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of IP addresses</p></li>
+</ul>
+</li>
 <li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of MX resolution warnings</p></li>
 </ul>
 </div></blockquote>
@@ -660,8 +664,7 @@ following keys:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">error</span></code>  - An error message</p></li>
 </ul>
 </div></blockquote>
-</dd>
-</dl>
+</div></blockquote>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -687,8 +690,9 @@ requests</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl>
-<dt>A dictionary with the following keys:</dt><dd><blockquote>
+<dd class="field-even"><p><p>A dictionary with the following keys:</p>
+<blockquote>
+<div><blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">hostnames</span></code> - A list of nameserver hostnames</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code>  - A list of warnings</p></li>
@@ -702,8 +706,7 @@ keys:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">error</span></code>  - An error message</p></li>
 </ul>
 </div></blockquote>
-</dd>
-</dl>
+</div></blockquote>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -728,8 +731,9 @@ requests</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl>
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><blockquote>
+<dd class="field-even"><p><p>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</p>
+<blockquote>
+<div><blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - The SPF record string</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">parsed</span></code> - The parsed SPF record</p></li>
@@ -747,8 +751,7 @@ following keys:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">valid</span></code> - False</p></li>
 </ul>
 </div></blockquote>
-</dd>
-</dl>
+</div></blockquote>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>

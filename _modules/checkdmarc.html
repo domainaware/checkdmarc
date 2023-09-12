@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc &mdash; checkdmarc 4.8.1 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 4.8.2 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -12,7 +12,7 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../_static/documentation_options.js?v=af3423b7"></script>
+        <script src="../_static/documentation_options.js?v=98cca9dd"></script>
         <script src="../_static/doctools.js?v=888ff710"></script>
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -32,7 +32,7 @@
             checkdmarc
           </a>
               <div class="version">
-                4.8.1
+                4.8.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -126,7 +126,7 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.8.1&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;4.8.2&quot;</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v *= *DMARC1;&quot;</span>
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;v=BIMI1;&quot;</span>
@@ -2790,11 +2790,13 @@
 <span class="sd">        timeout (float): number of seconds to wait for a record from DNS</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: A dictionary with the following keys:</span>
+
 <span class="sd">              - ``hostnames`` - A list of nameserver hostnames</span>
 <span class="sd">              - ``warnings``  - A list of warnings</span>
 
 <span class="sd">             If a DNS error occurs, the dictionary will have the following</span>
 <span class="sd">             keys:</span>
+
 <span class="sd">              - ``hostnames`` - An empty list</span>
 <span class="sd">              - ``error``  - An error message</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2833,12 +2835,17 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
+
 <span class="sd">                     - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of</span>
+
 <span class="sd">                       - ``hostname`` - A hostname</span>
 <span class="sd">                       - ``addresses`` - A ``list`` of IP addresses</span>
+
 <span class="sd">                     - ``warnings`` - A ``list`` of MX resolution warnings</span>
+
 <span class="sd">                    If a DNS error occurs, the dictionary will have the</span>
 <span class="sd">                    following keys:</span>
+
 <span class="sd">                      - ``hosts`` - An empty list</span>
 <span class="sd">                      - ``error``  - An error message</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2879,6 +2886,7 @@
 
 <span class="sd">        Returns:</span>
 <span class="sd">            OrderedDict: An ``OrderedDict`` with the following keys:</span>
+
 <span class="sd">                         - ``record`` - the unparsed DMARC record string</span>
 <span class="sd">                         - ``location`` - the domain where the record was found</span>
 <span class="sd">                         - ``warnings`` - warning conditions found</span>
@@ -2942,6 +2950,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
+
 <span class="sd">                       - ``record`` - The SPF record string</span>
 <span class="sd">                       - ``parsed`` - The parsed SPF record</span>
 <span class="sd">                       - ``dns_lookups`` - The number of DNS lookups</span>
@@ -2951,6 +2960,7 @@
 
 <span class="sd">                    If a DNS error occurs, the dictionary will have the</span>
 <span class="sd">                    following keys:</span>
+
 <span class="sd">                      - ``error`` - Tne error message</span>
 <span class="sd">                      - ``valid`` - False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
