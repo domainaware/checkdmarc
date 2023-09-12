@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.8.3
+-----
+
+- Fix compatibility with Python 3.8
+
 4.8.2
 -----
 
