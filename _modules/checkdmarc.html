@@ -2834,17 +2834,13 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
 <span class="sd">                     - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of</span>
-
 <span class="sd">                       - ``hostname`` - A hostname</span>
 <span class="sd">                       - ``addresses`` - A ``list`` of IP addresses</span>
-
 <span class="sd">                     - ``warnings`` - A ``list`` of MX resolution warnings</span>
 <span class="sd">                    If a DNS error occurs, the dictionary will have the</span>
 <span class="sd">                    following keys:</span>
-
 <span class="sd">                      - ``hosts`` - An empty list</span>
 <span class="sd">                      - ``error``  - An error message</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">mx_results</span> <span class="o">=</span> <span class="n">get_mx_hosts</span><span class="p">(</span>
