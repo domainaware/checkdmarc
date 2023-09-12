@@ -20,6 +20,7 @@
         "DNSKEY",
         "dnspython",
         "dnssec",
+        "docstrings",
         "dollarmath",
         "ekstrabladet",
         "elasticemail",

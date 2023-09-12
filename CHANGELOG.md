@@ -1,6 +1,14 @@
 Changelog
 =========
 
+4.8.2
+-----
+
+- `SPFRecordNotFound` exception now includes a `domain` argument (PR #103)
+- The DMARC missing authorization error message now includes the full expected DNS record
+- Lots of code cleanup
+- Added missing docstrings
+
 4.8.1
 -----
 
