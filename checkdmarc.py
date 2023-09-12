@@ -162,10 +162,11 @@ class DMARCError(Exception):
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
 
-    def __init__(self, error):
+    def __init__(self, error, domain):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
+        self.domain = domain
 
 class MultipleSPFRTXTRecords(SPFError):
     """Raised when multiple TXT spf1 records are found"""
@@ -1651,7 +1652,7 @@ def query_spf_record(domain: str,
                 spf_txt_records.append(record)
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords(
-                f"{domain} has multiple SPF TXT records{warnings_str}")
+                f"{domain} has multiple SPF TXT records{warnings_str}", domain)
         elif len(spf_txt_records) == 1:
             spf_record = spf_txt_records[0]
         if spf_record is None:
@@ -1659,11 +1660,11 @@ def query_spf_record(domain: str,
                 f"{domain} does not have a SPF TXT record{warnings_str}")
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound(
-            f"{domain} does not have a SPF TXT record {warnings_str}")
+            f"{domain} does not have a SPF TXT record {warnings_str}", domain)
     except dns.resolver.NXDOMAIN:
         raise SPFRecordNotFound(f"The domain {domain} does not exist")
     except Exception as error:
-        raise SPFRecordNotFound(error)
+        raise SPFRecordNotFound(error, domain)
 
     return OrderedDict([("record", spf_record), ("warnings", warnings)])
 
