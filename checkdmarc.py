@@ -661,7 +661,7 @@ def _query_dns(domain: str, record_type: str, nameservers: list[str] = None,
 
 def _get_nameservers(domain: str, nameservers: list[str] = None,
                      resolver: dns.resolver.Resolver = None,
-                     timeout: float = 2.0) -> list[OrderedDict]:
+                     timeout: float = 2.0) -> list[str]:
     """
     Queries DNS for a list of nameservers
 
@@ -673,8 +673,7 @@ def _get_nameservers(domain: str, nameservers: list[str] = None,
         timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
-        list: A list of ``OrderedDicts``; each containing a ``preference``
-                        integer and a ``hostname``
+        list: A list of hostnames
 
     Raises:
         :exc:`checkdmarc.DNSException`
@@ -1099,7 +1098,7 @@ def query_bimi_record(domain: str, selector: str = "default",
     except Exception:
         pass
 
-    if (record is None and domain != base_domain and selector != "default"):
+    if record is None and domain != base_domain and selector != "default":
         record = _query_bmi_record(base_domain,
                                    nameservers=nameservers, resolver=resolver,
                                    timeout=timeout)
@@ -1132,12 +1131,12 @@ def get_dmarc_tag_description(
     name = tag_values[tag]["name"]
     description = tag_values[tag]["description"]
     default = None
-    allowed_values = None
+    allowed_values = {}
     if "default" in tag_values[tag]:
         default = tag_values[tag]["default"]
-    if type(value) is str and allowed_values and value in allowed_values:
+    if type(value) is str and value in allowed_values:
         description = allowed_values[value]
-    elif type(value) is list and allowed_values:
+    elif type(value) is list and len(allowed_values):
         new_description = ""
         for sub_value in value:
             if sub_value in allowed_values:
@@ -1631,7 +1630,8 @@ def query_spf_record(domain: str,
     spf_type_records = []
     spf_txt_records = []
     try:
-        spf_type_records += _query_dns(domain, "SPF", nameservers=nameservers,
+        spf_type_records += _query_dns(domain, "SPF",
+                                       nameservers=nameservers,
                                        resolver=resolver, timeout=timeout)
     except (dns.resolver.NoAnswer, Exception):
         pass
@@ -1655,17 +1655,20 @@ def query_spf_record(domain: str,
                 spf_txt_records.append(record)
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords(
-                f"{domain} has multiple SPF TXT records{warnings_str}", domain)
+                f"{domain} has multiple SPF TXT records {warnings_str})")
         elif len(spf_txt_records) == 1:
             spf_record = spf_txt_records[0]
         if spf_record is None:
             raise SPFRecordNotFound(
-                f"{domain} does not have a SPF TXT record{warnings_str}")
+                f"{domain} does not have a SPF TXT record{warnings_str}",
+                domain)
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound(
-            f"{domain} does not have a SPF TXT record {warnings_str}", domain)
+            f"{domain} does not have a SPF TXT record {warnings_str}",
+            domain)
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordNotFound(f"The domain {domain} does not exist")
+        raise SPFRecordNotFound(f"The domain {domain} does not exist",
+                                domain)
     except Exception as error:
         raise SPFRecordNotFound(error, domain)
 
@@ -1845,7 +1848,7 @@ def parse_spf_record(
                             "Parsing the SPF record has "
                             f"{void_lookup_mechanism_count}/2 maximum void "
                             "DNS lookups - "
-                            r"{u}",
+                            f"{u}",
                             dns_void_lookups=void_lookup_mechanism_count)
                     parsed["redirect"] = OrderedDict(
                         [("domain", value), ("record", redirect_record),
@@ -2189,8 +2192,9 @@ def test_starttls(hostname: str,
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
     except smtplib.SMTPException as e:
-        error_code = error.lstrip("(").split(",")[0]
-        error = f"SMTP error code {e}"
+        message = e.__str__()
+        error_code = int(message.lstrip("(").split(",")[0])
+        error = f"SMTP error code {error_code}"
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
@@ -2362,9 +2366,9 @@ def get_nameservers(domain: str, approved_nameservers: list[str] = None,
         timeout (float): number of seconds to wait for a record from DNS
 
     Returns:
-        Dict: A dictionary with the following keys:
-              - ``hostnames`` - A list of nameserver hostnames
-              - ``warnings``  - A list of warnings
+        OrderedDict: A dictionary with the following keys:
+                     - ``hostnames`` - A list of nameserver hostnames
+                     - ``warnings``  - A list of warnings
     """
     logging.debug(f"Getting NS records on {domain}")
     warnings = []
@@ -2540,6 +2544,27 @@ def check_ns(domain: str,
              nameservers: list[str] = None,
              resolver: dns.resolver.Resolver = None,
              timeout: float = 2.0) -> OrderedDict:
+    """
+    Returns a dictionary of nameservers and warnings or a dictionary with an
+    empty list and an error.
+
+    Args:
+        domain (str): A domain name
+        approved_nameservers (list): A list of approved nameserver substrings
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for a record from DNS
+    Returns:
+        OrderedDict: A dictionary with the following keys:
+              - ``hostnames`` - A list of nameserver hostnames
+              - ``warnings``  - A list of warnings
+
+             If a DNS error occurs, the dictionary will have the following
+             keys:
+              - ``hostnames`` - An empty list
+              - ``error``  - An error message
+    """
     try:
         ns_results = get_nameservers(
             domain,
@@ -2557,6 +2582,34 @@ def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
              nameservers: list[str] = None,
              resolver: dns.resolver.Resolver = None,
              timeout: float = 2.0) -> OrderedDict:
+    """
+    Gets MX hostname and their addresses, or an empty list of hosts and an
+    error if a DNS error occurs
+
+    Args:
+        domain (str): A domain name
+        skip_tls (bool): Skip STARTTLS testing
+        approved_mx_hostnames (list): A list of approved MX hostname substrings
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for a record from DNS
+
+    Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
+                     - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of
+
+                       - ``hostname`` - A hostname
+                       - ``addresses`` - A ``list`` of IP addresses
+
+                     - ``warnings`` - A ``list`` of MX resolution warnings
+                    If a DNS error occurs, the dictionary will have the
+                    following keys:
+
+                      - ``hosts`` - An empty list
+                      - ``error``  - An error message
+
+    """
     try:
         mx_results = get_mx_hosts(
             domain,
@@ -2572,16 +2625,45 @@ def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
 
 def check_dmarc(domain: str, parked: bool = False,
                 include_dmarc_tag_descriptions: bool = False,
+                ignore_unrelated_records: bool = False,
                 nameservers: list[str] = None,
                 resolver: dns.resolver.Resolver = None,
                 timeout: float = 2.0) -> OrderedDict:
+    """
+        Returns a dictionary with a parsed DMARC record or an error
+
+        Args:
+            domain (str): A domain name
+            parked (bool): The domain is parked
+            include_dmarc_tag_descriptions (bool): Include tag descriptions
+            ignore_unrelated_records (bool): Ignore unrelated TXT records
+            nameservers (list): A list of nameservers to query
+            resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                              requests
+            timeout (float): number of seconds to wait for a record from DNS
+
+        Returns:
+            OrderedDict: An ``OrderedDict`` with the following keys:
+                         - ``record`` - the unparsed DMARC record string
+                         - ``location`` - the domain where the record was found
+                         - ``warnings`` - warning conditions found
+
+                        If a DNS error occurs, the dictionary will have the
+                        following keys:
+
+                      - ``error``  - An error message
+                      - ``valid`` - False
+
+        """
     dmarc_results = OrderedDict([("record", None), ("valid", True),
                                  ("location", None)])
     try:
-        dmarc_query = query_dmarc_record(domain,
-                                         nameservers=nameservers,
-                                         resolver=resolver,
-                                         timeout=timeout)
+        dmarc_query = query_dmarc_record(
+            domain,
+            ignore_unrelated_records=ignore_unrelated_records,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout)
         dmarc_results["record"] = dmarc_query["record"]
         dmarc_results["location"] = dmarc_query["location"]
         parsed_dmarc_record = parse_dmarc_record(
@@ -2609,6 +2691,31 @@ def check_spf(domain: str, parked: bool = False,
               nameservers: list[str] = None,
               resolver: dns.resolver.Resolver = None,
               timeout: float = 2.0) -> OrderedDict:
+    """
+    Returns a dictionary with a parsed SPF record on an error.
+
+    Args:
+        domain (str): A domain name
+        parked (bool): The domain is parked
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
+                       - ``record`` - The SPF record string
+                       - ``parsed`` - The parsed SPF record
+                       - ``dns_lookups`` - The number of DNS lookups
+                       - ``dns_void_lookups`` - The number of void DNS lookups
+                       - ``valid`` - True
+                       - ``warnings`` - A ``list`` of warnings
+
+                    If a DNS error occurs, the dictionary will have the
+                    following keys:
+                      - ``error`` - Tne error message
+                      - ``valid`` - False
+    """
     spf_results = OrderedDict(
         [("record", None), ("valid", True), ("dns_lookups", None),
          ("dns_void_lookups", None)])
