@@ -99,7 +99,7 @@ class SMTPError(Exception):
 class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
 
-    def __init__(self, msg: str, data: dict=None):
+    def __init__(self, msg: str, data: dict = None):
         """
         Args:
             msg (str): The error message
@@ -149,7 +149,7 @@ class DNSExceptionNXDOMAIN(DNSException):
 class DMARCError(Exception):
     """Raised when a fatal DMARC error occurs"""
 
-    def __init__(self, msg: str, data: dict=None):
+    def __init__(self, msg: str, data: dict = None):
         """
         Args:
             msg (str): The error message
@@ -167,6 +167,7 @@ class SPFRecordNotFound(SPFError):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
         self.domain = domain
+
 
 class MultipleSPFRTXTRecords(SPFError):
     """Raised when multiple TXT spf1 records are found"""
@@ -261,7 +262,7 @@ class MultipleDMARCRecords(DMARCError):
 
 class BIMIError(Exception):
     """Raised when a fatal BIMI error occurs"""
-    def __init__(self, msg: str, data: dict=None):
+    def __init__(self, msg: str, data: dict = None):
         """
        Args:
            msg (str): The error message
@@ -606,9 +607,9 @@ def get_base_domain(domain: str) -> str:
     return psl.privatesuffix(domain) or domain
 
 
-def _query_dns(domain: str, record_type: str, nameservers: list[str]=None,
-               resolver:dns.resolver.Resolver=None,
-               timeout: float=2.0, cache: ExpiringDict=None) -> list[str]:
+def _query_dns(domain: str, record_type: str, nameservers: list[str] = None,
+               resolver: dns.resolver.Resolver = None,
+               timeout: float = 2.0, cache: ExpiringDict = None) -> list[str]:
     """
     Queries DNS
 
@@ -658,9 +659,9 @@ def _query_dns(domain: str, record_type: str, nameservers: list[str]=None,
     return records
 
 
-def _get_nameservers(domain: str, nameservers: list[str]=None,
-                     resolver: dns.resolver.Resolver=None,
-                     timeout: float=2.0) -> list[OrderedDict]:
+def _get_nameservers(domain: str, nameservers: list[str] = None,
+                     resolver: dns.resolver.Resolver = None,
+                     timeout: float = 2.0) -> list[OrderedDict]:
     """
     Queries DNS for a list of nameservers
 
@@ -694,9 +695,9 @@ def _get_nameservers(domain: str, nameservers: list[str]=None,
     return answers
 
 
-def _get_mx_hosts(domain: str, nameservers: list[str]=None,
-                  resolver: dns.resolver.Resolver=None,
-                  timeout: float=2.0) -> list[OrderedDict]:
+def _get_mx_hosts(domain: str, nameservers: list[str] = None,
+                  resolver: dns.resolver.Resolver = None,
+                  timeout: float = 2.0) -> list[OrderedDict]:
     """
     Queries DNS for a list of Mail Exchange hosts
 
@@ -737,9 +738,9 @@ def _get_mx_hosts(domain: str, nameservers: list[str]=None,
     return hosts
 
 
-def _get_a_records(domain: str, nameservers: list[str]=None,
-                   resolver: dns.resolver.Resolver=None,
-                   timeout: float=2.0) -> list[str]:
+def _get_a_records(domain: str, nameservers: list[str] = None,
+                   resolver: dns.resolver.Resolver = None,
+                   timeout: float = 2.0) -> list[str]:
     """
     Queries DNS for A and AAAA records
 
@@ -775,9 +776,9 @@ def _get_a_records(domain: str, nameservers: list[str]=None,
     return addresses
 
 
-def _get_reverse_dns(ip_address: str, nameservers: list[str]=None,
-                     resolver: dns.resolver.Resolver=None,
-                     timeout: float=2.0) -> list[str]:
+def _get_reverse_dns(ip_address: str, nameservers: list[str] = None,
+                     resolver: dns.resolver.Resolver = None,
+                     timeout: float = 2.0) -> list[str]:
     """
     Queries for an IP addresses reverse DNS hostname(s)
 
@@ -807,9 +808,9 @@ def _get_reverse_dns(ip_address: str, nameservers: list[str]=None,
     return hostnames
 
 
-def _get_txt_records(domain: str, nameservers: list[str]=None,
-                     resolver: dns.resolver.Resolver=None,
-                     timeout: float=2.0) -> list[str]:
+def _get_txt_records(domain: str, nameservers: list[str] = None,
+                     resolver: dns.resolver.Resolver = None,
+                     timeout: float = 2.0) -> list[str]:
     """
     Queries DNS for TXT records
 
@@ -833,17 +834,18 @@ def _get_txt_records(domain: str, nameservers: list[str]=None,
     except dns.resolver.NXDOMAIN:
         raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
     except dns.resolver.NoAnswer:
-        raise DNSException(f"The domain {domain} does not have any TXT records")
+        raise DNSException(
+            f"The domain {domain} does not have any TXT records")
     except Exception as error:
         raise DNSException(error)
 
     return records
 
 
-def _query_dmarc_record(domain:str, nameservers: list[str]=None,
-                        resolver: dns.resolver.Resolver=None,
-                        timeout:float=2.0,
-                        ignore_unrelated_records:bool=False
+def _query_dmarc_record(domain: str, nameservers: list[str] = None,
+                        resolver: dns.resolver.Resolver = None,
+                        timeout: float = 2.0,
+                        ignore_unrelated_records: bool = False
                         ) -> Union[str, None]:
     """
     Queries DNS for a DMARC record
@@ -922,10 +924,10 @@ def _query_dmarc_record(domain:str, nameservers: list[str]=None,
     return dmarc_record
 
 
-def _query_bmi_record(domain: str, selector: str="default",
-                      nameservers: list[str]=None,
-                      resolver:dns.resolver.Resolver=None,
-                      timeout: float=2.0):
+def _query_bmi_record(domain: str, selector: str = "default",
+                      nameservers: list[str] = None,
+                      resolver: dns.resolver.Resolver = None,
+                      timeout: float = 2.0):
     """
     Queries DNS for a BIMI record
 
@@ -993,10 +995,10 @@ def _query_bmi_record(domain: str, selector: str="default",
     return bimi_record
 
 
-def query_dmarc_record(domain: str, nameservers:list[str]=None,
-                       resolver:dns.resolver.Resolver=None,
-                       timeout: float=2.0,
-                       ignore_unrelated_records: bool=False) -> OrderedDict:
+def query_dmarc_record(domain: str, nameservers: list[str] = None,
+                       resolver: dns.resolver.Resolver = None,
+                       timeout: float = 2.0,
+                       ignore_unrelated_records: bool = False) -> OrderedDict:
     """
     Queries DNS for a DMARC record
 
@@ -1052,10 +1054,10 @@ def query_dmarc_record(domain: str, nameservers:list[str]=None,
                         ("warnings", warnings)])
 
 
-def query_bimi_record(domain: str, selector: str="default",
-                      nameservers: list[str]=None,
-                      resolver:dns.resolver.Resolver=None,
-                      timeout:float=2.0) -> OrderedDict:
+def query_bimi_record(domain: str, selector: str = "default",
+                      nameservers: list[str] = None,
+                      resolver: dns.resolver.Resolver = None,
+                      timeout: float = 2.0) -> OrderedDict:
     """
     Queries DNS for a BIMI record
 
@@ -1111,8 +1113,8 @@ def query_bimi_record(domain: str, selector: str="default",
 
 
 def get_dmarc_tag_description(
-        tag:str,
-        value: Union[str, list[str]]=None) -> OrderedDict:
+        tag: str,
+        value: Union[str, list[str]] = None) -> OrderedDict:
     """
     Get the name, default value, and description for a DMARC tag, amd/or a
     description for a tag value
@@ -1190,9 +1192,9 @@ def parse_dmarc_report_uri(uri: str) -> OrderedDict:
 
 def check_wildcard_dmarc_report_authorization(
         domain: str,
-        nameservers:list[str]=None,
-        resolver: dns.resolver.Resolver=None,
-        timeout=2.0) -> bool:
+        nameservers: list[str] = None,
+        resolver: dns.resolver.Resolver = None,
+        timeout: float = 2.0) -> bool:
     """
     Checks for a wildcard DMARC report authorization record, e.g.:
 
@@ -1241,10 +1243,11 @@ def check_wildcard_dmarc_report_authorization(
     return True
 
 
-def verify_dmarc_report_destination(source_domain: str, destination_domain:str,
-                                    nameservers: list[str]=None,
-                                    resolver:dns.resolver.Resolver=None,
-                                    timeout: float=2.0) -> bool:
+def verify_dmarc_report_destination(source_domain: str,
+                                    destination_domain: str,
+                                    nameservers: list[str] = None,
+                                    resolver: dns.resolver.Resolver = None,
+                                    timeout: float = 2.0) -> bool:
     """
       Checks if the report destination accepts reports for the source domain
       per RFC 7489, section 7.1
@@ -1310,12 +1313,12 @@ def verify_dmarc_report_destination(source_domain: str, destination_domain:str,
 
 
 def parse_dmarc_record(
-        record: str, domain: str, parked: bool=False,
-        include_tag_descriptions: bool=False,
-        nameservers: list[str]=None,
-        resolver:dns.resolver.Resolver=None,
-        timeout: float=2.0,
-        syntax_error_marker: str=SYNTAX_ERROR_MARKER) -> OrderedDict:
+        record: str, domain: str, parked: bool = False,
+        include_tag_descriptions: bool = False,
+        nameservers: list[str] = None,
+        resolver: dns.resolver.Resolver = None,
+        timeout: float = 2.0,
+        syntax_error_marker: str = SYNTAX_ERROR_MARKER) -> OrderedDict:
     """
     Parses a DMARC record
 
@@ -1373,7 +1376,7 @@ def parse_dmarc_record(
         marked_record = (record[:parsed_record.pos] + syntax_error_marker +
                          record[parsed_record.pos:])
         expecting = " or ".join(expecting)
-        raise DMARCSyntaxError(f"Error: Expected {expecting} at position " 
+        raise DMARCSyntaxError(f"Error: Expected {expecting} at position "
                                f"{parsed_record.pos} "
                                f"(marked with {syntax_error_marker}) in: "
                                f"{marked_record}")
@@ -1550,10 +1553,10 @@ def parse_dmarc_record(
 
 
 def get_dmarc_record(domain: str,
-                     include_tag_descriptions: bool=False,
-                     nameservers: list[str]=None,
-                     resolver: dns.resolver.Resolver=None,
-                     timeout: float=2.0) -> OrderedDict:
+                     include_tag_descriptions: bool = False,
+                     nameservers: list[str] = None,
+                     resolver: dns.resolver.Resolver = None,
+                     timeout: float = 2.0) -> OrderedDict:
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -1602,9 +1605,9 @@ def get_dmarc_record(domain: str,
 
 
 def query_spf_record(domain: str,
-                     nameservers: list[str]=None,
-                     resolver: dns.resolver.Resolver=None,
-                     timeout: float=2.0) -> OrderedDict:
+                     nameservers: list[str] = None,
+                     resolver: dns.resolver.Resolver = None,
+                     timeout: float = 2.0) -> OrderedDict:
     """
     Queries DNS for an SPF record
 
@@ -1671,12 +1674,12 @@ def query_spf_record(domain: str,
 
 def parse_spf_record(
         record: str, domain: str,
-        parked: bool=False, seen: bool=None,
-        nameservers: list[str]=None,
-        resolver: dns.resolver.Resolver=None,
-        recursion: OrderedDict=None, 
-        timeout: float=2.0,
-        syntax_error_marker: str=SYNTAX_ERROR_MARKER) -> OrderedDict:
+        parked: bool = False, seen: bool = None,
+        nameservers: list[str] = None,
+        resolver: dns.resolver.Resolver = None,
+        recursion: OrderedDict = None,
+        timeout: float = 2.0,
+        syntax_error_marker: str = SYNTAX_ERROR_MARKER) -> OrderedDict:
     """
     Parses an SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
@@ -1837,11 +1840,12 @@ def parse_spf_record(
                             "#section-4.6.4",
                             dns_lookups=lookup_mechanism_count)
                     if void_lookup_mechanism_count > 2:
+                        u = "https://tools.ietf.org/html/rfc7208#section-4.6.4"
                         raise SPFTooManyVoidDNSLookups(
                             "Parsing the SPF record has "
                             f"{void_lookup_mechanism_count}/2 maximum void "
                             "DNS lookups - "
-                            "https://tools.ietf.org/html/rfc7208#section-4.6.4",
+                            r"{u}",
                             dns_void_lookups=void_lookup_mechanism_count)
                     parsed["redirect"] = OrderedDict(
                         [("domain", value), ("record", redirect_record),
@@ -1895,11 +1899,12 @@ def parse_spf_record(
                             "#section-4.6.4",
                             dns_lookups=lookup_mechanism_count)
                     if void_lookup_mechanism_count > 2:
+                        u = "https://tools.ietf.org/html/rfc7208#section-4.6.4"
                         raise SPFTooManyVoidDNSLookups(
                             "Parsing the SPF record has "
                             f"{void_lookup_mechanism_count}/2 maximum void "
                             "DNS lookups - "
-                            "https://tools.ietf.org/html/rfc7208#section-4.6.4",
+                            f"{u}",
                             dns_void_lookups=void_lookup_mechanism_count)
                     include = OrderedDict(
                         [("domain", value), ("record", include_record),
@@ -1944,9 +1949,9 @@ def parse_spf_record(
          ("parsed", parsed), ("warnings", warnings)])
 
 
-def get_spf_record(domain: str, nameservers: list[str]=None,
-                   resolver: dns.resolver.Resolver=None,
-                   timeout: float=2.0) -> OrderedDict:
+def get_spf_record(domain: str, nameservers: list[str] = None,
+                   resolver: dns.resolver.Resolver = None,
+                   timeout: float = 2.0) -> OrderedDict:
     """
     Retrieves and parses an SPF record
 
@@ -1980,8 +1985,8 @@ def get_spf_record(domain: str, nameservers: list[str]=None,
 
 @timeout_decorator.timeout(5, timeout_exception=SMTPError,
                            exception_message="Connection timed out")
-def test_tls(hostname: str, ssl_context: SSLContext=None,
-             cache: ExpiringDict=None) -> bool:
+def test_tls(hostname: str, ssl_context: SSLContext = None,
+             cache: ExpiringDict = None) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
 
@@ -2092,8 +2097,8 @@ def test_tls(hostname: str, ssl_context: SSLContext=None,
 @timeout_decorator.timeout(5, timeout_exception=SMTPError,
                            exception_message="Connection timed out")
 def test_starttls(hostname: str,
-                  ssl_context: SSLContext=None,
-                  cache: ExpiringDict=None) -> bool:
+                  ssl_context: SSLContext = None,
+                  cache: ExpiringDict = None) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support
 
@@ -2201,9 +2206,12 @@ def test_starttls(hostname: str,
         raise SMTPError(error)
 
 
-def get_mx_hosts(domain, skip_tls=False,
-                 approved_hostnames=None, parked=False,
-                 nameservers=None, resolver=None, timeout=2.0):
+def get_mx_hosts(domain: str, skip_tls: bool = False,
+                 approved_hostnames: list[str] = None,
+                 parked: bool = False,
+                 nameservers: list[str] = None,
+                 resolver: dns.resolver.Resolver = None,
+                 timeout: float = 2.0):
     """
     Gets MX hostname and their addresses
 
@@ -2246,7 +2254,7 @@ def get_mx_hosts(domain, skip_tls=False,
         approved_hostnames = list(map(lambda h: h.lower(),
                                       approved_hostnames))
     for host in hosts:
-        hostname =  hostname
+        hostname = host["hostname"]
         if hostname in hostnames:
             if hostname not in dupe_hostnames:
                 warnings.append(
@@ -2274,8 +2282,9 @@ def get_mx_hosts(domain, skip_tls=False,
                     f"{hostname} does not have any A or AAAA DNS records")
         except Exception as e:
             if hostname.lower().endswith(".msv1.invalid"):
-                warnings.append(f"{e}. Consider using a TXT record to validate "
-                                "domain ownership in Office 365 instead.")
+                warnings.append(f"{e}. Consider using a TXT record to "
+                                " validate domain ownership in Office 365 "
+                                "instead.")
             else:
                 warnings.append(e.__str__())
 
@@ -2337,10 +2346,10 @@ def get_mx_hosts(domain, skip_tls=False,
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
 
-def get_nameservers(domain: str, approved_nameservers: list[str]=None,
-                    nameservers: list[str]=None,
-                    resolver: dns.resolver.Resolver=None,
-                    timeout: float=2.0) -> dict:
+def get_nameservers(domain: str, approved_nameservers: list[str] = None,
+                    nameservers: list[str] = None,
+                    resolver: dns.resolver.Resolver = None,
+                    timeout: float = 2.0) -> dict:
     """
     Gets a list of nameservers for a given domain
 
@@ -2379,8 +2388,8 @@ def get_nameservers(domain: str, approved_nameservers: list[str]=None,
     return OrderedDict([("hostnames", ns_records), ("warnings", warnings)])
 
 
-def test_dnssec(domain: str, nameservers: list[str]=None,
-                timeout:float=2.0) -> bool:
+def test_dnssec(domain: str, nameservers: list[str] = None,
+                timeout: float = 2.0) -> bool:
     """
     Check for DNSSEC on the given domain
 
@@ -2418,15 +2427,15 @@ def test_dnssec(domain: str, nameservers: list[str]=None,
     return False
 
 
-def check_domains(domains: list[str], parked: bool=False,
-                  approved_nameservers: list[str]=None,
-                  approved_mx_hostnames: bool=None,
-                  skip_tls: bool=False,
-                  include_dmarc_tag_descriptions: bool=False,
-                  nameservers: list[str]=None,
-                  resolver: dns.resolver.Resolver=None,
-                  timeout: float=2.0,
-                  wait: float=0.0) -> Union[OrderedDict, list[OrderedDict]]:
+def check_domains(domains: list[str], parked: bool = False,
+                  approved_nameservers: list[str] = None,
+                  approved_mx_hostnames: bool = None,
+                  skip_tls: bool = False,
+                  include_dmarc_tag_descriptions: bool = False,
+                  nameservers: list[str] = None,
+                  resolver: dns.resolver.Resolver = None,
+                  timeout: float = 2.0,
+                  wait: float = 0.0) -> Union[OrderedDict, list[OrderedDict]]:
     """
     Check the given domains for SPF and DMARC records, parse them, and return
     them
@@ -2527,10 +2536,10 @@ def check_domains(domains: list[str], parked: bool=False,
 
 
 def check_ns(domain: str,
-             approved_nameservers: list[str]=None,
-             nameservers: list[str]=None,
-             resolver: dns.resolver.Resolver=None,
-             timeout:float=2.0) -> OrderedDict:
+             approved_nameservers: list[str] = None,
+             nameservers: list[str] = None,
+             resolver: dns.resolver.Resolver = None,
+             timeout: float = 2.0) -> OrderedDict:
     try:
         ns_results = get_nameservers(
             domain,
@@ -2543,11 +2552,11 @@ def check_ns(domain: str,
     return ns_results
 
 
-def check_mx(domain: str, approved_mx_hostnames: list[str]=None,
-             skip_tls: bool=False,
-             nameservers: list[str]=None,
-             resolver: dns.resolver.Resolver=None,
-             timeout: float=2.0) -> OrderedDict:
+def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
+             skip_tls: bool = False,
+             nameservers: list[str] = None,
+             resolver: dns.resolver.Resolver = None,
+             timeout: float = 2.0) -> OrderedDict:
     try:
         mx_results = get_mx_hosts(
             domain,
@@ -2561,11 +2570,11 @@ def check_mx(domain: str, approved_mx_hostnames: list[str]=None,
     return mx_results
 
 
-def check_dmarc(domain: str, parked: bool=False,
-                include_dmarc_tag_descriptions: bool=False,
-                nameservers: list[str]=None,
-                resolver: dns.resolver.Resolver=None,
-                timeout: float=2.0) -> OrderedDict:
+def check_dmarc(domain: str, parked: bool = False,
+                include_dmarc_tag_descriptions: bool = False,
+                nameservers: list[str] = None,
+                resolver: dns.resolver.Resolver = None,
+                timeout: float = 2.0) -> OrderedDict:
     dmarc_results = OrderedDict([("record", None), ("valid", True),
                                  ("location", None)])
     try:
@@ -2596,10 +2605,10 @@ def check_dmarc(domain: str, parked: bool=False,
     return dmarc_results
 
 
-def check_spf(domain: str, parked: bool=False,
-              nameservers: list[str]=None,
-              resolver:dns.resolver.Resolver=None,
-              timeout: float=2.0) -> OrderedDict:
+def check_spf(domain: str, parked: bool = False,
+              nameservers: list[str] = None,
+              resolver: dns.resolver.Resolver = None,
+              timeout: float = 2.0) -> OrderedDict:
     spf_results = OrderedDict(
         [("record", None), ("valid", True), ("dns_lookups", None),
          ("dns_void_lookups", None)])
@@ -2633,7 +2642,7 @@ def check_spf(domain: str, parked: bool=False,
     return spf_results
 
 
-def results_to_json(results: Union[dict,list[dict]]) -> str:
+def results_to_json(results: Union[dict, list[dict]]) -> str:
     """
     Converts a dictionary of results or list of results to a JSON string
 
