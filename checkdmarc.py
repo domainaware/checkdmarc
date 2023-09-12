@@ -4,6 +4,7 @@
 """Validates and parses SPF amd DMARC DNS records"""
 
 import logging
+from typing import Union
 from collections import OrderedDict
 from re import compile, IGNORECASE
 import json
@@ -17,7 +18,7 @@ import tempfile
 import platform
 import shutil
 import atexit
-from ssl import SSLError, create_default_context
+from ssl import SSLError, SSLContext, create_default_context
 
 from io import StringIO
 from expiringdict import ExpiringDict
@@ -70,11 +71,9 @@ MAILTO_REGEX = compile(MAILTO_REGEX_STRING, IGNORECASE)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING, IGNORECASE)
 AFTER_ALL_REGEX = compile(AFTER_ALL_REGEX_STRING, IGNORECASE)
 
-USER_AGENT = "Mozilla/5.0 (({0} {1})) parsedmarc/{2}".format(
-    platform.system(),
-    platform.release(),
-    __version__
-)
+OS = platform.system()
+OS_RELEASE = platform.release()
+USER_AGENT = f"Mozilla/5.0 (({OS} {OS_RELEASE})) parsedmarc/{__version__}"
 
 DNS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 TLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
@@ -100,7 +99,7 @@ class SMTPError(Exception):
 class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
 
-    def __init__(self, msg, data=None):
+    def __init__(self, msg: str, data: dict=None):
         """
         Args:
             msg (str): The error message
@@ -150,7 +149,7 @@ class DNSExceptionNXDOMAIN(DNSException):
 class DMARCError(Exception):
     """Raised when a fatal DMARC error occurs"""
 
-    def __init__(self, msg, data=None):
+    def __init__(self, msg: str, data: dict=None):
         """
         Args:
             msg (str): The error message
@@ -261,7 +260,7 @@ class MultipleDMARCRecords(DMARCError):
 
 class BIMIError(Exception):
     """Raised when a fatal BIMI error occurs"""
-    def __init__(self, msg, data=None):
+    def __init__(self, msg: str, data: dict=None):
         """
        Args:
            msg (str): The error message
@@ -585,7 +584,7 @@ bimi_tags = OrderedDict(
 )
 
 
-def get_base_domain(domain):
+def get_base_domain(domain: str) -> str:
     """
     Gets the base domain name for the given domain
 
@@ -606,8 +605,9 @@ def get_base_domain(domain):
     return psl.privatesuffix(domain) or domain
 
 
-def _query_dns(domain, record_type, nameservers=None, resolver=None,
-               timeout=2.0, cache=None):
+def _query_dns(domain: str, record_type: str, nameservers: list[str]=None,
+               resolver:dns.resolver.Resolver=None,
+               timeout: float=2.0, cache: ExpiringDict=None) -> list[str]:
     """
     Queries DNS
 
@@ -623,9 +623,9 @@ def _query_dns(domain, record_type, nameservers=None, resolver=None,
     Returns:
         list: A list of answers
     """
-    domain = str(domain).lower()
+    domain = domain.lower()
     record_type = record_type.upper()
-    cache_key = "{0}_{1}".format(domain, record_type)
+    cache_key = f"{domain}_{record_type}"
     if cache is None:
         cache = DNS_CACHE
     if type(cache) is ExpiringDict:
@@ -657,7 +657,9 @@ def _query_dns(domain, record_type, nameservers=None, resolver=None,
     return records
 
 
-def _get_nameservers(domain, nameservers=None, resolver=None, timeout=2.0):
+def _get_nameservers(domain: str, nameservers: list[str]=None,
+                     resolver: dns.resolver.Resolver=None,
+                     timeout: float=2.0) -> list[OrderedDict]:
     """
     Queries DNS for a list of nameservers
 
@@ -683,7 +685,7 @@ def _get_nameservers(domain, nameservers=None, resolver=None, timeout=2.0):
                              resolver=resolver, timeout=timeout)
     except dns.resolver.NXDOMAIN:
         raise DNSExceptionNXDOMAIN(
-            "The domain {0} does not exist".format(domain))
+            f"The domain {domain} does not exist")
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
@@ -691,7 +693,9 @@ def _get_nameservers(domain, nameservers=None, resolver=None, timeout=2.0):
     return answers
 
 
-def _get_mx_hosts(domain, nameservers=None, resolver=None, timeout=2.0):
+def _get_mx_hosts(domain: str, nameservers: list[str]=None,
+                  resolver: dns.resolver.Resolver=None,
+                  timeout: float=2.0) -> list[OrderedDict]:
     """
     Queries DNS for a list of Mail Exchange hosts
 
@@ -712,7 +716,7 @@ def _get_mx_hosts(domain, nameservers=None, resolver=None, timeout=2.0):
     """
     hosts = []
     try:
-        logging.debug("Checking for MX records on {0}".format(domain))
+        logging.debug(f"Checking for MX records on {domain}")
         answers = _query_dns(domain, "MX", nameservers=nameservers,
                              resolver=resolver, timeout=timeout)
         for record in answers:
@@ -724,7 +728,7 @@ def _get_mx_hosts(domain, nameservers=None, resolver=None, timeout=2.0):
         hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:
         raise DNSExceptionNXDOMAIN(
-            "The domain {0} does not exist".format(domain))
+            f"The domain {domain} does not exist")
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
@@ -732,7 +736,9 @@ def _get_mx_hosts(domain, nameservers=None, resolver=None, timeout=2.0):
     return hosts
 
 
-def _get_a_records(domain, nameservers=None, resolver=None, timeout=2.0):
+def _get_a_records(domain: str, nameservers: list[str]=None,
+                   resolver: dns.resolver.Resolver=None,
+                   timeout: float=2.0) -> list[str]:
     """
     Queries DNS for A and AAAA records
 
@@ -757,8 +763,7 @@ def _get_a_records(domain, nameservers=None, resolver=None, timeout=2.0):
             addresses += _query_dns(domain, qt, nameservers=nameservers,
                                     resolver=resolver, timeout=timeout)
         except dns.resolver.NXDOMAIN:
-            raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(
-                domain))
+            raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
         except dns.resolver.NoAnswer:
             # Sometimes a domain will only have A or AAAA records, but not both
             pass
@@ -769,19 +774,21 @@ def _get_a_records(domain, nameservers=None, resolver=None, timeout=2.0):
     return addresses
 
 
-def _get_reverse_dns(ip_address, nameservers=None, resolver=None, timeout=2.0):
+def _get_reverse_dns(ip_address: str, nameservers: list[str]=None,
+                     resolver: dns.resolver.Resolver=None,
+                     timeout: float=2.0) -> list[str]:
     """
     Queries for an IP addresses reverse DNS hostname(s)
 
     Args:
         ip_address (str): An IPv4 or IPv6 address
-
-    Returns:
-        list: A list of reverse DNS hostnames
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        list: A list of reverse DNS hostnames
 
     Raises:
         :exc:`checkdmarc.DNSException`
@@ -799,7 +806,9 @@ def _get_reverse_dns(ip_address, nameservers=None, resolver=None, timeout=2.0):
     return hostnames
 
 
-def _get_txt_records(domain, nameservers=None, resolver=None, timeout=2.0):
+def _get_txt_records(domain: str, nameservers: list[str]=None,
+                     resolver: dns.resolver.Resolver=None,
+                     timeout: float=2.0) -> list[str]:
     """
     Queries DNS for TXT records
 
@@ -821,19 +830,20 @@ def _get_txt_records(domain, nameservers=None, resolver=None, timeout=2.0):
         records = _query_dns(domain, "TXT", nameservers=nameservers,
                              resolver=resolver, timeout=timeout)
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN("The domain {0} does not exist".format(
-            domain))
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
     except dns.resolver.NoAnswer:
-        raise DNSException(
-            "The domain {0} does not have any TXT records".format(domain))
+        raise DNSException(f"The domain {domain} does not have any TXT records")
     except Exception as error:
         raise DNSException(error)
 
     return records
 
 
-def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0,
-                        ignore_unrelated_records=False):
+def _query_dmarc_record(domain:str, nameservers: list[str]=None,
+                        resolver: dns.resolver.Resolver=None,
+                        timeout:float=2.0,
+                        ignore_unrelated_records:bool=False
+                        ) -> Union[str, None]:
     """
     Queries DNS for a DMARC record
 
@@ -847,7 +857,8 @@ def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0,
     Returns:
         str: A record string or None
     """
-    target = "_dmarc.{0}".format(domain.lower())
+    domain = domain.lower()
+    target = f"_dmarc.{domain}"
     dmarc_record = None
     dmarc_record_count = 0
     unrelated_records = []
@@ -874,30 +885,29 @@ def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0,
                 "https://tools.ietf.org/html/rfc7489#section-6.6.3")
         if len(unrelated_records) > 0:
             if not ignore_unrelated_records:
+                ur_str = "\n\n".join(unrelated_records)
                 raise UnrelatedTXTRecordFoundAtDMARC(
                     "Unrelated TXT records were discovered. These should be "
                     "removed, as some receivers may not expect to find "
-                    "unrelated TXT records "
-                    "at {0}\n\n{1}".format(target, "\n\n".join(
-                        unrelated_records)))
+                    f"unrelated TXT records at {target}\n\n{ur_str}")
         dmarc_record = [record for record in records if record.startswith(
             dmarc_prefix)][0]
 
     except dns.resolver.NoAnswer:
         try:
-            records = _query_dns(domain.lower(), "TXT",
+            records = _query_dns(domain, "TXT",
                                  nameservers=nameservers, resolver=resolver,
                                  timeout=timeout)
             for record in records:
                 if record.startswith("v=DMARC1"):
                     raise DMARCRecordInWrongLocation(
                         "The DMARC record must be located at "
-                        "{0}, not {1}".format(target, domain.lower()))
+                        f"{target}, not {domain}")
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
             raise DMARCRecordNotFound(
-                "The domain {0} does not exist".format(domain))
+                f"The domain {0} does not exist".format(domain))
         except Exception as error:
             raise DMARCRecordNotFound(error)
 
@@ -911,8 +921,10 @@ def _query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0,
     return dmarc_record
 
 
-def _query_bmi_record(domain, selector="default", nameservers=None,
-                      resolver=None, timeout=2.0):
+def _query_bmi_record(domain: str, selector: str="default",
+                      nameservers: list[str]=None,
+                      resolver:dns.resolver.Resolver=None,
+                      timeout: float=2.0):
     """
     Queries DNS for a BIMI record
 
@@ -927,7 +939,8 @@ def _query_bmi_record(domain, selector="default", nameservers=None,
     Returns:
         str: A record string or None
     """
-    target = "{0}._bimi.{1}".format(selector, domain.lower())
+    domain = domain.lower()
+    target = f"{selector}._bimi.{domain}"
     bimi_record = None
     bmi_record_count = 0
     unrelated_records = []
@@ -945,28 +958,29 @@ def _query_bmi_record(domain, selector="default", nameservers=None,
             raise MultipleBIMIRecords(
                 "Multiple BMI records are not permitted")
         if len(unrelated_records) > 0:
+            ur_str = "\n\n".join(unrelated_records)
             raise UnrelatedTXTRecordFoundAtDMARC(
                 "Unrelated TXT records were discovered. These should be "
                 "removed, as some receivers may not expect to find "
                 "unrelated TXT records "
-                "at {0}\n\n{1}".format(target, "\n\n".join(unrelated_records)))
+                f"at {target}\n\n{ur_str}")
         bimi_record = records[0]
 
     except dns.resolver.NoAnswer:
         try:
-            records = _query_dns(domain.lower(), "TXT",
+            records = _query_dns(domain, "TXT",
                                  nameservers=nameservers, resolver=resolver,
                                  timeout=timeout)
             for record in records:
                 if record.startswith("v=BIMI1"):
                     raise BIMIRecordInWrongLocation(
                         "The BIMI record must be located at "
-                        "{0}, not {1}".format(target, domain.lower()))
+                        f"{target}, not {domain}")
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
             raise BIMIRecordNotFound(
-                "The domain {0} does not exist".format(domain))
+                f"The domain {domain} does not exist")
         except Exception as error:
             BIMIRecordNotFound(error)
 
@@ -978,8 +992,10 @@ def _query_bmi_record(domain, selector="default", nameservers=None,
     return bimi_record
 
 
-def query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0,
-                       ignore_unrelated_records=False):
+def query_dmarc_record(domain: str, nameservers:list[str]=None,
+                       resolver:dns.resolver.Resolver=None,
+                       timeout: float=2.0,
+                       ignore_unrelated_records: bool=False) -> OrderedDict:
     """
     Queries DNS for a DMARC record
 
@@ -1004,7 +1020,7 @@ def query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0,
         :exc:`checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
 
     """
-    logging.debug("Checking for a DMARC record on {0}".format(domain))
+    logging.debug(f"Checking for a DMARC record on {domain}")
     warnings = []
     base_domain = get_base_domain(domain)
     location = domain.lower()
@@ -1013,13 +1029,13 @@ def query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0,
         resolver=resolver, timeout=timeout,
         ignore_unrelated_records=ignore_unrelated_records)
     try:
-        root_records = _query_dns(domain.lower(), "TXT",
+        root_records = _query_dns(domain, "TXT",
                                   nameservers=nameservers, resolver=resolver,
                                   timeout=timeout)
         for root_record in root_records:
             if root_record.startswith("v=DMARC1"):
-                warnings.append("DMARC record at root of {0} "
-                                "has no effect".format(domain.lower()))
+                warnings.append(f"DMARC record at root of {domain} "
+                                "has no effect")
     except Exception:
         pass
 
@@ -1035,8 +1051,10 @@ def query_dmarc_record(domain, nameservers=None, resolver=None, timeout=2.0,
                         ("warnings", warnings)])
 
 
-def query_bimi_record(domain, selector="default", nameservers=None,
-                      resolver=None, timeout=2.0):
+def query_bimi_record(domain: str, selector: str="default",
+                      nameservers: list[str]=None,
+                      resolver:dns.resolver.Resolver=None,
+                      timeout:float=2.0) -> OrderedDict:
     """
     Queries DNS for a BIMI record
 
@@ -1060,7 +1078,7 @@ def query_bimi_record(domain, selector="default", nameservers=None,
         :exc:`checkdmarc.MultipleBIMIRecords`
 
     """
-    logging.debug("Checking for a BIMI record on {0}".format(domain))
+    logging.debug(f"Checking for a BIMI record on {domain}")
     warnings = []
     base_domain = get_base_domain(domain)
     location = domain.lower()
@@ -1068,13 +1086,13 @@ def query_bimi_record(domain, selector="default", nameservers=None,
                                nameservers=nameservers, resolver=resolver,
                                timeout=timeout)
     try:
-        root_records = _query_dns(domain.lower(), "TXT",
+        root_records = _query_dns(domain, "TXT",
                                   nameservers=nameservers, resolver=resolver,
                                   timeout=timeout)
         for root_record in root_records:
             if root_record.startswith("v=BIMI1"):
-                warnings.append("BIMI record at root of {0} "
-                                "has no effect".format(domain.lower()))
+                warnings.append(f"BIMI record at root of {domain} "
+                                "has no effect")
     except Exception:
         pass
 
@@ -1091,14 +1109,16 @@ def query_bimi_record(domain, selector="default", nameservers=None,
                         ("warnings", warnings)])
 
 
-def get_dmarc_tag_description(tag, value=None):
+def get_dmarc_tag_description(
+        tag:str,
+        value: Union[str, list[str]]=None) -> OrderedDict:
     """
     Get the name, default value, and description for a DMARC tag, amd/or a
     description for a tag value
 
     Args:
         tag (str): A DMARC tag
-        value (str): An optional value
+        value: An optional value
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -1109,19 +1129,17 @@ def get_dmarc_tag_description(tag, value=None):
     name = tag_values[tag]["name"]
     description = tag_values[tag]["description"]
     default = None
+    allowed_values = None
     if "default" in tag_values[tag]:
         default = tag_values[tag]["default"]
-    if type(value) is str and "values" in tag_values[tag] and value in \
-            tag_values[tag]["values"][value]:
-        description = tag_values[tag]["values"][value]
-    elif type(value) is list and "values" in tag_values[tag]:
+    if type(value) is str and allowed_values and value in allowed_values:
+        description = allowed_values[value]
+    elif type(value) is list and allowed_values:
         new_description = ""
-        for value_value in value:
-            if value_value in tag_values[tag]["values"]:
-                new_description += "{0}: {1}\n\n".format(value_value,
-                                                         tag_values[tag][
-                                                             "values"][
-                                                             value_value])
+        for sub_value in value:
+            if sub_value in allowed_values:
+                value_description = allowed_values[sub_value]
+                new_description += f"{sub_value}: {value_description}\n\n"
         new_description = new_description.strip()
         if new_description != "":
             description = new_description
@@ -1130,7 +1148,7 @@ def get_dmarc_tag_description(tag, value=None):
         [("name", name), ("default", default), ("description", description)])
 
 
-def parse_dmarc_report_uri(uri):
+def parse_dmarc_report_uri(uri: str) -> OrderedDict:
     """
     Parses a DMARC Reporting (i.e. ``rua``/``ruf``) URI
 
@@ -1154,9 +1172,9 @@ def parse_dmarc_report_uri(uri):
     if len(mailto_matches) != 1:
         raise InvalidDMARCReportURI(
             (
-                "{0} is not a valid DMARC report URI - please make "
+                f"{uri} is not a valid DMARC report URI - please make "
                 "sure that the URI begins with a schema such as mailto:"
-            ).format(uri)
+            )
         )
     match = mailto_matches[0]
     scheme = match[0].lower()
@@ -1169,9 +1187,11 @@ def parse_dmarc_report_uri(uri):
                         ("size_limit", size_limit)])
 
 
-def check_wildcard_dmarc_report_authorization(domain,
-                                              nameservers=None, resolver=None,
-                                              timeout=2.0):
+def check_wildcard_dmarc_report_authorization(
+        domain: str,
+        nameservers:list[str]=None,
+        resolver: dns.resolver.Resolver=None,
+        timeout=2.0) -> bool:
     """
     Checks for a wildcard DMARC report authorization record, e.g.:
 
@@ -1190,7 +1210,7 @@ def check_wildcard_dmarc_report_authorization(domain,
         bool: An indicator of the existence of a valid wildcard DMARC report
         authorization record
     """
-    wildcard_target = "*._report._dmarc.{0}".format(domain)
+    wildcard_target = f"*._report._dmarc.{domain}"
     dmarc_record_count = 0
     unrelated_records = []
     try:
@@ -1205,12 +1225,12 @@ def check_wildcard_dmarc_report_authorization(domain,
                 unrelated_records.append(record)
 
         if len(unrelated_records) > 0:
+            ur_str = "\n\n".join(unrelated_records)
             raise UnrelatedTXTRecordFoundAtDMARC(
                 "Unrelated TXT records were discovered. "
                 "These should be removed, as some "
                 "receivers may not expect to find unrelated TXT records "
-                "at {0}\n\n{1}".format(wildcard_target,
-                                       "\n\n".join(unrelated_records)))
+                f"at {wildcard_target}\n\n{ur_str}")
 
         if dmarc_record_count < 1:
             return False
@@ -1220,9 +1240,10 @@ def check_wildcard_dmarc_report_authorization(domain,
     return True
 
 
-def verify_dmarc_report_destination(source_domain, destination_domain,
-                                    nameservers=None, resolver=None,
-                                    timeout=2.0):
+def verify_dmarc_report_destination(source_domain: str, destination_domain:str,
+                                    nameservers: list[str]=None,
+                                    resolver:dns.resolver.Resolver=None,
+                                    timeout: float=2.0) -> bool:
     """
       Checks if the report destination accepts reports for the source domain
       per RFC 7489, section 7.1
@@ -1231,7 +1252,7 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
           source_domain (str): The source domain
           destination_domain (str): The destination domain
           nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+          resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
 
@@ -1252,14 +1273,12 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
                                                      nameservers=nameservers,
                                                      resolver=resolver):
             return True
-        target = "{0}._report._dmarc.{1}".format(source_domain,
-                                                 destination_domain)
-        message = "{0} does not indicate that it accepts DMARC reports " \
-                  "about {1} - " \
+        target = f"{source_domain}._report._dmarc.{destination_domain}"
+        message = f"{destination_domain} does not indicate that it accepts " \
+                  f"DMARC reports about {source_domain} - " \
                   "Authorization record not found: " \
-                  '{2} IN TXT "v=DMARC1"'.format(destination_domain,
-                                                 source_domain,
-                                                 target)
+                  f'{source_domain}._report._dmarc.{destination_domain} " \
+                    IN TXT "v=DMARC1"'
         dmarc_record_count = 0
         unrelated_records = []
         try:
@@ -1274,12 +1293,12 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
                     unrelated_records.append(record)
 
             if len(unrelated_records) > 0:
+                ur_str = "\n\n".join(unrelated_records)
                 raise UnrelatedTXTRecordFoundAtDMARC(
                     "Unrelated TXT records were discovered. "
                     "These should be removed, as some "
                     "receivers may not expect to find unrelated TXT records "
-                    "at {0}\n\n{1}".format(target,
-                                           "\n\n".join(unrelated_records)))
+                    f"at {target}\n\n{ur_str}")
 
             if dmarc_record_count < 1:
                 return False
@@ -1289,10 +1308,13 @@ def verify_dmarc_report_destination(source_domain, destination_domain,
     return True
 
 
-def parse_dmarc_record(record, domain, parked=False,
-                       include_tag_descriptions=False,
-                       nameservers=None, resolver=None, timeout=2.0,
-                       syntax_error_marker=SYNTAX_ERROR_MARKER):
+def parse_dmarc_record(
+        record: str, domain: str, parked: bool=False,
+        include_tag_descriptions: bool=False,
+        nameservers: list[str]=None,
+        resolver:dns.resolver.Resolver=None,
+        timeout: float=2.0,
+        syntax_error_marker: str=SYNTAX_ERROR_MARKER) -> OrderedDict:
     """
     Parses a DMARC record
 
@@ -1332,7 +1354,7 @@ def parse_dmarc_record(record, domain, parked=False,
         :exc:`checkdmarc.DMARCReportEmailAddressMissingMXRecords`
 
     """
-    logging.debug("Parsing the DMARC record for {0}".format(domain))
+    logging.debug(f"Parsing the DMARC record for {domain}")
     spf_in_dmarc_error_msg = "Found a SPF record where a DMARC record " \
                              "should be; most likely, the _dmarc " \
                              "subdomain record does not actually exist, " \
@@ -1349,13 +1371,11 @@ def parse_dmarc_record(record, domain, parked=False,
             map(lambda x: str(x).strip('"'), list(parsed_record.expecting)))
         marked_record = (record[:parsed_record.pos] + syntax_error_marker +
                          record[parsed_record.pos:])
-        raise DMARCSyntaxError("Error: Expected {0} at position {1} "
-                               "(marked with {2}) in: "
-                               "{3}".format(
-                                    " or ".join(expecting),
-                                    parsed_record.pos,
-                                    syntax_error_marker,
-                                    marked_record))
+        expecting = " or ".join(expecting)
+        raise DMARCSyntaxError(f"Error: Expected {expecting} at position " 
+                               f"{parsed_record.pos} "
+                               f"(marked with {syntax_error_marker}) in: "
+                               f"{marked_record}")
 
     pairs = DMARC_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
@@ -1383,31 +1403,32 @@ def parse_dmarc_record(record, domain, parked=False,
     # Validate tag values
     for tag in tags:
         if tag not in tag_values:
-            raise InvalidDMARCTag("{0} is not a valid DMARC tag".format(tag))
+            raise InvalidDMARCTag(f"{tag} is not a valid DMARC tag")
+        tag_value = tags[tag]["value"]
+        allowed_values = None
+        if "values" in tag_values[tag]:
+            allowed_values = tag_values[tag]["values"]
         if tag == "fo":
-            tags[tag]["value"] = tags[tag]["value"].split(":")
-            if "0" in tags[tag]["value"] and "1" in tags[tag]["value"]:
+            tag_value = tag_value.split(":")
+            if "0" in tag_value and "1" in tag_value:
                 warnings.append("Including 0 and 1 fo tag values is redundant")
-            for value in tags[tag]["value"]:
-                if value not in tag_values[tag]["values"]:
+            for value in tag_value:
+                if value not in allowed_values:
                     raise InvalidDMARCTagValue(
-                        "{0} is not a valid option for the DMARC "
-                        "fo tag".format(value))
+                        f"{value} is not a valid option for the DMARC fo tag")
         elif tag == "rf":
-            tags[tag]["value"] = tags[tag]["value"].lower().split(":")
-            for value in tags[tag]["value"]:
-                if value not in tag_values[tag]["values"]:
+            tag_value = tag_value.lower().split(":")
+            for value in tag_value:
+                if value not in allowed_values:
                     raise InvalidDMARCTagValue(
-                        "{0} is not a valid option for the DMARC "
-                        "rf tag".format(value))
+                        f"{value} is not a valid option for the DMARC "
+                        "rf tag")
 
-        elif "values" in tag_values[tag] and tags[tag]["value"] not in \
-                tag_values[tag]["values"]:
+        elif allowed_values and tag_value not in allowed_values:
+            allowed_values_str = ",".join(allowed_values)
             raise InvalidDMARCTagValue(
-                "Tag {0} must have one of the following values: "
-                "{1} - not {2}".format(tag,
-                                       ",".join(tag_values[tag]["values"]),
-                                       tags[tag]["value"]))
+                f"Tag {tag} must have one of the following values: "
+                f"{allowed_values_str} - not {tags[tag]['value']}")
 
     try:
         tags["pct"]["value"] = int(tags["pct"]["value"])
@@ -1430,7 +1451,7 @@ def parse_dmarc_record(record, domain, parked=False,
                 parsed_uris.append(uri)
                 email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
-                if email_domain.lower() != domain.lower():
+                if email_domain.lower() != domain:
                     verify_dmarc_report_destination(domain, email_domain,
                                                     nameservers=nameservers,
                                                     resolver=resolver,
@@ -1441,15 +1462,13 @@ def parse_dmarc_record(record, domain, parked=False,
                 except _DMARCWarning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "The domain for rua email address "
-                        "{0} has no MX records".format(
-                            email_address)
+                        f"{email_address} has no MX records"
                     )
                 except DNSException as warning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "Failed to retrieve MX records for the domain of "
                         "rua email address "
-                        "{0} - {1}".format(email_address, str(warning))
-                    )
+                        f"{email_address} - {warning}")
             except _DMARCWarning as warning:
                 warnings.append(str(warning))
 
@@ -1471,7 +1490,7 @@ def parse_dmarc_record(record, domain, parked=False,
                 parsed_uris.append(uri)
                 email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
-                if email_domain.lower() != domain.lower():
+                if email_domain.lower() != domain:
                     verify_dmarc_report_destination(domain, email_domain,
                                                     nameservers=nameservers,
                                                     resolver=resolver,
@@ -1482,14 +1501,13 @@ def parse_dmarc_record(record, domain, parked=False,
                 except _SPFWarning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "The domain for ruf email address "
-                        "{0} has no MX records".format(
-                            email_address)
+                        f"{email_address} has no MX records"
                     )
                 except DNSException as warning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "Failed to retrieve MX records for the domain of "
                         "ruf email address "
-                        "{0} - {1}".format(email_address, str(warning))
+                        f"{email_address} - {warning}"
                     )
 
             except _DMARCWarning as warning:
@@ -1521,7 +1539,7 @@ def parse_dmarc_record(record, domain, parked=False,
     # Add descriptions if requested
     if include_tag_descriptions:
         for tag in tags:
-            details = get_dmarc_tag_description(tag, tags[tag]["value"])
+            details = get_dmarc_tag_description(tag, tag_value)
             tags[tag]["name"] = details["name"]
             if details["default"]:
                 tags[tag]["default"] = details["default"]
@@ -1530,8 +1548,11 @@ def parse_dmarc_record(record, domain, parked=False,
     return OrderedDict([("tags", tags), ("warnings", warnings)])
 
 
-def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
-                     resolver=None, timeout=2.0):
+def get_dmarc_record(domain: str,
+                     include_tag_descriptions: bool=False,
+                     nameservers: list[str]=None,
+                     resolver: dns.resolver.Resolver=None,
+                     timeout: float=2.0) -> OrderedDict:
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -1579,7 +1600,10 @@ def get_dmarc_record(domain, include_tag_descriptions=False, nameservers=None,
                         ("parsed", tags)])
 
 
-def query_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
+def query_spf_record(domain: str,
+                     nameservers: list[str]=None,
+                     resolver: dns.resolver.Resolver=None,
+                     timeout: float=2.0) -> OrderedDict:
     """
     Queries DNS for an SPF record
 
@@ -1598,7 +1622,7 @@ def query_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
     Raises:
         :exc:`checkdmarc.SPFRecordNotFound`
     """
-    logging.debug("Checking for a SPF record on {0}".format(domain))
+    logging.debug(f"Checking for a SPF record on {domain}")
     warnings = []
     spf_type_records = []
     spf_txt_records = []
@@ -1613,11 +1637,11 @@ def query_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
                   "removed in the standards " \
                   "track version of SPF, RFC 7208. These records should " \
                   "be removed and replaced with TXT records: " \
-                  "{0}".format(",".join(spf_type_records))
+                  f"{','.join(spf_type_records)}"
         warnings.append(message)
     warnings_str = ""
     if len(warnings) > 0:
-        warnings_str = ". {0}".format(" ".join(warnings))
+        warnings_str = f". {' '.join(warnings)}"
     try:
         answers = _query_dns(domain, "TXT", nameservers=nameservers,
                              resolver=resolver, timeout=timeout)
@@ -1627,30 +1651,31 @@ def query_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
                 spf_txt_records.append(record)
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords(
-                "{0} has multiple SPF TXT records{1}".format(
-                    domain, warnings_str))
+                f"{domain} has multiple SPF TXT records{warnings_str}")
         elif len(spf_txt_records) == 1:
             spf_record = spf_txt_records[0]
         if spf_record is None:
             raise SPFRecordNotFound(
-                "{0} does not have a SPF TXT record{1}".format(
-                    domain, warnings_str))
+                f"{domain} does not have a SPF TXT record{warnings_str}")
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound(
-            "{0} does not have a SPF TXT record{1}".format(
-                domain, warnings_str))
+            f"{domain} does not have a SPF TXT record {warnings_str}")
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordNotFound("The domain {0} does not exist".format(domain))
+        raise SPFRecordNotFound(f"The domain {domain} does not exist")
     except Exception as error:
         raise SPFRecordNotFound(error)
 
     return OrderedDict([("record", spf_record), ("warnings", warnings)])
 
 
-def parse_spf_record(record, domain, parked=False, seen=None,
-                     nameservers=None, resolver=None,
-                     recursion=None, timeout=2.0,
-                     syntax_error_marker=SYNTAX_ERROR_MARKER):
+def parse_spf_record(
+        record: str, domain: str,
+        parked: bool=False, seen: bool=None,
+        nameservers: list[str]=None,
+        resolver: dns.resolver.Resolver=None,
+        recursion: OrderedDict=None, 
+        timeout: float=2.0,
+        syntax_error_marker: str=SYNTAX_ERROR_MARKER) -> OrderedDict:
     """
     Parses an SPF record, including resolving ``a``, ``mx``, and ``include``
     mechanisms
@@ -1679,7 +1704,7 @@ def parse_spf_record(record, domain, parked=False, seen=None,
         :exc:`checkdmarc.SPFSyntaxError`
         :exc:`checkdmarc.SPFTooManyDNSLookups`
     """
-    logging.debug("Parsing the SPF record on {0}".format(domain))
+    logging.debug(f"Parsing the SPF record on {domain}")
     lookup_mechanisms = ["a", "mx", "include", "exists", "redirect"]
     if seen is None:
         seen = [domain]
@@ -1692,7 +1717,7 @@ def parse_spf_record(record, domain, parked=False, seen=None,
         correct_record = "v=spf1 -all"
         if record != correct_record:
             warnings.append("The SPF record for parked domains should be: "
-                            "{0} not: {1}".format(correct_record, record))
+                            f"{correct_record} not: {record}")
     if len(AFTER_ALL_REGEX.findall(record)) > 0:
         warnings.append("Any text after the all mechanism is ignored")
         record = AFTER_ALL_REGEX.sub("all", record)
@@ -1704,12 +1729,8 @@ def parse_spf_record(record, domain, parked=False, seen=None,
         expecting = " or ".join(expecting)
         marked_record = record[:pos] + syntax_error_marker + record[pos:]
         raise SPFSyntaxError(
-            "{0}: Expected {1} at position {2} "
-            "(marked with {3}) in: {4}".format(domain,
-                                               expecting,
-                                               pos,
-                                               syntax_error_marker,
-                                               marked_record))
+            f"{domain}: Expected {expecting} at position {pos} "
+            f"(marked with {syntax_error_marker}) in: {marked_record}")
     matches = SPF_MECHANISM_REGEX.findall(record.lower())
     parsed = OrderedDict([("pass", []),
                           ("neutral", []),
@@ -1728,9 +1749,9 @@ def parse_spf_record(record, domain, parked=False, seen=None,
             lookup_mechanism_count += 1
     if lookup_mechanism_count > 10:
         raise SPFTooManyDNSLookups(
-            "Parsing the SPF record requires {0}/10 maximum DNS lookups - "
-            "https://tools.ietf.org/html/rfc7208#section-4.6.4".format(
-                lookup_mechanism_count),
+            "Parsing the SPF record requires "
+            f"{lookup_mechanism_count}/10 maximum DNS lookups - "
+            "https://tools.ietf.org/html/rfc7208#section-4.6.4",
             dns_lookups=lookup_mechanism_count)
 
     for match in matches:
@@ -1744,21 +1765,19 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                     if not isinstance(ipaddress.ip_network(value,
                                                            strict=False),
                                       ipaddress.IPv4Network):
-                        raise SPFSyntaxError("{0} is not a valid ipv4 value. "
-                                             "Looks like ipv6".format(value))
+                        raise SPFSyntaxError(f"{value} is not a valid ipv4  "
+                                             "value. Looks like ipv6")
                 except ValueError:
-                    raise SPFSyntaxError("{0} is not a valid ipv4 "
-                                         "value".format(value))
+                    raise SPFSyntaxError(f"{value} is not a valid ipv4 value")
             elif mechanism == "ip6":
                 try:
                     if not isinstance(ipaddress.ip_network(value,
                                                            strict=False),
                                       ipaddress.IPv6Network):
-                        raise SPFSyntaxError("{0} is not a valid ipv6 value. "
-                                             "Looks like ipv4".format(value))
+                        raise SPFSyntaxError(f"{value} is not a valid ipv6 "
+                                             "value. Looks like ipv4")
                 except ValueError:
-                    raise SPFSyntaxError("{0} is not a valid ipv6 "
-                                         "value".format(value))
+                    raise SPFSyntaxError(f"{value} is not a valid ipv6 value")
 
             if mechanism == "a":
                 if value == "":
@@ -1767,8 +1786,7 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                                            resolver=resolver, timeout=timeout)
                 if len(a_records) == 0:
                     raise _SPFMissingRecords(
-                        "{0} does not have any A/AAAA records".format(
-                            value.lower()))
+                        f"{value.lower()} does not have any A/AAAA records")
                 for record in a_records:
                     parsed[result].append(OrderedDict(
                         [("value", record), ("mechanism", mechanism)]))
@@ -1779,21 +1797,20 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                                          resolver=resolver, timeout=timeout)
                 if len(mx_hosts) == 0:
                     raise _SPFMissingRecords(
-                        "{0} does not have any MX records".format(
-                            value.lower()))
+                        f"{value.lower()} does not have any MX records")
                 if len(mx_hosts) > 10:
                     url = "https://tools.ietf.org/html/rfc7208#section-4.6.4"
                     raise SPFTooManyDNSLookups(
-                        "{0} has more than 10 MX records - "
-                        "{1}".format(value, url), dns_lookups=len(mx_hosts))
+                        f"{value} has more than 10 MX records - {url}",
+                        dns_lookups=len(mx_hosts))
                 for host in mx_hosts:
+                    hostname = host["hostname"]
                     parsed[result].append(OrderedDict(
-                        [("value", host["hostname"]),
+                        [("value", hostname),
                          ("mechanism", mechanism)]))
             elif mechanism == "redirect":
                 if value.lower() in recursion:
-                    raise SPFRedirectLoop(
-                        "Redirect loop: {0}".format(value.lower()))
+                    raise SPFRedirectLoop(f"Redirect loop: {value.lower()}")
                 seen.append(value.lower())
                 try:
                     redirect_record = query_spf_record(value,
@@ -1812,19 +1829,18 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                     void_lookup_mechanism_count += redirect["dns_void_lookups"]
                     if lookup_mechanism_count > 10:
                         raise SPFTooManyDNSLookups(
-                            "Parsing the SPF record requires {0}/10 maximum "
+                            "Parsing the SPF record requires "
+                            f"{lookup_mechanism_count}/10 maximum "
                             "DNS lookups - "
                             "https://tools.ietf.org/html/rfc7208"
-                            "#section-4.6.4".format(
-                                lookup_mechanism_count),
+                            "#section-4.6.4",
                             dns_lookups=lookup_mechanism_count)
                     if void_lookup_mechanism_count > 2:
                         raise SPFTooManyVoidDNSLookups(
-                            "Parsing the SPF record has {0}/2 maximum void "
+                            "Parsing the SPF record has "
+                            f"{void_lookup_mechanism_count}/2 maximum void "
                             "DNS lookups - "
-                            "https://tools.ietf.org/html/rfc7208#section-4.6.4"
-                            .format(
-                                void_lookup_mechanism_count),
+                            "https://tools.ietf.org/html/rfc7208#section-4.6.4",
                             dns_void_lookups=void_lookup_mechanism_count)
                     parsed["redirect"] = OrderedDict(
                         [("domain", value), ("record", redirect_record),
@@ -1843,11 +1859,11 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                 parsed["all"] = result
             elif mechanism == "include":
                 if value.lower() in recursion:
-                    raise SPFIncludeLoop("Include loop: {0}".format(
-                        " -> ".join(recursion + [value.lower()])))
+                    pointer = " -> ".join(recursion + [value.lower()])
+                    raise SPFIncludeLoop(f"Include loop: {pointer}")
                 if value.lower() in seen:
                     raise _SPFDuplicateInclude(
-                        "Duplicate include: {0}".format(value.lower()))
+                        f"Duplicate include: {value.lower()}")
                 seen.append(value.lower())
                 if "%{" in value:
                     include = OrderedDict(
@@ -1871,19 +1887,18 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                     void_lookup_mechanism_count += include["dns_void_lookups"]
                     if lookup_mechanism_count > 10:
                         raise SPFTooManyDNSLookups(
-                            "Parsing the SPF record requires {0}/10 maximum "
+                            "Parsing the SPF record requires "
+                            f"{lookup_mechanism_count}/10 maximum "
                             "DNS lookups - "
                             "https://tools.ietf.org/html/rfc7208"
-                            "#section-4.6.4".format(
-                                lookup_mechanism_count),
+                            "#section-4.6.4",
                             dns_lookups=lookup_mechanism_count)
                     if void_lookup_mechanism_count > 2:
                         raise SPFTooManyVoidDNSLookups(
-                            "Parsing the SPF record has {0}/2 maximum void "
+                            "Parsing the SPF record has "
+                            f"{void_lookup_mechanism_count}/2 maximum void "
                             "DNS lookups - "
-                            "https://tools.ietf.org/html/rfc7208#section-4.6.4"
-                            .format(
-                                void_lookup_mechanism_count),
+                            "https://tools.ietf.org/html/rfc7208#section-4.6.4",
                             dns_void_lookups=void_lookup_mechanism_count)
                     include = OrderedDict(
                         [("domain", value), ("record", include_record),
@@ -1916,11 +1931,10 @@ def parse_spf_record(record, domain, parked=False, seen=None,
                 void_lookup_mechanism_count += 1
                 if void_lookup_mechanism_count > 2:
                     raise SPFTooManyVoidDNSLookups(
-                        "Parsing the SPF record has {0}/2 maximum void DNS "
+                        "Parsing the SPF record has "
+                        f"{void_lookup_mechanism_count}/2 maximum void DNS "
                         "lookups - "
-                        "https://tools.ietf.org/html/rfc7208#section-4.6.4"
-                        .format(
-                            void_lookup_mechanism_count),
+                        "https://tools.ietf.org/html/rfc7208#section-4.6.4",
                         dns_void_lookups=void_lookup_mechanism_count)
             warnings.append(str(warning))
     return OrderedDict(
@@ -1929,7 +1943,9 @@ def parse_spf_record(record, domain, parked=False, seen=None,
          ("parsed", parsed), ("warnings", warnings)])
 
 
-def get_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
+def get_spf_record(domain: str, nameservers: list[str]=None,
+                   resolver: dns.resolver.Resolver=None,
+                   timeout: float=2.0) -> OrderedDict:
     """
     Retrieves and parses an SPF record
 
@@ -1963,14 +1979,15 @@ def get_spf_record(domain, nameservers=None, resolver=None, timeout=2.0):
 
 @timeout_decorator.timeout(5, timeout_exception=SMTPError,
                            exception_message="Connection timed out")
-def test_tls(hostname, ssl_context=None, cache=None):
+def test_tls(hostname: str, ssl_context: SSLContext=None,
+             cache: ExpiringDict=None) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
 
     Args:
         hostname (str): The hostname
         cache (ExpiringDict): Cache storage
-        ssl_context: A SSL context
+        ssl_context (SSLContext): A SSL context
 
     Returns:
         bool: TLS supported
@@ -1984,7 +2001,7 @@ def test_tls(hostname, ssl_context=None, cache=None):
             return cached_result["tls"]
     if ssl_context is None:
         ssl_context = create_default_context()
-    logging.debug("Testing TLS/SSL on {0}".format(hostname))
+    logging.debug(f"Testing TLS/SSL on {hostname}")
     try:
         server = smtplib.SMTP_SSL(hostname, context=ssl_context)
         server.ehlo_or_helo_if_needed()
@@ -2028,7 +2045,7 @@ def test_tls(hostname, ssl_context=None, cache=None):
             cache[hostname] = dict(tls=False, error=error)
         raise SMTPError(error)
     except SSLError as e:
-        error = "SSL error: {0}".format(e.__str__())
+        error = f"SSL error: {e}"
         if cache:
             cache[hostname] = dict(tls=False, error=error)
         raise SMTPError(error)
@@ -2038,20 +2055,20 @@ def test_tls(hostname, ssl_context=None, cache=None):
         if error_code == 554:
             message = " SMTP error code 554 - Not allowed"
         else:
-            message = " SMTP error code {0}".format(error_code)
-        error = "Could not connect: {0}".format(message)
+            message = f" SMTP error code {error_code}"
+        error = f"Could not connect: {message}"
         if cache:
             cache[hostname] = dict(tls=False, error=error)
         raise SMTPError(error)
     except smtplib.SMTPHeloError as e:
-        error = "HELO error: {0}".format(e.__str__())
+        error = f"HELO error: {e}"
         if cache:
             cache[hostname] = dict(tls=False, error=error)
         raise SMTPError(error)
     except smtplib.SMTPException as e:
         error = e.__str__()
         error_code = error.lstrip("(").split(",")[0]
-        error = "SMTP error code {0}".format(error_code)
+        error = f"SMTP error code {error_code}"
         if cache:
             cache[hostname] = dict(tls=False, error=error)
         raise SMTPError(error)
@@ -2073,7 +2090,9 @@ def test_tls(hostname, ssl_context=None, cache=None):
 
 @timeout_decorator.timeout(5, timeout_exception=SMTPError,
                            exception_message="Connection timed out")
-def test_starttls(hostname, ssl_context=None, cache=None):
+def test_starttls(hostname: str,
+                  ssl_context: SSLContext=None,
+                  cache: ExpiringDict=None) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support
 
@@ -2094,7 +2113,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             return cached_result["starttls"]
     if ssl_context is None:
         ssl_context = create_default_context()
-    logging.debug("Testing STARTTLS on {0}".format(hostname))
+    logging.debug(f"Testing STARTTLS on {hostname}")
     try:
         server = smtplib.SMTP(hostname)
         server.ehlo_or_helo_if_needed()
@@ -2143,7 +2162,7 @@ def test_starttls(hostname, ssl_context=None, cache=None):
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
     except SSLError as e:
-        error = "SSL error: {0}".format(e.__str__())
+        error = f"SSL error: {e}"
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
@@ -2153,20 +2172,19 @@ def test_starttls(hostname, ssl_context=None, cache=None):
         if error_code == 554:
             message = " SMTP error code 554 - Not allowed"
         else:
-            message = " SMTP error code {0}".format(error_code)
-        error = "Could not connect: {0}".format(message)
+            message = f" SMTP error code {error_code}"
+        error = f"Could not connect: {message}"
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
     except smtplib.SMTPHeloError as e:
-        error = "HELO error: {0}".format(e.__str__())
+        error = f"HELO error: {e}"
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
     except smtplib.SMTPException as e:
-        error = e.__str__()
         error_code = error.lstrip("(").split(",")[0]
-        error = "SMTP error code {0}".format(error_code)
+        error = f"SMTP error code {e}"
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
@@ -2227,41 +2245,36 @@ def get_mx_hosts(domain, skip_tls=False,
         approved_hostnames = list(map(lambda h: h.lower(),
                                       approved_hostnames))
     for host in hosts:
-        if host["hostname"] in hostnames:
-            if host["hostname"] not in dupe_hostnames:
+        hostname =  hostname
+        if hostname in hostnames:
+            if hostname not in dupe_hostnames:
                 warnings.append(
-                    "Hostname {0} is listed in multiple MX records".format(
-                        host["hostname"]))
-                dupe_hostnames.add(host["hostname"])
+                    f"Hostname {hostname} is listed in multiple MX records")
+                dupe_hostnames.add(hostname)
             continue
-        hostnames.add(host["hostname"])
+        hostnames.add(hostname)
         if approved_hostnames:
             approved = False
             for approved_hostname in approved_hostnames:
-                if approved_hostname in host["hostname"]:
+                if approved_hostname in hostname:
                     approved = True
                     break
             if not approved:
-                warnings.append("Unapproved MX hostname: {0}".format(
-                    host["hostname"]
-                ))
+                warnings.append(f"Unapproved MX hostname: {hostname}")
 
         try:
             host["addresses"] = []
-            host["addresses"] = _get_a_records(host["hostname"],
+            host["addresses"] = _get_a_records(hostname,
                                                nameservers=nameservers,
                                                resolver=resolver,
                                                timeout=timeout)
             if len(host["addresses"]) == 0:
                 warnings.append(
-                    "{0} does not have any A or AAAA DNS records".format(
-                        host["hostname"]
-                    ))
+                    f"{hostname} does not have any A or AAAA DNS records")
         except Exception as e:
-            if host["hostname"].lower().endswith(".msv1.invalid"):
-                warnings.append("{0}. Consider using a TXT record to validate "
-                                "domain ownership in Office 365 instead."
-                                "".format(e.__str__()))
+            if hostname.lower().endswith(".msv1.invalid"):
+                warnings.append(f"{e}. Consider using a TXT record to validate "
+                                "domain ownership in Office 365 instead.")
             else:
                 warnings.append(e.__str__())
 
@@ -2275,8 +2288,8 @@ def get_mx_hosts(domain, skip_tls=False,
                 reverse_hostnames = []
             if len(reverse_hostnames) == 0:
                 warnings.append(
-                    "{0} does not have any reverse DNS (PTR) "
-                    "records".format(address))
+                    f"{address} does not have any reverse DNS (PTR) "
+                    "records")
             for hostname in reverse_hostnames:
                 try:
                     _addresses = _get_a_records(hostname, resolver=resolver)
@@ -2284,28 +2297,26 @@ def get_mx_hosts(domain, skip_tls=False,
                     warnings.append(str(warning))
                     _addresses = []
                 if address not in _addresses:
-                    warnings.append("The reverse DNS of {1} is {0}, but "
+                    warnings.append(f"The reverse DNS of "
+                                    f"{address} is {hostname}, but "
                                     "the A/AAAA DNS records for "
-                                    "{0} do not resolve to "
-                                    "{1}".format(hostname, address))
+                                    f"{hostname} do not resolve to "
+                                    f"{address}")
         if not skip_tls and platform.system() == "Windows":
             logging.warning("Testing TLS is not supported on Windows")
             skip_tls = True
         if skip_tls:
-            logging.debug("Skipping TLS/SSL tests on {0}".format(
-                host["hostname"]))
+            logging.debug(f"Skipping TLS/SSL tests on {hostname}")
         else:
             try:
-                starttls = test_starttls(host["hostname"],
+                starttls = test_starttls(hostname,
                                          cache=STARTTLS_CACHE)
                 if not starttls:
-                    warnings.append("STARTTLS is not supported on {0}".format(
-                        host["hostname"]))
-                tls = test_tls(host["hostname"], cache=TLS_CACHE)
+                    warnings.append(f"STARTTLS is not supported on {hostname}")
+                tls = test_tls(hostname, cache=TLS_CACHE)
 
                 if not tls:
-                    warnings.append("SSL/TLS is not supported on {0}".format(
-                        host["hostname"]))
+                    warnings.append(f"SSL/TLS is not supported on {hostname}")
                 host["tls"] = tls
                 host["starttls"] = starttls
             except DNSException as warning:
@@ -2317,7 +2328,7 @@ def get_mx_hosts(domain, skip_tls=False,
             except SMTPError as error:
                 tls = False
                 starttls = False
-                warnings.append("{0}: {1}".format(host["hostname"], error))
+                warnings.append(f"{hostname}: {error}")
 
                 host["tls"] = tls
                 host["starttls"] = starttls
@@ -2325,8 +2336,10 @@ def get_mx_hosts(domain, skip_tls=False,
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
 
-def get_nameservers(domain, approved_nameservers=None,
-                    nameservers=None, resolver=None, timeout=2.0):
+def get_nameservers(domain: str, approved_nameservers: list[str]=None,
+                    nameservers: list[str]=None,
+                    resolver: dns.resolver.Resolver=None,
+                    timeout: float=2.0) -> dict:
     """
     Gets a list of nameservers for a given domain
 
@@ -2343,7 +2356,7 @@ def get_nameservers(domain, approved_nameservers=None,
               - ``hostnames`` - A list of nameserver hostnames
               - ``warnings``  - A list of warnings
     """
-    logging.debug("Getting NS records on {0}".format(domain))
+    logging.debug(f"Getting NS records on {domain}")
     warnings = []
 
     ns_records = _get_nameservers(domain, nameservers=nameservers,
@@ -2360,14 +2373,13 @@ def get_nameservers(domain, approved_nameservers=None,
                     approved = True
                     break
             if not approved:
-                warnings.append("Unapproved nameserver: {0}".format(
-                    nameserver
-                ))
+                warnings.append(f"Unapproved nameserver: {nameserver}")
 
     return OrderedDict([("hostnames", ns_records), ("warnings", warnings)])
 
 
-def test_dnssec(domain, nameservers=None, timeout=2.0):
+def test_dnssec(domain: str, nameservers: list[str]=None,
+                timeout:float=2.0) -> bool:
     """
     Check for DNSSEC on the given domain
 
@@ -2396,21 +2408,24 @@ def test_dnssec(domain, nameservers=None, timeout=2.0):
                     return False
                 rrset = answer[0]
                 rrsig = answer[1]
-                name = dns.name.from_text(f'{domain.lower()}.')
+                name = dns.name.from_text(f'{domain}.')
                 dns.dnssec.validate(rrset, rrsig, {name: rrset})
                 return True
         except Exception as e:
-            logging.debug("DNSSEC query error: {0}".format(e))
+            logging.debug(f"DNSSEC query error: {e}")
 
     return False
 
 
-def check_domains(domains, parked=False,
-                  approved_nameservers=None,
-                  approved_mx_hostnames=None,
-                  skip_tls=False,
-                  include_dmarc_tag_descriptions=False,
-                  nameservers=None, resolver=None, timeout=2.0, wait=0.0):
+def check_domains(domains: list[str], parked: bool=False,
+                  approved_nameservers: list[str]=None,
+                  approved_mx_hostnames: bool=None,
+                  skip_tls: bool=False,
+                  include_dmarc_tag_descriptions: bool=False,
+                  nameservers: list[str]=None,
+                  resolver: dns.resolver.Resolver=None,
+                  timeout: float=2.0,
+                  wait: float=0.0) -> Union[OrderedDict, list[OrderedDict]]:
     """
     Check the given domains for SPF and DMARC records, parse them, and return
     them
@@ -2455,7 +2470,7 @@ def check_domains(domains, parked=False,
     results = []
     for domain in domains:
         domain = domain.lower()
-        logging.debug("Checking: {0}".format(domain))
+        logging.debug(f"Checking: {domain}")
 
         domain_results = OrderedDict(
             [("domain", domain), ("base_domain", get_base_domain(domain)),
@@ -2502,7 +2517,7 @@ def check_domains(domains, parked=False,
 
         results.append(domain_results)
         if wait > 0.0:
-            logging.debug("Sleeping for {0} seconds".format(wait))
+            logging.debug(f"Sleeping for {wait} seconds")
             sleep(wait)
     if len(results) == 1:
         results = results[0]
@@ -2510,8 +2525,11 @@ def check_domains(domains, parked=False,
     return results
 
 
-def check_ns(domain, approved_nameservers=None,
-             nameservers=None, resolver=None, timeout=2.0):
+def check_ns(domain: str,
+             approved_nameservers: list[str]=None,
+             nameservers: list[str]=None,
+             resolver: dns.resolver.Resolver=None,
+             timeout:float=2.0) -> OrderedDict:
     try:
         ns_results = get_nameservers(
             domain,
@@ -2524,8 +2542,11 @@ def check_ns(domain, approved_nameservers=None,
     return ns_results
 
 
-def check_mx(domain, approved_mx_hostnames=None, skip_tls=False,
-             nameservers=None, resolver=None, timeout=2.0):
+def check_mx(domain: str, approved_mx_hostnames: list[str]=None,
+             skip_tls: bool=False,
+             nameservers: list[str]=None,
+             resolver: dns.resolver.Resolver=None,
+             timeout: float=2.0) -> OrderedDict:
     try:
         mx_results = get_mx_hosts(
             domain,
@@ -2539,9 +2560,11 @@ def check_mx(domain, approved_mx_hostnames=None, skip_tls=False,
     return mx_results
 
 
-def check_dmarc(domain, parked=False,
-                include_dmarc_tag_descriptions=False,
-                nameservers=None, resolver=None, timeout=2.0):
+def check_dmarc(domain: str, parked: bool=False,
+                include_dmarc_tag_descriptions: bool=False,
+                nameservers: list[str]=None,
+                resolver: dns.resolver.Resolver=None,
+                timeout: float=2.0) -> OrderedDict:
     dmarc_results = OrderedDict([("record", None), ("valid", True),
                                  ("location", None)])
     try:
@@ -2572,8 +2595,10 @@ def check_dmarc(domain, parked=False,
     return dmarc_results
 
 
-def check_spf(domain, parked=False, nameservers=None, resolver=None,
-              timeout=2.0):
+def check_spf(domain: str, parked: bool=False,
+              nameservers: list[str]=None,
+              resolver:dns.resolver.Resolver=None,
+              timeout: float=2.0) -> OrderedDict:
     spf_results = OrderedDict(
         [("record", None), ("valid", True), ("dns_lookups", None),
          ("dns_void_lookups", None)])
@@ -2607,9 +2632,9 @@ def check_spf(domain, parked=False, nameservers=None, resolver=None,
     return spf_results
 
 
-def results_to_json(results):
+def results_to_json(results: Union[dict,list[dict]]) -> str:
     """
-    Converts a dictionary of results to a JSON string
+    Converts a dictionary of results or list of results to a JSON string
 
     Args:
         results (dict): A dictionary of results
@@ -2620,15 +2645,16 @@ def results_to_json(results):
     return json.dumps(results, ensure_ascii=False, indent=2)
 
 
-def results_to_csv_rows(results):
+def results_to_csv_rows(results: Union[dict, list[dict]]) -> list[dict]:
     """
-    Converts a dictionary of results list of CSV row dicts
+    Converts a results dictionary or list of dictionaries and returns a
+    list of CSV row dictionaries
 
     Args:
         results (dict): A dictionary of results
 
     Returns:
-        list: A list of CSV row dicts
+        list: A list of CSV row dictionaries
     """
     rows = []
 
@@ -2650,13 +2676,10 @@ def results_to_csv_rows(results):
         else:
             row["ns_warnings"] = "|".join(ns["warnings"])
         row["mx"] = "|".join(list(
-            map(lambda r: "{0} {1}".format(r["preference"], r["hostname"]),
-                mx["hosts"])))
+            map(lambda r: f"{r['preference']}, {r['hostname']}", mx["hosts"])))
         tls = None
         try:
-            tls_results = list(
-                map(lambda r: "{0}".format(r["starttls"]),
-                    mx["hosts"]))
+            tls_results = list(map(lambda r: f"{r['starttls']}", mx["hosts"]))
             for tls_result in tls_results:
                 tls = tls_result
                 if tls_result is False:
@@ -2671,8 +2694,7 @@ def results_to_csv_rows(results):
         starttls = None
         try:
             starttls_results = list(
-                map(lambda r: "{0}".format(r["starttls"]),
-                    mx["hosts"]))
+                map(lambda r: f"{r['starttls']}", mx["hosts"]))
             for starttls_result in starttls_results:
                 starttls = starttls_result
                 if starttls_result is False:
@@ -2725,7 +2747,7 @@ def results_to_csv_rows(results):
     return rows
 
 
-def results_to_csv(results):
+def results_to_csv(results: dict) -> str:
     """
     Converts a dictionary of results to CSV
 
@@ -2754,7 +2776,7 @@ def results_to_csv(results):
     return output.getvalue()
 
 
-def output_to_file(path, content):
+def output_to_file(path: str, content: str):
     """
     Write given content to the given path
 
@@ -2849,7 +2871,7 @@ def _main():
 
             if not json_path and not csv_path:
                 logging.error(
-                    "Output path {0} must end in .json or .csv".format(path))
+                    f"Output path {path} must end in .json or .csv")
             else:
                 if path.lower().endswith(".json"):
                     output_to_file(path, results_to_json(results))
