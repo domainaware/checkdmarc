@@ -1,6 +1,11 @@
 Changelog
 =========
 
+4.8.4
+-----
+
+- Make DMARC retorting URI error messages more clear (PR #104)
+
 4.8.3
 -----
 
