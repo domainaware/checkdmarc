@@ -17,7 +17,7 @@ Changelog
 4.8.1
 -----
 
-- `get_base_domain()` will return the input sting instead of `None` if it can't parse a domain
+- `get_base_domain()` will return the input string instead of `None` if it can't parse a domain
 - Always use the base domain when testing DNSSEC
 
 4.8.0
@@ -231,7 +231,7 @@ Changelog
 
 - Save `public_suffix_list.dat` to a temporary folder instead of the current
   working directory (CWD)
-- Emulate a browser HTTP `User-Agent` sting when downloading
+- Emulate a browser HTTP `User-Agent` string when downloading
 `public_suffix_list.dat`
 - Add requirement `requests`
 - Change list separator within CSV fields from `,` to `|`
