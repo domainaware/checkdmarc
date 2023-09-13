@@ -1176,8 +1176,14 @@ def parse_dmarc_report_uri(uri: str) -> OrderedDict:
     if len(mailto_matches) != 1:
         raise InvalidDMARCReportURI(
             (
-                f"{uri} is not a valid DMARC report URI - please make "
-                "sure that the URI begins with a schema such as mailto:"
+                f"{uri} is not a valid DMARC report URI" + (
+                    ""
+                    if uri.startswith("mailto:")
+                    else (
+                        " - please make sure that the URI begins with "
+                        "a schema such as mailto:"
+                    )
+                )
             )
         )
     match = mailto_matches[0]
