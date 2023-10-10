@@ -2268,8 +2268,6 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
     if approved_hostnames:
         approved_hostnames = list(map(lambda h: h.lower(),
                                       approved_hostnames))
-
-
     for host in hosts:
         hostname = host["hostname"]
         if hostname in hostnames:
