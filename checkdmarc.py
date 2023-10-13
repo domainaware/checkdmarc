@@ -723,7 +723,7 @@ def _get_mx_hosts(domain: str, nameservers: list[str] = None,
         answers = _query_dns(domain, "MX", nameservers=nameservers,
                              resolver=resolver, timeout=timeout)
         if answers == ['0 ']:
-            logging.debug(f"\"No Service\" MX record found")
+            logging.debug("\"No Service\" MX record found")
             return []
         for record in answers:
             record = record.split(" ")
