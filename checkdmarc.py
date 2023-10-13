@@ -1422,7 +1422,10 @@ def parse_dmarc_record(
         if tag == "fo":
             tag_value = tag_value.split(":")
             if "0" in tag_value and "1" in tag_value:
-                warnings.append("Including 0 and 1 fo tag values is redundant")
+                warnings.append(
+                    "When 1 is present in the fo tag, including 0 is "
+                    "redundant"
+                )
             for value in tag_value:
                 if value not in allowed_values:
                     raise InvalidDMARCTagValue(
