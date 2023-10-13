@@ -919,6 +919,8 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
         pass
     except DMARCRecordStartsWithWhitespace as error:
         raise error
+    except MultipleDMARCRecords as error:
+        raise error
     except Exception as error:
         raise DMARCRecordNotFound(error)
 
