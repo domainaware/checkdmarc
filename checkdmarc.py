@@ -53,7 +53,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "4.8.4"
+__version__ = "4.8.5"
 
 DMARC_VERSION_REGEX_STRING = r"v *= *DMARC1;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
@@ -1659,9 +1659,6 @@ def query_spf_record(domain: str,
                   "be removed and replaced with TXT records: " \
                   f"{','.join(spf_type_records)}"
         warnings.append(message)
-    warnings_str = ""
-    if len(warnings) > 0:
-        warnings_str = f". {' '.join(warnings)}"
     try:
         answers = _query_dns(domain, "TXT", nameservers=nameservers,
                              resolver=resolver, timeout=timeout)
@@ -1671,16 +1668,17 @@ def query_spf_record(domain: str,
                 spf_txt_records.append(record)
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords(
-                f"{domain} has multiple SPF TXT records {warnings_str})")
+                f"{domain} has multiple SPF TXT records)")
         elif len(spf_txt_records) == 1:
             spf_record = spf_txt_records[0]
         if spf_record is None:
             raise SPFRecordNotFound(
-                f"{domain} does not have a SPF TXT record{warnings_str}",
+                f"{domain} "
+                f"does not have a SPF TXT record",
                 domain)
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound(
-            f"{domain} does not have a SPF TXT record {warnings_str}",
+            f"{domain} does not have a SPF TXT record",
             domain)
     except dns.resolver.NXDOMAIN:
         raise SPFRecordNotFound(f"The domain {domain} does not exist",
@@ -2762,7 +2760,7 @@ def check_spf(domain: str, parked: bool = False,
         spf_results["parsed"] = parsed_spf["parsed"]
         spf_results["warnings"] += parsed_spf["warnings"]
     except SPFError as error:
-        spf_results["error"] = str(error)
+        spf_results["error"] = error.args[0].args[0]
         del spf_results["dns_lookups"]
         spf_results["valid"] = False
         if hasattr(error, "data") and error.data:
