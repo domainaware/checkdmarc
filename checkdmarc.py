@@ -58,7 +58,9 @@ __version__ = "4.8.5"
 WSP_REGEX = "[ \t]"
 DMARC_VERSION_REGEX_STRING = fr"v{WSP_REGEX}*={WSP_REGEX}*DMARC1{WSP_REGEX}*;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
-DMARC_TAG_VALUE_REGEX_STRING = fr"([a-z]{{1,5}}){WSP_REGEX}*={WSP_REGEX}*([\w.:@/+!,_\- ]+)"
+DMARC_TAG_VALUE_REGEX_STRING = (
+    fr"([a-z]{{1,5}}){WSP_REGEX}*={WSP_REGEX}*([\w.:@/+!,_\- ]+)"
+)
 BIMI_TAG_VALUE_REGEX_STRING = r"([a-z]{1}) *= *(.*)"
 MAILTO_REGEX_STRING = r"^(mailto):" \
                       r"([\w\-!#$%&'*+-/=?^_`{|}~]" \
@@ -328,7 +330,12 @@ class _DMARCGrammar(Grammar):
     """Defines Pyleri grammar for DMARC records"""
     version_tag = Regex(DMARC_VERSION_REGEX_STRING, IGNORECASE)
     tag_value = Regex(DMARC_TAG_VALUE_REGEX_STRING, IGNORECASE)
-    START = Sequence(version_tag, List(tag_value, delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True))
+    START = Sequence(
+        version_tag,
+        List(
+            tag_value,
+            delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"),
+            opt=True))
 
 
 class _BIMIGrammar(Grammar):
