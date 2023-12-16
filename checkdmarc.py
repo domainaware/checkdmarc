@@ -134,8 +134,10 @@ class _SPFDuplicateInclude(_SPFWarning):
 class _DMARCWarning(Exception):
     """Raised when a non-fatal DMARC error occurs"""
 
+
 class _STSWarning(Exception):
     """Raised when a non-fatal STS error occurs"""
+
 
 class STSError(Exception):
     """Raised when a fatal STS error occurs"""
@@ -150,14 +152,14 @@ class STSError(Exception):
 
 
 class STSRecordNotFound(STSError):
-    """Raised when a STS record could not be found"""
+    """Raised when an STS record could not be found"""
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
 
 class STSSyntaxError(STSError):
-    """Raised when a STS syntax error is found"""
+    """Raised when an STS syntax error is found"""
 
 
 class InvalidSTSTag(STSSyntaxError):
@@ -177,14 +179,14 @@ class UnrelatedTXTRecordFoundAtSTS(STSError):
 
 
 class SPFRecordFoundWhereSTSRecordShouldBe(UnrelatedTXTRecordFoundAtSTS):
-    """Raised when an SPF record is found where a STS record should be;
+    """Raised when an SPF record is found where an STS record should be;
         most likely, the ``selector_STS`` subdomain
         record does not actually exist, and the request for ``TXT`` records was
         redirected to the base domain"""
 
 
 class STSRecordInWrongLocation(STSError):
-    """Raised when a STS record is found at the root of a domain"""
+    """Raised when an STS record is found at the root of a domain"""
 
 
 class MultipleSTSRecords(STSError):
@@ -196,8 +198,7 @@ class STSPolicyError(STSError):
 
 
 class STSPolicySyntaxError(STSPolicyError):
-    """Raised when a syntax error is found in a STS policy"""
-
+    """Raised when a syntax error is found in an STS policy"""
 
 
 class _BIMIWarning(Exception):
@@ -406,11 +407,13 @@ class _DMARCGrammar(Grammar):
             delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"),
             opt=True))
 
+
 class _BIMIGrammar(Grammar):
     """Defines Pyleri grammar for BIMI records"""
     version_tag = Regex(BIMI_VERSION_REGEX_STRING, IGNORECASE)
     tag_value = Regex(BIMI_TAG_VALUE_REGEX_STRING, IGNORECASE)
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
+
 
 class _STSGrammar(Grammar):
     """Defines Pyleri grammar for STS records"""
@@ -1023,9 +1026,9 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
 
 
 def _query_bimi_record(domain: str, selector: str = "default",
-                      nameservers: list[str] = None,
-                      resolver: dns.resolver.Resolver = None,
-                      timeout: float = 2.0):
+                       nameservers: list[str] = None,
+                       resolver: dns.resolver.Resolver = None,
+                       timeout: float = 2.0):
     """
     Queries DNS for a BIMI record
 
@@ -1098,7 +1101,7 @@ def _query_sts_record(domain: str,
                       resolver: dns.resolver.Resolver = None,
                       timeout: float = 2.0):
     """
-    Queries DNS for a STS record
+    Queries DNS for an STS record
 
     Args:
         domain (str): A domain name
@@ -1120,14 +1123,14 @@ def _query_sts_record(domain: str,
         records = _query_dns(target, "TXT", nameservers=nameservers,
                              resolver=resolver, timeout=timeout)
         for record in records:
-            if record.startswith("v=STS1"):
+            if record.startswith("v=STSv1"):
                 bimi_record_count += 1
             else:
                 unrelated_records.append(record)
 
         if bimi_record_count > 1:
             raise MultipleSTSRecords(
-                "Multiple BMI records are not permitted")
+                "Multiple STS records are not permitted")
         if len(unrelated_records) > 0:
             ur_str = "\n\n".join(unrelated_records)
             raise UnrelatedTXTRecordFoundAtSTS(
@@ -1162,12 +1165,13 @@ def _query_sts_record(domain: str,
 
     return sts_record
 
+
 def query_sts_record(domain: str,
                      nameservers: list[str] = None,
                      resolver: dns.resolver.Resolver = None,
                      timeout: float = 2.0) -> OrderedDict:
     """
-    Queries DNS for a STS record
+    Queries DNS for an STS record
 
     Args:
         domain (str): A domain name
@@ -1189,8 +1193,6 @@ def query_sts_record(domain: str,
     """
     logging.debug(f"Checking for a STS record on {domain}")
     warnings = []
-    base_domain = get_base_domain(domain)
-    location = domain.lower()
     record = _query_sts_record(domain,
                                nameservers=nameservers, resolver=resolver,
                                timeout=timeout)
@@ -1211,6 +1213,7 @@ def query_sts_record(domain: str,
 
     return OrderedDict([("record", record),
                         ("warnings", warnings)])
+
 
 def query_dmarc_record(domain: str, nameservers: list[str] = None,
                        resolver: dns.resolver.Resolver = None,
