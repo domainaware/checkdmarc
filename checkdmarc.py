@@ -1676,7 +1676,7 @@ def query_spf_record(domain: str,
                 spf_txt_records.append(record)
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords(
-                f"{domain} has multiple SPF TXT records)")
+                f"{domain} has multiple SPF TXT records")
         elif len(spf_txt_records) == 1:
             spf_record = spf_txt_records[0]
         if spf_record is None:
