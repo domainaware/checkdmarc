@@ -58,10 +58,12 @@ __version__ = "4.8.5"
 WSP_REGEX = "[ \t]"
 DMARC_VERSION_REGEX_STRING = fr"v{WSP_REGEX}*={WSP_REGEX}*DMARC1{WSP_REGEX}*;"
 BIMI_VERSION_REGEX_STRING = r"v=BIMI1;"
+STS_VERSION_REGEX_STRING = r"v=STSv1;"
 DMARC_TAG_VALUE_REGEX_STRING = (
     fr"([a-z]{{1,5}}){WSP_REGEX}*={WSP_REGEX}*([\w.:@/+!,_\- ]+)"
 )
-BIMI_TAG_VALUE_REGEX_STRING = r"([a-z]{1}) *= *(.*)"
+BIMI_TAG_VALUE_REGEX_STRING = r"([a-z]{1}) *= *(.+)"
+STS_TAG_VALUE_REGEX_STRING = r"([a-z]{1,2}) *= *(.+)"
 MAILTO_REGEX_STRING = r"^(mailto):" \
                       r"([\w\-!#$%&'*+-/=?^_`{|}~]" \
                       r"[\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?"
@@ -72,6 +74,7 @@ AFTER_ALL_REGEX_STRING = "all .*"
 
 DMARC_TAG_VALUE_REGEX = compile(DMARC_TAG_VALUE_REGEX_STRING, IGNORECASE)
 BIMI_TAG_VALUE_REGEX = compile(BIMI_TAG_VALUE_REGEX_STRING, IGNORECASE)
+STS_TAG_VALUE_REGEX = compile(STS_TAG_VALUE_REGEX_STRING, IGNORECASE)
 MAILTO_REGEX = compile(MAILTO_REGEX_STRING, IGNORECASE)
 SPF_MECHANISM_REGEX = compile(SPF_MECHANISM_REGEX_STRING, IGNORECASE)
 AFTER_ALL_REGEX = compile(AFTER_ALL_REGEX_STRING, IGNORECASE)
@@ -83,6 +86,7 @@ USER_AGENT = f"Mozilla/5.0 (({OS} {OS_RELEASE})) parsedmarc/{__version__}"
 DNS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 TLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 STARTTLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
+STS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 
 SYNTAX_ERROR_MARKER = "➞"
 
@@ -129,6 +133,71 @@ class _SPFDuplicateInclude(_SPFWarning):
 
 class _DMARCWarning(Exception):
     """Raised when a non-fatal DMARC error occurs"""
+
+class _STSWarning(Exception):
+    """Raised when a non-fatal STS error occurs"""
+
+class STSError(Exception):
+    """Raised when a fatal STS error occurs"""
+    def __init__(self, msg: str, data: dict = None):
+        """
+       Args:
+           msg (str): The error message
+           data (dict): A dictionary of data to include in the results
+        """
+        self.data = data
+        Exception.__init__(self, msg)
+
+
+class STSRecordNotFound(STSError):
+    """Raised when a STS record could not be found"""
+    def __init__(self, error):
+        if isinstance(error, dns.exception.Timeout):
+            error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+
+
+class STSSyntaxError(STSError):
+    """Raised when a STS syntax error is found"""
+
+
+class InvalidSTSTag(STSSyntaxError):
+    """Raised when an invalid STS tag is found"""
+
+
+class InvalidSTSTagValue(STSSyntaxError):
+    """Raised when an invalid STS tag value is found"""
+
+
+class InvalidSTSIndicatorURI(InvalidSTSTagValue):
+    """Raised when an invalid STS indicator URI is found"""
+
+
+class UnrelatedTXTRecordFoundAtSTS(STSError):
+    """Raised when a TXT record unrelated to STS is found"""
+
+
+class SPFRecordFoundWhereSTSRecordShouldBe(UnrelatedTXTRecordFoundAtSTS):
+    """Raised when an SPF record is found where a STS record should be;
+        most likely, the ``selector_STS`` subdomain
+        record does not actually exist, and the request for ``TXT`` records was
+        redirected to the base domain"""
+
+
+class STSRecordInWrongLocation(STSError):
+    """Raised when a STS record is found at the root of a domain"""
+
+
+class MultipleSTSRecords(STSError):
+    """Raised when multiple STS records are found"""
+
+
+class STSPolicyError(STSError):
+    """Raised when the STS policy cannot be obtained or parsed"""
+
+
+class STSPolicySyntaxError(STSPolicyError):
+    """Raised when a syntax error is found in a STS policy"""
+
 
 
 class _BIMIWarning(Exception):
@@ -337,11 +406,16 @@ class _DMARCGrammar(Grammar):
             delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"),
             opt=True))
 
-
 class _BIMIGrammar(Grammar):
     """Defines Pyleri grammar for BIMI records"""
     version_tag = Regex(BIMI_VERSION_REGEX_STRING, IGNORECASE)
     tag_value = Regex(BIMI_TAG_VALUE_REGEX_STRING, IGNORECASE)
+    START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
+
+class _STSGrammar(Grammar):
+    """Defines Pyleri grammar for STS records"""
+    version_tag = Regex(STS_VERSION_REGEX_STRING, IGNORECASE)
+    tag_value = Regex(STS_TAG_VALUE_REGEX_STRING, IGNORECASE)
     START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
 
 
@@ -593,6 +667,16 @@ bimi_tags = OrderedDict(
                               'record MUST be ignored. '
                               'It MUST be the first '
                               'tag in the list.')
+)
+
+sts_tags = OrderedDict(
+    v=OrderedDict(name="Version",
+                  description='Currently, only "STSv1" is supported.'),
+    id='A short string used to track policy '
+       'updates.  This string MUST uniquely identify a given instance of a '
+       'policy, such that senders can determine when the policy has been '
+       'updated by comparing to the "id" of a previously seen policy. '
+       'There is no implied ordering of "id" fields between revisions.'
 )
 
 
@@ -938,7 +1022,7 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
     return dmarc_record
 
 
-def _query_bmi_record(domain: str, selector: str = "default",
+def _query_bimi_record(domain: str, selector: str = "default",
                       nameservers: list[str] = None,
                       resolver: dns.resolver.Resolver = None,
                       timeout: float = 2.0):
@@ -959,7 +1043,7 @@ def _query_bmi_record(domain: str, selector: str = "default",
     domain = domain.lower()
     target = f"{selector}._bimi.{domain}"
     bimi_record = None
-    bmi_record_count = 0
+    bimi_record_count = 0
     unrelated_records = []
 
     try:
@@ -967,16 +1051,16 @@ def _query_bmi_record(domain: str, selector: str = "default",
                              resolver=resolver, timeout=timeout)
         for record in records:
             if record.startswith("v=BIMI1"):
-                bmi_record_count += 1
+                bimi_record_count += 1
             else:
                 unrelated_records.append(record)
 
-        if bmi_record_count > 1:
+        if bimi_record_count > 1:
             raise MultipleBIMIRecords(
                 "Multiple BMI records are not permitted")
         if len(unrelated_records) > 0:
             ur_str = "\n\n".join(unrelated_records)
-            raise UnrelatedTXTRecordFoundAtDMARC(
+            raise UnrelatedTXTRecordFoundAtBIMI(
                 "Unrelated TXT records were discovered. These should be "
                 "removed, as some receivers may not expect to find "
                 "unrelated TXT records "
@@ -1008,6 +1092,125 @@ def _query_bmi_record(domain: str, selector: str = "default",
 
     return bimi_record
 
+
+def _query_sts_record(domain: str,
+                      nameservers: list[str] = None,
+                      resolver: dns.resolver.Resolver = None,
+                      timeout: float = 2.0):
+    """
+    Queries DNS for a STS record
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for a record from DNS
+
+    Returns:
+        str: A record string or None
+    """
+    domain = domain.lower()
+    target = f"_mta-sts.{domain}"
+    sts_record = None
+    bimi_record_count = 0
+    unrelated_records = []
+
+    try:
+        records = _query_dns(target, "TXT", nameservers=nameservers,
+                             resolver=resolver, timeout=timeout)
+        for record in records:
+            if record.startswith("v=STS1"):
+                bimi_record_count += 1
+            else:
+                unrelated_records.append(record)
+
+        if bimi_record_count > 1:
+            raise MultipleSTSRecords(
+                "Multiple BMI records are not permitted")
+        if len(unrelated_records) > 0:
+            ur_str = "\n\n".join(unrelated_records)
+            raise UnrelatedTXTRecordFoundAtSTS(
+                "Unrelated TXT records were discovered. These should be "
+                "removed, as some receivers may not expect to find "
+                "unrelated TXT records "
+                f"at {target}\n\n{ur_str}")
+        sts_record = records[0]
+
+    except dns.resolver.NoAnswer:
+        try:
+            records = _query_dns(domain, "TXT",
+                                 nameservers=nameservers, resolver=resolver,
+                                 timeout=timeout)
+            for record in records:
+                if record.startswith("v=STS1"):
+                    raise STSRecordInWrongLocation(
+                        "The STS record must be located at "
+                        f"{target}, not {domain}")
+        except dns.resolver.NoAnswer:
+            pass
+        except dns.resolver.NXDOMAIN:
+            raise STSRecordNotFound(
+                f"The domain {domain} does not exist")
+        except Exception as error:
+            STSRecordNotFound(error)
+
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        pass
+    except Exception as error:
+        raise STSRecordNotFound(error)
+
+    return sts_record
+
+def query_sts_record(domain: str,
+                     nameservers: list[str] = None,
+                     resolver: dns.resolver.Resolver = None,
+                     timeout: float = 2.0) -> OrderedDict:
+    """
+    Queries DNS for a STS record
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for a record from DNS
+
+    Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
+                     - ``record`` - the unparsed STS record string
+                     - ``warnings`` - warning conditions found
+
+     Raises:
+        :exc:`checkdmarc.STSRecordNotFound`
+        :exc:`checkdmarc.STSRecordInWrongLocation`
+        :exc:`checkdmarc.MultipleSTSRecords`
+
+    """
+    logging.debug(f"Checking for a STS record on {domain}")
+    warnings = []
+    base_domain = get_base_domain(domain)
+    location = domain.lower()
+    record = _query_sts_record(domain,
+                               nameservers=nameservers, resolver=resolver,
+                               timeout=timeout)
+    try:
+        root_records = _query_dns(domain, "TXT",
+                                  nameservers=nameservers, resolver=resolver,
+                                  timeout=timeout)
+        for root_record in root_records:
+            if root_record.startswith("v=STSv1"):
+                warnings.append(f"STS record at root of {domain} "
+                                "has no effect")
+    except Exception:
+        pass
+
+    if record is None:
+        raise STSRecordNotFound(
+            "A STS record does not exist for this domain or its base domain")
+
+    return OrderedDict([("record", record),
+                        ("warnings", warnings)])
 
 def query_dmarc_record(domain: str, nameservers: list[str] = None,
                        resolver: dns.resolver.Resolver = None,
@@ -1085,7 +1288,7 @@ def query_bimi_record(domain: str, selector: str = "default",
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
-                     - ``record`` - the unparsed DMARC record string
+                     - ``record`` - the unparsed BIMI record string
                      - ``location`` - the domain where the record was found
                      - ``warnings`` - warning conditions found
 
@@ -1099,9 +1302,9 @@ def query_bimi_record(domain: str, selector: str = "default",
     warnings = []
     base_domain = get_base_domain(domain)
     location = domain.lower()
-    record = _query_bmi_record(domain, selector=selector,
-                               nameservers=nameservers, resolver=resolver,
-                               timeout=timeout)
+    record = _query_bimi_record(domain, selector=selector,
+                                nameservers=nameservers, resolver=resolver,
+                                timeout=timeout)
     try:
         root_records = _query_dns(domain, "TXT",
                                   nameservers=nameservers, resolver=resolver,
@@ -1114,9 +1317,9 @@ def query_bimi_record(domain: str, selector: str = "default",
         pass
 
     if record is None and domain != base_domain and selector != "default":
-        record = _query_bmi_record(base_domain,
-                                   nameservers=nameservers, resolver=resolver,
-                                   timeout=timeout)
+        record = _query_bimi_record(base_domain,
+                                    nameservers=nameservers, resolver=resolver,
+                                    timeout=timeout)
         location = base_domain
     if record is None:
         raise BIMIRecordNotFound(
