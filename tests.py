@@ -43,6 +43,8 @@ class Test(unittest.TestCase):
         examples = [
             "v=DMARC1;p=ReJect",
             "v = DMARC1;p=reject;",
+            "v = DMARC1\t;\tp=reject\t;",
+            "v = DMARC1\t;\tp\t\t\t=\t\t\treject\t;",
             "V=DMARC1;p=reject;"
         ]
 
