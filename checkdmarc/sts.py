@@ -100,13 +100,18 @@ class _STSGrammar(Grammar):
     """Defines Pyleri grammar for STS records"""
     version_tag = Regex(STS_VERSION_REGEX_STRING, re.IGNORECASE)
     tag_value = Regex(STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
-    START = Sequence(version_tag, List(tag_value, delimiter=";", opt=True))
+    START = Sequence(
+        version_tag,
+        List(
+            tag_value,
+            delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"),
+            opt=True))
 
 
-def _query_sts_record(domain: str,
-                      nameservers: list[str] = None,
-                      resolver: dns.resolver.Resolver = None,
-                      timeout: float = 2.0):
+def query_sts_record(domain: str,
+                     nameservers: list[str] = None,
+                     resolver: dns.resolver.Resolver = None,
+                     timeout: float = 2.0) -> OrderedDict:
     """
     Queries DNS for an STS record
 
@@ -118,8 +123,18 @@ def _query_sts_record(domain: str,
         timeout (float): number of seconds to wait for a record from DNS
 
     Returns:
-        str: A record string or None
+        OrderedDict: An ``OrderedDict`` with the following keys:
+                     - ``record`` - the unparsed STS record string
+                     - ``warnings`` - warning conditions found
+
+     Raises:
+        :exc:`checkdmarc.STSRecordNotFound`
+        :exc:`checkdmarc.STSRecordInWrongLocation`
+        :exc:`checkdmarc.MultipleSTSRecords`
+
     """
+    logging.debug(f"Checking for a STS record on {domain}")
+    warnings = []
     domain = domain.lower()
     target = f"_mta-sts.{domain}"
     sts_record = None
@@ -169,40 +184,6 @@ def _query_sts_record(domain: str,
         pass
     except Exception as error:
         raise STSRecordNotFound(error)
-
-    return sts_record
-
-
-def query_sts_record(domain: str,
-                     nameservers: list[str] = None,
-                     resolver: dns.resolver.Resolver = None,
-                     timeout: float = 2.0) -> OrderedDict:
-    """
-    Queries DNS for an STS record
-
-    Args:
-        domain (str): A domain name
-        nameservers (list): A list of nameservers to query
-        resolver (dns.resolver.Resolver): A resolver object to use for DNS
-                                          requests
-        timeout (float): number of seconds to wait for a record from DNS
-
-    Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
-                     - ``record`` - the unparsed STS record string
-                     - ``warnings`` - warning conditions found
-
-     Raises:
-        :exc:`checkdmarc.STSRecordNotFound`
-        :exc:`checkdmarc.STSRecordInWrongLocation`
-        :exc:`checkdmarc.MultipleSTSRecords`
-
-    """
-    logging.debug(f"Checking for a STS record on {domain}")
-    warnings = []
-    record = _query_sts_record(domain,
-                               nameservers=nameservers, resolver=resolver,
-                               timeout=timeout)
     try:
         root_records = _query_dns(domain, "TXT",
                                   nameservers=nameservers, resolver=resolver,
@@ -214,9 +195,9 @@ def query_sts_record(domain: str,
     except Exception:
         pass
 
-    if record is None:
+    if sts_record is None:
         raise STSRecordNotFound(
             "A STS record does not exist for this domain or its base domain")
 
-    return OrderedDict([("record", record),
+    return OrderedDict([("record", sts_record),
                         ("warnings", warnings)])
