@@ -565,7 +565,7 @@ def check_spf(domain: str, parked: bool = False,
         spf_results["parsed"] = parsed_spf["parsed"]
         spf_results["warnings"] += parsed_spf["warnings"]
     except SPFError as error:
-        spf_results["error"] = error.args[0]
+        spf_results["error"] = str(error)
         del spf_results["dns_lookups"]
         spf_results["valid"] = False
         if hasattr(error, "data") and error.data:

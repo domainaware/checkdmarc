@@ -56,6 +56,10 @@ def _main():
                                  "from DNS (default 2.0)",
                             type=float,
                             default=2.0)
+    arg_parser.add_argument("-b", "--bimi-selector",
+                            default=None,
+                            help="Check for a BIMI record at the provided "
+                                 "selector")
     arg_parser.add_argument("-v", "--version", action="version",
                             version=__version__)
     arg_parser.add_argument("-w", "--wait", type=float,
@@ -94,6 +98,7 @@ def _main():
                             approved_mx_hostnames=args.mx,
                             include_dmarc_tag_descriptions=args.descriptions,
                             nameservers=args.nameserver, timeout=args.timeout,
+                            bimi_selector=args.bimi_selector,
                             wait=args.wait)
 
     if args.output is None:

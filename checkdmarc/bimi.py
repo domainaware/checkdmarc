@@ -35,7 +35,7 @@ limitations under the License."""
 
 BIMI_VERSION_REGEX_STRING = fr"v{WSP_REGEX}*={WSP_REGEX}*BIMI1{WSP_REGEX}*;"
 BIMI_TAG_VALUE_REGEX_STRING = (
-    fr"([a-z]{{1,2}}){WSP_REGEX}*={WSP_REGEX}*({HTTPS_REGEX})?"
+    fr"([a-z]{{1,2}}){WSP_REGEX}*={WSP_REGEX}*(bimi1|{HTTPS_REGEX})?"
 )
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
@@ -100,7 +100,7 @@ class MultipleBIMIRecords(BIMIError):
 
 class _BIMIGrammar(Grammar):
     """Defines Pyleri grammar for BIMI records"""
-    version_tag = Regex(BIMI_VERSION_REGEX_STRING, re.IGNORECASE)
+    version_tag = Regex(BIMI_VERSION_REGEX_STRING)
     tag_value = Regex(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
     START = Sequence(
         version_tag, List(tag_value,
@@ -391,18 +391,21 @@ def check_bimi(domain: str, selector: str = "default",
                       - ``valid`` - False
     """
     bimi_results = OrderedDict([("record", None), ("valid", True)])
+    selector = selector.lower()
     try:
         bimi_query = query_bimi_record(
             domain,
             selector=selector,
             nameservers=nameservers, resolver=resolver,
             timeout=timeout)
+        bimi_results["selector"] = selector
         bimi_results["record"] = bimi_query["record"]
         parsed_bimi = parse_bimi_record(bimi_results["record"])
-        bimi_results["parsed"] = parsed_bimi["tags"]
+        bimi_results["tags"] = parsed_bimi["tags"]
         bimi_results["warnings"] = parsed_bimi["warnings"]
     except BIMIError as error:
+        bimi_results["selector"] = selector
         bimi_results["valid"] = False
-        bimi_results["error"] = error.args[0]
+        bimi_results["error"] = str(error)
 
     return bimi_results

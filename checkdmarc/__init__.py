@@ -43,6 +43,7 @@ def check_domains(domains: list[str], parked: bool = False,
                   approved_nameservers: list[str] = None,
                   approved_mx_hostnames: bool = None,
                   skip_tls: bool = False,
+                  bimi_selector: str = None,
                   include_dmarc_tag_descriptions: bool = False,
                   nameservers: list[str] = None,
                   resolver: dns.resolver.Resolver = None,
@@ -58,6 +59,7 @@ def check_domains(domains: list[str], parked: bool = False,
         approved_nameservers (list): A list of approved nameservers
         approved_mx_hostnames (list): A list of approved MX hostname
         skip_tls (bool): Skip STARTTLS testing
+        bimi_selector (str): The BIMI selector to test
         include_dmarc_tag_descriptions (bool): Include descriptions of DMARC
                                                tags and/or tag values in the
                                                results
@@ -136,6 +138,13 @@ def check_domains(domains: list[str], parked: bool = False,
             resolver=resolver,
             timeout=timeout
             )
+
+        if bimi_selector is not None:
+            domain_results["bimi"] = check_bimi(domain,
+                                                selector=bimi_selector,
+                                                nameservers=nameservers,
+                                                resolver=resolver,
+                                                timeout=timeout)
 
         results.append(domain_results)
         if wait > 0.0:
