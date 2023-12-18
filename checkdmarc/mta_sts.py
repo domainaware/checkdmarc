@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """SMTP MTA Strict Transport Security (MTA-STS) validation"""
 
 from __future__ import annotations

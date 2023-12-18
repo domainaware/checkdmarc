@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """DMARC record validation"""
 
 from __future__ import annotations
@@ -15,9 +16,10 @@ from pyleri import (Grammar,
                     )
 
 
-from checkdmarc.utils import (WSP_REGEX, _query_dns, get_base_domain,
-                              MAILTO_REGEX, _get_mx_hosts, DNSException)
-from checkdmarc import SYNTAX_ERROR_MARKER
+from checkdmarc.utils import (WSP_REGEX, query_dns, get_base_domain,
+                              MAILTO_REGEX, DNSException)
+from checkdmarc.utils import get_mx_records
+from checkdmarc._constants import SYNTAX_ERROR_MARKER
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -398,8 +400,8 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
     dmarc_prefix = "v=DMARC1"
 
     try:
-        records = _query_dns(target, "TXT", nameservers=nameservers,
-                             resolver=resolver, timeout=timeout)
+        records = query_dns(target, "TXT", nameservers=nameservers,
+                            resolver=resolver, timeout=timeout)
         for record in records:
             if record.startswith(dmarc_prefix):
                 dmarc_record_count += 1
@@ -428,9 +430,9 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
 
     except dns.resolver.NoAnswer:
         try:
-            records = _query_dns(domain, "TXT",
-                                 nameservers=nameservers, resolver=resolver,
-                                 timeout=timeout)
+            records = query_dns(domain, "TXT",
+                                nameservers=nameservers, resolver=resolver,
+                                timeout=timeout)
             for record in records:
                 if record.startswith("v=DMARC1"):
                     raise DMARCRecordInWrongLocation(
@@ -493,9 +495,9 @@ def query_dmarc_record(domain: str, nameservers: list[str] = None,
         resolver=resolver, timeout=timeout,
         ignore_unrelated_records=ignore_unrelated_records)
     try:
-        root_records = _query_dns(domain, "TXT",
-                                  nameservers=nameservers, resolver=resolver,
-                                  timeout=timeout)
+        root_records = query_dns(domain, "TXT",
+                                 nameservers=nameservers, resolver=resolver,
+                                 timeout=timeout)
         for root_record in root_records:
             if root_record.startswith("v=DMARC1"):
                 warnings.append(f"DMARC record at root of {domain} "
@@ -626,9 +628,9 @@ def check_wildcard_dmarc_report_authorization(
     dmarc_record_count = 0
     unrelated_records = []
     try:
-        records = _query_dns(wildcard_target, "TXT",
-                             nameservers=nameservers, resolver=resolver,
-                             timeout=timeout)
+        records = query_dns(wildcard_target, "TXT",
+                            nameservers=nameservers, resolver=resolver,
+                            timeout=timeout)
 
         for record in records:
             if record.startswith("v=DMARC1"):
@@ -695,9 +697,9 @@ def verify_dmarc_report_destination(source_domain: str,
         dmarc_record_count = 0
         unrelated_records = []
         try:
-            records = _query_dns(target, "TXT",
-                                 nameservers=nameservers, resolver=resolver,
-                                 timeout=timeout)
+            records = query_dns(target, "TXT",
+                                nameservers=nameservers, resolver=resolver,
+                                timeout=timeout)
 
             for record in records:
                 if record.startswith("v=DMARC1"):
@@ -873,13 +875,15 @@ def parse_dmarc_record(
                                                     resolver=resolver,
                                                     timeout=timeout)
                 try:
-                    _get_mx_hosts(email_domain, nameservers=nameservers,
-                                  resolver=resolver, timeout=timeout)
-                except _DMARCWarning:
-                    raise DMARCReportEmailAddressMissingMXRecords(
-                        "The domain for rua email address "
-                        f"{email_address} has no MX records"
-                    )
+                    hosts = get_mx_records(email_domain,
+                                           nameservers=nameservers,
+                                           resolver=resolver,
+                                           timeout=timeout)
+                    if len(hosts) == 0:
+                        raise DMARCReportEmailAddressMissingMXRecords(
+                            "The domain for rua email address "
+                            f"{email_address} has no MX records"
+                        )
                 except DNSException as warning:
                     raise DMARCReportEmailAddressMissingMXRecords(
                         "Failed to retrieve MX records for the domain of "
@@ -912,9 +916,11 @@ def parse_dmarc_record(
                                                     resolver=resolver,
                                                     timeout=timeout)
                 try:
-                    mx = _get_mx_hosts(email_domain, nameservers=nameservers,
-                                       resolver=resolver, timeout=timeout)
-                    if len(mx) == 0:
+                    hosts = get_mx_records(email_domain,
+                                           nameservers=nameservers,
+                                           resolver=resolver,
+                                           timeout=timeout)
+                    if len(hosts) == 0:
                         raise DMARCReportEmailAddressMissingMXRecords(
                             "The domain for ruf email address "
                             f"{email_address} has no MX records"
@@ -1015,3 +1021,69 @@ def get_dmarc_record(domain: str,
                          query["record"]),
                         ("location", query["location"]),
                         ("parsed", tags)])
+
+
+def check_dmarc(domain: str, parked: bool = False,
+                include_dmarc_tag_descriptions: bool = False,
+                ignore_unrelated_records: bool = False,
+                nameservers: list[str] = None,
+                resolver: dns.resolver.Resolver = None,
+                timeout: float = 2.0) -> OrderedDict:
+    """
+        Returns a dictionary with a parsed DMARC record or an error
+
+        Args:
+            domain (str): A domain name
+            parked (bool): The domain is parked
+            include_dmarc_tag_descriptions (bool): Include tag descriptions
+            ignore_unrelated_records (bool): Ignore unrelated TXT records
+            nameservers (list): A list of nameservers to query
+            resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                              requests
+            timeout (float): number of seconds to wait for a record from DNS
+
+        Returns:
+            OrderedDict: An ``OrderedDict`` with the following keys:
+
+                         - ``record`` - the unparsed DMARC record string
+                         - ``location`` - the domain where the record was found
+                         - ``warnings`` - warning conditions found
+
+                        If a DNS error occurs, the dictionary will have the
+                        following keys:
+
+                      - ``error``  - An error message
+                      - ``valid`` - False
+
+        """
+    dmarc_results = OrderedDict([("record", None), ("valid", True),
+                                 ("location", None)])
+    try:
+        dmarc_query = query_dmarc_record(
+            domain,
+            ignore_unrelated_records=ignore_unrelated_records,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout)
+        dmarc_results["record"] = dmarc_query["record"]
+        dmarc_results["location"] = dmarc_query["location"]
+        parsed_dmarc_record = parse_dmarc_record(
+            dmarc_query["record"],
+            dmarc_query["location"],
+            parked=parked,
+            include_tag_descriptions=include_dmarc_tag_descriptions,
+            nameservers=nameservers, resolver=resolver,
+            timeout=timeout)
+        dmarc_results["warnings"] = dmarc_query["warnings"]
+
+        dmarc_results["tags"] = parsed_dmarc_record["tags"]
+        dmarc_results["warnings"] += parsed_dmarc_record[
+            "warnings"]
+    except DMARCError as error:
+        dmarc_results["error"] = str(error)
+        dmarc_results["valid"] = False
+        if hasattr(error, "data") and error.data:
+            for key in error.data:
+                dmarc_results[key] = error.data[key]
+
+    return dmarc_results

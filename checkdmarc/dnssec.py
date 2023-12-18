@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """DNSSEC tests"""
 
 from __future__ import annotations

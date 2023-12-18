@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Sender Policy framework (SPF) record validation"""
 
 from __future__ import annotations
@@ -14,9 +15,9 @@ from pyleri import (Grammar,
                     Repeat
                     )
 
-from checkdmarc import SYNTAX_ERROR_MARKER
-from checkdmarc.utils import (_query_dns, _get_a_records, _get_mx_hosts,
-                              _get_txt_records,
+from checkdmarc._constants import SYNTAX_ERROR_MARKER
+from checkdmarc.utils import (query_dns, get_a_records,
+                              get_txt_records, get_mx_records,
                               DNSException, DNSExceptionNXDOMAIN)
 
 """Copyright 2019-2023 Sean Whalen
@@ -155,9 +156,9 @@ def query_spf_record(domain: str,
     spf_type_records = []
     spf_txt_records = []
     try:
-        spf_type_records += _query_dns(domain, "SPF",
-                                       nameservers=nameservers,
-                                       resolver=resolver, timeout=timeout)
+        spf_type_records += query_dns(domain, "SPF",
+                                      nameservers=nameservers,
+                                      resolver=resolver, timeout=timeout)
     except (dns.resolver.NoAnswer, Exception):
         pass
 
@@ -169,8 +170,8 @@ def query_spf_record(domain: str,
                   f"{','.join(spf_type_records)}"
         warnings.append(message)
     try:
-        answers = _query_dns(domain, "TXT", nameservers=nameservers,
-                             resolver=resolver, timeout=timeout)
+        answers = query_dns(domain, "TXT", nameservers=nameservers,
+                            resolver=resolver, timeout=timeout)
         spf_record = None
         for record in answers:
             if record.startswith("v=spf1"):
@@ -312,8 +313,8 @@ def parse_spf_record(
             if mechanism == "a":
                 if value == "":
                     value = domain
-                a_records = _get_a_records(value, nameservers=nameservers,
-                                           resolver=resolver, timeout=timeout)
+                a_records = get_a_records(value, nameservers=nameservers,
+                                          resolver=resolver, timeout=timeout)
                 if len(a_records) == 0:
                     raise _SPFMissingRecords(
                         f"{value.lower()} does not have any A/AAAA records")
@@ -323,8 +324,8 @@ def parse_spf_record(
             elif mechanism == "mx":
                 if value == "":
                     value = domain
-                mx_hosts = _get_mx_hosts(value, nameservers=nameservers,
-                                         resolver=resolver, timeout=timeout)
+                mx_hosts = get_mx_records(value, nameservers=nameservers,
+                                          resolver=resolver, timeout=timeout)
                 if len(mx_hosts) == 0:
                     raise _SPFMissingRecords(
                         f"{value.lower()} does not have any MX records")
@@ -385,7 +386,7 @@ def parse_spf_record(
                         void_lookup_mechanism_count += 1
                     raise _SPFWarning(str(error))
             elif mechanism == "exp":
-                parsed["exp"] = _get_txt_records(value)[0]
+                parsed["exp"] = get_txt_records(value)[0]
             elif mechanism == "all":
                 parsed["all"] = result
             elif mechanism == "include":
@@ -507,3 +508,67 @@ def get_spf_record(domain: str, nameservers: list[str] = None,
     parsed_record["record"] = record
 
     return parsed_record
+
+
+def check_spf(domain: str, parked: bool = False,
+              nameservers: list[str] = None,
+              resolver: dns.resolver.Resolver = None,
+              timeout: float = 2.0) -> OrderedDict:
+    """
+    Returns a dictionary with a parsed SPF record or an error.
+
+    Args:
+        domain (str): A domain name
+        parked (bool): The domain is parked
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
+
+                       - ``record`` - The SPF record string
+                       - ``parsed`` - The parsed SPF record
+                       - ``dns_lookups`` - The number of DNS lookups
+                       - ``dns_void_lookups`` - The number of void DNS lookups
+                       - ``valid`` - True
+                       - ``warnings`` - A ``list`` of warnings
+
+                    If a DNS error occurs, the dictionary will have the
+                    following keys:
+
+                      - ``error`` - Tne error message
+                      - ``valid`` - False
+    """
+    spf_results = OrderedDict(
+        [("record", None), ("valid", True), ("dns_lookups", None),
+         ("dns_void_lookups", None)])
+    try:
+        spf_query = query_spf_record(
+            domain,
+            nameservers=nameservers, resolver=resolver,
+            timeout=timeout)
+        spf_results["record"] = spf_query["record"]
+        spf_results["warnings"] = spf_query["warnings"]
+        parsed_spf = parse_spf_record(spf_results["record"],
+                                      domain,
+                                      parked=parked,
+                                      nameservers=nameservers,
+                                      resolver=resolver,
+                                      timeout=timeout)
+
+        spf_results["dns_lookups"] = parsed_spf[
+            "dns_lookups"]
+        spf_results["dns_void_lookups"] = parsed_spf[
+            "dns_void_lookups"]
+        spf_results["parsed"] = parsed_spf["parsed"]
+        spf_results["warnings"] += parsed_spf["warnings"]
+    except SPFError as error:
+        spf_results["error"] = error.args[0]
+        del spf_results["dns_lookups"]
+        spf_results["valid"] = False
+        if hasattr(error, "data") and error.data:
+            for key in error.data:
+                spf_results[key] = error.data[key]
+    return spf_results

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Brand Indicators for Message Identification (BIMI) record validation"""
 
 from __future__ import annotations
@@ -14,8 +15,8 @@ from pyleri import (Grammar,
                     List
                     )
 
-from checkdmarc import SYNTAX_ERROR_MARKER, USER_AGENT
-from checkdmarc.utils import (WSP_REGEX, HTTPS_REGEX, _query_dns,
+from checkdmarc._constants import SYNTAX_ERROR_MARKER, USER_AGENT
+from checkdmarc.utils import (WSP_REGEX, HTTPS_REGEX, query_dns,
                               get_base_domain)
 
 """Copyright 2019-2023 Sean Whalen
@@ -172,8 +173,8 @@ def _query_bimi_record(domain: str, selector: str = "default",
     unrelated_records = []
 
     try:
-        records = _query_dns(target, "TXT", nameservers=nameservers,
-                             resolver=resolver, timeout=timeout)
+        records = query_dns(target, "TXT", nameservers=nameservers,
+                            resolver=resolver, timeout=timeout)
         for record in records:
             if record.startswith("v=BIMI1"):
                 bimi_record_count += 1
@@ -194,9 +195,9 @@ def _query_bimi_record(domain: str, selector: str = "default",
 
     except dns.resolver.NoAnswer:
         try:
-            records = _query_dns(domain, "TXT",
-                                 nameservers=nameservers, resolver=resolver,
-                                 timeout=timeout)
+            records = query_dns(domain, "TXT",
+                                nameservers=nameservers, resolver=resolver,
+                                timeout=timeout)
             for record in records:
                 if record.startswith("v=BIMI1"):
                     raise BIMIRecordInWrongLocation(
@@ -253,9 +254,9 @@ def query_bimi_record(domain: str, selector: str = "default",
                                 nameservers=nameservers, resolver=resolver,
                                 timeout=timeout)
     try:
-        root_records = _query_dns(domain, "TXT",
-                                  nameservers=nameservers, resolver=resolver,
-                                  timeout=timeout)
+        root_records = query_dns(domain, "TXT",
+                                 nameservers=nameservers, resolver=resolver,
+                                 timeout=timeout)
         for root_record in root_records:
             if root_record.startswith("v=BIMI1"):
                 warnings.append(f"BIMI record at root of {domain} "
@@ -308,7 +309,7 @@ def parse_bimi_record(
         :exc:`checkdmarc.InvalidBIMITagValue`
 
     """
-    logging.debug(f"Parsing the BIMI record")
+    logging.debug("Parsing the BIMI record")
     session = requests.Session()
     session.headers = {"User-Agent": USER_AGENT}
     spf_in_dmarc_error_msg = "Found a SPF record where a BIMI record " \
@@ -358,3 +359,50 @@ def parse_bimi_record(
                                 f"{tag_value} - {e}")
 
     return OrderedDict(tags=tags, warnings=warnings)
+
+
+def check_bimi(domain: str, selector: str = "default",
+               nameservers: list[str] = None,
+               resolver: dns.resolver.Resolver = None,
+               timeout: float = 2.0) -> OrderedDict:
+    """
+    Returns a dictionary with a parsed BIMI record or an error.
+
+    Args:
+        domain (str): A domain name
+        selector (str): The BIMI selector
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
+
+                       - ``record`` - The BIMI record string
+                       - ``parsed`` - The parsed BIMI record
+                       - ``valid`` - True
+                       - ``warnings`` - A ``list`` of warnings
+
+                    If a DNS error occurs, the dictionary will have the
+                    following keys:
+
+                      - ``error`` - Tne error message
+                      - ``valid`` - False
+    """
+    bimi_results = OrderedDict([("record", None), ("valid", True)])
+    try:
+        bimi_query = query_bimi_record(
+            domain,
+            selector=selector,
+            nameservers=nameservers, resolver=resolver,
+            timeout=timeout)
+        bimi_results["record"] = bimi_query["record"]
+        parsed_bimi = parse_bimi_record(bimi_results["record"])
+        bimi_results["parsed"] = parsed_bimi["tags"]
+        bimi_results["warnings"] = parsed_bimi["warnings"]
+    except BIMIError as error:
+        bimi_results["valid"] = False
+        bimi_results["error"] = error.args[0]
+
+    return bimi_results
