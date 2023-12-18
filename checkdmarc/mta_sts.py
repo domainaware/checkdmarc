@@ -13,7 +13,7 @@ from pyleri import (Grammar,
                     List,
                     )
 
-from checkdmarc.utils import _query_dns, WSP_REGEX
+from checkdmarc.utils import query_dns, WSP_REGEX
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -142,8 +142,8 @@ def query_sts_record(domain: str,
     unrelated_records = []
 
     try:
-        records = _query_dns(target, "TXT", nameservers=nameservers,
-                             resolver=resolver, timeout=timeout)
+        records = query_dns(target, "TXT", nameservers=nameservers,
+                            resolver=resolver, timeout=timeout)
         for record in records:
             if record.startswith("v=STSv1"):
                 sts_record_count += 1
@@ -164,9 +164,9 @@ def query_sts_record(domain: str,
 
     except dns.resolver.NoAnswer:
         try:
-            records = _query_dns(domain, "TXT",
-                                 nameservers=nameservers, resolver=resolver,
-                                 timeout=timeout)
+            records = query_dns(domain, "TXT",
+                                nameservers=nameservers, resolver=resolver,
+                                timeout=timeout)
             for record in records:
                 if record.startswith("v=STS1"):
                     raise STSRecordInWrongLocation(
@@ -185,9 +185,9 @@ def query_sts_record(domain: str,
     except Exception as error:
         raise STSRecordNotFound(error)
     try:
-        root_records = _query_dns(domain, "TXT",
-                                  nameservers=nameservers, resolver=resolver,
-                                  timeout=timeout)
+        root_records = query_dns(domain, "TXT",
+                                 nameservers=nameservers, resolver=resolver,
+                                 timeout=timeout)
         for root_record in root_records:
             if root_record.startswith("v=STSv1"):
                 warnings.append(f"STS record at root of {domain} "
