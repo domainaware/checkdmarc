@@ -480,10 +480,10 @@ def query_dmarc_record(domain: str, nameservers: list[str] = None,
                      - ``warnings`` - warning conditions found
 
      Raises:
-        :exc:`checkdmarc.DMARCRecordNotFound`
-        :exc:`checkdmarc.DMARCRecordInWrongLocation`
-        :exc:`checkdmarc.MultipleDMARCRecords`
-        :exc:`checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
+        :exc:`checkdmarc.dmarc.DMARCRecordNotFound`
+        :exc:`checkdmarc.dmarc.DMARCRecordInWrongLocation`
+        :exc:`checkdmarc.dmarc.MultipleDMARCRecords`
+        :exc:`checkdmarc.dmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
 
     """
     logging.debug(f"Checking for a DMARC record on {domain}")
@@ -502,7 +502,10 @@ def query_dmarc_record(domain: str, nameservers: list[str] = None,
             if root_record.startswith("v=DMARC1"):
                 warnings.append(f"DMARC record at root of {domain} "
                                 "has no effect")
-    except Exception:
+    except dns.resolver.NXDOMAIN:
+        raise DMARCRecordNotFound(
+            f"The domain {domain} does not exist")
+    except dns.exception.DNSException:
         pass
 
     if record is None and domain != base_domain:
@@ -572,7 +575,7 @@ def parse_dmarc_report_uri(uri: str) -> OrderedDict:
                     - ``address``
                     - ``size_limit``
     Raises:
-        :exc:`checkdmarc.InvalidDMARCReportURI`
+        :exc:`checkdmarc.dmarc.InvalidDMARCReportURI`
 
     """
     uri = uri.strip()
@@ -648,7 +651,7 @@ def check_wildcard_dmarc_report_authorization(
 
         if dmarc_record_count < 1:
             return False
-    except Exception:
+    except dns.exception.DNSException:
         return False
 
     return True
@@ -676,8 +679,8 @@ def verify_dmarc_report_destination(source_domain: str,
           domain
 
       Raises:
-          :exc:`checkdmarc.UnverifiedDMARCURIDestination`
-          :exc:`checkdmarc.UnrelatedTXTRecordFound`
+          :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`
+          :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFound`
       """
 
     source_domain = source_domain.lower()
@@ -760,13 +763,13 @@ def parse_dmarc_record(
             ``include_tag_descriptions`` is set to ``True``
 
     Raises:
-        :exc:`checkdmarc.DMARCSyntaxError`
-        :exc:`checkdmarc.InvalidDMARCTag`
-        :exc:`checkdmarc.InvalidDMARCTagValue`
-        :exc:`checkdmarc.InvalidDMARCReportURI`
-        :exc:`checkdmarc.UnverifiedDMARCURIDestination`
-        :exc:`checkdmarc.UnrelatedTXTRecordFound`
-        :exc:`checkdmarc.DMARCReportEmailAddressMissingMXRecords`
+        :exc:`checkdmarc.dmarc.DMARCSyntaxError`
+        :exc:`checkdmarc.dmarc.InvalidDMARCTag`
+        :exc:`checkdmarc.dmarc.InvalidDMARCTagValue`
+        :exc:`checkdmarc.dmarc.InvalidDMARCReportURI`
+        :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`
+        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFound`
+        :exc:`checkdmarc.dmarc.DMARCReportEmailAddressMissingMXRecords`
 
     """
     logging.debug(f"Parsing the DMARC record for {domain}")
@@ -994,18 +997,18 @@ def get_dmarc_record(domain: str,
          - ``parsed`` - See :meth:`checkdmarc.parse_dmarc_record`
 
      Raises:
-        :exc:`checkdmarc.DMARCRecordNotFound`
-        :exc:`checkdmarc.DMARCRecordInWrongLocation`
-        :exc:`checkdmarc.MultipleDMARCRecords`
-        :exc:`checkdmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
-        :exc:`checkdmarc.UnverifiedDMARCURIDestination`
-        :exc:`checkdmarc.DMARCSyntaxError`
-        :exc:`checkdmarc.InvalidDMARCTag`
-        :exc:`checkdmarc.InvalidDMARCTagValue`
-        :exc:`checkdmarc.InvalidDMARCReportURI`
-        :exc:`checkdmarc.UnverifiedDMARCURIDestination`
-        :exc:`checkdmarc.UnrelatedTXTRecordFound`
-        :exc:`checkdmarc.DMARCReportEmailAddressMissingMXRecords`
+        :exc:`checkdmarc.dmarc.DMARCRecordNotFound`
+        :exc:`checkdmarc.dmarc.DMARCRecordInWrongLocation`
+        :exc:`checkdmarc.dmarc.MultipleDMARCRecords`
+        :exc:`checkdmarc.dmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
+        :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`
+        :exc:`checkdmarc.dmarc.DMARCSyntaxError`
+        :exc:`checkdmarc.dmarc.InvalidDMARCTag`
+        :exc:`checkdmarc.dmarc.InvalidDMARCTagValue`
+        :exc:`checkdmarc.dmarc.InvalidDMARCReportURI`
+        :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`
+        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFound`
+        :exc:`checkdmarc.dmarc.DMARCReportEmailAddressMissingMXRecords`
     """
     query = query_dmarc_record(domain, nameservers=nameservers,
                                resolver=resolver, timeout=timeout)

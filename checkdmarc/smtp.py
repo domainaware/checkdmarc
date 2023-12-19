@@ -447,5 +447,5 @@ def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
             timeout=timeout)
     except DNSException as error:
         mx_results = OrderedDict([("hosts", []),
-                                  ("error", error.__str__())])
+                                  ("error", str(error))])
     return mx_results

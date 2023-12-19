@@ -16,6 +16,7 @@ from csv import DictWriter
 import checkdmarc._constants
 from checkdmarc.utils import get_base_domain, get_nameservers, DNSException
 from checkdmarc.dnssec import test_dnssec
+from checkdmarc.mta_sts import check_mta_sts
 from checkdmarc.smtp import check_mx
 from checkdmarc.spf import check_spf
 from checkdmarc.dmarc import check_dmarc
@@ -74,11 +75,11 @@ def check_domains(domains: list[str], parked: bool = False,
 
        - ``domain`` - The domain name
        - ``base_domain`` The base domain
-       - ``mx`` - See :func:`checkdmarc.get_mx_hosts`
+       - ``mx`` - See :func:`checkdmarc.smtp.get_mx_hosts`
        - ``spf`` -  A ``valid`` flag, plus the output of
-         :func:`checkdmarc.parse_spf_record` or an ``error``
+         :func:`checkdmarc.spf.parse_spf_record` or an ``error``
        - ``dmarc`` - A ``valid`` flag, plus the output of
-         :func:`checkdmarc.parse_dmarc_record` or an ``error``
+         :func:`checkdmarc.dmarc.parse_dmarc_record` or an ``error``
     """
     domains = sorted(list(set(
         map(lambda d: d.rstrip(".\r\n").strip().lower().split(",")[0],
@@ -113,6 +114,10 @@ def check_domains(domains: list[str], parked: bool = False,
             resolver=resolver, timeout=timeout
             )
 
+        domain_results["mta_sts"] = check_mta_sts(domain,
+                                                  nameservers=nameservers,
+                                                  resolver=resolver,
+                                                  timeout=timeout)
         domain_results["mx"] = check_mx(
             domain,
             approved_mx_hostnames=approved_mx_hostnames,

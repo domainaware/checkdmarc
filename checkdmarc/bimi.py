@@ -241,9 +241,9 @@ def query_bimi_record(domain: str, selector: str = "default",
                      - ``warnings`` - warning conditions found
 
      Raises:
-        :exc:`checkdmarc.BIMIRecordNotFound`
-        :exc:`checkdmarc.BIMIRecordInWrongLocation`
-        :exc:`checkdmarc.MultipleBIMIRecords`
+        :exc:`checkdmarc.bimi.BIMIRecordNotFound`
+        :exc:`checkdmarc.bimi.BIMIRecordInWrongLocation`
+        :exc:`checkdmarc.bimi.MultipleBIMIRecords`
 
     """
     logging.debug(f"Checking for a BIMI record at {selector}._bimi.{domain}")
@@ -261,7 +261,10 @@ def query_bimi_record(domain: str, selector: str = "default",
             if root_record.startswith("v=BIMI1"):
                 warnings.append(f"BIMI record at root of {domain} "
                                 "has no effect")
-    except Exception:
+    except dns.resolver.NXDOMAIN:
+        raise BIMIRecordNotFound(
+            f"The domain {domain} does not exist")
+    except dns.exception.DNSException:
         pass
 
     if record is None and domain != base_domain and selector != "default":
@@ -304,9 +307,10 @@ def parse_bimi_record(
             ``include_tag_descriptions`` is set to ``True``
 
     Raises:
-        :exc:`checkdmarc.BIMISyntaxError`
-        :exc:`checkdmarc.InvalidBIMITag`
-        :exc:`checkdmarc.InvalidBIMITagValue`
+        :exc:`checkdmarc.bimi.BIMISyntaxError`
+        :exc:`checkdmarc.bimi.InvalidBIMITag`
+        :exc:`checkdmarc.bimi.InvalidBIMITagValue`
+        :exc:`checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe`
 
     """
     logging.debug("Parsing the BIMI record")

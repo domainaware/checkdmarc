@@ -33,9 +33,12 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-STS_VERSION_REGEX_STRING = fr"v{WSP_REGEX}*={WSP_REGEX}*STSv1{WSP_REGEX}*;"
-STS_TAG_VALUE_REGEX_STRING = fr"([a-z]{{1,2}}){WSP_REGEX}*={WSP_REGEX}*([\
+MTA_STS_VERSION_REGEX_STRING = fr"v{WSP_REGEX}*={WSP_REGEX}*STSv1{WSP_REGEX}*;"
+MTA_STS_TAG_VALUE_REGEX_STRING = fr"([a-z]{{1,2}}){WSP_REGEX}*={WSP_REGEX}*([\
 a-z0-9]+)"
+
+MTA_STS_MX_REGEX_STRING = r"[a-z0-9\-*.]+"
+MTA_STS_MX_REGEX = re.compile(MTA_STS_MX_REGEX_STRING, re.IGNORECASE)
 
 
 class _MTASTSWarning(Exception):
@@ -65,7 +68,7 @@ class MTASTSRecordSyntaxError(MTASTSError):
     """Raised when an MTA-STS DNS record syntax error is found"""
 
 
-class InvalidSTSTag(MTASTSRecordSyntaxError):
+class InvalidMTASTSTag(MTASTSRecordSyntaxError):
     """Raised when an invalid MTA-STS tag is found"""
 
 
@@ -77,9 +80,9 @@ class UnrelatedTXTRecordFoundAtMTASTS(MTASTSError):
     """Raised when a TXT record unrelated to MTA-STS is found"""
 
 
-class SPFRecordFoundWhereSTSRecordShouldBe(UnrelatedTXTRecordFoundAtMTASTS):
+class SPFRecordFoundWhereMTASTSRecordShouldBe(UnrelatedTXTRecordFoundAtMTASTS):
     """Raised when an SPF record is found where an MTA-STS record should be;
-        most likely, the ``selector_STS`` subdomain
+        most likely, the ``_mta-sts`` subdomain
         record does not actually exist, and the request for ``TXT`` records was
         redirected to the base domain"""
 
@@ -96,14 +99,14 @@ class MTASTSPolicyError(MTASTSError):
     """Raised when the MTA-STS policy cannot be obtained or parsed"""
 
 
-class STSPolicySyntaxError(MTASTSPolicyError):
+class MTASTSPolicySyntaxError(MTASTSPolicyError):
     """Raised when a syntax error is found in an MTA-STS policy"""
 
 
 class _STSGrammar(Grammar):
     """Defines Pyleri grammar for MTA-STS records"""
-    version_tag = Regex(STS_VERSION_REGEX_STRING, re.IGNORECASE)
-    tag_value = Regex(STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    version_tag = Regex(MTA_STS_VERSION_REGEX_STRING, re.IGNORECASE)
+    tag_value = Regex(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
     START = Sequence(
         version_tag,
         List(
@@ -127,7 +130,7 @@ mta_sts_tags = OrderedDict(
                                'ordering of "id" fields between revisions.')
 )
 
-STS_TAG_VALUE_REGEX = re.compile(STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
 
 def query_mta_sts_record(domain: str,
@@ -150,9 +153,9 @@ def query_mta_sts_record(domain: str,
                      - ``warnings`` - warning conditions found
 
      Raises:
-        :exc:`checkdmarc.STSRecordNotFound`
-        :exc:`checkdmarc.STSRecordInWrongLocation`
-        :exc:`checkdmarc.MultipleSTSRecords`
+        :exc:`checkdmarc.mta_sts.MTASTSRecordNotFound`
+        :exc:`checkdmarc.mta_sts.MTASTSRecordInWrongLocation`
+        :exc:`checkdmarc.mta_sts.MultipleMTASTSRecords`
 
     """
     logging.debug(f"Checking for a MTA-STS record on {domain}")
@@ -184,7 +187,7 @@ def query_mta_sts_record(domain: str,
                 f"at {target}\n\n{ur_str}")
         sts_record = records[0]
 
-    except dns.resolver.NoAnswer:
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
         try:
             records = query_dns(domain, "TXT",
                                 nameservers=nameservers, resolver=resolver,
@@ -204,7 +207,7 @@ def query_mta_sts_record(domain: str,
 
     if sts_record is None:
         raise MTASTSRecordNotFound(
-            "A MTA-STS DNS record does not exist for this domain")
+            "An MTA-STS DNS record does not exist for this domain")
 
     return OrderedDict([("record", sts_record),
                         ("warnings", warnings)])
@@ -236,9 +239,10 @@ def parse_mta_sts_record(
             ``include_tag_descriptions`` is set to ``True``
 
     Raises:
-        :exc:`checkdmarc.STSSyntaxError`
-        :exc:`checkdmarc.InvalidSTSTag`
-        :exc:`checkdmarc.InvalidSTSTagValue`
+        :exc:`checkdmarc.mta_sts.MTASTSSyntaxError`
+        :exc:`checkdmarc.mta_sts.InvalidMTASTSTag`
+        :exc:`checkdmarc.mta_sts.InvalidMTASTSTagValue`
+        :exc:`checkdmarc.mta_sts.SPFRecordFoundWhereSTSRecordShouldBe`
 
     """
     logging.debug("Parsing the MTA-STS record")
@@ -250,7 +254,7 @@ def parse_mta_sts_record(
     warnings = []
     record = record.strip('"')
     if record.lower().startswith("v=spf1"):
-        raise SPFRecordFoundWhereSTSRecordShouldBe(spf_in_dmarc_error_msg)
+        raise SPFRecordFoundWhereMTASTSRecordShouldBe(spf_in_dmarc_error_msg)
     sts_syntax_checker = _STSGrammar()
     parsed_record = sts_syntax_checker.parse(record)
     if not parsed_record.is_valid:
@@ -271,7 +275,7 @@ def parse_mta_sts_record(
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
         if tag not in mta_sts_tags:
-            raise InvalidSTSTag(f"{tag} is not a valid MTA-STS record tag")
+            raise InvalidMTASTSTag(f"{tag} is not a valid MTA-STS record tag")
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["description"] = mta_sts_tags[tag]["description"]
@@ -287,7 +291,12 @@ def download_mta_sts_policy(domain: str) -> OrderedDict:
         domain (str): A domain name
 
     Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
+                     - ``policy`` - The unparsed policy string
+                     - ``warnings`` - A list of any warning conditions found
 
+    Raises:
+        :exc:`checkdmarc.mta_sts.MTASTSPolicyError`
     """
     warnings = []
     headers = {"User-Agent": USER_AGENT}
@@ -314,13 +323,129 @@ def download_mta_sts_policy(domain: str) -> OrderedDict:
     return OrderedDict(policy=response.text, warnings=warnings)
 
 
-def parse_mta_sts_policy(policy: str):
+def parse_mta_sts_policy(policy: str) -> OrderedDict:
     """
     Parses an MTA-STS policy
 
     Args:
-        policy:
+        policy (str): The policy
+
+     Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
+                     - ``policy`` - The parsed policy
+                     - ``warnings`` - A list of any warning conditions found
+
+    Raises:
+        :exc:`checkdmarc.mta_sts.MTASTSPolicySyntaxError`
+    """
+    parsed_policy = OrderedDict()
+    warnings = []
+    mx = []
+    versions = ["STSv1"]
+    modes = ["enforce", "testing", "none"]
+    required_keys = ["version", "mode", "max_age"]
+    acceptable_keys = required_keys.copy()
+    acceptable_keys.append("mx")
+    if "\n" in policy and "\r\n" not in policy:
+        warnings.append("MTA-STS policy lines should end with CRLF, not LF")
+        policy = policy.replace("\n", "\r\n")
+    lines = policy.split("\r\n")
+    for i in range(len(lines)):
+        line = i + 1
+        if lines[i] == "":
+            continue
+        key_value = lines[i].split(":")
+        if len(key_value) != 2:
+            raise MTASTSPolicySyntaxError(
+                f"Line {line}: Not a key: value pair")
+        key = key_value[0].strip()
+        value = key_value[1].strip()
+        if key not in acceptable_keys:
+            raise MTASTSPolicySyntaxError(
+                f"Line {line}: Unexpected key: {key}")
+        if key in parsed_policy and key != "mx":
+            MTASTSPolicySyntaxError(f"Line {line}: Duplicate key: {key}")
+        elif key == "version" and value not in versions:
+            MTASTSPolicySyntaxError(f"Line {line}: Invalid version: {value}")
+        elif key == "mode" and value not in modes:
+            MTASTSPolicySyntaxError(f"Line {line}: Invalid mode: {value}")
+        elif key == "max_age":
+            error_msg = ("max_age must be an integer value between 0 and "
+                         "31557600")
+            if "." in value:
+                raise MTASTSPolicySyntaxError(error_msg)
+            try:
+                value = int(value)
+            except ValueError:
+                MTASTSPolicySyntaxError(error_msg)
+            if value < 0 or value > 31557600:
+                raise MTASTSPolicySyntaxError(error_msg)
+        if key != "mx":
+            parsed_policy[key] = value
+        else:
+            if len(MTA_STS_MX_REGEX.findall(value)) == 0:
+                raise MTASTSPolicySyntaxError(f"Line {line}: Invalid mx "
+                                              f"value: {value}")
+            mx.append(value)
+    for required_key in required_keys:
+        if required_key not in parsed_policy:
+            raise MTASTSPolicySyntaxError(f"Missing required key: "
+                                          f"{required_key}")
+
+    if parsed_policy["mode"] != "none" and len(mx) == 0:
+        raise MTASTSPolicySyntaxError(f"{parsed_policy['mode']} mode requires "
+                                      f"at least one mx value")
+    parsed_policy["mx"] = mx
+
+    return OrderedDict(policy=parsed_policy, warnings=warnings)
+
+
+def check_mta_sts(domain: str,
+                  nameservers: list[str] = None,
+                  resolver: dns.resolver.Resolver = None,
+                  timeout: float = 2.0) -> OrderedDict:
+    """
+    Returns a dictionary with a parsed MTA-STS policy or an error.
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Returns:
+        OrderedDict: An ``OrderedDict`` with the following keys:
 
+                       - ``id`` - The SIS-MTA DNS record ID
+                       - ``policy`` - The parsed MTA-STS policy
+                       - ``valid`` - True
+                       - ``warnings`` - A ``list`` of warnings
+
+                    If an error occurs, the dictionary will have the
+                    following keys:
+
+                      - ``error`` - Tne error message
+                      - ``valid`` - False
     """
+    domain = domain.lower()
+    mta_sts_results = OrderedDict([("valid", True)])
+    try:
+        mta_sts_record = query_mta_sts_record(
+            domain,
+            nameservers=nameservers, resolver=resolver,
+            timeout=timeout)
+        warnings = mta_sts_record["warnings"]
+        mta_sts_record = parse_mta_sts_record(mta_sts_record["record"])
+        mta_sts_results["id"] = mta_sts_record["tags"]["id"]["value"]
+        policy = download_mta_sts_policy(domain)
+        warnings += policy["warnings"]
+        policy = parse_mta_sts_policy(policy["policy"])
+        warnings += policy["warnings"]
+        mta_sts_results["policy"] = policy["policy"]
+        mta_sts_results["warnings"] = warnings
+    except MTASTSError as error:
+        mta_sts_results["valid"] = False
+        mta_sts_results["error"] = str(error)
+
+    return mta_sts_results
