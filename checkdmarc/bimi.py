@@ -313,7 +313,7 @@ def parse_bimi_record(
     session = requests.Session()
     session.headers = {"User-Agent": USER_AGENT}
     spf_in_dmarc_error_msg = "Found a SPF record where a BIMI record " \
-                             "should be; most likely, the _dmarc " \
+                             "should be; most likely, the _bimi " \
                              "subdomain record does not actually exist, " \
                              "and the request for TXT records was " \
                              "redirected to the base domain"
@@ -347,16 +347,18 @@ def parse_bimi_record(
             tags[tag]["description"] = bimi_tags[tag]["description"]
         if tag == "a" and tag_value != "":
             try:
-                session.get(tag_value)
+                response = session.get(tag_value)
+                response.raise_for_status()
             except Exception as e:
                 warnings.append(f"Unable to download Authority Evidence at "
-                                f"{tag_value} - {e}")
+                                f"{tag_value} - {str(e)}")
         elif tag == "e" and tag_value != "":
             try:
-                session.get(tag_value)
+                response = session.get(tag_value)
+                response.raise_for_status()
             except Exception as e:
                 warnings.append(f"Unable to download  "
-                                f"{tag_value} - {e}")
+                                f"{tag_value} - {str(e)}")
 
     return OrderedDict(tags=tags, warnings=warnings)
 
