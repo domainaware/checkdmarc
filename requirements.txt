@@ -13,3 +13,4 @@ wheel>=0.35.1
 codecov>=2.1.10
 autopep8
 hatch
+pytest

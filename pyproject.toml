@@ -19,6 +19,8 @@ keywords = [
     "DMARC",
     "DNS",
     "SPF",
+    "BIMI",
+    "MTA-STS"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -38,7 +40,7 @@ dependencies = [
 ]
 
 [project.scripts]
-checkdmarc = "checkdmarc:_main"
+checkdmarc = "checkdmarc._cli:_main"
 
 [project.urls]
 Homepage = "https://github.com/domainaware/checkdmarc"
@@ -46,11 +48,13 @@ Documentation = "https://domainaware.github.io/checkdmarc/"
 Issues = "https://github.com/domainaware/checkdmarc/issues"
 Changelog = "https://github.com/domainaware/checkdmarc/blob/master/CHANGELOG.md"
 
-
 [tool.hatch.version]
-path = "checkdmarc.py"
+path = "checkdmarc/_constants.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "checkdmarc.py",
+    "/checkdmarc",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["checkdmarc"]

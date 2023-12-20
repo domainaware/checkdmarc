@@ -1,6 +1,15 @@
 Changelog
 =========
 
+5.0.0
+-----
+
+- Major refactoring: Change from a single module to a package of modules, with each checked standard as its own package
+- Add support for MTA-STS [RFC 8461](https://www.rfc-editor.org/rfc/rfc8461)
+- Add support for [BIMI](https://www.ietf.org/archive/id/draft-brand-indicators-for-message-identification-04.html)
+  - Specify a BIMI selector using the `--bimi-selector`/`-b` option
+- Various bug fixes
+
 4.8.5
 -----
 
