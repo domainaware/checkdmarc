@@ -302,6 +302,11 @@ def parse_bimi_record(
 
          - ``warnings`` - A ``list`` of warnings
 
+        .. note::
+            This will attempt to download the files at the URLs provided in
+            the BIMI record and will include a warning if the downloads fail,
+            but the file content is not currently analyzed.
+
          .. note::
             ``description`` is only included if
             ``include_tag_descriptions`` is set to ``True``
@@ -311,7 +316,6 @@ def parse_bimi_record(
         :exc:`checkdmarc.bimi.InvalidBIMITag`
         :exc:`checkdmarc.bimi.InvalidBIMITagValue`
         :exc:`checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe`
-
     """
     logging.debug("Parsing the BIMI record")
     session = requests.Session()
@@ -373,6 +377,11 @@ def check_bimi(domain: str, selector: str = "default",
                timeout: float = 2.0) -> OrderedDict:
     """
     Returns a dictionary with a parsed BIMI record or an error.
+
+    .. note::
+            This will attempt to download the files at the URLs provided in
+            the BIMI record and will include a warning if the downloads fail,
+            but the file content is not currently analyzed.
 
     Args:
         domain (str): A domain name

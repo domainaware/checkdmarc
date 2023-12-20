@@ -114,13 +114,17 @@ def check_domains(domains: list[str], parked: bool = False,
             resolver=resolver, timeout=timeout
             )
 
+        mta_sts_mx_patterns = None
         domain_results["mta_sts"] = check_mta_sts(domain,
                                                   nameservers=nameservers,
                                                   resolver=resolver,
                                                   timeout=timeout)
+        if domain_results["mta_sts"]["valid"]:
+            mta_sts_mx_patterns = domain_results["mta_sts"]["policy"]["mx"]
         domain_results["mx"] = check_mx(
             domain,
             approved_mx_hostnames=approved_mx_hostnames,
+            mta_sts_mx_patterns=mta_sts_mx_patterns,
             skip_tls=skip_tls,
             nameservers=nameservers,
             resolver=resolver,

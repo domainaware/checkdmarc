@@ -16,6 +16,7 @@ from expiringdict import ExpiringDict
 
 from checkdmarc.utils import (DNSException,
                               get_a_records, get_reverse_dns, get_mx_records)
+from checkdmarc.mta_sts import mx_in_mta_sts_patterns
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -266,6 +267,7 @@ def test_starttls(hostname: str,
 
 def get_mx_hosts(domain: str, skip_tls: bool = False,
                  approved_hostnames: list[str] = None,
+                 mta_sts_mx_patterns: list[str] = None,
                  parked: bool = False,
                  nameservers: list[str] = None,
                  resolver: dns.resolver.Resolver = None,
@@ -277,6 +279,7 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
         domain (str): A domain name
         skip_tls (bool): Skip STARTTLS testing
         approved_hostnames (list): A list of approved MX hostname substrings
+        mta_sts_mx_patterns (list): A list of MX patterns from MTA-STS
         parked (bool): Indicates that the domains are parked
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
@@ -328,6 +331,10 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                     break
             if not approved:
                 warnings.append(f"Unapproved MX hostname: {hostname}")
+        if mta_sts_mx_patterns:
+            if not mx_in_mta_sts_patterns(hostname, mta_sts_mx_patterns):
+                warnings.append(f"{hostname} is not included in the MTA-STS "
+                                f"policy")
 
         try:
             host["addresses"] = []
@@ -405,6 +412,7 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
 
 
 def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
+             mta_sts_mx_patterns: list[str] = None,
              skip_tls: bool = False,
              nameservers: list[str] = None,
              resolver: dns.resolver.Resolver = None,
@@ -417,6 +425,7 @@ def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
         domain (str): A domain name
         skip_tls (bool): Skip STARTTLS testing
         approved_mx_hostnames (list): A list of approved MX hostname substrings
+        mta_sts_mx_patterns (list): A list of MX patterns from MTA-STS
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
@@ -443,6 +452,7 @@ def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
             domain,
             skip_tls=skip_tls,
             approved_hostnames=approved_mx_hostnames,
+            mta_sts_mx_patterns=mta_sts_mx_patterns,
             nameservers=nameservers, resolver=resolver,
             timeout=timeout)
     except DNSException as error:

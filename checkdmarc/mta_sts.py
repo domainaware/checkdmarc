@@ -449,3 +449,24 @@ def check_mta_sts(domain: str,
         mta_sts_results["error"] = str(error)
 
     return mta_sts_results
+
+
+def mx_in_mta_sts_patterns(mx_hostname: str, mta_sts_mx_patterns: list[str])\
+        -> bool:
+    """
+    Tests is a given MX hostname is covered by a given list of MX patterns
+    from an MTA-STS policy:
+
+    Args:
+        mx_hostname (str): The MX hostname to test
+        mta_sts_mx_patterns (str): The list of MTA-STS MX patterns
+
+    Returns: True if the MX hostname is included, false if not
+    """
+    for pattern in mta_sts_mx_patterns:
+        regex_pattern = pattern.replace(r".", r"\.")
+        regex_pattern = regex_pattern.replace(r"*",
+                                              r"[a-z0-9\-.]+")
+        if len(re.findall(regex_pattern, mx_hostname, re.IGNORECASE)) > 0:
+            return True
+    return False
