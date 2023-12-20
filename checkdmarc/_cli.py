@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""The command line interface"""
+"""TValidates and parses email-related DNS records"""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def _main():
     arg_parser.add_argument("--mx", nargs="+",
                             help="approved MX hostname substrings")
     arg_parser.add_argument("-d", "--descriptions", action="store_true",
-                            help="include descriptions of DMARC tags in "
+                            help="include descriptions of tags in "
                                  "the JSON output")
     arg_parser.add_argument("-f", "--format", default="json",
                             help="specify JSON or CSV screen output format")
@@ -96,7 +96,7 @@ def _main():
                             parked=args.parked,
                             approved_nameservers=args.ns,
                             approved_mx_hostnames=args.mx,
-                            include_dmarc_tag_descriptions=args.descriptions,
+                            include_tag_descriptions=args.descriptions,
                             nameservers=args.nameserver, timeout=args.timeout,
                             bimi_selector=args.bimi_selector,
                             wait=args.wait)

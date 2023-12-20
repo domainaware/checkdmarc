@@ -352,6 +352,7 @@ def parse_bimi_record(
             raise InvalidBIMITag(f"{tag} is not a valid BIMI record tag")
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
+            tags[tag]["name"] = bimi_tags[tag]["name"]
             tags[tag]["description"] = bimi_tags[tag]["description"]
         if tag == "a" and tag_value != "":
             try:
@@ -372,6 +373,7 @@ def parse_bimi_record(
 
 
 def check_bimi(domain: str, selector: str = "default",
+               include_tag_descriptions: bool = False,
                nameservers: list[str] = None,
                resolver: dns.resolver.Resolver = None,
                timeout: float = 2.0) -> OrderedDict:
@@ -386,6 +388,7 @@ def check_bimi(domain: str, selector: str = "default",
     Args:
         domain (str): A domain name
         selector (str): The BIMI selector
+        include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
@@ -415,7 +418,9 @@ def check_bimi(domain: str, selector: str = "default",
             timeout=timeout)
         bimi_results["selector"] = selector
         bimi_results["record"] = bimi_query["record"]
-        parsed_bimi = parse_bimi_record(bimi_results["record"])
+        parsed_bimi = parse_bimi_record(
+            bimi_results["record"],
+            include_tag_descriptions=include_tag_descriptions)
         bimi_results["tags"] = parsed_bimi["tags"]
         bimi_results["warnings"] = parsed_bimi["warnings"]
     except BIMIError as error:
