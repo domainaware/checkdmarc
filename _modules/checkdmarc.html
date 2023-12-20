@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc &mdash; checkdmarc 5.0.0 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 5.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=92fd9be5" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
@@ -14,7 +14,7 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../_static/documentation_options.js?v=ce74c6a2"></script>
+        <script src="../_static/documentation_options.js?v=6a0c42bb"></script>
         <script src="../_static/doctools.js?v=888ff710"></script>
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -34,7 +34,7 @@
             checkdmarc
           </a>
               <div class="version">
-                5.0.0
+                5.0.1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -124,7 +124,7 @@
                   <span class="n">approved_mx_hostnames</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">skip_tls</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                   <span class="n">bimi_selector</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                  <span class="n">include_dmarc_tag_descriptions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                  <span class="n">include_tag_descriptions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                   <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
@@ -140,7 +140,7 @@
 <span class="sd">        approved_mx_hostnames (list): A list of approved MX hostname</span>
 <span class="sd">        skip_tls (bool): Skip STARTTLS testing</span>
 <span class="sd">        bimi_selector (str): The BIMI selector to test</span>
-<span class="sd">        include_dmarc_tag_descriptions (bool): Include descriptions of DMARC</span>
+<span class="sd">        include_tag_descriptions (bool): Include descriptions of</span>
 <span class="sd">                                               tags and/or tag values in the</span>
 <span class="sd">                                               results</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
@@ -221,18 +221,20 @@
         <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">check_dmarc</span><span class="p">(</span>
             <span class="n">domain</span><span class="p">,</span>
             <span class="n">parked</span><span class="o">=</span><span class="n">parked</span><span class="p">,</span>
-            <span class="n">include_dmarc_tag_descriptions</span><span class="o">=</span><span class="n">include_dmarc_tag_descriptions</span><span class="p">,</span>
+            <span class="n">include_dmarc_tag_descriptions</span><span class="o">=</span><span class="n">include_tag_descriptions</span><span class="p">,</span>
             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">bimi_selector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;bimi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">check_bimi</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span>
-                                                <span class="n">selector</span><span class="o">=</span><span class="n">bimi_selector</span><span class="p">,</span>
-                                                <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                                                <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
-                                                <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;bimi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">check_bimi</span><span class="p">(</span>
+                <span class="n">domain</span><span class="p">,</span>
+                <span class="n">selector</span><span class="o">=</span><span class="n">bimi_selector</span><span class="p">,</span>
+                <span class="n">include_tag_descriptions</span><span class="o">=</span><span class="n">include_tag_descriptions</span><span class="p">,</span>
+                <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
 
         <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_results</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">wait</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
@@ -326,6 +328,7 @@
         <span class="n">row</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="n">ns</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;ns&quot;</span><span class="p">]</span>
         <span class="n">mx</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span>
+        <span class="n">_mta_sts</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;mta_sts&quot;</span><span class="p">]</span>
         <span class="n">_spf</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">]</span>
         <span class="n">_dmarc</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">]</span>
         <span class="n">row</span><span class="p">[</span><span class="s2">&quot;domain&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;domain&quot;</span><span class="p">]</span>
@@ -336,6 +339,24 @@
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;ns_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ns</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;ns_warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ns</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">_mta_sts</span><span class="p">:</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mta_sts_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_mta_sts</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mta_sts_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_mta_sts</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mta_sts_mode&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_mta_sts</span><span class="p">[</span><span class="s2">&quot;policy&quot;</span><span class="p">][</span><span class="s2">&quot;mode&quot;</span><span class="p">]</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mta_sts_max_age&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_mta_sts</span><span class="p">[</span><span class="s2">&quot;policy&quot;</span><span class="p">][</span><span class="s2">&quot;max_age&quot;</span><span class="p">]</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mta_sts_mx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_mta_sts</span><span class="p">[</span><span class="s2">&quot;policy&quot;</span><span class="p">][</span><span class="s2">&quot;mx&quot;</span><span class="p">])</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mta_sts_warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_mta_sts</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s2">&quot;bimi&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+            <span class="n">_bimi</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;bimi&quot;</span><span class="p">]</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;bimi_warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_bimi</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">])</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;bimi_selector&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_bimi</span><span class="p">[</span><span class="s2">&quot;selector&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">_bimi</span><span class="p">:</span>
+                <span class="n">row</span><span class="p">[</span><span class="s2">&quot;bimi_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_bimi</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s2">&quot;l&quot;</span> <span class="ow">in</span> <span class="n">_bimi</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]:</span>
+                    <span class="n">row</span><span class="p">[</span><span class="s2">&quot;bimi_l&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_bimi</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;l&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s2">&quot;a&quot;</span> <span class="ow">in</span> <span class="n">_bimi</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]:</span>
+                    <span class="n">row</span><span class="p">[</span><span class="s2">&quot;bimi_a&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_bimi</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;a&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
         <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span>
             <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;preference&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">mx</span><span class="p">[</span><span class="s2">&quot;hosts&quot;</span><span class="p">])))</span>
         <span class="n">tls</span> <span class="o">=</span> <span class="kc">None</span>
@@ -425,9 +446,10 @@
               <span class="s2">&quot;dmarc_adkim&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_aspf&quot;</span><span class="p">,</span>
               <span class="s2">&quot;dmarc_fo&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_p&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_pct&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_rf&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_ri&quot;</span><span class="p">,</span>
               <span class="s2">&quot;dmarc_rua&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_ruf&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_sp&quot;</span><span class="p">,</span>
-              <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;tls&quot;</span><span class="p">,</span> <span class="s2">&quot;starttls&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_record&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_record&quot;</span><span class="p">,</span>
-              <span class="s2">&quot;dmarc_record_location&quot;</span><span class="p">,</span> <span class="s2">&quot;mx_error&quot;</span><span class="p">,</span>
-              <span class="s2">&quot;mx_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_error&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;tls&quot;</span><span class="p">,</span> <span class="s2">&quot;starttls&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_record&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_record&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;dmarc_record_location&quot;</span><span class="p">,</span> <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;mx_error&quot;</span><span class="p">,</span> <span class="s2">&quot;mx_warnings&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;mta_sts_id&quot;</span><span class="p">,</span> <span class="s2">&quot;mta_sts_mode&quot;</span><span class="p">,</span> <span class="s2">&quot;mta_sts_max_age&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;mta_sts_mx&quot;</span><span class="p">,</span> <span class="s2">&quot;mta_sts_error&quot;</span><span class="p">,</span> <span class="s2">&quot;mta_sts_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;spf_error&quot;</span><span class="p">,</span>
               <span class="s2">&quot;spf_warnings&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_error&quot;</span><span class="p">,</span> <span class="s2">&quot;dmarc_warnings&quot;</span><span class="p">,</span>
               <span class="s2">&quot;ns&quot;</span><span class="p">,</span> <span class="s2">&quot;ns_error&quot;</span><span class="p">,</span> <span class="s2">&quot;ns_warnings&quot;</span><span class="p">]</span>
     <span class="n">output</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">(</span><span class="n">newline</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>

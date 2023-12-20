@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CLI &mdash; checkdmarc 5.0.0 documentation</title>
+  <title>CLI &mdash; checkdmarc 5.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -15,7 +15,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=ce74c6a2"></script>
+        <script src="_static/documentation_options.js?v=6a0c42bb"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -36,7 +36,7 @@
             checkdmarc
           </a>
               <div class="version">
-                5.0.0
+                5.0.1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -81,39 +81,36 @@
              
   <section class="tex2jax_ignore mathjax_ignore" id="cli">
 <h1>CLI<a class="headerlink" href="#cli" title="Link to this heading"></a></h1>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: checkdmarc  [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d]
-                    [-f FORMAT] [-o OUTPUT [OUTPUT ...]]
-                    [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-v]
-                    [-w WAIT] [--skip-tls] [--debug]
-                    domain [domain ...]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: checkdmarc [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d] [-f FORMAT] [-o OUTPUT [OUTPUT ...]]
+                  [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-b BIMI_SELECTOR] [-v] [-w WAIT] [--skip-tls]
+                  [--debug]
+                  domain [domain ...]
 
-  Validates and parses SPF amd DMARC DNS records
+Validates and parses email-related DNS records
 
-  positional arguments:
-    domain                one or more domains, or a single path to a file
-                          containing a list of domains
+positional arguments:
+  domain                one or more domains, or a single path to a file containing a list of domains
 
-  optional arguments:
-    -h, --help            show this help message and exit
-    -p, --parked          indicate that the domains are parked
-    --ns NS [NS ...]      approved nameserver substrings
-    --mx MX [MX ...]      approved MX hostname substrings
-    -d, --descriptions    include descriptions of DMARC tags in the JSON output
-    -f FORMAT, --format FORMAT
-                          specify JSON or CSV screen output format
-    -o OUTPUT [OUTPUT ...], --output OUTPUT [OUTPUT ...]
-                          one or more file paths to output to (must end in .json
-                          or .csv) (silences screen output)
-    -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
-                          nameservers to query (Default is Cloudflare&#39;s
-    -t TIMEOUT, --timeout TIMEOUT
-                          number of seconds to wait for an answer from DNS
-                          (default 2.0)
-    -v, --version         show program&#39;s version number and exit
-    -w WAIT, --wait WAIT  number of seconds to wait between checking domains
-                          (default 0.0)
-    --skip-tls            skip TLS/SSL testing
-    --debug               enable debugging output
+options:
+  -h, --help            show this help message and exit
+  -p, --parked          indicate that the domains are parked
+  --ns NS [NS ...]      approved nameserver substrings
+  --mx MX [MX ...]      approved MX hostname substrings
+  -d, --descriptions    include descriptions of tags in the JSON output
+  -f FORMAT, --format FORMAT
+                        specify JSON or CSV screen output format
+  -o OUTPUT [OUTPUT ...], --output OUTPUT [OUTPUT ...]
+                        one or more file paths to output to (must end in .json or .csv) (silences screen output)
+  -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
+                        nameservers to query
+  -t TIMEOUT, --timeout TIMEOUT
+                        number of seconds to wait for an answer from DNS (default 2.0)
+  -b BIMI_SELECTOR, --bimi-selector BIMI_SELECTOR
+                        Check for a BIMI record at the provided selector
+  -v, --version         show program&#39;s version number and exit
+  -w WAIT, --wait WAIT  number of seconds to wait between checking domains (default 0.0)
+  --skip-tls            skip TLS/SSL testing
+  --debug               enable debugging output
 </pre></div>
 </div>
 <section id="example">
