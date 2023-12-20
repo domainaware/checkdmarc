@@ -6,8 +6,7 @@ from __future__ import annotations
 import logging
 
 import dns
-
-from checkdmarc.utils import get_base_domain
+import dns.dnssec
 
 
 """Copyright 2019-2023 Sean Whalen
@@ -40,8 +39,6 @@ def test_dnssec(domain: str, nameservers: list[str] = None,
     """
     if nameservers is None:
         nameservers = dns.resolver.Resolver().nameservers
-
-    domain = get_base_domain(domain)
 
     request = dns.message.make_query(domain,
                                      dns.rdatatype.DNSKEY,

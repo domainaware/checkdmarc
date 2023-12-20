@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.0.2
+-----
+
+- Fix DNSSEC test
+  - Add missing `import dns.dnssec`
+  - Always use the actual subdomain or domain provided (close #114)
+
 5.0.1
 -----
 
