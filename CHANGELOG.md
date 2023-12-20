@@ -1,6 +1,16 @@
 Changelog
 =========
 
+5.0.1
+-----
+
+- Include MTA-STS and BIMI results in CSV output
+- Renamed `include_dmarc_tag_descriptions` parameter in `checkdmarc.check_domains()` to `include_tag_descriptions`
+- Added the `include_tag_descriptions` parameter to `checkdmarc.bimi.check_bimi()`
+- Ignore encoding value when checking the `Content-Type` header during the MTA-STS policy download
+- Added the exception class `MTASTSPolicyDownloadError`
+- Update documentation
+
 5.0.0
 -----
 

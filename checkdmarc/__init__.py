@@ -45,7 +45,7 @@ def check_domains(domains: list[str], parked: bool = False,
                   approved_mx_hostnames: bool = None,
                   skip_tls: bool = False,
                   bimi_selector: str = None,
-                  include_dmarc_tag_descriptions: bool = False,
+                  include_tag_descriptions: bool = False,
                   nameservers: list[str] = None,
                   resolver: dns.resolver.Resolver = None,
                   timeout: float = 2.0,
@@ -61,7 +61,7 @@ def check_domains(domains: list[str], parked: bool = False,
         approved_mx_hostnames (list): A list of approved MX hostname
         skip_tls (bool): Skip STARTTLS testing
         bimi_selector (str): The BIMI selector to test
-        include_dmarc_tag_descriptions (bool): Include descriptions of DMARC
+        include_tag_descriptions (bool): Include descriptions of
                                                tags and/or tag values in the
                                                results
         nameservers (list): A list of nameservers to query
@@ -142,18 +142,20 @@ def check_domains(domains: list[str], parked: bool = False,
         domain_results["dmarc"] = check_dmarc(
             domain,
             parked=parked,
-            include_dmarc_tag_descriptions=include_dmarc_tag_descriptions,
+            include_dmarc_tag_descriptions=include_tag_descriptions,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout
             )
 
         if bimi_selector is not None:
-            domain_results["bimi"] = check_bimi(domain,
-                                                selector=bimi_selector,
-                                                nameservers=nameservers,
-                                                resolver=resolver,
-                                                timeout=timeout)
+            domain_results["bimi"] = check_bimi(
+                domain,
+                selector=bimi_selector,
+                include_tag_descriptions=include_tag_descriptions,
+                nameservers=nameservers,
+                resolver=resolver,
+                timeout=timeout)
 
         results.append(domain_results)
         if wait > 0.0:
@@ -238,6 +240,7 @@ def results_to_csv_rows(results: Union[dict, list[dict]]) -> list[dict]:
         row = dict()
         ns = result["ns"]
         mx = result["mx"]
+        _mta_sts = result["mta_sts"]
         _spf = result["spf"]
         _dmarc = result["dmarc"]
         row["domain"] = result["domain"]
@@ -248,6 +251,24 @@ def results_to_csv_rows(results: Union[dict, list[dict]]) -> list[dict]:
             row["ns_error"] = ns["error"]
         else:
             row["ns_warnings"] = "|".join(ns["warnings"])
+        if "error" in _mta_sts:
+            row["mta_sts_error"] = _mta_sts["error"]
+        else:
+            row["mta_sts_id"] = _mta_sts["id"]
+            row["mta_sts_mode"] = _mta_sts["policy"]["mode"]
+            row["mta_sts_max_age"] = _mta_sts["policy"]["max_age"]
+            row["mta_sts_mx"] = "|".join(_mta_sts["policy"]["mx"])
+            row["mta_sts_warnings"] = "|".join(_mta_sts["warnings"])
+        if "bimi" in result:
+            _bimi = result["bimi"]
+            row["bimi_warnings"] = "|".join(_bimi["warnings"])
+            row["bimi_selector"] = _bimi["selector"]
+            if "error" in _bimi:
+                row["bimi_error"] = _bimi["error"]
+                if "l" in _bimi["tags"]:
+                    row["bimi_l"] = _bimi["tags"]["l"]["value"]
+                if "a" in _bimi["tags"]:
+                    row["bimi_a"] = _bimi["tags"]["a"]["value"]
         row["mx"] = "|".join(list(
             map(lambda r: f"{r['preference']}, {r['hostname']}", mx["hosts"])))
         tls = None
@@ -334,9 +355,10 @@ def results_to_csv(results: dict) -> str:
               "dmarc_adkim", "dmarc_aspf",
               "dmarc_fo", "dmarc_p", "dmarc_pct", "dmarc_rf", "dmarc_ri",
               "dmarc_rua", "dmarc_ruf", "dmarc_sp",
-              "mx", "tls", "starttls", "spf_record", "dmarc_record",
-              "dmarc_record_location", "mx_error",
-              "mx_warnings", "spf_error",
+              "tls", "starttls", "spf_record", "dmarc_record",
+              "dmarc_record_location", "mx", "mx_error", "mx_warnings",
+              "mta_sts_id", "mta_sts_mode", "mta_sts_max_age",
+              "mta_sts_mx", "mta_sts_error", "mta_sts_warnings", "spf_error",
               "spf_warnings", "dmarc_error", "dmarc_warnings",
               "ns", "ns_error", "ns_warnings"]
     output = StringIO(newline="\n")

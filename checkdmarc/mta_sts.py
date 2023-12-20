@@ -41,10 +41,6 @@ MTA_STS_MX_REGEX_STRING = r"[a-z0-9\-*.]+"
 MTA_STS_MX_REGEX = re.compile(MTA_STS_MX_REGEX_STRING, re.IGNORECASE)
 
 
-class _MTASTSWarning(Exception):
-    """Raised when a non-fatal MTA-STS error occurs"""
-
-
 class MTASTSError(Exception):
     """Raised when a fatal MTA-STS error occurs"""
     def __init__(self, msg: str, data: dict = None):
@@ -96,7 +92,11 @@ class MultipleMTASTSRecords(MTASTSError):
 
 
 class MTASTSPolicyError(MTASTSError):
-    """Raised when the MTA-STS policy cannot be obtained or parsed"""
+    """Raised when the MTA-STS policy cannot be downloaded or parsed"""
+
+
+class MTASTSPolicyDownloadError(MTASTSPolicyError):
+    """Raised when the MTA-STS policy cannot be downloaded"""
 
 
 class MTASTSPolicySyntaxError(MTASTSPolicyError):
@@ -158,9 +158,9 @@ def query_mta_sts_record(domain: str,
         :exc:`checkdmarc.mta_sts.MultipleMTASTSRecords`
 
     """
+    domain = domain.lower()
     logging.debug(f"Checking for a MTA-STS record on {domain}")
     warnings = []
-    domain = domain.lower()
     target = f"_mta-sts.{domain}"
     sts_record = None
     sts_record_count = 0
@@ -296,7 +296,7 @@ def download_mta_sts_policy(domain: str) -> OrderedDict:
                      - ``warnings`` - A list of any warning conditions found
 
     Raises:
-        :exc:`checkdmarc.mta_sts.MTASTSPolicyError`
+        :exc:`checkdmarc.mta_sts.MTASTSPolicyDownloadError`
     """
     warnings = []
     headers = {"User-Agent": USER_AGENT}
@@ -309,7 +309,8 @@ def download_mta_sts_policy(domain: str) -> OrderedDict:
         response = session.get(url)
         response.raise_for_status()
         if "Content-Type" in response.headers:
-            content_type = response.headers["Content-Type"]
+            content_type = response.headers["Content-Type"].split(";")[0]
+            content_type = content_type.strip()
             if content_type != expected_content_type:
                 warnings.append(f"Content-Type header should be "
                                 f"{expected_content_type} not {content_type}")
@@ -318,7 +319,7 @@ def download_mta_sts_policy(domain: str) -> OrderedDict:
                             f"be set to {expected_content_type}")
 
     except Exception as e:
-        raise MTASTSPolicyError(str(e))
+        raise MTASTSPolicyDownloadError(str(e))
 
     return OrderedDict(policy=response.text, warnings=warnings)
 
