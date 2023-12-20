@@ -49,7 +49,7 @@ Issues = "https://github.com/domainaware/checkdmarc/issues"
 Changelog = "https://github.com/domainaware/checkdmarc/blob/master/CHANGELOG.md"
 
 [tool.hatch.version]
-path = "checkdmarc/__init__.py"
+path = "checkdmarc/_constants.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
