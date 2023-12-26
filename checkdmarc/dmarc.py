@@ -394,18 +394,18 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
     """
     domain = domain.lower()
     target = f"_dmarc.{domain}"
+    txt_prefix = "v=DMARC1"
     dmarc_record = None
     dmarc_record_count = 0
     unrelated_records = []
-    dmarc_prefix = "v=DMARC1"
 
     try:
         records = query_dns(target, "TXT", nameservers=nameservers,
                             resolver=resolver, timeout=timeout)
         for record in records:
-            if record.startswith(dmarc_prefix):
+            if record.startswith(txt_prefix):
                 dmarc_record_count += 1
-            elif record.strip().startswith("v=DMARC1"):
+            elif record.strip().startswith(txt_prefix):
                 raise DMARCRecordStartsWithWhitespace(
                     "Found a DMARC record that starts with whitespace. "
                     "Please remove the whitespace, as some implementations "
@@ -426,7 +426,7 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
                     "removed, as some receivers may not expect to find "
                     f"unrelated TXT records at {target}\n\n{ur_str}")
         dmarc_record = [record for record in records if record.startswith(
-            dmarc_prefix)][0]
+            txt_prefix)][0]
 
     except dns.resolver.NoAnswer:
         try:
@@ -434,7 +434,7 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
                                 nameservers=nameservers, resolver=resolver,
                                 timeout=timeout)
             for record in records:
-                if record.startswith("v=DMARC1"):
+                if record.startswith(txt_prefix):
                     raise DMARCRecordInWrongLocation(
                         "The DMARC record must be located at "
                         f"{target}, not {domain}")

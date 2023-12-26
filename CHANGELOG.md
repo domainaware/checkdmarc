@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.1.0
+-----
+
+- Add support for parsing SMTP TLS Reporting ([RFC8460](https://www.rfc-editor.org/rfc/rfc8460.html)) DNS records
+
 5.0.2
 -----
 

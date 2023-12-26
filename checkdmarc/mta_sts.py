@@ -159,9 +159,10 @@ def query_mta_sts_record(domain: str,
 
     """
     domain = domain.lower()
-    logging.debug(f"Checking for a MTA-STS record on {domain}")
+    logging.debug(f"Checking for an MTA-STS record on {domain}")
     warnings = []
     target = f"_mta-sts.{domain}"
+    txt_prefix = "v=STSv1"
     sts_record = None
     sts_record_count = 0
     unrelated_records = []
@@ -170,7 +171,7 @@ def query_mta_sts_record(domain: str,
         records = query_dns(target, "TXT", nameservers=nameservers,
                             resolver=resolver, timeout=timeout)
         for record in records:
-            if record.startswith("v=STSv1"):
+            if record.startswith(txt_prefix):
                 sts_record_count += 1
             else:
                 unrelated_records.append(record)
@@ -193,7 +194,7 @@ def query_mta_sts_record(domain: str,
                                 nameservers=nameservers, resolver=resolver,
                                 timeout=timeout)
             for record in records:
-                if record.startswith("v=STS1"):
+                if record.startswith(txt_prefix):
                     raise MTASTSRecordInWrongLocation(
                         "The MTA-STS record must be located at "
                         f"{target}, not {domain}")
