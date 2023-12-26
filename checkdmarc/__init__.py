@@ -21,6 +21,7 @@ from checkdmarc.smtp import check_mx
 from checkdmarc.spf import check_spf
 from checkdmarc.dmarc import check_dmarc
 from checkdmarc.bimi import check_bimi
+from checkdmarc.smtp_tls_reporting import check_smtp_tls_reporting
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -148,6 +149,13 @@ def check_domains(domains: list[str], parked: bool = False,
             timeout=timeout
             )
 
+        domain_results["smtp_tls_reporting"] = check_smtp_tls_reporting(
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout
+        )
+
         if bimi_selector is not None:
             domain_results["bimi"] = check_bimi(
                 domain,
@@ -247,6 +255,7 @@ def results_to_csv_rows(results: Union[dict, list[dict]]) -> list[dict]:
         row["base_domain"] = result["base_domain"]
         row["dnssec"] = result["dnssec"]
         row["ns"] = "|".join(ns["hostnames"])
+        _smtp_tls_reporting = result["smtp_tls_reporting"]
         if "error" in ns:
             row["ns_error"] = ns["error"]
         else:
@@ -337,6 +346,16 @@ def results_to_csv_rows(results: Union[dict, list[dict]]) -> list[dict]:
                     u["address"]), addresses))
                 row["dmarc_ruf"] = "|".join(addresses)
             row["dmarc_warnings"] = "|".join(_dmarc["warnings"])
+        if "error" in _smtp_tls_reporting:
+            row["smtp_tls_reporting_valid"] = False
+            row["smtp_tls_reporting_error"] = _smtp_tls_reporting["error"]
+        else:
+            row["smtp_tls_reporting_valid"] = True
+            row["smtp_tls_reporting_rua"] = "|".join(_smtp_tls_reporting[
+                                                         "tags"]["rua"][
+                                                         "value"])
+            row["smtp_tls_reporting_warnings"] = _smtp_tls_reporting[
+                "warnings"]
         rows.append(row)
     return rows
 
@@ -358,9 +377,11 @@ def results_to_csv(results: dict) -> str:
               "tls", "starttls", "spf_record", "dmarc_record",
               "dmarc_record_location", "mx", "mx_error", "mx_warnings",
               "mta_sts_id", "mta_sts_mode", "mta_sts_max_age",
+              "smtp_tls_reporting_valid", "smtp_tls_reporting_rua",
               "mta_sts_mx", "mta_sts_error", "mta_sts_warnings", "spf_error",
               "spf_warnings", "dmarc_error", "dmarc_warnings",
-              "ns", "ns_error", "ns_warnings"]
+              "ns", "ns_error", "ns_warnings",
+              "smtp_tls_reporting_error", "smtp_tls_reporting_warnings"]
     output = StringIO(newline="\n")
     writer = DictWriter(output, fieldnames=fields)
     writer.writeheader()

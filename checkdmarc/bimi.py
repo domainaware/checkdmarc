@@ -168,6 +168,7 @@ def _query_bimi_record(domain: str, selector: str = "default",
     """
     domain = domain.lower()
     target = f"{selector}._bimi.{domain}"
+    txt_prefix = "v=BIMI1"
     bimi_record = None
     bimi_record_count = 0
     unrelated_records = []
@@ -176,7 +177,7 @@ def _query_bimi_record(domain: str, selector: str = "default",
         records = query_dns(target, "TXT", nameservers=nameservers,
                             resolver=resolver, timeout=timeout)
         for record in records:
-            if record.startswith("v=BIMI1"):
+            if record.startswith(txt_prefix):
                 bimi_record_count += 1
             else:
                 unrelated_records.append(record)
@@ -199,7 +200,7 @@ def _query_bimi_record(domain: str, selector: str = "default",
                                 nameservers=nameservers, resolver=resolver,
                                 timeout=timeout)
             for record in records:
-                if record.startswith("v=BIMI1"):
+                if record.startswith(txt_prefix):
                     raise BIMIRecordInWrongLocation(
                         "The BIMI record must be located at "
                         f"{target}, not {domain}")

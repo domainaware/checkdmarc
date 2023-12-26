@@ -152,6 +152,7 @@ def query_spf_record(domain: str,
         :exc:`checkdmarc.SPFRecordNotFound`
     """
     logging.debug(f"Checking for a SPF record on {domain}")
+    txt_prefix = "v=spf1"
     warnings = []
     spf_type_records = []
     spf_txt_records = []
@@ -174,7 +175,7 @@ def query_spf_record(domain: str,
                             resolver=resolver, timeout=timeout)
         spf_record = None
         for record in answers:
-            if record.startswith("v=spf1"):
+            if record.startswith(txt_prefix):
                 spf_txt_records.append(record)
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords(
