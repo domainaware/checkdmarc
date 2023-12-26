@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; checkdmarc 5.0.2 documentation</title>
+  <title>API &mdash; checkdmarc 5.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -15,7 +15,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=5df4c8d1"></script>
+        <script src="_static/documentation_options.js?v=bfa18cfb"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -37,7 +37,7 @@
             checkdmarc
           </a>
               <div class="version">
-                5.0.2
+                5.1.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -124,14 +124,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.mta_sts.query_mta_sts_record"><code class="docutils literal notranslate"><span class="pre">query_mta_sts_record()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#module-checkdmarc.smtp">checkdmarc.smtp</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.smtp.SMTPError"><code class="docutils literal notranslate"><span class="pre">SMTPError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.smtp.check_mx"><code class="docutils literal notranslate"><span class="pre">check_mx()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.smtp.get_mx_hosts"><code class="docutils literal notranslate"><span class="pre">get_mx_hosts()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.smtp.test_starttls"><code class="docutils literal notranslate"><span class="pre">test_starttls()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.smtp.test_tls"><code class="docutils literal notranslate"><span class="pre">test_tls()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#checkdmarc-smtp-tls-reporting">checkdmarc.smtp_tls_reporting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-checkdmarc.spf">checkdmarc.spf</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.spf.MultipleSPFRTXTRecords"><code class="docutils literal notranslate"><span class="pre">MultipleSPFRTXTRecords</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.spf.SPFError"><code class="docutils literal notranslate"><span class="pre">SPFError</span></code></a></li>
@@ -222,7 +215,7 @@ requests</p></li>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">domain</span></code> - The domain name</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">base_domain</span></code> The base domain</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">mx</span></code> - See <a class="reference internal" href="#checkdmarc.smtp.get_mx_hosts" title="checkdmarc.smtp.get_mx_hosts"><code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.smtp.get_mx_hosts()</span></code></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mx</span></code> - See <code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.smtp.get_mx_hosts()</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">spf</span></code> -  A <code class="docutils literal notranslate"><span class="pre">valid</span></code> flag, plus the output of
 <a class="reference internal" href="#checkdmarc.spf.parse_spf_record" title="checkdmarc.spf.parse_spf_record"><code class="xref py py-func docutils literal notranslate"><span class="pre">checkdmarc.spf.parse_spf_record()</span></code></a> or an <code class="docutils literal notranslate"><span class="pre">error</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dmarc</span></code> - A <code class="docutils literal notranslate"><span class="pre">valid</span></code> flag, plus the output of
@@ -1448,145 +1441,17 @@ requests</p></li>
 </dd></dl>
 
 </section>
-<section id="module-checkdmarc.smtp">
-<span id="checkdmarc-smtp"></span><h2>checkdmarc.smtp<a class="headerlink" href="#module-checkdmarc.smtp" title="Link to this heading"></a></h2>
-<p>SMTP tests</p>
-<dl class="py exception">
-<dt class="sig sig-object py" id="checkdmarc.smtp.SMTPError">
-<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">checkdmarc.smtp.</span></span><span class="sig-name descname"><span class="pre">SMTPError</span></span><a class="reference internal" href="_modules/checkdmarc/smtp.html#SMTPError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.smtp.SMTPError" title="Link to this definition"></a></dt>
-<dd><p>Raised when SMTP error occurs</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="checkdmarc.smtp.check_mx">
-<span class="sig-prename descclassname"><span class="pre">checkdmarc.smtp.</span></span><span class="sig-name descname"><span class="pre">check_mx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approved_mx_hostnames</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mta_sts_mx_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_tls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Resolver</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">OrderedDict</span></span></span><a class="reference internal" href="_modules/checkdmarc/smtp.html#check_mx"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.smtp.check_mx" title="Link to this definition"></a></dt>
-<dd><p>Gets MX hostname and their addresses, or an empty list of hosts and an
-error if a DNS error occurs</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
-<li><p><strong>skip_tls</strong> (<em>bool</em>) – Skip STARTTLS testing</p></li>
-<li><p><strong>approved_mx_hostnames</strong> (<em>list</em>) – A list of approved MX hostname substrings</p></li>
-<li><p><strong>mta_sts_mx_patterns</strong> (<em>list</em>) – A list of MX patterns from MTA-STS</p></li>
-<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
-<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
-requests</p></li>
-<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><p>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</p>
+<section id="checkdmarc-smtp-tls-reporting">
+<h2>checkdmarc.smtp_tls_reporting<a class="headerlink" href="#checkdmarc-smtp-tls-reporting" title="Link to this heading"></a></h2>
+<p>## checkdmarc.smtp</p>
+<p><a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>{eval-rst}
+.. automodule:: checkdmarc.smtp</p>
 <blockquote>
-<div><blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">hosts</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with keys of</p>
-<ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">hostname</span></code> - A hostname</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">addresses</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of IP addresses</p></li>
-</ul>
-</li>
-<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of MX resolution warnings</p></li>
-</ul>
+<div><dl class="field-list simple">
+<dt class="field-odd">members<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
 </div></blockquote>
-<p>If a DNS error occurs, the dictionary will have the
-following keys:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">hosts</span></code> - An empty list</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">error</span></code>  - An error message</p></li>
-</ul>
-</div></blockquote>
-</div></blockquote>
-</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>OrderedDict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="checkdmarc.smtp.get_mx_hosts">
-<span class="sig-prename descclassname"><span class="pre">checkdmarc.smtp.</span></span><span class="sig-name descname"><span class="pre">get_mx_hosts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_tls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approved_hostnames</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mta_sts_mx_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Resolver</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc/smtp.html#get_mx_hosts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.smtp.get_mx_hosts" title="Link to this definition"></a></dt>
-<dd><p>Gets MX hostname and their addresses</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
-<li><p><strong>skip_tls</strong> (<em>bool</em>) – Skip STARTTLS testing</p></li>
-<li><p><strong>approved_hostnames</strong> (<em>list</em>) – A list of approved MX hostname substrings</p></li>
-<li><p><strong>mta_sts_mx_patterns</strong> (<em>list</em>) – A list of MX patterns from MTA-STS</p></li>
-<li><p><strong>parked</strong> (<em>bool</em>) – Indicates that the domains are parked</p></li>
-<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
-<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
-requests</p></li>
-<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">hosts</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with keys of</p>
-<ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">hostname</span></code> - A hostname</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">addresses</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of IP addresses</p></li>
-</ul>
-</li>
-<li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of MX resolution warnings</p></li>
-</ul>
-</dd>
-</dl>
-</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>OrderedDict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="checkdmarc.smtp.test_starttls">
-<span class="sig-prename descclassname"><span class="pre">checkdmarc.smtp.</span></span><span class="sig-name descname"><span class="pre">test_starttls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssl_context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SSLContext</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ExpiringDict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/checkdmarc/smtp.html#test_starttls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.smtp.test_starttls" title="Link to this definition"></a></dt>
-<dd><p>Attempt to connect to an SMTP server and validate STARTTLS support</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>hostname</strong> (<em>str</em>) – The hostname</p></li>
-<li><p><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</p></li>
-<li><p><strong>ssl_context</strong> – A SSL context</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>STARTTLS supported</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="checkdmarc.smtp.test_tls">
-<span class="sig-prename descclassname"><span class="pre">checkdmarc.smtp.</span></span><span class="sig-name descname"><span class="pre">test_tls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssl_context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SSLContext</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ExpiringDict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/checkdmarc/smtp.html#test_tls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.smtp.test_tls" title="Link to this definition"></a></dt>
-<dd><p>Attempt to connect to an SMTP server port 465 and validate TLS/SSL support</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>hostname</strong> (<em>str</em>) – The hostname</p></li>
-<li><p><strong>cache</strong> (<em>ExpiringDict</em>) – Cache storage</p></li>
-<li><p><strong>ssl_context</strong> (<em>SSLContext</em>) – A SSL context</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>TLS supported</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
 </section>
 <section id="module-checkdmarc.spf">
 <span id="checkdmarc-spf"></span><h2>checkdmarc.spf<a class="headerlink" href="#module-checkdmarc.spf" title="Link to this heading"></a></h2>
