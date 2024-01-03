@@ -59,3 +59,39 @@ def test_dnssec(domain: str, nameservers: list[str] = None,
             logging.debug(f"DNSSEC query error: {e}")
 
     return False
+
+
+def get_tlsa_records(hostname: str, nameservers: list[str] = None,
+              timeout: float = 2.0) -> bool:
+    """
+    Check for TLSA records for SMTP on the given hostname
+
+    Args:
+        hostname (str): The domain to check
+        nameservers (list): A list of nameservers to query
+        timeout (float): Timeout in seconds
+
+    Returns:
+        bool: DNSSEC status
+    """
+    if nameservers is None:
+        nameservers = dns.resolver.Resolver().nameservers
+
+    request = dns.message.make_query(f"_25._tcp.{hostname}",
+                                     dns.rdatatype.TLSA,
+                                     want_dnssec=True)
+    for nameserver in nameservers:
+        try:
+            response = dns.query.udp(request, nameserver, timeout=timeout)
+            if response is not None:
+                answer = response.answer
+                if len(answer) != 2:
+                    return False
+                rrset = answer[0]
+                rrsig = answer[1]
+                name = dns.name.from_text(f'{hostname}.')
+                dns.dnssec.validate(rrset, rrsig, {name: rrset})
+                tlsa_records = rrset.items.keys()
+                return tlsa_records
+        except Exception as e:
+            logging.debug(f"TLSA query error: {e}")
