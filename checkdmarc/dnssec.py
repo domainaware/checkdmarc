@@ -66,6 +66,7 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
             if response is not None:
                 answer = response.answer
                 if len(answer) != 2:
+                    logging.debug(f"No DNSKEY records found at {domain}")
                     base_domain = get_base_domain(domain)
                     if domain != base_domain:
                         return get_dnskey(base_domain)
@@ -161,6 +162,10 @@ def get_tlsa_records(hostname: str, nameservers: list[str] = None,
                     nameservers=nameservers,
                     timeout=timeout
                 )
+                if dnskey is None:
+                    logging.debug(f"Found TLSA records but not a DNSKEY "
+                                  f"record to verify them")
+                    return tlsa_records
                 rrset = answer[0]
                 rrsig = answer[1]
                 dns.dnssec.validate(rrset, rrsig, dnskey)
