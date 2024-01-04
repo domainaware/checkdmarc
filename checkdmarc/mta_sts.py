@@ -349,7 +349,7 @@ def parse_mta_sts_policy(policy: str) -> OrderedDict:
     acceptable_keys = required_keys.copy()
     acceptable_keys.append("mx")
     if "\n" in policy and "\r\n" not in policy:
-        warnings.append("MTA-STS policy lines should end with CRLF, not LF")
+        warnings.append("MTA-STS policy lines should end with CRLF not LF")
         policy = policy.replace("\n", "\r\n")
     lines = policy.split("\r\n")
     for i in range(len(lines)):
