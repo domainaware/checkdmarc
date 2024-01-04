@@ -1,6 +1,12 @@
 Changelog
 =========
 
+5.2.1
+-----
+
+- Fix bug where TLSA records would not be checked in some cases
+- Improved debug logging
+
 5.2.0
 -----
 

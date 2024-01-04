@@ -56,6 +56,7 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
     if domain in cache:
         return cache[domain]
 
+    logging.debug(f"Checking for DNSKEY records at {domain}")
     request = dns.message.make_query(domain,
                                      dns.rdatatype.DNSKEY,
                                      want_dnssec=True)
@@ -144,6 +145,7 @@ def get_tlsa_records(hostname: str, nameservers: list[str] = None,
     if query_hostname in TLSA_CACHE:
         return TLSA_CACHE[query_hostname]
     tlsa_records = []
+    logging.debug(f"Checking for TLSA records at {query_hostname}")
     request = dns.message.make_query(query_hostname,
                                      dns.rdatatype.TLSA,
                                      want_dnssec=True)

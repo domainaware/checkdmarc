@@ -343,6 +343,11 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                                               nameservers=nameservers,
                                               resolver=resolver,
                                               timeout=timeout)
+            tlsa_records = get_tlsa_records(hostname,
+                                            nameservers=nameservers,
+                                            timeout=timeout)
+            if len(tlsa_records) > 0:
+                host["tlsa"] = tlsa_records
             if len(host["addresses"]) == 0:
                 warnings.append(
                     f"{hostname} does not have any A or AAAA DNS records")
@@ -378,11 +383,6 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                                     "the A/AAAA DNS records for "
                                     f"{hostname} do not resolve to "
                                     f"{address}")
-        tlsa_records = get_tlsa_records(hostname,
-                                        nameservers=nameservers,
-                                        timeout=timeout)
-        if len(tlsa_records) > 0:
-            host["tlsa"] = tlsa_records
         if not skip_tls and platform.system() == "Windows":
             logging.warning("Testing TLS is not supported on Windows")
             skip_tls = True
