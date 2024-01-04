@@ -120,7 +120,7 @@ def test_dnssec(domain: str, nameservers: list[str] = None,
 def get_tlsa_records(hostname: str, nameservers: list[str] = None,
                      timeout: float = 2.0, port: int = 25,
                      protocol: str = "tcp",
-                     cache: ExpiringDict = None) -> list[OrderedDict]:
+                     cache: ExpiringDict = None) -> list[str]:
     """
     Checks for TLSA records on the given hostname
 
@@ -133,7 +133,7 @@ def get_tlsa_records(hostname: str, nameservers: list[str] = None,
         cache (ExpiringDict): A cache
 
     Returns:
-        list: A list of parsed TLSA records
+        list: A list of TLSA records
     """
     if nameservers is None:
         nameservers = dns.resolver.Resolver().nameservers
@@ -163,14 +163,8 @@ def get_tlsa_records(hostname: str, nameservers: list[str] = None,
                 rrset = answer[0]
                 rrsig = answer[1]
                 dns.dnssec.validate(rrset, rrsig, dnskey)
-                response = list(rrset.items.keys())
-                for record in response:
-                    tlsa_records.append(OrderedDict(
-                        certificate_usage=record.usage,
-                        selector=record.selector,
-                        matching_type=record.mtype,
-                        association_data=str(record.cert)
-                    ))
+                tlsa_records = list(map(lambda x: str(x),
+                                        list(rrset.items.keys())))
                 cache[query_hostname] = tlsa_records
                 return tlsa_records
         except Exception as e:

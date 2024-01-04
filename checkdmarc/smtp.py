@@ -382,7 +382,7 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                                         nameservers=nameservers,
                                         timeout=timeout)
         if len(tlsa_records) > 0:
-            host["tlsa_records"] = tlsa_records
+            host["tlsa"] = tlsa_records
         if not skip_tls and platform.system() == "Windows":
             logging.warning("Testing TLS is not supported on Windows")
             skip_tls = True
