@@ -38,7 +38,7 @@ options:
 ## Example
 
 ```bash
-checkdmarc proton.me
+checkdmarc --skip-tls proton.me
 ```
 
 ```json
