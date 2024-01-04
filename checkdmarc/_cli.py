@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""TValidates and parses email-related DNS records"""
+"""Validates and parses email-related DNS records"""
 
 from __future__ import annotations
 
