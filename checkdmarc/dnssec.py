@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from collections import OrderedDict
 
 import dns
 import dns.dnssec
