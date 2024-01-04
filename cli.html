@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CLI &mdash; checkdmarc 5.2.0 documentation</title>
+  <title>CLI &mdash; checkdmarc 5.2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -15,7 +15,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=2dde5210"></script>
+        <script src="_static/documentation_options.js?v=89a6d609"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -36,7 +36,7 @@
             checkdmarc
           </a>
               <div class="version">
-                5.2.0
+                5.2.1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -81,15 +81,16 @@
              
   <section class="tex2jax_ignore mathjax_ignore" id="cli">
 <h1>CLI<a class="headerlink" href="#cli" title="Link to this heading"></a></h1>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: checkdmarc [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d] [-f FORMAT] [-o OUTPUT [OUTPUT ...]]
-                  [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT] [-b BIMI_SELECTOR] [-v] [-w WAIT] [--skip-tls]
-                  [--debug]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: checkdmarc [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d] [-f FORMAT]
+                  [-o OUTPUT [OUTPUT ...]] [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT]
+                  [-b BIMI_SELECTOR] [-v] [-w WAIT] [--skip-tls] [--debug]
                   domain [domain ...]
 
-Validates and parses email-related DNS records
+TValidates and parses email-related DNS records
 
 positional arguments:
-  domain                one or more domains, or a single path to a file containing a list of domains
+  domain                one or more domains, or a single path to a file containing a
+                        list of domains
 
 options:
   -h, --help            show this help message and exit
@@ -100,7 +101,8 @@ options:
   -f FORMAT, --format FORMAT
                         specify JSON or CSV screen output format
   -o OUTPUT [OUTPUT ...], --output OUTPUT [OUTPUT ...]
-                        one or more file paths to output to (must end in .json or .csv) (silences screen output)
+                        one or more file paths to output to (must end in .json or .csv)
+                        (silences screen output)
   -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
                         nameservers to query
   -t TIMEOUT, --timeout TIMEOUT
@@ -115,133 +117,211 @@ options:
 </div>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>checkdmarc<span class="w"> </span>fbi.gov
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>checkdmarc<span class="w"> </span>proton.me
 </pre></div>
 </div>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;base_domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;dnssec&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;ns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;proton.me&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;base_domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;proton.me&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;dnssec&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;ns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;hostnames&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;a1.fbi.gov&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">&quot;a2.fbi.gov&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">&quot;a3.fbi.gov&quot;</span>
+<span class="w">      </span><span class="s2">&quot;ns1.proton.me&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;ns2.proton.me&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;ns3.proton.me&quot;</span>
 <span class="w">    </span><span class="p">],</span>
 <span class="w">    </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;mx&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;mx&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;hosts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span>
+<span class="w">      </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;preference&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;hostname&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mx-east.fbi.gov&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;hostname&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mail.protonmail.ch&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;addresses&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">            </span><span class="s2">&quot;153.31.160.5&quot;</span>
-<span class="w">        </span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;tls&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;starttls&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">        </span><span class="p">}</span>
+<span class="w">          </span><span class="s2">&quot;176.119.200.128&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;185.205.70.128&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;185.70.42.128&quot;</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;preference&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;hostname&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mailsec.protonmail.ch&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;addresses&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;176.119.200.129&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;185.205.70.129&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;185.70.42.129&quot;</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">],</span>
 <span class="w">    </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;spf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=spf1 +mx ip4:153.31.0.0/16 -all&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;mta_sts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;190906205100Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;policy&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;STSv1&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;enforce&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;max_age&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">604800</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;mx&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;mail.protonmail.ch&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;mailsec.protonmail.ch&quot;</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;MTA-STS policy lines should end with CRLF not LF&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;spf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=spf1 include:_spf.protonmail.ch ~all&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;dns_void_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
 <span class="w">    </span><span class="nt">&quot;parsed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;pass&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="nt">&quot;pass&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">      </span><span class="nt">&quot;neutral&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">      </span><span class="nt">&quot;softfail&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">      </span><span class="nt">&quot;fail&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">      </span><span class="nt">&quot;include&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mx-east.fbi.gov&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mx&quot;</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;153.31.0.0/16&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">          </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;_spf.protonmail.ch&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=spf1 ip4:185.70.40.0/24 ip4:185.70.41.0/24 ip4:185.70.43.0/24 include:_spf2.protonmail.ch ~all&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;dns_void_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;parsed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;pass&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">              </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;185.70.40.0/24&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">              </span><span class="p">},</span>
+<span class="w">              </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;185.70.41.0/24&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">              </span><span class="p">},</span>
+<span class="w">              </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;185.70.43.0/24&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">              </span><span class="p">}</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;neutral&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">            </span><span class="nt">&quot;softfail&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">            </span><span class="nt">&quot;fail&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">            </span><span class="nt">&quot;include&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">              </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;_spf2.protonmail.ch&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=spf1 ip4:51.89.119.103 ip4:91.134.188.129 ip4:51.77.79.158 ip4:54.38.221.122 ip4:188.165.51.139 ip4:54.36.149.183 ~all&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;dns_void_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;parsed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;pass&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;51.89.119.103&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;91.134.188.129&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;51.77.79.158&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;54.38.221.122&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;188.165.51.139&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;54.36.149.183&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">}</span>
+<span class="w">                  </span><span class="p">],</span>
+<span class="w">                  </span><span class="nt">&quot;neutral&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">                  </span><span class="nt">&quot;softfail&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">                  </span><span class="nt">&quot;fail&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">                  </span><span class="nt">&quot;include&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">                  </span><span class="nt">&quot;redirect&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">                  </span><span class="nt">&quot;exp&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">                  </span><span class="nt">&quot;all&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;softfail&quot;</span>
+<span class="w">                </span><span class="p">},</span>
+<span class="w">                </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">              </span><span class="p">}</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;redirect&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;exp&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;all&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;softfail&quot;</span>
+<span class="w">          </span><span class="p">},</span>
+<span class="w">          </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
 <span class="w">        </span><span class="p">}</span>
-<span class="w">        </span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;neutral&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<span class="w">        </span><span class="nt">&quot;softfail&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<span class="w">        </span><span class="nt">&quot;fail&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<span class="w">        </span><span class="nt">&quot;include&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<span class="w">        </span><span class="nt">&quot;redirect&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;exp&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;all&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fail&quot;</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;redirect&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;exp&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;all&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;softfail&quot;</span>
 <span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;dmarc&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=DMARC1; p=reject; rua=mailto:dmarc-feedback@fbi.gov,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:dmarc-feedback@fbi.gov; pct=100&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;dmarc&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=DMARC1; p=quarantine; fo=1; aspf=s; adkim=s;&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;location&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fbi.gov&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">    </span><span class="nt">&quot;location&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;proton.me&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;rua tag (destination for aggregate reports) not found&quot;</span>
+<span class="w">    </span><span class="p">],</span>
 <span class="w">    </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;v&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;v&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DMARC1&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;p&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reject&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;p&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quarantine&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;rua&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">            </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;scheme&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mailto&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;size_limit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
-<span class="w">            </span><span class="p">},</span>
-<span class="w">            </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;scheme&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mailto&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reports@dmarc.cyber.dhs.gov&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;size_limit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">        </span><span class="p">],</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;fo&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;ruf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">            </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;scheme&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mailto&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dmarc-feedback@fbi.gov&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;size_limit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">        </span><span class="p">],</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;aspf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;s&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;pct&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;adkim&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;s&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;pct&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;adkim&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;r&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;aspf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;r&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;rf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;afrf&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;fo&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">            </span><span class="s2">&quot;0&quot;</span>
-<span class="w">        </span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;rf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">            </span><span class="s2">&quot;afrf&quot;</span>
-<span class="w">        </span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;ri&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;ri&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;sp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reject&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;sp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quarantine&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;explicit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;smtp_tls_reporting&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;v&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TLSRPTv1&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;rua&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;https://reports.proton.me/reports/smtptls&quot;</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>

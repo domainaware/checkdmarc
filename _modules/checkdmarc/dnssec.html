@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.dnssec &mdash; checkdmarc 5.2.0 documentation</title>
+  <title>checkdmarc.dnssec &mdash; checkdmarc 5.2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=92fd9be5" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
 
@@ -14,7 +14,7 @@
   
         <script src="../../_static/jquery.js?v=5d32c60e"></script>
         <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../../_static/documentation_options.js?v=2dde5210"></script>
+        <script src="../../_static/documentation_options.js?v=89a6d609"></script>
         <script src="../../_static/doctools.js?v=888ff710"></script>
         <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -34,7 +34,7 @@
             checkdmarc
           </a>
               <div class="version">
-                5.2.0
+                5.2.1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -136,6 +136,7 @@
     <span class="k">if</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="n">domain</span><span class="p">]</span>
 
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for DNSKEY records at </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">make_query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span>
                                      <span class="n">dns</span><span class="o">.</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">DNSKEY</span><span class="p">,</span>
                                      <span class="n">want_dnssec</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -145,6 +146,7 @@
             <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">answer</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">answer</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No DNSKEY records found at </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                     <span class="n">base_domain</span> <span class="o">=</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">domain</span> <span class="o">!=</span> <span class="n">base_domain</span><span class="p">:</span>
                         <span class="k">return</span> <span class="n">get_dnskey</span><span class="p">(</span><span class="n">base_domain</span><span class="p">)</span>
@@ -230,6 +232,7 @@
     <span class="k">if</span> <span class="n">query_hostname</span> <span class="ow">in</span> <span class="n">TLSA_CACHE</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">TLSA_CACHE</span><span class="p">[</span><span class="n">query_hostname</span><span class="p">]</span>
     <span class="n">tlsa_records</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for TLSA records at </span><span class="si">{</span><span class="n">query_hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">make_query</span><span class="p">(</span><span class="n">query_hostname</span><span class="p">,</span>
                                      <span class="n">dns</span><span class="o">.</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">TLSA</span><span class="p">,</span>
                                      <span class="n">want_dnssec</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -245,6 +248,10 @@
                     <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                     <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
                 <span class="p">)</span>
+                <span class="k">if</span> <span class="n">dnskey</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found TLSA records at </span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2"> but not &quot;</span>
+                                  <span class="sa">f</span><span class="s2">&quot;a DNSKEY record to verify them&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">tlsa_records</span>
                 <span class="n">rrset</span> <span class="o">=</span> <span class="n">answer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="n">rrsig</span> <span class="o">=</span> <span class="n">answer</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
                 <span class="n">dns</span><span class="o">.</span><span class="n">dnssec</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">rrset</span><span class="p">,</span> <span class="n">rrsig</span><span class="p">,</span> <span class="n">dnskey</span><span class="p">)</span>
