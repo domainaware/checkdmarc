@@ -163,8 +163,8 @@ def get_tlsa_records(hostname: str, nameservers: list[str] = None,
                     timeout=timeout
                 )
                 if dnskey is None:
-                    logging.debug(f"Found TLSA records at {hostname} but not a "
-                                  f"DNSKEY record to verify them")
+                    logging.debug(f"Found TLSA records at {hostname} but not "
+                                  f"a DNSKEY record to verify them")
                     return tlsa_records
                 rrset = answer[0]
                 rrsig = answer[1]
