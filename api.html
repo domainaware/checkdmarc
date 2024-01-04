@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; checkdmarc 5.1.0 documentation</title>
+  <title>API &mdash; checkdmarc 5.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -15,7 +15,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=bfa18cfb"></script>
+        <script src="_static/documentation_options.js?v=2dde5210"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -37,7 +37,7 @@
             checkdmarc
           </a>
               <div class="version">
-                5.1.0
+                5.2.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -100,6 +100,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-checkdmarc.dnssec">checkdmarc.dnssec</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.dnssec.get_dnskey"><code class="docutils literal notranslate"><span class="pre">get_dnskey()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.dnssec.get_tlsa_records"><code class="docutils literal notranslate"><span class="pre">get_tlsa_records()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.dnssec.test_dnssec"><code class="docutils literal notranslate"><span class="pre">test_dnssec()</span></code></a></li>
 </ul>
 </li>
@@ -1077,6 +1079,49 @@ domain</p>
 <section id="module-checkdmarc.dnssec">
 <span id="checkdmarc-dnssec"></span><h2>checkdmarc.dnssec<a class="headerlink" href="#module-checkdmarc.dnssec" title="Link to this heading"></a></h2>
 <p>DNSSEC tests</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.dnssec.get_dnskey">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.dnssec.</span></span><span class="sig-name descname"><span class="pre">get_dnskey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ExpiringDict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkdmarc/dnssec.html#get_dnskey"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.dnssec.get_dnskey" title="Link to this definition"></a></dt>
+<dd><p>Get a DNSKEY RRSet on the given domain</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – The domain to check</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – Timeout in seconds</p></li>
+<li><p><strong>cache</strong> (<em>ExpiringDict</em>) – A cache</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A DNSKEY dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.dnssec.get_tlsa_records">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.dnssec.</span></span><span class="sig-name descname"><span class="pre">get_tlsa_records</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protocol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'tcp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ExpiringDict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/checkdmarc/dnssec.html#get_tlsa_records"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.dnssec.get_tlsa_records" title="Link to this definition"></a></dt>
+<dd><p>Checks for TLSA records on the given hostname</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hostname</strong> (<em>str</em>) – The domain to check</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – Timeout in seconds</p></li>
+<li><p><strong>port</strong> (<em>int</em>) – The port</p></li>
+<li><p><strong>protocol</strong> (<em>str</em>) – The protocol</p></li>
+<li><p><strong>cache</strong> (<em>ExpiringDict</em>) – A cache</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of TLSA records</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.dnssec.test_dnssec">
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.dnssec.</span></span><span class="sig-name descname"><span class="pre">test_dnssec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/checkdmarc/dnssec.html#test_dnssec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.dnssec.test_dnssec" title="Link to this definition"></a></dt>
