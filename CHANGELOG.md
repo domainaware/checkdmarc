@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.2.0
+-----
+
+- Check for TLSA records
+
 5.1.0
 -----
 

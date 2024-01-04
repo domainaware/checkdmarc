@@ -17,6 +17,7 @@ from expiringdict import ExpiringDict
 from checkdmarc.utils import (DNSException,
                               get_a_records, get_reverse_dns, get_mx_records)
 from checkdmarc.mta_sts import mx_in_mta_sts_patterns
+from checkdmarc.dnssec import get_tlsa_records
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -377,6 +378,11 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                                     "the A/AAAA DNS records for "
                                     f"{hostname} do not resolve to "
                                     f"{address}")
+        tlsa_records = get_tlsa_records(hostname,
+                                        nameservers=nameservers,
+                                        timeout=timeout)
+        if len(tlsa_records) > 0:
+            host["tlsa"] = tlsa_records
         if not skip_tls and platform.system() == "Windows":
             logging.warning("Testing TLS is not supported on Windows")
             skip_tls = True
