@@ -1,11 +1,16 @@
 Changelog
 =========
 
+5.2.5
+-----
+
+- Properly cache DNSKEY answers
+
 5.2.4
 -----
 
 - Workaround DNSSEC testing bug in Debian for some domains
-  - On Windows, querying for a `DNSKEY` record on `proton.ch` will return a `RRSET` and `RRSIG`. However, running the same query on 
+  - On Windows, querying for a `DNSKEY` record on `proton.ch` will return a `RRSET` and `RRSIG`. However, running the same query on
     Linux will only return a `RRSET`, but will return a `RRSET` and `RRSIG` if another record type is requested, such
     as `A`
 
@@ -14,7 +19,6 @@ Changelog
 
 - Fix exception handling for `query_mta_sts_record`
 - Fix exception handling for `query_smtp_tls_reporting_record`
-
 
 5.2.2
 -----

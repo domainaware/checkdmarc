@@ -33,7 +33,7 @@ TLSA_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 
 
 def get_dnskey(domain: str, nameservers: list[str] = None,
-               timeout: float = 2.0, cache: ExpiringDict = None):
+               timeout: float = 2.0, cache: ExpiringDict = None) -> dict:
     """
     Get a DNSKEY RRSet on the given domain
 
@@ -73,7 +73,9 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
                     return None
                 rrset = answer[0]
                 name = dns.name.from_text(f'{domain}.')
-                return {name: rrset}
+                key = {name: rrset}
+                cache[domain] = key
+                return key
         except Exception as e:
             logging.debug(f"DNSKEY query error: {e}")
 
