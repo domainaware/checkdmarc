@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.2.3
+-----
+
+- Fix exception handling for `query_mta_sts_record`
+- Fix exception handling for `query_smtp_tls_reporting_record`
+
+
 5.2.2
 -----
 

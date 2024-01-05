@@ -204,7 +204,9 @@ def query_smtp_tls_reporting_record(domain: str,
             raise SMTPTLSReportingRecordNotFound(
                 f"The domain {domain} does not exist")
         except Exception as error:
-            SMTPTLSReportingRecordNotFound(error)
+            raise SMTPTLSReportingRecordNotFound(error)
+    except Exception as error:
+        raise SMTPTLSReportingRecordNotFound(error)
 
     if sts_record is None:
         raise SMTPTLSReportingRecordNotFound(
