@@ -1,6 +1,12 @@
 Changelog
 =========
 
+5.2.2
+-----
+
+- Better exception handling for `query_mta_sts_record`
+- More verbose debug logging
+
 5.2.1
 -----
 

@@ -150,6 +150,7 @@ def get_a_records(domain: str, nameservers: list[str] = None,
     addresses = []
     for qt in qtypes:
         try:
+            logging.debug(f"Getting {qt} records for {domain}")
             addresses += query_dns(domain, qt, nameservers=nameservers,
                                    resolver=resolver, timeout=timeout)
         except dns.resolver.NXDOMAIN:
@@ -186,6 +187,7 @@ def get_reverse_dns(ip_address: str, nameservers: list[str] = None,
     """
     try:
         name = str(dns.reversename.from_address(ip_address))
+        logging.debug(f"Getting PTR records for {ip_address}")
         hostnames = query_dns(name, "PTR", nameservers=nameservers,
                               resolver=resolver, timeout=timeout)
     except dns.resolver.NXDOMAIN:

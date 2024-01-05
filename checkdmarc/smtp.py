@@ -301,6 +301,7 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
     warnings = []
     hostnames = set()
     dupe_hostnames = set()
+    logging.debug(f"Getting MX records for {domain}")
     mx_records = get_mx_records(domain, nameservers=nameservers,
                                 resolver=resolver, timeout=timeout)
     for record in mx_records:

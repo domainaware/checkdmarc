@@ -205,6 +205,8 @@ def query_mta_sts_record(domain: str,
                 f"The domain {domain} does not exist")
         except Exception as error:
             MTASTSRecordNotFound(error)
+    except Exception as error:
+        MTASTSRecordNotFound(error)
 
     if sts_record is None:
         raise MTASTSRecordNotFound(
