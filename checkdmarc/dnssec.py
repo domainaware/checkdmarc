@@ -65,17 +65,17 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
             response = dns.query.udp(request, nameserver, timeout=timeout)
             if response is not None:
                 answer = response.answer
-                if len(answer) == 0:
+                if len(answer) != 2:
                     logging.debug(f"No DNSKEY records found at {domain}")
                     base_domain = get_base_domain(domain)
                     if domain != base_domain:
                         return get_dnskey(base_domain)
                     return None
                 rrset = answer[0]
+                rrsig = answer[1]
                 name = dns.name.from_text(f'{domain}.')
-                key = {name: rrset}
-                cache[domain] = key
-                return key
+                dns.dnssec.validate(rrset, rrsig, {name: rrset})
+                return {name: rrset}
         except Exception as e:
             logging.debug(f"DNSKEY query error: {e}")
 
@@ -93,11 +93,27 @@ def test_dnssec(domain: str, nameservers: list[str] = None,
     Returns:
         bool: DNSSEC status
     """
-    try:
-        get_dnskey(domain, nameservers=nameservers, timeout=timeout)
-        return True
-    except Exception as e:
-        logging.debug(f"DNSSEC query error: {e}")
+    if nameservers is None:
+        nameservers = dns.resolver.Resolver().nameservers
+
+    request = dns.message.make_query(domain,
+                                     dns.rdatatype.DNSKEY,
+                                     want_dnssec=True)
+    for nameserver in nameservers:
+        try:
+            response = dns.query.udp(request, nameserver, timeout=timeout)
+            if response is not None:
+                answer = response.answer
+                if len(answer) != 2:
+                    return False
+                rrset = answer[0]
+                rrsig = answer[1]
+                name = dns.name.from_text(f'{domain}.')
+                key = {name: rrset}
+                dns.dnssec.validate(rrset, rrsig, key)
+                return True
+        except Exception as e:
+            logging.debug(f"DNSSEC query error: {e}")
 
     return False
 
