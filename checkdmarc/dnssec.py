@@ -127,7 +127,7 @@ def test_dnssec(domain: str,
                 if response is not None:
                     answer = response.answer
                     if len(answer) != 2:
-                        pass
+                        continue
                     rrset = answer[0]
                     rrsig = answer[1]
                     dns.dnssec.validate(rrset, rrsig, key)
