@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.2.6
+-----
+
+- Revert change introduced in 5.2.4 that caused the DNSSEC test to always return `True`
+- Test for multiple RDATA types when testing DNSSEC
+- Properly cache DNSSEC test results
+
 5.2.5
 -----
 

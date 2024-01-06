@@ -31,6 +31,7 @@ DNSSEC_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 DNSKEY_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 TLSA_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 
+
 def get_dnskey(domain: str, nameservers: list[str] = None,
                timeout: float = 2.0, cache: ExpiringDict = None):
     """
@@ -69,6 +70,7 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
                     base_domain = get_base_domain(domain)
                     if domain != base_domain:
                         return get_dnskey(base_domain)
+                    cache[domain] = None
                     return None
                 rrset = answer[0]
                 rrsig = answer[1]
@@ -82,8 +84,10 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
             logging.debug(f"DNSKEY query error: {e}")
 
 
-def test_dnssec(domain: str, nameservers: list[str] = None,
-                timeout: float = 2.0) -> bool:
+def test_dnssec(domain: str,
+                nameservers: list[str] = None,
+                timeout: float = 2.0,
+                cache: ExpiringDict = None) -> bool:
     """
     Check for DNSSEC on the given domain
 
@@ -91,32 +95,49 @@ def test_dnssec(domain: str, nameservers: list[str] = None,
         domain (str): The domain to check
         nameservers (list): A list of nameservers to query
         timeout (float): Timeout in seconds
+        cache (ExpiringDict): Cache
 
     Returns:
         bool: DNSSEC status
     """
     if nameservers is None:
         nameservers = dns.resolver.Resolver().nameservers
+    if cache is None:
+        cache = DNSSEC_CACHE
 
-    request = dns.message.make_query(domain,
-                                     dns.rdatatype.DNSKEY,
-                                     want_dnssec=True)
-    for nameserver in nameservers:
-        try:
-            response = dns.query.udp(request, nameserver, timeout=timeout)
-            if response is not None:
-                answer = response.answer
-                if len(answer) != 2:
-                    return False
-                rrset = answer[0]
-                rrsig = answer[1]
-                name = dns.name.from_text(f'{domain}.')
-                key = {name: rrset}
-                dns.dnssec.validate(rrset, rrsig, key)
-                return True
-        except Exception as e:
-            logging.debug(f"DNSSEC query error: {e}")
+    if domain in cache:
+        return DNSSEC_CACHE[cache]
 
+    key = get_dnskey(domain, nameservers=nameservers, timeout=timeout)
+    if key is None:
+        return False
+    rdatatypes = [dns.rdatatype.DNSKEY,
+                  dns.rdatatype.MX,
+                  dns.rdatatype.A,
+                  dns.rdatatype.NS,
+                  dns.rdatatype.CNAME]
+    for rdatatype in rdatatypes:
+        request = dns.message.make_query(domain,
+                                         rdatatype,
+                                         want_dnssec=True)
+        for nameserver in nameservers:
+            try:
+                response = dns.query.udp(request, nameserver,
+                                         timeout=timeout)
+                if response is not None:
+                    answer = response.answer
+                    if len(answer) != 2:
+                        pass
+                    rrset = answer[0]
+                    rrsig = answer[1]
+                    dns.dnssec.validate(rrset, rrsig, key)
+
+                    cache[domain] = True
+                    return True
+            except Exception as e:
+                logging.debug(f"DNSSEC query error: {e}")
+
+    cache[domain] = False
     return False
 
 
