@@ -131,7 +131,7 @@ def test_dnssec(domain: str,
                     rrset = answer[0]
                     rrsig = answer[1]
                     dns.dnssec.validate(rrset, rrsig, key)
-
+                    logging.debug(f"Found a signed {rdatatype} record")
                     cache[domain] = True
                     return True
             except Exception as e:
