@@ -65,7 +65,7 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
             response = dns.query.udp(request, nameserver, timeout=timeout)
             if response is not None:
                 answer = response.answer
-                if len(answer) != 2:
+                if len(answer) == 0:
                     logging.debug(f"No DNSKEY records found at {domain}")
                     base_domain = get_base_domain(domain)
                     if domain != base_domain:
@@ -73,9 +73,7 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
                     cache[domain] = None
                     return None
                 rrset = answer[0]
-                rrsig = answer[1]
                 name = dns.name.from_text(f'{domain}.')
-                dns.dnssec.validate(rrset, rrsig, {name: rrset})
                 key = {name: rrset}
                 cache[domain] = key
                 return key
@@ -131,7 +129,7 @@ def test_dnssec(domain: str,
                     rrset = answer[0]
                     rrsig = answer[1]
                     dns.dnssec.validate(rrset, rrsig, key)
-                    logging.debug(f"Found a signed {rdatatype} record")
+                    logging.debug(f"Found a signed {rdatatype.name} record")
                     cache[domain] = True
                     return True
             except Exception as e:

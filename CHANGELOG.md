@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.2.7
+-----
+
+- Do not require an `RRSIG` answer when querying for `DNSKEY` records
+  - On Windows and macOS, querying for a `DNSKEY` record on `proton.ch` will return a `RRSET` and `RRSIG`. However,
+    running the same query on Debian-based Linux will only return a `RRSET`
+
 5.2.6
 -----
 
@@ -17,7 +24,7 @@ Changelog
 -----
 
 - Workaround DNSSEC testing bug in Debian for some domains
-  - On Windows, querying for a `DNSKEY` record on `proton.ch` will return a `RRSET` and `RRSIG`. However, running the same query on 
+  - On Windows, querying for a `DNSKEY` record on `proton.ch` will return a `RRSET` and `RRSIG`. However, running the same query on
     Linux will only return a `RRSET`, but will return a `RRSET` and `RRSIG` if another record type is requested, such
     as `A`
 
