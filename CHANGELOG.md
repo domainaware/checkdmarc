@@ -7,6 +7,7 @@ Changelog
 - Do not require an `RRSIG` answer when querying for `DNSKEY` records
   - On Windows and macOS, querying for a `DNSKEY` record on `proton.ch` will return a `RRSET` and `RRSIG`. However,
     running the same query on Debian-based Linux will only return a `RRSET`
+- Pass in `nameservers` and `timeout` when running `get_dnskey` recursively
 
 5.2.6
 -----

@@ -69,7 +69,9 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
                     logging.debug(f"No DNSKEY records found at {domain}")
                     base_domain = get_base_domain(domain)
                     if domain != base_domain:
-                        return get_dnskey(base_domain)
+                        return get_dnskey(base_domain,
+                                          nameservers=nameservers,
+                                          timeout=timeout)
                     cache[domain] = None
                     return None
                 rrset = answer[0]
