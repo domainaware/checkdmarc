@@ -691,10 +691,11 @@ def verify_dmarc_report_destination(source_domain: str,
     destination_domain = destination_domain.lower()
 
     if get_base_domain(source_domain) != get_base_domain(destination_domain):
-        if check_wildcard_dmarc_report_authorization(destination_domain,
-                                                     nameservers=nameservers,
-                                                     ignore_unrelated_records=ignore_unrelated_records,
-                                                     resolver=resolver):
+        if check_wildcard_dmarc_report_authorization(
+                destination_domain,
+                nameservers=nameservers,
+                ignore_unrelated_records=ignore_unrelated_records,
+                resolver=resolver):
             return True
         target = f"{source_domain}._report._dmarc.{destination_domain}"
         message = f"{destination_domain} does not indicate that it accepts " \
@@ -880,11 +881,13 @@ def parse_dmarc_record(
                 email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
-                    verify_dmarc_report_destination(domain, email_domain,
-                                                    nameservers=nameservers,
-                                                    ignore_unrelated_records=ignore_unrelated_records,
-                                                    resolver=resolver,
-                                                    timeout=timeout)
+                    verify_dmarc_report_destination(
+                        domain,
+                        email_domain,
+                        nameservers=nameservers,
+                        ignore_unrelated_records=ignore_unrelated_records,
+                        resolver=resolver,
+                        timeout=timeout)
                 try:
                     hosts = get_mx_records(email_domain,
                                            nameservers=nameservers,
@@ -922,11 +925,13 @@ def parse_dmarc_record(
                 email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
-                    verify_dmarc_report_destination(domain, email_domain,
-                                                    nameservers=nameservers,
-                                                    ignore_unrelated_records=ignore_unrelated_records,
-                                                    resolver=resolver,
-                                                    timeout=timeout)
+                    verify_dmarc_report_destination(
+                        domain,
+                        email_domain,
+                        nameservers=nameservers,
+                        ignore_unrelated_records=ignore_unrelated_records,
+                        resolver=resolver,
+                        timeout=timeout)
                 try:
                     hosts = get_mx_records(email_domain,
                                            nameservers=nameservers,
