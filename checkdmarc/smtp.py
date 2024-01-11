@@ -17,7 +17,7 @@ from expiringdict import ExpiringDict
 from checkdmarc.utils import (DNSException,
                               get_a_records, get_reverse_dns, get_mx_records)
 from checkdmarc.mta_sts import mx_in_mta_sts_patterns
-from checkdmarc.dnssec import get_tlsa_records
+from checkdmarc.dnssec import test_dnssec, get_tlsa_records
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -292,7 +292,9 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                      - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of
 
                        - ``hostname`` - A hostname
+                       - ``dnssec`` - DNSSEC status
                        - ``addresses`` - A ``list`` of IP addresses
+                       - ``tlsa`` - A list of TLSA records, if they exist
 
                      - ``warnings`` - A ``list`` of MX resolution warnings
 
@@ -339,6 +341,14 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                                 f"policy")
 
         try:
+            dnssec = False
+            try:
+                dnssec = test_dnssec(hostname,
+                                     nameservers=nameservers,
+                                     timeout=timeout)
+            except Exception as e:
+                logging.debug(e)
+            host["dnssec"] = dnssec
             host["addresses"] = []
             host["addresses"] = get_a_records(hostname,
                                               nameservers=nameservers,
@@ -347,6 +357,7 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
             tlsa_records = get_tlsa_records(hostname,
                                             nameservers=nameservers,
                                             timeout=timeout)
+
             if len(tlsa_records) > 0:
                 host["tlsa"] = tlsa_records
             if len(host["addresses"]) == 0:

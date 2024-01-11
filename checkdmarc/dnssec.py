@@ -58,13 +58,16 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
 
     logging.debug(f"Checking for DNSKEY records at {domain}")
     request = dns.message.make_query(domain,
-                                     dns.rdatatype.DNSKEY)
+                                     dns.rdatatype.DNSKEY,
+                                     want_dnssec=True)
     for nameserver in nameservers:
         try:
             response = dns.query.udp(request, nameserver, timeout=timeout)
             if response is not None:
                 answer = response.answer
                 if len(answer) == 0:
+                    request = dns.message.make_query(domain,
+                                                     dns.rdatatype.DNSKEY)
                     logging.debug(f"No DNSKEY records found at {domain}")
                     base_domain = get_base_domain(domain)
                     if domain != base_domain:

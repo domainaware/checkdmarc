@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.3.0
+-----
+
+- Check DNSSEC on MX hostnames
+
 5.2.7
 -----
 
