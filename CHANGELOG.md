@@ -5,6 +5,7 @@ Changelog
 -----
 
 - Check DNSSEC on MX hostnames
+- USE DNSSEC when requesting `DNSKEY` records
 
 5.2.7
 -----
