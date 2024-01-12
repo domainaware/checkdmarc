@@ -607,6 +607,7 @@ def parse_dmarc_report_uri(uri: str) -> OrderedDict:
 def check_wildcard_dmarc_report_authorization(
         domain: str,
         nameservers: list[str] = None,
+        ignore_unrelated_records: bool = False,
         resolver: dns.resolver.Resolver = None,
         timeout: float = 2.0) -> bool:
     """
@@ -619,6 +620,7 @@ def check_wildcard_dmarc_report_authorization(
     Args:
         domain (str): The domain to check
         nameservers (list): A list of nameservers to query
+        ignore_unrelated_records (bool): Ignore unrelated TXT records
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
@@ -641,7 +643,7 @@ def check_wildcard_dmarc_report_authorization(
             else:
                 unrelated_records.append(record)
 
-        if len(unrelated_records) > 0:
+        if len(unrelated_records) > 0 and not ignore_unrelated_records:
             ur_str = "\n\n".join(unrelated_records)
             raise UnrelatedTXTRecordFoundAtDMARC(
                 "Unrelated TXT records were discovered. "
@@ -660,6 +662,7 @@ def check_wildcard_dmarc_report_authorization(
 def verify_dmarc_report_destination(source_domain: str,
                                     destination_domain: str,
                                     nameservers: list[str] = None,
+                                    ignore_unrelated_records: bool = False,
                                     resolver: dns.resolver.Resolver = None,
                                     timeout: float = 2.0) -> bool:
     """
@@ -670,6 +673,7 @@ def verify_dmarc_report_destination(source_domain: str,
           source_domain (str): The source domain
           destination_domain (str): The destination domain
           nameservers (list): A list of nameservers to query
+          ignore_unrelated_records (bool): Ignore unrelated TXT records
           resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
@@ -687,9 +691,11 @@ def verify_dmarc_report_destination(source_domain: str,
     destination_domain = destination_domain.lower()
 
     if get_base_domain(source_domain) != get_base_domain(destination_domain):
-        if check_wildcard_dmarc_report_authorization(destination_domain,
-                                                     nameservers=nameservers,
-                                                     resolver=resolver):
+        if check_wildcard_dmarc_report_authorization(
+                destination_domain,
+                nameservers=nameservers,
+                ignore_unrelated_records=ignore_unrelated_records,
+                resolver=resolver):
             return True
         target = f"{source_domain}._report._dmarc.{destination_domain}"
         message = f"{destination_domain} does not indicate that it accepts " \
@@ -710,7 +716,7 @@ def verify_dmarc_report_destination(source_domain: str,
                 else:
                     unrelated_records.append(record)
 
-            if len(unrelated_records) > 0:
+            if len(unrelated_records) > 0 and not ignore_unrelated_records:
                 ur_str = "\n\n".join(unrelated_records)
                 raise UnrelatedTXTRecordFoundAtDMARC(
                     "Unrelated TXT records were discovered. "
@@ -730,6 +736,7 @@ def parse_dmarc_record(
         record: str, domain: str, parked: bool = False,
         include_tag_descriptions: bool = False,
         nameservers: list[str] = None,
+        ignore_unrelated_records: bool = False,
         resolver: dns.resolver.Resolver = None,
         timeout: float = 2.0,
         syntax_error_marker: str = SYNTAX_ERROR_MARKER) -> OrderedDict:
@@ -742,6 +749,7 @@ def parse_dmarc_record(
         parked (bool): Indicates if a domain is parked
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
+        ignore_unrelated_records (bool): Ignore unrelated TXT records
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
@@ -873,10 +881,13 @@ def parse_dmarc_record(
                 email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
-                    verify_dmarc_report_destination(domain, email_domain,
-                                                    nameservers=nameservers,
-                                                    resolver=resolver,
-                                                    timeout=timeout)
+                    verify_dmarc_report_destination(
+                        domain,
+                        email_domain,
+                        nameservers=nameservers,
+                        ignore_unrelated_records=ignore_unrelated_records,
+                        resolver=resolver,
+                        timeout=timeout)
                 try:
                     hosts = get_mx_records(email_domain,
                                            nameservers=nameservers,
@@ -914,10 +925,13 @@ def parse_dmarc_record(
                 email_address = uri["address"]
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
-                    verify_dmarc_report_destination(domain, email_domain,
-                                                    nameservers=nameservers,
-                                                    resolver=resolver,
-                                                    timeout=timeout)
+                    verify_dmarc_report_destination(
+                        domain,
+                        email_domain,
+                        nameservers=nameservers,
+                        ignore_unrelated_records=ignore_unrelated_records,
+                        resolver=resolver,
+                        timeout=timeout)
                 try:
                     hosts = get_mx_records(email_domain,
                                            nameservers=nameservers,
@@ -1075,6 +1089,7 @@ def check_dmarc(domain: str, parked: bool = False,
             dmarc_query["location"],
             parked=parked,
             include_tag_descriptions=include_dmarc_tag_descriptions,
+            ignore_unrelated_records=ignore_unrelated_records,
             nameservers=nameservers, resolver=resolver,
             timeout=timeout)
         dmarc_results["warnings"] = dmarc_query["warnings"]
