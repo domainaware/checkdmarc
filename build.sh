@@ -15,7 +15,9 @@ cd docs
 make clean
 make html
 touch build/html/.nojekyll
-cp -rf build/html/* ../../checkdmarc-docs/
+if [ ! -d "../../checkdmarc-docs" ]; then
+  cp -rf build/html/* ../../checkdmarc-docs/
+fi
 cd ..
 rm -rf dist/ build/
 hatch build

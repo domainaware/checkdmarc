@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.3.1
+-----
+
+- Ignore `UnicodeDecodeError` exceptions when querying for `TXT` records (close #124)
+
 5.3.0
 -----
 

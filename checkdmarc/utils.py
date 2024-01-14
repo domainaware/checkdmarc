@@ -115,7 +115,13 @@ def query_dns(domain: str, record_type: str, nameservers: list[str] = None,
         _resource_record = [
             resource_record[0][:0].join(resource_record)
             for resource_record in resource_records if resource_record]
-        records = [r.decode() for r in _resource_record]
+        records = []
+        for r in _resource_record:
+            try:
+                r = r.decode()
+            except UnicodeDecodeError:
+                pass
+            records.append(r)
     else:
         records = list(map(
             lambda r: r.to_text().replace('"', '').rstrip("."),
