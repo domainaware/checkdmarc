@@ -6,7 +6,7 @@ usage: checkdmarc [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d] [-f FORMA
                   [-b BIMI_SELECTOR] [-v] [-w WAIT] [--skip-tls] [--debug]
                   domain [domain ...]
 
-TValidates and parses email-related DNS records
+Validates and parses email-related DNS records
 
 positional arguments:
   domain                one or more domains, or a single path to a file containing a
