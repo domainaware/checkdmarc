@@ -499,8 +499,9 @@ def query_dmarc_record(domain: str, nameservers: list[str] = None,
             resolver=resolver, timeout=timeout,
             ignore_unrelated_records=ignore_unrelated_records)
     except DMARCRecordNotFound:
-        # Skip this exception as we want to query the base domain. If we fail at that,
-        # at the end of this function we will raise another DMARCRecordNotFound.
+        # Skip this exception as we want to query the base domain. If we fail
+        # at that, at the end of this function we will raise another
+        # DMARCRecordNotFound.
         record = None
 
     try:
