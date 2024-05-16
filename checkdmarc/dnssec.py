@@ -106,7 +106,7 @@ def test_dnssec(domain: str,
         cache = DNSSEC_CACHE
 
     if domain in cache:
-        return DNSSEC_CACHE[cache]
+        return cache[domain]
 
     key = get_dnskey(domain, nameservers=nameservers, timeout=timeout)
     if key is None:
