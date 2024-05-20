@@ -520,7 +520,8 @@ def query_dmarc_record(domain: str, nameservers: list[str] = None,
 
     if record is None and domain != base_domain:
         record = _query_dmarc_record(base_domain, nameservers=nameservers,
-                                     resolver=resolver, timeout=timeout)
+                                     resolver=resolver, timeout=timeout,
+                                     ignore_unrelated_records=ignore_unrelated_records)
         location = base_domain
     if record is None:
         raise DMARCRecordNotFound(
