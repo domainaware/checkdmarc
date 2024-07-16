@@ -4,7 +4,6 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "Python: Current File",
             "type": "python",
@@ -17,8 +16,11 @@
             "name": "checkdmarc --skip-tls dhs.gov",
             "type": "python",
             "request": "launch",
-            "program": "checkdmarc.py",
-            "args": ["--skip-tls", "dhs.gov"],
+            "module": "checkdmarc._cli.py",
+            "args": [
+                "--skip-tls",
+                "dhs.gov"
+            ],
             "console": "integratedTerminal",
             "justMyCode": true
         },
