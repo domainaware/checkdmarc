@@ -387,17 +387,17 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                 warnings.append(
                     f"{address} does not have any reverse DNS (PTR) "
                     "records")
-            for hostname in reverse_hostnames:
+            for reverse_hostname in reverse_hostnames:
                 try:
-                    _addresses = get_a_records(hostname, resolver=resolver)
+                    _addresses = get_a_records(reverse_hostname, resolver=resolver)
                 except DNSException as warning:
                     warnings.append(str(warning))
                     _addresses = []
                 if address not in _addresses:
                     warnings.append(f"The reverse DNS of "
-                                    f"{address} is {hostname}, but "
+                                    f"{address} is {reverse_hostname}, but "
                                     "the A/AAAA DNS records for "
-                                    f"{hostname} do not resolve to "
+                                    f"{reverse_hostname} do not resolve to "
                                     f"{address}")
         if not skip_tls and platform.system() == "Windows":
             logging.warning("Testing TLS is not supported on Windows")
