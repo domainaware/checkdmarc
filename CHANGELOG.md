@@ -1,6 +1,17 @@
 Changelog
 =========
 
+5.4.0
+-----
+
+- Fix TLS/STARTTLS check (Fixes issue #138)
+- Consider `tls: true` if `starttls: true`
+- Handle records not existing if ignoring unrelated records (PR #131 fixes #130)
+- Query the base domain if a DMARC record is not found at the subdomain (PR #132)
+- Do not accept `include=` in the SPF record (PR #134 fixes issue #134)
+- Fix DNSSEC cache (PR #136 Fixes issue #137)
+- Fixed checking whether there is some text after `all` SPF directive (PR #139)
+
 5.3.1
 -----
 

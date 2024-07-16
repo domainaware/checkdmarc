@@ -9,10 +9,6 @@ import socket
 import smtplib
 from collections import OrderedDict
 import ssl
-if not getattr(ssl, "HAS_SNI", False):
-        from urllib3.contrib import pyopenssl
-
-        pyopenssl.inject_into_urllib3()
 
 import dns
 import timeout_decorator
@@ -389,7 +385,8 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                     "records")
             for reverse_hostname in reverse_hostnames:
                 try:
-                    _addresses = get_a_records(reverse_hostname, resolver=resolver)
+                    _addresses = get_a_records(reverse_hostname,
+                                               resolver=resolver)
                 except DNSException as warning:
                     warnings.append(str(warning))
                     _addresses = []
@@ -415,7 +412,7 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
 
                     if not tls:
                         warnings.append(f"SSL/TLS is not supported on "
-                                        "{hostname}")
+                                        f"{hostname}")
                 host["tls"] = tls
                 host["starttls"] = starttls
             except DNSException as warning:
