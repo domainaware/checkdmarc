@@ -8,7 +8,11 @@ import platform
 import socket
 import smtplib
 from collections import OrderedDict
-from ssl import SSLError, SSLContext, create_default_context
+import ssl
+if not getattr(ssl, "HAS_SNI", False):
+        from urllib3.contrib import pyopenssl
+
+        pyopenssl.inject_into_urllib3()
 
 import dns
 import timeout_decorator
@@ -44,7 +48,7 @@ class SMTPError(Exception):
 
 @timeout_decorator.timeout(5, timeout_exception=SMTPError,
                            exception_message="Connection timed out")
-def test_tls(hostname: str, ssl_context: SSLContext = None,
+def test_tls(hostname: str, ssl_context: ssl.SSLContext = None,
              cache: ExpiringDict = None) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
@@ -65,7 +69,8 @@ def test_tls(hostname: str, ssl_context: SSLContext = None,
                 raise SMTPError(cached_result["error"])
             return cached_result["tls"]
     if ssl_context is None:
-        ssl_context = create_default_context()
+        ssl_context = ssl.create_default_context()
+        ssl_context.hostname_checks_common_name=False
     logging.debug(f"Testing TLS/SSL on {hostname}")
     try:
         server = smtplib.SMTP_SSL(hostname, context=ssl_context)
@@ -109,7 +114,7 @@ def test_tls(hostname: str, ssl_context: SSLContext = None,
         if cache:
             cache[hostname] = dict(tls=False, error=error)
         raise SMTPError(error)
-    except SSLError as e:
+    except ssl.SSLError as e:
         error = f"SSL error: {e}"
         if cache:
             cache[hostname] = dict(tls=False, error=error)
@@ -156,7 +161,7 @@ def test_tls(hostname: str, ssl_context: SSLContext = None,
 @timeout_decorator.timeout(5, timeout_exception=SMTPError,
                            exception_message="Connection timed out")
 def test_starttls(hostname: str,
-                  ssl_context: SSLContext = None,
+                  ssl_context: ssl.SSLContext = None,
                   cache: ExpiringDict = None) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support
@@ -177,7 +182,7 @@ def test_starttls(hostname: str,
                 raise SMTPError(cached_result["error"])
             return cached_result["starttls"]
     if ssl_context is None:
-        ssl_context = create_default_context()
+        ssl_context = ssl.create_default_context()
     logging.debug(f"Testing STARTTLS on {hostname}")
     try:
         server = smtplib.SMTP(hostname)
@@ -226,7 +231,7 @@ def test_starttls(hostname: str,
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
-    except SSLError as e:
+    except ssl.SSLError as e:
         error = f"SSL error: {e}"
         if cache:
             cache[hostname] = dict(starttls=False, error=error)

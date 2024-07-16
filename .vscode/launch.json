@@ -16,10 +16,21 @@
             "name": "checkdmarc --skip-tls dhs.gov",
             "type": "python",
             "request": "launch",
-            "module": "checkdmarc._cli.py",
+            "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
                 "dhs.gov"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc gmail.com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "gmail.com"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
