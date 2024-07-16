@@ -450,6 +450,8 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
         pass
     except DMARCRecordStartsWithWhitespace as error:
         raise error
+    except UnrelatedTXTRecordFoundAtDMARC as error:
+        raise error
     except MultipleDMARCRecords as error:
         raise error
     except Exception as error:
@@ -490,10 +492,18 @@ def query_dmarc_record(domain: str, nameservers: list[str] = None,
     warnings = []
     base_domain = get_base_domain(domain)
     location = domain.lower()
-    record = _query_dmarc_record(
-        domain, nameservers=nameservers,
-        resolver=resolver, timeout=timeout,
-        ignore_unrelated_records=ignore_unrelated_records)
+
+    try:
+        record = _query_dmarc_record(
+            domain, nameservers=nameservers,
+            resolver=resolver, timeout=timeout,
+            ignore_unrelated_records=ignore_unrelated_records)
+    except DMARCRecordNotFound:
+        # Skip this exception as we want to query the base domain. If we fail
+        # at that, at the end of this function we will raise another
+        # DMARCRecordNotFound.
+        record = None
+
     try:
         root_records = query_dns(domain, "TXT",
                                  nameservers=nameservers, resolver=resolver,
@@ -509,8 +519,12 @@ def query_dmarc_record(domain: str, nameservers: list[str] = None,
         pass
 
     if record is None and domain != base_domain:
-        record = _query_dmarc_record(base_domain, nameservers=nameservers,
-                                     resolver=resolver, timeout=timeout)
+        record = _query_dmarc_record(
+            base_domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            ignore_unrelated_records=ignore_unrelated_records)
         location = base_domain
     if record is None:
         raise DMARCRecordNotFound(
