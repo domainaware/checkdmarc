@@ -396,7 +396,7 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
     target = f"_dmarc.{domain}"
     txt_prefix = "v=DMARC1"
     dmarc_record = None
-    dmarc_record_count = 0
+    dmarc_records = []
     unrelated_records = []
 
     try:
@@ -404,7 +404,7 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
                             resolver=resolver, timeout=timeout)
         for record in records:
             if record.startswith(txt_prefix):
-                dmarc_record_count += 1
+                dmarc_records.append(record)
             elif record.strip().startswith(txt_prefix):
                 raise DMARCRecordStartsWithWhitespace(
                     "Found a DMARC record that starts with whitespace. "
@@ -414,7 +414,7 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
             else:
                 unrelated_records.append(record)
 
-        if dmarc_record_count > 1:
+        if len(dmarc_records) > 1:
             raise MultipleDMARCRecords(
                 "Multiple DMARC policy records are not permitted - "
                 "https://tools.ietf.org/html/rfc7489#section-6.6.3")
@@ -425,8 +425,8 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
                     "Unrelated TXT records were discovered. These should be "
                     "removed, as some receivers may not expect to find "
                     f"unrelated TXT records at {target}\n\n{ur_str}")
-        dmarc_record = [record for record in records if record.startswith(
-            txt_prefix)][0]
+        if len(dmarc_records) == 1:
+            dmarc_record = dmarc_records[0]
 
     except dns.resolver.NoAnswer:
         try:
