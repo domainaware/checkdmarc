@@ -70,7 +70,6 @@ def test_tls(hostname: str, ssl_context: ssl.SSLContext = None,
             return cached_result["tls"]
     if ssl_context is None:
         ssl_context = ssl.create_default_context()
-        ssl_context.hostname_checks_common_name=False
     logging.debug(f"Testing TLS/SSL on {hostname}")
     try:
         server = smtplib.SMTP_SSL(hostname, context=ssl_context)
