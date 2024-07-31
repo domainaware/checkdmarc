@@ -683,8 +683,8 @@ def verify_dmarc_report_destination(source_domain: str,
                                     timeout: float = 2.0) -> None:
     """
       Checks if the report destination accepts reports for the source domain
-      per RFC 7489, section 7.1. Raises `checkdmarc.dmarc.UnverifiedDMARCURIDestination`
-      if it doesn't accept.
+      per RFC 7489, section 7.1. Raises
+      `checkdmarc.dmarc.UnverifiedDMARCURIDestination` if it doesn't accept.
 
       Args:
           source_domain (str): The source domain
