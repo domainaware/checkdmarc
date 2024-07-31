@@ -424,7 +424,7 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
                 raise UnrelatedTXTRecordFoundAtDMARC(
                     "Unrelated TXT records were discovered. These should be "
                     "removed, as some receivers may not expect to find "
-                    f"unrelated TXT records at {target}\n\n{ur_str}")
+                    f"unrelated TXT records at {target}\n\n{ur_str}", data={"target": target})
         if len(dmarc_records) == 1:
             dmarc_record = dmarc_records[0]
 
@@ -663,7 +663,8 @@ def check_wildcard_dmarc_report_authorization(
                 "Unrelated TXT records were discovered. "
                 "These should be removed, as some "
                 "receivers may not expect to find unrelated TXT records "
-                f"at {wildcard_target}\n\n{ur_str}")
+                f"at {wildcard_target}\n\n{ur_str}",
+                data={"target": wildcard_target})
 
         if dmarc_record_count < 1:
             return False
@@ -736,7 +737,7 @@ def verify_dmarc_report_destination(source_domain: str,
                     "Unrelated TXT records were discovered. "
                     "These should be removed, as some "
                     "receivers may not expect to find unrelated TXT records "
-                    f"at {target}\n\n{ur_str}")
+                    f"at {target}\n\n{ur_str}", data={"target": target})
 
             if dmarc_record_count < 1:
                 return False
