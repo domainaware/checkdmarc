@@ -424,7 +424,8 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
                 raise UnrelatedTXTRecordFoundAtDMARC(
                     "Unrelated TXT records were discovered. These should be "
                     "removed, as some receivers may not expect to find "
-                    f"unrelated TXT records at {target}\n\n{ur_str}", data={"target": target})
+                    f"unrelated TXT records at {target}\n\n{ur_str}",
+                    data={"target": target})
         if len(dmarc_records) == 1:
             dmarc_record = dmarc_records[0]
 
