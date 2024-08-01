@@ -424,7 +424,8 @@ def _query_dmarc_record(domain: str, nameservers: list[str] = None,
                 raise UnrelatedTXTRecordFoundAtDMARC(
                     "Unrelated TXT records were discovered. These should be "
                     "removed, as some receivers may not expect to find "
-                    f"unrelated TXT records at {target}\n\n{ur_str}")
+                    f"unrelated TXT records at {target}\n\n{ur_str}",
+                    data={"target": target})
         if len(dmarc_records) == 1:
             dmarc_record = dmarc_records[0]
 
@@ -663,7 +664,8 @@ def check_wildcard_dmarc_report_authorization(
                 "Unrelated TXT records were discovered. "
                 "These should be removed, as some "
                 "receivers may not expect to find unrelated TXT records "
-                f"at {wildcard_target}\n\n{ur_str}")
+                f"at {wildcard_target}\n\n{ur_str}",
+                data={"target": wildcard_target})
 
         if dmarc_record_count < 1:
             return False
@@ -678,10 +680,11 @@ def verify_dmarc_report_destination(source_domain: str,
                                     nameservers: list[str] = None,
                                     ignore_unrelated_records: bool = False,
                                     resolver: dns.resolver.Resolver = None,
-                                    timeout: float = 2.0) -> bool:
+                                    timeout: float = 2.0) -> None:
     """
       Checks if the report destination accepts reports for the source domain
-      per RFC 7489, section 7.1
+      per RFC 7489, section 7.1. Raises
+      `checkdmarc.dmarc.UnverifiedDMARCURIDestination` if it doesn't accept.
 
       Args:
           source_domain (str): The source domain
@@ -691,10 +694,6 @@ def verify_dmarc_report_destination(source_domain: str,
           resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
-
-      Returns:
-          bool: Indicates if the report domain accepts reports from the given
-          domain
 
       Raises:
           :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`
@@ -710,7 +709,7 @@ def verify_dmarc_report_destination(source_domain: str,
                 nameservers=nameservers,
                 ignore_unrelated_records=ignore_unrelated_records,
                 resolver=resolver):
-            return True
+            return
         target = f"{source_domain}._report._dmarc.{destination_domain}"
         message = f"{destination_domain} does not indicate that it accepts " \
                   f"DMARC reports about {source_domain} - " \
@@ -736,14 +735,12 @@ def verify_dmarc_report_destination(source_domain: str,
                     "Unrelated TXT records were discovered. "
                     "These should be removed, as some "
                     "receivers may not expect to find unrelated TXT records "
-                    f"at {target}\n\n{ur_str}")
+                    f"at {target}\n\n{ur_str}", data={"target": target})
 
             if dmarc_record_count < 1:
-                return False
+                raise UnverifiedDMARCURIDestination(message)
         except Exception:
             raise UnverifiedDMARCURIDestination(message)
-
-    return True
 
 
 def parse_dmarc_record(
