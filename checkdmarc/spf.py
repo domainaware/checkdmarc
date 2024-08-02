@@ -36,7 +36,8 @@ limitations under the License."""
 
 SPF_VERSION_TAG_REGEX_STRING = "v=spf1"
 SPF_MECHANISM_REGEX_STRING = (
-    r"([+\-~?])?(mx:?|ip4:?|ip6:?|exists:?|include:?|all:?|a:?|redirect=|exp:?|ptr:?)"
+    r"([+\-~?])?"
+    r"(mx:?|ip4:?|ip6:?|exists:?|include:?|all:?|a:?|redirect=|exp:?|ptr:?)"
     r"([\w+/_.:\-{%}]*)"
 )
 AFTER_ALL_REGEX_STRING = r"\ball\s*[^\s]+"
