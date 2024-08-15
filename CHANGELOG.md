@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.5.0
+-----
+
+- Support `redirect` in SPF (PR #144)
+
 5.4.0
 -----
 
