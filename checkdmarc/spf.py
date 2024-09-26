@@ -40,7 +40,7 @@ SPF_MECHANISM_REGEX_STRING = (
     r"(mx:?|ip4:?|ip6:?|exists:?|include:?|all:?|a:?|redirect=|exp:?|ptr:?)"
     r"([\w+/_.:\-{%}]*)"
 )
-AFTER_ALL_REGEX_STRING = r"\ball\s*[^\s]+"
+AFTER_ALL_REGEX_STRING = r"([\s^][+\-~?]?all)\s+.*"
 
 SPF_MECHANISM_REGEX = re.compile(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re.IGNORECASE)
@@ -253,7 +253,7 @@ def parse_spf_record(
                             f"{correct_record} not: {record}")
     if len(AFTER_ALL_REGEX.findall(record)) > 0:
         warnings.append("Any text after the all mechanism is ignored")
-        record = AFTER_ALL_REGEX.sub("all", record)
+        record = AFTER_ALL_REGEX.sub(r"\1", record)
     parsed_record = spf_syntax_checker.parse(record)
     if not parsed_record.is_valid:
         pos = parsed_record.pos
