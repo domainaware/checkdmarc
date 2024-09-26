@@ -40,7 +40,7 @@ SPF_MECHANISM_REGEX_STRING = (
     r"(mx:?|ip4:?|ip6:?|exists:?|include:?|all:?|a:?|redirect=|exp:?|ptr:?)"
     r"([\w+/_.:\-{%}]*)"
 )
-AFTER_ALL_REGEX_STRING = r"([\s^][+\-~?]?all)\s+[^\s]+"
+AFTER_ALL_REGEX_STRING = r"([\s^][+\-~?]?all)\s+.*"
 
 SPF_MECHANISM_REGEX = re.compile(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re.IGNORECASE)
