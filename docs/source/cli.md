@@ -28,7 +28,7 @@ options:
   -t TIMEOUT, --timeout TIMEOUT
                         number of seconds to wait for an answer from DNS (default 2.0)
   -b BIMI_SELECTOR, --bimi-selector BIMI_SELECTOR
-                        Check for a BIMI record at the provided selector
+                        The BIMI selector to use (default default)
   -v, --version         show program's version number and exit
   -w WAIT, --wait WAIT  number of seconds to wait between checking domains (default 0.0)
   --skip-tls            skip TLS/SSL testing

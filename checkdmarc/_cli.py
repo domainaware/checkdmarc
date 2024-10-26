@@ -57,9 +57,8 @@ def _main():
                             type=float,
                             default=2.0)
     arg_parser.add_argument("-b", "--bimi-selector",
-                            default=None,
-                            help="Check for a BIMI record at the provided "
-                                 "selector")
+                            default="default",
+                            help="the BIMI selector to use")
     arg_parser.add_argument("-v", "--version", action="version",
                             version=__version__)
     arg_parser.add_argument("-w", "--wait", type=float,

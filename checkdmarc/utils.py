@@ -30,8 +30,7 @@ DNS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 
 WSP_REGEX = r"[ \t]"
 HTTPS_REGEX = (
-    r"https://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F]"
-    r"[0-9a-fA-F]))+"
+    r"(https:\/\/)([\w\-]+\.)+[\w-]+([\w\- ,.\/?%&=]*)"
 )
 MAILTO_REGEX_STRING = (
     r"^(mailto):([\w\-!#$%&'*+-/=?^_`{|}~]"

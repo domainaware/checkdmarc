@@ -1,6 +1,20 @@
 Changelog
 =========
 
+5.6.0
+-----
+
+- Automatically check for a BIMI DNS record at the `default` selector when using the CLI
+- Fix parsing of BIMI record tags when they are separated by a `;` without a space
+- Validate the file at the URL in the BIMI `l` tag value
+  - Must be a SVG file
+  - The SVG version must be `1.2`
+  - The SVG base profile must be `tiny-ps`
+  - The SVG dimensions must be square
+  - The file size must not exceed 32 KB
+
+**Note**: This does not currently include certificate validation.
+
 5.5.1
 -----
 

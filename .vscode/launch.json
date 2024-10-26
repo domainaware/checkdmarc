@@ -13,6 +13,30 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls cardinalhealth.com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "cardinalhealth.com"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc --skip-tls ally.com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "ally.com"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls dhs.gov",
             "type": "python",
             "request": "launch",

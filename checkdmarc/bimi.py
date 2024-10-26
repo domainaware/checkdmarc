@@ -6,9 +6,11 @@ from __future__ import annotations
 import logging
 import re
 from collections import OrderedDict
+from sys import getsizeof
 
 import dns
 import requests
+import xmltodict
 from pyleri import (Grammar,
                     Regex,
                     Sequence,
@@ -355,19 +357,46 @@ def parse_bimi_record(
         if include_tag_descriptions:
             tags[tag]["name"] = bimi_tags[tag]["name"]
             tags[tag]["description"] = bimi_tags[tag]["description"]
-        if tag == "a" and tag_value != "":
+        if tag == "l" and tag_value != "":
+            try:
+                response = session.get(tag_value)
+                response.raise_for_status()
+                raw_xml = response.text
+            except Exception as e:
+                warnings.append(f"Unable to download  "
+                                f"{tag_value} - {str(e)}")
+            try:
+                if isinstance(raw_xml, bytes):
+                    raw_xml = raw_xml.decode(errors="ignore")
+                xml = xmltodict.parse(raw_xml)
+                if "svg" not in xml.keys():
+                    warnings.append(f"The file at {tag_value} is not a SVG file")
+                else:
+                    svg = xml["svg"]
+                    version = svg["@version"]
+                    base_profile = None
+                    if "base_profile" in svg.keys():
+                        base_profile = svg["@baseProfile"]
+                    view_box = svg["@viewBox"]
+                    view_box = view_box.split(" ")
+                    width = int(view_box[-2])
+                    height = int(view_box[-1])
+                    if version != "1.2":
+                        warnings.append(f"The SVG version must be 1.2, not {version}")
+                    if base_profile != "tiny-ps":
+                        warnings.append(f"The SVG base profile must be tiny-ps")
+                    if width != height:
+                        warnings.append("The SVG dimensions must be square, not {width}x{height}")
+                    if getsizeof(raw_xml) > 32000:
+                        warnings.append("The SVG file exceeds to maximum size of 32 KB")
+            except Exception as e:
+                warnings.append(f"Not a SVG file: {str(e)}")
+        elif tag == "a" and tag_value != "":
             try:
                 response = session.get(tag_value)
                 response.raise_for_status()
             except Exception as e:
                 warnings.append(f"Unable to download Authority Evidence at "
-                                f"{tag_value} - {str(e)}")
-        elif tag == "e" and tag_value != "":
-            try:
-                response = session.get(tag_value)
-                response.raise_for_status()
-            except Exception as e:
-                warnings.append(f"Unable to download  "
                                 f"{tag_value} - {str(e)}")
 
     return OrderedDict(tags=tags, warnings=warnings)
