@@ -17,3 +17,4 @@ autopep8
 hatch
 pytest
 ruff
+black

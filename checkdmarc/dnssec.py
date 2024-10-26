@@ -32,8 +32,12 @@ DNSKEY_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 TLSA_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 
 
-def get_dnskey(domain: str, nameservers: list[str] = None,
-               timeout: float = 2.0, cache: ExpiringDict = None):
+def get_dnskey(
+    domain: str,
+    nameservers: list[str] = None,
+    timeout: float = 2.0,
+    cache: ExpiringDict = None,
+):
     """
     Get a DNSKEY RRSet on the given domain
 
@@ -57,9 +61,7 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
         return cache[domain]
 
     logging.debug(f"Checking for DNSKEY records at {domain}")
-    request = dns.message.make_query(domain,
-                                     dns.rdatatype.DNSKEY,
-                                     want_dnssec=True)
+    request = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec=True)
     for nameserver in nameservers:
         try:
             response = dns.query.udp(request, nameserver, timeout=timeout)
@@ -69,13 +71,13 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
                     logging.debug(f"No DNSKEY records found at {domain}")
                     base_domain = get_base_domain(domain)
                     if domain != base_domain:
-                        return get_dnskey(base_domain,
-                                          nameservers=nameservers,
-                                          timeout=timeout)
+                        return get_dnskey(
+                            base_domain, nameservers=nameservers, timeout=timeout
+                        )
                     cache[domain] = None
                     return None
                 rrset = answer[0]
-                name = dns.name.from_text(f'{domain}.')
+                name = dns.name.from_text(f"{domain}.")
                 key = {name: rrset}
                 cache[domain] = key
                 return key
@@ -84,10 +86,12 @@ def get_dnskey(domain: str, nameservers: list[str] = None,
             logging.debug(f"DNSKEY query error: {e}")
 
 
-def test_dnssec(domain: str,
-                nameservers: list[str] = None,
-                timeout: float = 2.0,
-                cache: ExpiringDict = None) -> bool:
+def test_dnssec(
+    domain: str,
+    nameservers: list[str] = None,
+    timeout: float = 2.0,
+    cache: ExpiringDict = None,
+) -> bool:
     """
     Check for DNSSEC on the given domain
 
@@ -111,19 +115,18 @@ def test_dnssec(domain: str,
     key = get_dnskey(domain, nameservers=nameservers, timeout=timeout)
     if key is None:
         return False
-    rdatatypes = [dns.rdatatype.DNSKEY,
-                  dns.rdatatype.MX,
-                  dns.rdatatype.A,
-                  dns.rdatatype.NS,
-                  dns.rdatatype.CNAME]
+    rdatatypes = [
+        dns.rdatatype.DNSKEY,
+        dns.rdatatype.MX,
+        dns.rdatatype.A,
+        dns.rdatatype.NS,
+        dns.rdatatype.CNAME,
+    ]
     for rdatatype in rdatatypes:
-        request = dns.message.make_query(domain,
-                                         rdatatype,
-                                         want_dnssec=True)
+        request = dns.message.make_query(domain, rdatatype, want_dnssec=True)
         for nameserver in nameservers:
             try:
-                response = dns.query.udp(request, nameserver,
-                                         timeout=timeout)
+                response = dns.query.udp(request, nameserver, timeout=timeout)
                 if response is not None:
                     answer = response.answer
                     if len(answer) != 2:
@@ -141,10 +144,14 @@ def test_dnssec(domain: str,
     return False
 
 
-def get_tlsa_records(hostname: str, nameservers: list[str] = None,
-                     timeout: float = 2.0, port: int = 25,
-                     protocol: str = "tcp",
-                     cache: ExpiringDict = None) -> list[str]:
+def get_tlsa_records(
+    hostname: str,
+    nameservers: list[str] = None,
+    timeout: float = 2.0,
+    port: int = 25,
+    protocol: str = "tcp",
+    cache: ExpiringDict = None,
+) -> list[str]:
     """
     Checks for TLSA records on the given hostname
 
@@ -170,9 +177,9 @@ def get_tlsa_records(hostname: str, nameservers: list[str] = None,
         return TLSA_CACHE[query_hostname]
     tlsa_records = []
     logging.debug(f"Checking for TLSA records at {query_hostname}")
-    request = dns.message.make_query(query_hostname,
-                                     dns.rdatatype.TLSA,
-                                     want_dnssec=True)
+    request = dns.message.make_query(
+        query_hostname, dns.rdatatype.TLSA, want_dnssec=True
+    )
     for nameserver in nameservers:
         try:
             response = dns.query.udp(request, nameserver, timeout=timeout)
@@ -181,19 +188,18 @@ def get_tlsa_records(hostname: str, nameservers: list[str] = None,
                 if len(answer) != 2:
                     return tlsa_records
                 dnskey = get_dnskey(
-                    domain=hostname,
-                    nameservers=nameservers,
-                    timeout=timeout
+                    domain=hostname, nameservers=nameservers, timeout=timeout
                 )
                 if dnskey is None:
-                    logging.debug(f"Found TLSA records at {hostname} but not "
-                                  f"a DNSKEY record to verify them")
+                    logging.debug(
+                        f"Found TLSA records at {hostname} but not "
+                        f"a DNSKEY record to verify them"
+                    )
                     return tlsa_records
                 rrset = answer[0]
                 rrsig = answer[1]
                 dns.dnssec.validate(rrset, rrsig, dnskey)
-                tlsa_records = list(map(lambda x: str(x),
-                                        list(rrset.items.keys())))
+                tlsa_records = list(map(lambda x: str(x), list(rrset.items.keys())))
                 cache[query_hostname] = tlsa_records
                 return tlsa_records
         except Exception as e:

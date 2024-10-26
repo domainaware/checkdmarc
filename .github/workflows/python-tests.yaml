@@ -30,8 +30,7 @@ jobs:
         make html
     - name: Check code style
       run: |
-        flake8 checkdmarc
-        flake8 tests.py
+        black --check .
     - name: Run unit tests
       run: |
         coverage run tests.py

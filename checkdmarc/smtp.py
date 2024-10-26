@@ -14,8 +14,12 @@ import dns
 import timeout_decorator
 from expiringdict import ExpiringDict
 
-from checkdmarc.utils import (DNSException,
-                              get_a_records, get_reverse_dns, get_mx_records)
+from checkdmarc.utils import (
+    DNSException,
+    get_a_records,
+    get_reverse_dns,
+    get_mx_records,
+)
 from checkdmarc.mta_sts import mx_in_mta_sts_patterns
 from checkdmarc.dnssec import test_dnssec, get_tlsa_records
 
@@ -42,10 +46,12 @@ class SMTPError(Exception):
     """Raised when SMTP error occurs"""
 
 
-@timeout_decorator.timeout(5, timeout_exception=SMTPError,
-                           exception_message="Connection timed out")
-def test_tls(hostname: str, ssl_context: ssl.SSLContext = None,
-             cache: ExpiringDict = None) -> bool:
+@timeout_decorator.timeout(
+    5, timeout_exception=SMTPError, exception_message="Connection timed out"
+)
+def test_tls(
+    hostname: str, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
+) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
 
@@ -153,11 +159,12 @@ def test_tls(hostname: str, ssl_context: ssl.SSLContext = None,
         return tls
 
 
-@timeout_decorator.timeout(5, timeout_exception=SMTPError,
-                           exception_message="Connection timed out")
-def test_starttls(hostname: str,
-                  ssl_context: ssl.SSLContext = None,
-                  cache: ExpiringDict = None) -> bool:
+@timeout_decorator.timeout(
+    5, timeout_exception=SMTPError, exception_message="Connection timed out"
+)
+def test_starttls(
+    hostname: str, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
+) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support
 
@@ -266,13 +273,16 @@ def test_starttls(hostname: str,
         raise SMTPError(error)
 
 
-def get_mx_hosts(domain: str, skip_tls: bool = False,
-                 approved_hostnames: list[str] = None,
-                 mta_sts_mx_patterns: list[str] = None,
-                 parked: bool = False,
-                 nameservers: list[str] = None,
-                 resolver: dns.resolver.Resolver = None,
-                 timeout: float = 2.0):
+def get_mx_hosts(
+    domain: str,
+    skip_tls: bool = False,
+    approved_hostnames: list[str] = None,
+    mta_sts_mx_patterns: list[str] = None,
+    parked: bool = False,
+    nameservers: list[str] = None,
+    resolver: dns.resolver.Resolver = None,
+    timeout: float = 2.0,
+):
     """
     Gets MX hostname and their addresses
 
@@ -304,26 +314,31 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
     hostnames = set()
     dupe_hostnames = set()
     logging.debug(f"Getting MX records for {domain}")
-    mx_records = get_mx_records(domain, nameservers=nameservers,
-                                resolver=resolver, timeout=timeout)
+    mx_records = get_mx_records(
+        domain, nameservers=nameservers, resolver=resolver, timeout=timeout
+    )
     for record in mx_records:
-        hosts.append(OrderedDict([("preference", record["preference"]),
-                                  ("hostname", record["hostname"].lower()),
-                                  ("addresses", [])]))
+        hosts.append(
+            OrderedDict(
+                [
+                    ("preference", record["preference"]),
+                    ("hostname", record["hostname"].lower()),
+                    ("addresses", []),
+                ]
+            )
+        )
     if parked and len(hosts) > 0:
         warnings.append("MX records found on parked domains")
     elif not parked and len(hosts) == 0:
         warnings.append("No MX records found. Is the domain parked?")
 
     if approved_hostnames:
-        approved_hostnames = list(map(lambda h: h.lower(),
-                                      approved_hostnames))
+        approved_hostnames = list(map(lambda h: h.lower(), approved_hostnames))
     for host in hosts:
         hostname = host["hostname"]
         if hostname in hostnames:
             if hostname not in dupe_hostnames:
-                warnings.append(
-                    f"Hostname {hostname} is listed in multiple MX records")
+                warnings.append(f"Hostname {hostname} is listed in multiple MX records")
                 dupe_hostnames.add(hostname)
             continue
         hostnames.add(hostname)
@@ -337,65 +352,62 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
                 warnings.append(f"Unapproved MX hostname: {hostname}")
         if mta_sts_mx_patterns:
             if not mx_in_mta_sts_patterns(hostname, mta_sts_mx_patterns):
-                warnings.append(f"{hostname} is not included in the MTA-STS "
-                                f"policy")
+                warnings.append(f"{hostname} is not included in the MTA-STS " f"policy")
 
         try:
             dnssec = False
             try:
-                dnssec = test_dnssec(hostname,
-                                     nameservers=nameservers,
-                                     timeout=timeout)
+                dnssec = test_dnssec(hostname, nameservers=nameservers, timeout=timeout)
             except Exception as e:
                 logging.debug(e)
             host["dnssec"] = dnssec
             host["addresses"] = []
-            host["addresses"] = get_a_records(hostname,
-                                              nameservers=nameservers,
-                                              resolver=resolver,
-                                              timeout=timeout)
-            tlsa_records = get_tlsa_records(hostname,
-                                            nameservers=nameservers,
-                                            timeout=timeout)
+            host["addresses"] = get_a_records(
+                hostname, nameservers=nameservers, resolver=resolver, timeout=timeout
+            )
+            tlsa_records = get_tlsa_records(
+                hostname, nameservers=nameservers, timeout=timeout
+            )
 
             if len(tlsa_records) > 0:
                 host["tlsa"] = tlsa_records
             if len(host["addresses"]) == 0:
-                warnings.append(
-                    f"{hostname} does not have any A or AAAA DNS records")
+                warnings.append(f"{hostname} does not have any A or AAAA DNS records")
         except Exception as e:
             if hostname.lower().endswith(".msv1.invalid"):
-                warnings.append(f"{e}. Consider using a TXT record to "
-                                " validate domain ownership in Office 365 "
-                                "instead.")
+                warnings.append(
+                    f"{e}. Consider using a TXT record to "
+                    " validate domain ownership in Office 365 "
+                    "instead."
+                )
             else:
                 warnings.append(e.__str__())
 
         for address in host["addresses"]:
             try:
-                reverse_hostnames = get_reverse_dns(address,
-                                                    nameservers=nameservers,
-                                                    resolver=resolver,
-                                                    timeout=timeout)
+                reverse_hostnames = get_reverse_dns(
+                    address, nameservers=nameservers, resolver=resolver, timeout=timeout
+                )
             except DNSException:
                 reverse_hostnames = []
             if len(reverse_hostnames) == 0:
                 warnings.append(
-                    f"{address} does not have any reverse DNS (PTR) "
-                    "records")
+                    f"{address} does not have any reverse DNS (PTR) " "records"
+                )
             for reverse_hostname in reverse_hostnames:
                 try:
-                    _addresses = get_a_records(reverse_hostname,
-                                               resolver=resolver)
+                    _addresses = get_a_records(reverse_hostname, resolver=resolver)
                 except DNSException as warning:
                     warnings.append(str(warning))
                     _addresses = []
                 if address not in _addresses:
-                    warnings.append(f"The reverse DNS of "
-                                    f"{address} is {reverse_hostname}, but "
-                                    "the A/AAAA DNS records for "
-                                    f"{reverse_hostname} do not resolve to "
-                                    f"{address}")
+                    warnings.append(
+                        f"The reverse DNS of "
+                        f"{address} is {reverse_hostname}, but "
+                        "the A/AAAA DNS records for "
+                        f"{reverse_hostname} do not resolve to "
+                        f"{address}"
+                    )
         if not skip_tls and platform.system() == "Windows":
             logging.warning("Testing TLS is not supported on Windows")
             skip_tls = True
@@ -403,16 +415,14 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
             logging.debug(f"Skipping TLS/SSL tests on {hostname}")
         else:
             try:
-                starttls = test_starttls(hostname,
-                                         cache=STARTTLS_CACHE)
+                starttls = test_starttls(hostname, cache=STARTTLS_CACHE)
                 tls = starttls
                 if not starttls:
                     warnings.append(f"STARTTLS is not supported on {hostname}")
                     tls = test_tls(hostname, cache=TLS_CACHE)
 
                     if not tls:
-                        warnings.append(f"SSL/TLS is not supported on "
-                                        f"{hostname}")
+                        warnings.append(f"SSL/TLS is not supported on " f"{hostname}")
                 host["tls"] = tls
                 host["starttls"] = starttls
             except DNSException as warning:
@@ -432,12 +442,15 @@ def get_mx_hosts(domain: str, skip_tls: bool = False,
     return OrderedDict([("hosts", hosts), ("warnings", warnings)])
 
 
-def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
-             mta_sts_mx_patterns: list[str] = None,
-             skip_tls: bool = False,
-             nameservers: list[str] = None,
-             resolver: dns.resolver.Resolver = None,
-             timeout: float = 2.0) -> OrderedDict:
+def check_mx(
+    domain: str,
+    approved_mx_hostnames: list[str] = None,
+    mta_sts_mx_patterns: list[str] = None,
+    skip_tls: bool = False,
+    nameservers: list[str] = None,
+    resolver: dns.resolver.Resolver = None,
+    timeout: float = 2.0,
+) -> OrderedDict:
     """
     Gets MX hostname and their addresses, or an empty list of hosts and an
     error if a DNS error occurs
@@ -474,9 +487,10 @@ def check_mx(domain: str, approved_mx_hostnames: list[str] = None,
             skip_tls=skip_tls,
             approved_hostnames=approved_mx_hostnames,
             mta_sts_mx_patterns=mta_sts_mx_patterns,
-            nameservers=nameservers, resolver=resolver,
-            timeout=timeout)
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+        )
     except DNSException as error:
-        mx_results = OrderedDict([("hosts", []),
-                                  ("error", str(error))])
+        mx_results = OrderedDict([("hosts", []), ("error", str(error))])
     return mx_results

@@ -9,15 +9,10 @@ import re
 from collections import OrderedDict
 
 import dns
-from pyleri import (Grammar,
-                    Regex,
-                    Sequence,
-                    List
-                    )
+from pyleri import Grammar, Regex, Sequence, List
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
-from checkdmarc.utils import (WSP_REGEX, MAILTO_REGEX_STRING, HTTPS_REGEX,
-                              query_dns)
+from checkdmarc.utils import WSP_REGEX, MAILTO_REGEX_STRING, HTTPS_REGEX, query_dns
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -33,16 +28,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-SMTPTLSREPORTING_VERSION_REGEX_STRING = (fr"v{WSP_REGEX}*="
-                                         fr"{WSP_REGEX}*TLSRPTv1{WSP_REGEX}*;")
-SMTPTLSREPORTING_URI_REGEX_STRING = fr"({MAILTO_REGEX_STRING}|{HTTPS_REGEX})"
+SMTPTLSREPORTING_VERSION_REGEX_STRING = (
+    rf"v{WSP_REGEX}*=" rf"{WSP_REGEX}*TLSRPTv1{WSP_REGEX}*;"
+)
+SMTPTLSREPORTING_URI_REGEX_STRING = rf"({MAILTO_REGEX_STRING}|{HTTPS_REGEX})"
 
 SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING = (
-    fr"([a-z]{{1,3}}){WSP_REGEX}*={WSP_REGEX}*"
-    fr"([^\s;]+)"
+    rf"([a-z]{{1,3}}){WSP_REGEX}*={WSP_REGEX}*" rf"([^\s;]+)"
 )
 SMTPTLSREPORTING_TAG_VALUE_REGEX = re.compile(
-    SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING, re.IGNORECASE
+)
 
 SMTPTLSREPORTING_URI_REGEX = re.compile(
     SMTPTLSREPORTING_URI_REGEX_STRING, re.IGNORECASE
@@ -55,11 +51,12 @@ class _SMTPTLSReportingWarning(Exception):
 
 class SMTPTLSReportingError(Exception):
     """Raised when a fatal SMTP TLS Reporting error occurs"""
+
     def __init__(self, msg: str, data: dict = None):
         """
-       Args:
-           msg (str): The error message
-           data (dict): A dictionary of data to include in the results
+        Args:
+            msg (str): The error message
+            data (dict): A dictionary of data to include in the results
         """
         self.data = data
         Exception.__init__(self, msg)
@@ -67,6 +64,7 @@ class SMTPTLSReportingError(Exception):
 
 class SMTPTLSReportingRecordNotFound(SMTPTLSReportingError):
     """Raised when an SMTP TLS Reporting record could not be found"""
+
     def __init__(self, error):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
@@ -90,15 +88,15 @@ class UnrelatedTXTRecordFoundAtTLSRPT(SMTPTLSReportingError):
 
 class SPFRecordFoundWhereTLSRPTShouldBe(UnrelatedTXTRecordFoundAtTLSRPT):
     """Raised when an SPF record is found where an SMTP TLS Reporting record
-        should be;
-        most likely, the ``_smtp._tls.SMTPTLSReporting`` subdomain
-        record does not actually exist, and the request for ``TXT`` records was
-        redirected to the base domain"""
+    should be;
+    most likely, the ``_smtp._tls.SMTPTLSReporting`` subdomain
+    record does not actually exist, and the request for ``TXT`` records was
+    redirected to the base domain"""
 
 
 class SMTPTLSReportingRecordInWrongLocation(SMTPTLSReportingError):
     """Raised when an SMTP TLS Reporting record is found at the root of a
-       domain"""
+    domain"""
 
 
 class MultipleSMTPTLSReportingRecords(SMTPTLSReportingError):
@@ -107,36 +105,35 @@ class MultipleSMTPTLSReportingRecords(SMTPTLSReportingError):
 
 class _SMTPTLSReportingGrammar(Grammar):
     """Defines Pyleri grammar for SMTP TLS Reporting records"""
+
     version_tag = Regex(SMTPTLSREPORTING_VERSION_REGEX_STRING)
     tag_value = Regex(SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
     START = Sequence(
-        version_tag, List(tag_value,
-                          delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"),
-                          opt=True))
+        version_tag,
+        List(tag_value, delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True),
+    )
 
 
 smtp_rpt_tags = OrderedDict(
-    v=OrderedDict(
-        name="Version",
-        description="Must be TLSRPTv1",
-        required=True
-    ),
+    v=OrderedDict(name="Version", description="Must be TLSRPTv1", required=True),
     rua=OrderedDict(
         name="Aggregate Reporting URIs",
-        description='A URI specifying the endpoint to which aggregate '
-                    'information about policy validation results should be '
-                    'sent. Two URI schemes are supported: "mailto" and '
-                    '"https".  As with DMARC the Policy Domain can specify a '
-                    'comma-separated list of URIs.',
-        required=False
-    )
+        description="A URI specifying the endpoint to which aggregate "
+        "information about policy validation results should be "
+        'sent. Two URI schemes are supported: "mailto" and '
+        '"https".  As with DMARC the Policy Domain can specify a '
+        "comma-separated list of URIs.",
+        required=False,
+    ),
 )
 
 
-def query_smtp_tls_reporting_record(domain: str,
-                                    nameservers: list[str] = None,
-                                    resolver: dns.resolver.Resolver = None,
-                                    timeout: float = 2.0) -> OrderedDict:
+def query_smtp_tls_reporting_record(
+    domain: str,
+    nameservers: list[str] = None,
+    resolver: dns.resolver.Resolver = None,
+    timeout: float = 2.0,
+) -> OrderedDict:
     """
     Queries DNS for an SMTP TLS Reporting record
 
@@ -168,8 +165,9 @@ def query_smtp_tls_reporting_record(domain: str,
     unrelated_records = []
 
     try:
-        records = query_dns(target, "TXT", nameservers=nameservers,
-                            resolver=resolver, timeout=timeout)
+        records = query_dns(
+            target, "TXT", nameservers=nameservers, resolver=resolver, timeout=timeout
+        )
         for record in records:
             if record.startswith(txt_prefix):
                 sts_record_count += 1
@@ -178,31 +176,37 @@ def query_smtp_tls_reporting_record(domain: str,
 
         if sts_record_count > 1:
             raise MultipleSMTPTLSReportingRecords(
-                "Multiple SMTP TLS Reporting records are not permitted")
+                "Multiple SMTP TLS Reporting records are not permitted"
+            )
         if len(unrelated_records) > 0:
             ur_str = "\n\n".join(unrelated_records)
             raise UnrelatedTXTRecordFoundAtTLSRPT(
                 "Unrelated TXT records were discovered. These should be "
                 "removed, as some receivers may not expect to find "
                 "unrelated TXT records "
-                f"at {target}\n\n{ur_str}")
+                f"at {target}\n\n{ur_str}"
+            )
         sts_record = records[0]
 
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
         try:
-            records = query_dns(domain, "TXT",
-                                nameservers=nameservers, resolver=resolver,
-                                timeout=timeout)
+            records = query_dns(
+                domain,
+                "TXT",
+                nameservers=nameservers,
+                resolver=resolver,
+                timeout=timeout,
+            )
             for record in records:
                 if record.startswith(txt_prefix):
                     raise SMTPTLSReportingRecordInWrongLocation(
                         "The SMTP TLS Reporting record must be located at "
-                        f"{target}, not {domain}")
+                        f"{target}, not {domain}"
+                    )
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
-            raise SMTPTLSReportingRecordNotFound(
-                f"The domain {domain} does not exist")
+            raise SMTPTLSReportingRecordNotFound(f"The domain {domain} does not exist")
         except Exception as error:
             raise SMTPTLSReportingRecordNotFound(error)
     except Exception as error:
@@ -210,16 +214,17 @@ def query_smtp_tls_reporting_record(domain: str,
 
     if sts_record is None:
         raise SMTPTLSReportingRecordNotFound(
-            "An SMTP TLS Reporting DNS record does not exist for this domain")
+            "An SMTP TLS Reporting DNS record does not exist for this domain"
+        )
 
-    return OrderedDict([("record", sts_record),
-                        ("warnings", warnings)])
+    return OrderedDict([("record", sts_record), ("warnings", warnings)])
 
 
 def parse_smtp_tls_reporting_record(
-        record: str,
-        include_tag_descriptions: bool = False,
-        syntax_error_marker: str = SYNTAX_ERROR_MARKER) -> OrderedDict:
+    record: str,
+    include_tag_descriptions: bool = False,
+    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
+) -> OrderedDict:
     """
     Parses an SMTP TLS Reporting record
 
@@ -249,11 +254,13 @@ def parse_smtp_tls_reporting_record(
 
     """
     logging.debug("Parsing the SMTP TLS Reporting record")
-    spf_in_smtp_error_msg = ("Found a SPF record where a SMTP TLS Reporting "
-                             "record should be; most likely, the _smtp._tls "
-                             "subdomain record does not actually exist, "
-                             "and the request for TXT records was "
-                             "redirected to the base domain")
+    spf_in_smtp_error_msg = (
+        "Found a SPF record where a SMTP TLS Reporting "
+        "record should be; most likely, the _smtp._tls "
+        "subdomain record does not actually exist, "
+        "and the request for TXT records was "
+        "redirected to the base domain"
+    )
     warnings = []
     record = record.strip('"')
     if record.lower().startswith("v=spf1"):
@@ -262,15 +269,21 @@ def parse_smtp_tls_reporting_record(
     parsed_record = smtp_tls_syntax_checker.parse(record)
     if not parsed_record.is_valid:
         expecting = list(
-            map(lambda x: str(x).strip('"'), list(parsed_record.expecting)))
-        marked_record = (record[:parsed_record.pos] + syntax_error_marker +
-                         record[parsed_record.pos:])
+            map(lambda x: str(x).strip('"'), list(parsed_record.expecting))
+        )
+        marked_record = (
+            record[: parsed_record.pos]
+            + syntax_error_marker
+            + record[parsed_record.pos :]
+        )
         expecting = " or ".join(expecting)
-        raise SMTPTLSReportingSyntaxError(f"Error: Expected {expecting} "
-                                          f"at position {parsed_record.pos} "
-                                          f"(marked with"
-                                          f" {syntax_error_marker}) "
-                                          f"in: {marked_record}")
+        raise SMTPTLSReportingSyntaxError(
+            f"Error: Expected {expecting} "
+            f"at position {parsed_record.pos} "
+            f"(marked with"
+            f" {syntax_error_marker}) "
+            f"in: {marked_record}"
+        )
 
     pairs = SMTPTLSREPORTING_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
@@ -279,27 +292,30 @@ def parse_smtp_tls_reporting_record(
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
         if tag not in smtp_rpt_tags:
-            raise InvalidSMTPTLSReportingTag(f"{tag} is not a valid SMTP TLS "
-                                             f"Reporting record tag")
+            raise InvalidSMTPTLSReportingTag(
+                f"{tag} is not a valid SMTP TLS " f"Reporting record tag"
+            )
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["description"] = smtp_rpt_tags[tag]["description"]
     if "rua" not in tags:
-        SMTPTLSReportingSyntaxError("The record is missing the required rua "
-                                    "tag")
+        SMTPTLSReportingSyntaxError("The record is missing the required rua " "tag")
     tags["rua"]["value"] = tags["rua"]["value"].split(",")
     for uri in tags["rua"]["value"]:
         if len(SMTPTLSREPORTING_URI_REGEX.findall(uri)) != 1:
-            raise SMTPTLSReportingSyntaxError(f"{uri} is not a valid SMTP "
-                                              f"TLS reporting URI")
+            raise SMTPTLSReportingSyntaxError(
+                f"{uri} is not a valid SMTP " f"TLS reporting URI"
+            )
 
     return OrderedDict(tags=tags, warnings=warnings)
 
 
-def check_smtp_tls_reporting(domain: str,
-                             nameservers: list[str] = None,
-                             resolver: dns.resolver.Resolver = None,
-                             timeout: float = 2.0) -> OrderedDict:
+def check_smtp_tls_reporting(
+    domain: str,
+    nameservers: list[str] = None,
+    resolver: dns.resolver.Resolver = None,
+    timeout: float = 2.0,
+) -> OrderedDict:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.
 
@@ -328,12 +344,12 @@ def check_smtp_tls_reporting(domain: str,
     smtp_tls_reporting_results = OrderedDict([("valid", True)])
     try:
         smtp_tls_reporting_record = query_smtp_tls_reporting_record(
-            domain,
-            nameservers=nameservers, resolver=resolver,
-            timeout=timeout)
+            domain, nameservers=nameservers, resolver=resolver, timeout=timeout
+        )
         warnings = smtp_tls_reporting_record["warnings"]
         smtp_tls_reporting_record = parse_smtp_tls_reporting_record(
-            smtp_tls_reporting_record["record"])
+            smtp_tls_reporting_record["record"]
+        )
         warnings += smtp_tls_reporting_record["warnings"]
         smtp_tls_reporting_results["tags"] = smtp_tls_reporting_record["tags"]
         smtp_tls_reporting_results["warnings"] = warnings
