@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.5.1
+-----
+
+- SPF record validation fixes (PR #147)
+  - Accept mechanisms with domains that start with `all` (Fixes #145)
+  - Ignore multiple trailing mechanisms and random text with spaces
+
 5.5.0
 -----
 
