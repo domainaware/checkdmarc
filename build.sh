@@ -9,8 +9,7 @@ fi
 . venv/bin/activate
 pip install -U pip
 pip install -U -r requirements.txt
-flake8 checkdmarc
-flake8 tests.py
+black --check .
 cd docs
 make clean
 make html
