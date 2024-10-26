@@ -1,6 +1,12 @@
 Changelog
 =========
 
+5.6.2
+-----
+
+- Add a warning when BIMI records do not provide a mark certificate
+- Ude the correct dependency (`xmltodict`, not `xml2dict`)
+
 5.6.1
 -----
 

@@ -372,6 +372,7 @@ def parse_bimi_record(
 
     pairs = BIMI_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
+    certificate_provided = False
 
     for pair in pairs:
         tag = pair[0].lower().strip()
@@ -421,11 +422,16 @@ def parse_bimi_record(
             try:
                 response = session.get(tag_value)
                 response.raise_for_status()
+                certificate_provided = True
             except Exception as e:
                 warnings.append(
                     f"Unable to download Authority Evidence at "
                     f"{tag_value} - {str(e)}"
                 )
+    if not certificate_provided:
+        warnings.append(
+            "Most providers will not display a BIMI image without a mark certificate"
+        )
 
     return OrderedDict(tags=tags, warnings=warnings)
 
