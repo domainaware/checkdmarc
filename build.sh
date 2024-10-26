@@ -9,7 +9,7 @@ fi
 . venv/bin/activate
 pip install -U pip
 pip install -U -r requirements.txt
-black --check .
+black .
 cd docs
 make clean
 make html

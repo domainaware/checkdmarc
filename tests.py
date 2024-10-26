@@ -348,10 +348,10 @@ class Test(unittest.TestCase):
         )
 
     def testBIMI(self):
-        """Test BIMI checks """
+        """Test BIMI checks"""
         domain = "chase.com"
 
-        results =  checkdmarc.bimi.check_bimi(domain)
+        results = checkdmarc.bimi.check_bimi(domain)
 
         self.assertEqual(len(results["warnings"]), 0)
 
