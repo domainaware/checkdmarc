@@ -399,7 +399,7 @@ def parse_bimi_record(
                     svg = xml["svg"]
                     version = svg["@version"]
                     base_profile = None
-                    if "@base_profile" in svg.keys():
+                    if "@baseProfile" in svg.keys():
                         base_profile = svg["@baseProfile"]
                     view_box = svg["@viewBox"]
                     view_box = view_box.split(" ")
