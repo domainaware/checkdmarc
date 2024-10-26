@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.6.1
+-----
+
+- Fix SVG base profile detection
+
 5.6.0
 -----
 

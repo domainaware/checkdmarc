@@ -11,6 +11,7 @@ import checkdmarc.utils
 import checkdmarc.spf
 import checkdmarc.dmarc
 import checkdmarc.dnssec
+import checkdmarc.bimi
 
 known_good_domains = ["fbi.gov", "pm.me"]
 
@@ -345,6 +346,14 @@ class Test(unittest.TestCase):
             dmarc_record,
             domain,
         )
+
+    def testBIMI(self):
+        """Test BIMI checks """
+        domain = "chase.com"
+
+        results =  checkdmarc.bimi.check_bimi(domain)
+
+        self.assertEqual(len(results["warnings"]), 0)
 
 
 if __name__ == "__main__":
