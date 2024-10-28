@@ -1,6 +1,16 @@
 Changelog
 =========
 
+5.7.0
+-----
+
+`checkdmarc` will now validate Verified Mark Certificates (VMCs) and Common Mark Certificates (CMC),
+snd will verify that SHA256 hash of the logo embedded in the certificate matches the SHA256 hash
+logo at the URL at the BIMI `l` tag.
+
+Additionally, SVG and certificate metadata is now included in the `checkdmarc.bimi.parse_bimi_record()` API and
+JSON CLI output.
+
 5.6.2
 -----
 

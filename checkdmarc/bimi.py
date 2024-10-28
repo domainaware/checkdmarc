@@ -4,15 +4,28 @@
 from __future__ import annotations
 
 import logging
+from typing import Union
 import re
 from collections import OrderedDict
 from sys import getsizeof
+import base64
+import gzip
+import hashlib
+
+try:
+    import importlib.resources as pkg_resources
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    import importlib_resources as pkg_resources
 
 import dns
 import requests
 import xmltodict
+import pem
 from pyleri import Grammar, Regex, Sequence, List
+from OpenSSL.crypto import load_certificate, FILETYPE_PEM, X509Store, X509StoreContext, X509, X509StoreContextError
 
+import checkdmarc.resources
 from checkdmarc._constants import SYNTAX_ERROR_MARKER, USER_AGENT
 from checkdmarc.utils import WSP_REGEX, HTTPS_REGEX, query_dns, get_base_domain
 
@@ -35,6 +48,60 @@ BIMI_TAG_VALUE_REGEX_STRING = (
     rf"([a-z]{{1,2}}){WSP_REGEX}*={WSP_REGEX}*(bimi1|{HTTPS_REGEX})?"
 )
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+
+
+# Load the certificates included in MVACAS.pem into a certificate store
+X509STORE = X509Store()
+with pkg_resources.path(checkdmarc.resources,
+                        "MVACAs.pem") as path:
+
+    CA_PEMS = pem.parse_file(path)
+for CA_PEM in CA_PEMS:
+    CA = load_certificate(FILETYPE_PEM, CA_PEM.as_bytes())
+    X509STORE.add_cert(CA)
+
+BIMI_TAGS = OrderedDict(
+    v=OrderedDict(
+        name="Version",
+        required=True,
+        description="Identifies the record "
+        "retrieved as a BIMI "
+        "record. It MUST have the "
+        'value of "BIMI1". The '
+        "value of this tag MUST "
+        "match precisely; if it "
+        "does not or it is absent, "
+        "the entire retrieved "
+        "record MUST be ignored. "
+        "It MUST be the first "
+        "tag in the list.",
+    ),
+    a=OrderedDict(
+        name="Authority Evidence Location",
+        required=False,
+        default="",
+        description="If present, this tag MUST have an empty value "
+        "or its value MUST be a single URI. An empty "
+        "value for the tag is interpreted to mean the "
+        "Domain Owner does not wish to publish or does "
+        "not have authority evidence to disclose. The "
+        "URI, if present, MUST contain a fully "
+        "qualified domain name (FQDN) and MUST specify "
+        'HTTPS as the URI scheme ("https"). The URI '
+        "SHOULD specify the location of a publicly "
+        "retrievable BIMI Evidence Document.",
+    ),
+    l=OrderedDict(
+        name="Location",
+        required=False,
+        default="",
+        description="The value of this tag is either empty "
+        "indicating declination to publish, or a single "
+        "URI representing the location of a Brand "
+        "Indicator file. The only supported transport "
+        "is HTTPS.",
+    ),
+)
 
 
 class _BIMIWarning(Exception):
@@ -107,50 +174,121 @@ class _BIMIGrammar(Grammar):
         List(tag_value, delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True),
     )
 
+def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
+    if isinstance(raw_xml, bytes):
+        raw_xml = raw_xml.decode(errors="ignore")
+    try:
+        xml = xmltodict.parse(raw_xml)
+        base_profile = None
+        svg = xml["svg"]
+        version = svg["@version"]
+        if "@baseProfile" in svg.keys():
+            base_profile = svg["@baseProfile"]
+        view_box = svg["@viewBox"]
+        view_box = view_box.split(" ")
+        width = int(view_box[-2])
+        height = int(view_box[-1])
+        title = None
+        if "title" in svg.keys():
+            title = svg["title"]
+        metadata = OrderedDict()
+        metadata["svg_version"] = version
+        metadata["base_profile"] = base_profile
+        if title is not None:
+            metadata["title"] = title
+        metadata["width"] = width
+        metadata["height"] = height
+        metadata["filesize"] = f"{getsizeof(raw_xml)/1000} KB"
+        metadata["sha256_hash"] = hashlib.sha256(raw_xml.encode("utf-8")).hexdigest()
+        return metadata
+    except Exception as e:
+        raise ValueError(f"Not a SVG file: {str(e)}")
 
-bimi_tags = OrderedDict(
-    v=OrderedDict(
-        name="Version",
-        required=True,
-        description="Identifies the record "
-        "retrieved as a BIMI "
-        "record. It MUST have the "
-        'value of "BIMI1". The '
-        "value of this tag MUST "
-        "match precisely; if it "
-        "does not or it is absent, "
-        "the entire retrieved "
-        "record MUST be ignored. "
-        "It MUST be the first "
-        "tag in the list.",
-    ),
-    a=OrderedDict(
-        name="Authority Evidence Location",
-        required=False,
-        default="",
-        description="If present, this tag MUST have an empty value "
-        "or its value MUST be a single URI. An empty "
-        "value for the tag is interpreted to mean the "
-        "Domain Owner does not wish to publish or does "
-        "not have authority evidence to disclose. The "
-        "URI, if present, MUST contain a fully "
-        "qualified domain name (FQDN) and MUST specify "
-        'HTTPS as the URI scheme ("https"). The URI '
-        "SHOULD specify the location of a publicly "
-        "retrievable BIMI Evidence Document.",
-    ),
-    l=OrderedDict(
-        name="Location",
-        required=False,
-        default="",
-        description="The value of this tag is either empty "
-        "indicating declination to publish, or a single "
-        "URI representing the location of a Brand "
-        "Indicator file. The only supported transport "
-        "is HTTPS.",
-    ),
-)
 
+def check_svg_requirements(svg_metadata: OrderedDict) -> [str]:
+    _warnings = []
+    if svg_metadata["svg_version"] != "1.2":
+        _warnings.append(f"The SVG version must be 1.2, not {svg_metadata['svg_version']}")
+    if svg_metadata["base_profile"] != "tiny-ps":
+        _warnings.append(f"The SVG base profile must be tiny-ps")
+    if svg_metadata["width"] != svg_metadata["height"]:
+        _warnings.append(
+            "The SVG dimensions must be square, not {width}x{height}"
+        )
+    if float(svg_metadata["filesize"].strip(" KB")) > 32:
+        _warnings.append("The SVG file exceeds the maximum size of 32 kB")
+    return _warnings
+
+def _get_certificate_subjecttaltnames(cert: Union[X509, bytes]) -> [str]:
+    """Get the subjectaltname from a PEM certificate"""
+    if type(cert) is bytes:
+        cert = load_certificate(FILETYPE_PEM, cert)
+    for cert_ext_id in range(cert.get_extension_count()):
+        cert_ext = cert.get_extension(cert_ext_id)
+        if cert_ext.get_short_name() == b"subjectAltName":
+            ext_data = cert_ext.get_data().strip(b'0\x10\x82\x0e').strip(b'0\x81\x8e\x82\x13')
+            return ext_data.decode("utf-8", errors="ignore").lower().split('\x82\x15')
+
+
+def extract_logo_from_certificate(cert: Union[bytes, X509]):
+    """Extracts the logo from a certificate"""
+    if type(cert) is bytes:
+        cert = load_certificate(FILETYPE_PEM, cert)
+    for cert_ext_id in range(cert.get_extension_count()):
+        cert_ext = cert.get_extension(cert_ext_id)
+        if cert_ext.get_short_name() == b"UNDEF":
+            logotype_data = cert_ext.get_data().decode("utf-8", errors="ignore")
+            logo_base64 = base64.b64decode(logotype_data.split(",")[1])
+            logo = gzip.decompress(logo_base64)
+            return logo
+def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> OrderedDict:
+    """Get metadata about a Verified Mark Certificate"""
+    metadata = OrderedDict()
+    valid = False
+    validation_errors = []
+    subjectaltnames = []
+    def decode_components(components: dict):
+        new_dict = OrderedDict()
+        for component in components:
+            new_key = component[0].decode("utf-8", errors="ignore")
+            new_value = component[1].decode("utf-8", errors="ignore")
+            new_dict[new_key] = new_value
+        return new_dict
+    try:
+        if type(pem_crt) is bytes:
+            pem_crt = pem_crt.decode(errors="ignore")
+        loaded_certs = []
+        for cert in pem.parse(pem_crt):
+            cert = load_certificate(FILETYPE_PEM, cert.as_bytes())
+            loaded_certs.append(cert)
+        vmc = loaded_certs[0]
+        metadata["issuer"] = decode_components(vmc.get_issuer().get_components())
+        metadata["subject"] = decode_components(vmc.get_subject().get_components())
+        metadata["serial_number"] = vmc.get_serial_number()
+        metadata["expires"] = str(vmc.get_notAfter())
+        metadata["valid"] = valid and not vmc.has_expired()
+        subjectaltnames = _get_certificate_subjecttaltnames(vmc)
+        metadata["domains"] = subjectaltnames
+        metadata["logodata_sha256_hash"] = None
+        logodata = extract_logo_from_certificate(vmc)
+        if logodata is not None:
+            metadata["logodata_sha256_hash"] = hashlib.sha256(logodata).hexdigest()
+        store_context = X509StoreContext(X509STORE, vmc, chain=loaded_certs)
+        try:
+            store_context.verify_certificate()
+            valid = True
+            metadata["valid"] = valid
+        except X509StoreContextError as e:
+            validation_errors.append(str(e))
+            metadata["valid"] = valid
+    except Exception as e:
+        validation_errors.append(str(e))
+    if domain is not None:
+        if domain.lower() not in subjectaltnames:
+            validation_errors.append(f"{domain} does not match the certificate subjectaltnames, {subjectaltnames}")
+            metadata["validation_errors"] = validation_errors
+            metadata["valid"] = False
+    return metadata
 
 def _query_bimi_record(
     domain: str,
@@ -302,6 +440,7 @@ def query_bimi_record(
 
 def parse_bimi_record(
     record: str,
+    domain: str = None,
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> OrderedDict:
@@ -310,6 +449,7 @@ def parse_bimi_record(
 
     Args:
         record (str): A BIMI record
+        domain (str): The domain where the BIMI record was located
         include_tag_descriptions (bool): Include descriptions in parsed results
         syntax_error_marker (str): The maker for pointing out syntax errors
 
@@ -319,7 +459,8 @@ def parse_bimi_record(
 
            - ``value`` - The BIMI tag value
            - ``description`` - A description of the tag/value
-
+         - ``image`` - SVG image metadata, if any
+         - ``certificate`` - Verified Mark Certificate (VMC metadata), if any
          - ``warnings`` - A ``list`` of warnings
 
         .. note::
@@ -337,6 +478,9 @@ def parse_bimi_record(
         :exc:`checkdmarc.bimi.InvalidBIMITagValue`
         :exc:`checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe`
     """
+    results = OrderedDict()
+    image_metadata = None
+    cert_metadata = None
     logging.debug("Parsing the BIMI record")
     session = requests.Session()
     session.headers = {"User-Agent": USER_AGENT}
@@ -377,63 +521,53 @@ def parse_bimi_record(
     for pair in pairs:
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
-        if tag not in bimi_tags:
+        if tag not in BIMI_TAGS:
             raise InvalidBIMITag(f"{tag} is not a valid BIMI record tag")
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
-            tags[tag]["name"] = bimi_tags[tag]["name"]
-            tags[tag]["description"] = bimi_tags[tag]["description"]
+            tags[tag]["name"] = BIMI_TAGS[tag]["name"]
+            tags[tag]["description"] = BIMI_TAGS[tag]["description"]
         if tag == "l" and tag_value != "":
+            raw_xml = None
             try:
                 response = session.get(tag_value)
                 response.raise_for_status()
-                raw_xml = response.text
+                raw_xml = response.content
             except Exception as e:
-                warnings.append(f"Unable to download  " f"{tag_value} - {str(e)}")
-            try:
-                if isinstance(raw_xml, bytes):
-                    raw_xml = raw_xml.decode(errors="ignore")
-                xml = xmltodict.parse(raw_xml)
-                if "svg" not in xml.keys():
-                    warnings.append(f"The file at {tag_value} is not a SVG file")
-                else:
-                    svg = xml["svg"]
-                    version = svg["@version"]
-                    base_profile = None
-                    if "@baseProfile" in svg.keys():
-                        base_profile = svg["@baseProfile"]
-                    view_box = svg["@viewBox"]
-                    view_box = view_box.split(" ")
-                    width = int(view_box[-2])
-                    height = int(view_box[-1])
-                    if version != "1.2":
-                        warnings.append(f"The SVG version must be 1.2, not {version}")
-                    if base_profile != "tiny-ps":
-                        warnings.append(f"The SVG base profile must be tiny-ps")
-                    if width != height:
-                        warnings.append(
-                            "The SVG dimensions must be square, not {width}x{height}"
-                        )
-                    if getsizeof(raw_xml) > 32000:
-                        warnings.append("The SVG file exceeds to maximum size of 32 KB")
-            except Exception as e:
-                warnings.append(f"Not a SVG file: {str(e)}")
+                warnings.append(f"Unable to download {tag_value} - {str(e)}")
+            if raw_xml is not None:
+                try:
+                    image_metadata = get_svg_metadata(raw_xml)
+                    warnings += check_svg_requirements(image_metadata)
+                except Exception as e:
+                    warnings.append(str(e))
         elif tag == "a" and tag_value != "":
+            cert_metadata = None
             try:
                 response = session.get(tag_value)
                 response.raise_for_status()
-                certificate_provided = True
+                pem_bytes = response.content
+                cert_metadata = get_certificate_metadata(pem_bytes, domain=domain)
+                if image_metadata["sha256_hash"] == cert_metadata["logodata_sha256_hash"]:
+                    certificate_provided = True
+                else:
+                    warnings.append("SHA256 hash mismatch between the certificate and the image")
             except Exception as e:
-                warnings.append(
-                    f"Unable to download Authority Evidence at "
-                    f"{tag_value} - {str(e)}"
-                )
+                warnings.append(f"Unable to download mark certificate - {str(e)}")
+
+
     if not certificate_provided:
         warnings.append(
-            "Most providers will not display a BIMI image without a mark certificate"
+            "Most providers will not display a BIMI image without a valid mark certificate"
         )
+    results["tags"] = tags
+    if image_metadata is not None:
+        results["image"] = image_metadata
+    if cert_metadata is not None:
+        results["certificate"] = cert_metadata
+    results["warnings"] = warnings
 
-    return OrderedDict(tags=tags, warnings=warnings)
+    return results
 
 
 def check_bimi(
@@ -488,9 +622,14 @@ def check_bimi(
         bimi_results["selector"] = selector
         bimi_results["record"] = bimi_query["record"]
         parsed_bimi = parse_bimi_record(
-            bimi_results["record"], include_tag_descriptions=include_tag_descriptions
+            bimi_results["record"], include_tag_descriptions=include_tag_descriptions,
+            domain=domain
         )
         bimi_results["tags"] = parsed_bimi["tags"]
+        if "image" in parsed_bimi.keys():
+            bimi_results["image"] = parsed_bimi["image"]
+        if "certificate" in parsed_bimi.keys():
+            bimi_results["certificate"] = parsed_bimi["certificate"]
         bimi_results["warnings"] = parsed_bimi["warnings"]
     except BIMIError as error:
         bimi_results["selector"] = selector
