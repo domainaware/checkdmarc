@@ -235,9 +235,10 @@ def _get_certificate_san(cert: Union[X509, bytes]) -> [str]:
         cert_ext = cert.get_extension(cert_ext_id)
         if cert_ext.get_short_name() == b"subjectAltName":
             san = cert_ext.__str__()
-            san.replace("DNS:", "")
+            san = san.replace("DNS:", "")
             san = san.split(", ")
             return san
+
 
 def extract_logo_from_certificate(cert: Union[bytes, X509]):
     """Extracts the logo from a certificate"""
