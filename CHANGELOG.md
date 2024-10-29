@@ -1,6 +1,14 @@
 Changelog
 =========
 
+7.5.3
+-----
+
+- BIMI images and mark certificates
+  - Better error handling
+  - Simplified warning messages
+  - `sha256_hash` output tfields renamed to `sha256` 
+
 7.5.2
 -----
 

@@ -207,7 +207,7 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
         metadata["width"] = width
         metadata["height"] = height
         metadata["filesize"] = f"{getsizeof(raw_xml)/1000} KB"
-        metadata["sha256_hash"] = hashlib.sha256(raw_xml.encode("utf-8")).hexdigest()
+        metadata["sha256"] = hashlib.sha256(raw_xml.encode("utf-8")).hexdigest()
         return metadata
     except Exception as e:
         raise ValueError(f"Not a SVG file: {str(e)}")
@@ -286,10 +286,10 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
         metadata["valid"] = valid and not vmc.has_expired()
         san = _get_certificate_san(vmc)
         metadata["domains"] = san
-        metadata["logodata_sha256_hash"] = None
-        logodata = extract_logo_from_certificate(vmc)
-        if logodata is not None:
-            metadata["logodata_sha256_hash"] = hashlib.sha256(logodata).hexdigest()
+        metadata["logotype_sha256"] = None
+        logotype = extract_logo_from_certificate(vmc)
+        if logotype is not None:
+            metadata["logotype_sha256"] = hashlib.sha256(logotype).hexdigest()
         store_context = X509StoreContext(X509STORE, vmc, chain=loaded_certs)
         try:
             store_context.verify_certificate()
@@ -303,7 +303,7 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
     if domain is not None:
         if domain.lower() not in san:
             validation_errors.append(
-                f"{domain} does not match the certificate san, {san}"
+                f"{domain} does not match the certificate domains, {san}"
             )
             metadata["validation_errors"] = validation_errors
             metadata["valid"] = False
@@ -568,15 +568,16 @@ def parse_bimi_record(
                 response.raise_for_status()
                 pem_bytes = response.content
                 cert_metadata = get_certificate_metadata(pem_bytes, domain=domain)
-                if (
-                    image_metadata["sha256_hash"]
-                    == cert_metadata["logodata_sha256_hash"]
-                ):
-                    hash_match = True
-                else:
-                    warnings.append(
-                        "SHA256 hash mismatch between the certificate and the image"
-                    )
+                if image_metadata is not None:
+                    if (
+                        image_metadata["sha256"]
+                        == cert_metadata["logotype_sha256"]
+                    ):
+                        hash_match = True
+                    else:
+                        warnings.append(
+                            "The image at the l= tag URL does not match the image embedded in the certificate"
+                        )
             except Exception as e:
                 warnings.append(f"Unable to download mark certificate - {str(e)}")
     certificate_provided = hash_match and cert_metadata["valid"]

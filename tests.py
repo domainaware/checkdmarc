@@ -91,7 +91,7 @@ class Test(unittest.TestCase):
         assert result == "c.akamaiedge.net"
 
     def testUppercaseSPFMechanism(self):
-        """Treat uppercase SPF"SPF mechanisms as valid"""
+        """Treat uppercase SPF mechanisms as valid"""
         spf_record = "v=spf1 IP4:147.75.8.208 -ALL"
         domain = "example.no"
 
