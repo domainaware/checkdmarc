@@ -1,7 +1,7 @@
 Changelog
 =========
 
-7.5.3
+5.7.3
 -----
 
 - BIMI images and mark certificates
@@ -9,12 +9,12 @@ Changelog
   - Simplified warning messages
   - `sha256_hash` output tfields renamed to `sha256` 
 
-7.5.2
+5.7.2
 -----
 
 - Account for float SVG sizes
 
-7.5.1
+5.7.1
 -----
 
 - Properly parse a certificate SAN
