@@ -227,18 +227,17 @@ def check_svg_requirements(svg_metadata: OrderedDict) -> [str]:
     return _warnings
 
 
-def _get_certificate_subjecttaltnames(cert: Union[X509, bytes]) -> [str]:
+def _get_certificate_san(cert: Union[X509, bytes]) -> [str]:
     """Get the subjectaltname from a PEM certificate"""
     if type(cert) is bytes:
         cert = load_certificate(FILETYPE_PEM, cert)
     for cert_ext_id in range(cert.get_extension_count()):
         cert_ext = cert.get_extension(cert_ext_id)
         if cert_ext.get_short_name() == b"subjectAltName":
-            ext_data = (
-                cert_ext.get_data().strip(b"0\x10\x82\x0e").strip(b"0\x81\x8e\x82\x13")
-            )
-            return ext_data.decode("utf-8", errors="ignore").lower().split("\x82\x15")
-
+            san = cert_ext.__str__()
+            san.replace("DNS:", "")
+            san = san.split(", ")
+            return san
 
 def extract_logo_from_certificate(cert: Union[bytes, X509]):
     """Extracts the logo from a certificate"""
@@ -258,7 +257,7 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
     metadata = OrderedDict()
     valid = False
     validation_errors = []
-    subjectaltnames = []
+    san = []
 
     def decode_components(components: dict):
         new_dict = OrderedDict()
@@ -281,8 +280,8 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
         metadata["serial_number"] = vmc.get_serial_number()
         metadata["expires"] = str(vmc.get_notAfter())
         metadata["valid"] = valid and not vmc.has_expired()
-        subjectaltnames = _get_certificate_subjecttaltnames(vmc)
-        metadata["domains"] = subjectaltnames
+        san = _get_certificate_san(vmc)
+        metadata["domains"] = san
         metadata["logodata_sha256_hash"] = None
         logodata = extract_logo_from_certificate(vmc)
         if logodata is not None:
@@ -298,9 +297,9 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
     except Exception as e:
         validation_errors.append(str(e))
     if domain is not None:
-        if domain.lower() not in subjectaltnames:
+        if domain.lower() not in san:
             validation_errors.append(
-                f"{domain} does not match the certificate subjectaltnames, {subjectaltnames}"
+                f"{domain} does not match the certificate san, {san}"
             )
             metadata["validation_errors"] = validation_errors
             metadata["valid"] = False
@@ -565,18 +564,19 @@ def parse_bimi_record(
                 response.raise_for_status()
                 pem_bytes = response.content
                 cert_metadata = get_certificate_metadata(pem_bytes, domain=domain)
+                hash_match = False
                 if (
                     image_metadata["sha256_hash"]
                     == cert_metadata["logodata_sha256_hash"]
                 ):
-                    certificate_provided = True
+                    hash_match = True
                 else:
                     warnings.append(
                         "SHA256 hash mismatch between the certificate and the image"
                     )
             except Exception as e:
                 warnings.append(f"Unable to download mark certificate - {str(e)}")
-
+    certificate_provided == hash_match and cert_metadata["valid"]
     if not certificate_provided:
         warnings.append(
             "Most providers will not display a BIMI image without a valid mark certificate"

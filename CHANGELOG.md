@@ -1,6 +1,12 @@
 Changelog
 =========
 
+7.5.1
+-----
+
+- Properly parse a certificate SAN
+- Certificate warnings fire properly
+
 5.7.0
 -----
 
