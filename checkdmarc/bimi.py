@@ -533,7 +533,7 @@ def parse_bimi_record(
 
     pairs = BIMI_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
-    certificate_provided = False
+    hash_match = False
 
     for pair in pairs:
         tag = pair[0].lower().strip()
@@ -565,7 +565,6 @@ def parse_bimi_record(
                 response.raise_for_status()
                 pem_bytes = response.content
                 cert_metadata = get_certificate_metadata(pem_bytes, domain=domain)
-                hash_match = False
                 if (
                     image_metadata["sha256_hash"]
                     == cert_metadata["logodata_sha256_hash"]
@@ -577,7 +576,7 @@ def parse_bimi_record(
                     )
             except Exception as e:
                 warnings.append(f"Unable to download mark certificate - {str(e)}")
-    certificate_provided == hash_match and cert_metadata["valid"]
+    certificate_provided = hash_match and cert_metadata["valid"]
     if not certificate_provided:
         warnings.append(
             "Most providers will not display a BIMI image without a valid mark certificate"
