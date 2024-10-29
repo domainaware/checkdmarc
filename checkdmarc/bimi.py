@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Union
 import re
 from collections import OrderedDict
@@ -278,8 +279,10 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
         vmc = loaded_certs[0]
         metadata["issuer"] = decode_components(vmc.get_issuer().get_components())
         metadata["subject"] = decode_components(vmc.get_subject().get_components())
-        metadata["serial_number"] = vmc.get_serial_number()
-        metadata["expires"] = str(vmc.get_notAfter())
+        metadata["serial_number"] = vmc.get_serial_number().__str__()
+        metadata["expires"] = vmc.get_notAfter().decode("utf-8", errors="ignore")
+        metadata["expires"] = datetime.strptime(metadata["expires"], "%Y%m%d%H%M%SZ")
+        metadata["expires"] = metadata["expires"].strftime("%Y-%m-%d %H:%M:%SZ")
         metadata["valid"] = valid and not vmc.has_expired()
         san = _get_certificate_san(vmc)
         metadata["domains"] = san

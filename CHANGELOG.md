@@ -6,6 +6,7 @@ Changelog
 
 - Properly parse a certificate SAN
 - Certificate warnings fire properly
+- Make the `expires` timestamp more readable
 
 5.7.0
 -----
