@@ -569,10 +569,7 @@ def parse_bimi_record(
                 pem_bytes = response.content
                 cert_metadata = get_certificate_metadata(pem_bytes, domain=domain)
                 if image_metadata is not None:
-                    if (
-                        image_metadata["sha256"]
-                        == cert_metadata["logotype_sha256"]
-                    ):
+                    if image_metadata["sha256"] == cert_metadata["logotype_sha256"]:
                         hash_match = True
                     else:
                         warnings.append(
