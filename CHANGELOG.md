@@ -1,6 +1,11 @@
 Changelog
 =========
 
+7.5.2
+-----
+
+- Account for float SVG sizes
+
 7.5.1
 -----
 

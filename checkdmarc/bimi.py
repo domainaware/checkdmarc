@@ -194,8 +194,8 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
             base_profile = svg["@baseProfile"]
         view_box = svg["@viewBox"]
         view_box = view_box.split(" ")
-        width = int(view_box[-2])
-        height = int(view_box[-1])
+        width = float(view_box[-2])
+        height = float(view_box[-1])
         title = None
         if "title" in svg.keys():
             title = svg["title"]
