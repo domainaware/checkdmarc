@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.7.4
+-----
+
+- Add additional checks for `tiny-ps` SVG requirements
+
 5.7.3
 -----
 
@@ -48,7 +53,7 @@ JSON CLI output.
 - Automatically check for a BIMI DNS record at the `default` selector when using the CLI
 - Fix parsing of BIMI record tags when they are separated by a `;` without a space
 - Validate the file at the URL in the BIMI `l` tag value
-  - Must be a SVG file
+  - Must be an SVG file
   - The SVG version must be `1.2`
   - The SVG base profile must be `tiny-ps`
   - The SVG dimensions must be square
@@ -329,10 +334,10 @@ JSON CLI output.
 4.1.10
 ------
 
-- Make SPF mechanisms and modifiers case insensitive, in compliance with
+- Make SPF mechanisms and modifiers case-insensitive, in compliance with
   RFC 7208, sections 4.6.1 and 12 (#42)
-- Raise a warning instead of an error when a MX hostname does not exist
-- Raise a specific warning when a Office 365 MX domain validation record is
+- Raise a warning instead of an error when an MX hostname does not exist
+- Raise a specific warning when an Office 365 MX domain validation record is
   detected
 
 4.1.9
@@ -475,11 +480,11 @@ full string
 -----
 
 - Bugfix: CSV format `-f csv` for starttls header
-- Bugfix: Always properly close a SMTP connection
+- Bugfix: Always properly close an SMTP connection
 - Cache DNS and STARTTLS results in memory
 - Use python3 in docs Makefile for Sphinx build
 - Add `--debug` option
-- Make warning about proper SPF records for MX hosts a only show with `--debug`
+- Make warning about proper SPF records for MX hosts an only show with `--debug`
  (Very noisy - Many hosts use DKIM without SPF to DMARC align bouncebacks)
 
 2.8.0
@@ -583,7 +588,7 @@ full string
 ------
 
 - Treat `pct` < 1 as invalid
-- Issue warning if there are more that two URIs for `rua` or `ruf` (separate count)
+- Issue warning if there are more than two URIs for `rua` or `ruf` (separate count)
 
 2.1.12
 ------

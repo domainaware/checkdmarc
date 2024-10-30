@@ -58,7 +58,7 @@ BIMI_TAG_VALUE_REGEX_STRING = (
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
 
-# Load the certificates included in MVACAS.pem into a certificate store
+# Load the certificates included in MVACAs.pem into a certificate store
 X509STORE = X509Store()
 with pkg_resources.path(checkdmarc.resources, "MVACAs.pem") as path:
 
@@ -183,6 +183,7 @@ class _BIMIGrammar(Grammar):
 
 
 def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
+    metadata = OrderedDict()
     if isinstance(raw_xml, bytes):
         raw_xml = raw_xml.decode(errors="ignore")
     try:
@@ -197,13 +198,20 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
         width = float(view_box[-2])
         height = float(view_box[-1])
         title = None
+        if "x" in svg.keys():
+            metadata["x"] = svg["x"]
+        if "y" in svg.keys():
+            metadata["x"] = svg["y"]
         if "title" in svg.keys():
             title = svg["title"]
-        metadata = OrderedDict()
+        description = None
+        if "description" in svg.keys():
+            description = svg["description"]
         metadata["svg_version"] = version
         metadata["base_profile"] = base_profile
-        if title is not None:
-            metadata["title"] = title
+        metadata["title"] = title
+        if description is not None:
+            metadata["description"] = description
         metadata["width"] = width
         metadata["height"] = height
         metadata["filesize"] = f"{getsizeof(raw_xml)/1000} KB"
@@ -213,7 +221,7 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
         raise ValueError(f"Not a SVG file: {str(e)}")
 
 
-def check_svg_requirements(svg_metadata: OrderedDict) -> [str]:
+def check_svg_requirements(svg_metadata: OrderedDict) -> list[str]:
     _warnings = []
     if svg_metadata["svg_version"] != "1.2":
         _warnings.append(
@@ -223,12 +231,16 @@ def check_svg_requirements(svg_metadata: OrderedDict) -> [str]:
         _warnings.append(f"The SVG base profile must be tiny-ps")
     if svg_metadata["width"] != svg_metadata["height"]:
         _warnings.append("The SVG dimensions must be square, not {width}x{height}")
+    if "title" not in svg_metadata.keys():
+        _warnings.append("The SVG must have a title element")
+    if "x" in svg_metadata.keys() or "y" in svg_metadata.keys():
+        _warnings.append("The SVG cannot include x or y in the svg element")
     if float(svg_metadata["filesize"].strip(" KB")) > 32:
         _warnings.append("The SVG file exceeds the maximum size of 32 kB")
     return _warnings
 
 
-def _get_certificate_san(cert: Union[X509, bytes]) -> [str]:
+def _get_certificate_san(cert: Union[X509, bytes]) -> list[str]:
     """Get the subjectaltname from a PEM certificate"""
     if type(cert) is bytes:
         cert = load_certificate(FILETYPE_PEM, cert)
@@ -241,8 +253,8 @@ def _get_certificate_san(cert: Union[X509, bytes]) -> [str]:
             return san
 
 
-def extract_logo_from_certificate(cert: Union[bytes, X509]):
-    """Extracts the logo from a certificate"""
+def extract_logo_from_certificate(cert: Union[bytes, X509]) -> bytes:
+    """Extracts the logo from a mark certificate"""
     if type(cert) is bytes:
         cert = load_certificate(FILETYPE_PEM, cert)
     for cert_ext_id in range(cert.get_extension_count()):
@@ -261,7 +273,7 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
     validation_errors = []
     san = []
 
-    def decode_components(components: dict):
+    def _decode_components(components: list[tuple[bytes, bytes]]):
         new_dict = OrderedDict()
         for component in components:
             new_key = component[0].decode("utf-8", errors="ignore")
@@ -277,8 +289,8 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
             cert = load_certificate(FILETYPE_PEM, cert.as_bytes())
             loaded_certs.append(cert)
         vmc = loaded_certs[0]
-        metadata["issuer"] = decode_components(vmc.get_issuer().get_components())
-        metadata["subject"] = decode_components(vmc.get_subject().get_components())
+        metadata["issuer"] = _decode_components(vmc.get_issuer().get_components())
+        metadata["subject"] = _decode_components(vmc.get_subject().get_components())
         metadata["serial_number"] = vmc.get_serial_number().__str__()
         metadata["expires"] = vmc.get_notAfter().decode("utf-8", errors="ignore")
         metadata["expires"] = datetime.strptime(metadata["expires"], "%Y%m%d%H%M%SZ")
