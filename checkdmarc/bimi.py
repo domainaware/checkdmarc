@@ -454,7 +454,7 @@ def query_bimi_record(
     except dns.exception.DNSException:
         pass
 
-    if record is None and domain != base_domain and selector != "default":
+    if record is None and domain != base_domain:
         record = _query_bimi_record(
             base_domain, nameservers=nameservers, resolver=resolver, timeout=timeout
         )

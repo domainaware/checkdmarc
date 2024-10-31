@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.7.5
+-----
+
+- Fix BIMI lookup for subdomains that do not have a BIMI record (fixes #148)
+
 5.7.4
 -----
 
