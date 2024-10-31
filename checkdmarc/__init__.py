@@ -47,7 +47,7 @@ def check_domains(
     approved_nameservers: list[str] = None,
     approved_mx_hostnames: bool = None,
     skip_tls: bool = False,
-    bimi_selector: str = None,
+    bimi_selector: str = "default",
     include_tag_descriptions: bool = False,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
@@ -280,8 +280,13 @@ def results_to_csv_rows(results: Union[dict, list[dict]]) -> list[dict]:
             row["mta_sts_warnings"] = "|".join(_mta_sts["warnings"])
         if "bimi" in result:
             _bimi = result["bimi"]
-            row["bimi_warnings"] = "|".join(_bimi["warnings"])
             row["bimi_selector"] = _bimi["selector"]
+            bimi_error = None
+            if "error" in _bimi:
+                bimi_error = _bimi["error"]
+            row["bimi_error"] = bimi_error
+
+            row["bimi_warnings"] = "|".join(_bimi["warnings"])
             if "error" in _bimi:
                 row["bimi_error"] = _bimi["error"]
                 if "l" in _bimi["tags"]:
@@ -418,6 +423,9 @@ def results_to_csv(results: dict) -> str:
         "ns",
         "ns_error",
         "ns_warnings",
+        "bimi_selector",
+        "bimi_error",
+        "bimi_warnings",
         "smtp_tls_reporting_error",
         "smtp_tls_reporting_warnings",
     ]

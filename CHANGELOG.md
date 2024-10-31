@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.7.6
+-----
+
+- Fix crash when trying to output to CSV format
+
 5.7.5
 -----
 
@@ -17,7 +22,7 @@ Changelog
 - BIMI images and mark certificates
   - Better error handling
   - Simplified warning messages
-  - `sha256_hash` output tfields renamed to `sha256` 
+  - `sha256_hash` output fields renamed to `sha256`
 
 5.7.2
 -----
