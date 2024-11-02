@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.7.8
+-----
+
+- Move SVG validation errors from `["bimi"]["warnings"]` to `["bimi"]["image"]["validation_errors"]` (#150)
+
 5.7.7
 -----
 
