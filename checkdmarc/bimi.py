@@ -567,7 +567,9 @@ def parse_bimi_record(
                 response.raise_for_status()
                 raw_xml = response.content
             except Exception as e:
-                warnings.append(f"Failed to download BIMI image at {tag_value} - {str(e)}")
+                results["certificate"] = dict(
+                    error=f"Failed to download BIMI image at {tag_value} - {str(e)}"
+                )
             if raw_xml is not None:
                 try:
                     image_metadata = get_svg_metadata(raw_xml)
@@ -575,7 +577,9 @@ def parse_bimi_record(
                     if len(svg_validation_errors) > 0:
                         image_metadata["validation_errors"] = svg_validation_errors
                 except Exception as e:
-                   warnings.append(f"Failed to process BIMI image at {tag_value} - {str(e)}")
+                    results["image"] = dict(
+                        error=f"Failed to process BIMI image at {tag_value} - {str(e)}"
+                    )
         elif tag == "a" and tag_value != "":
             cert_metadata = None
             try:
@@ -591,7 +595,9 @@ def parse_bimi_record(
                             "The image at the l= tag URL does not match the image embedded in the certificate"
                         )
             except Exception as e:
-                warnings.append(f"Unable to download mark certificate - {str(e)}")
+                results["certificate"] = dict(
+                    error=f"Failed to download the mark certificate at {tag_value} - {str(e)}"
+                )
     certificate_provided = hash_match and cert_metadata["valid"]
     if not certificate_provided:
         warnings.append(

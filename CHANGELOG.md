@@ -1,10 +1,17 @@
 Changelog
 =========
 
+5.7.9
+-----
+
+- Add an error message to `["bimi"]["image]["error"]` instead of `["bimi"]["warnings"]` when a BIMI image download fails
+- Add an error message to `["bimi"]["certificate]["error"]` instead of `["bimi"]["warnings"]` when a BIMI certificate download fails
+
 5.7.8
 -----
 
 - Move SVG validation errors from `["bimi"]["warnings"]` to `["bimi"]["image"]["validation_errors"]` (#150)
+
 
 5.7.7
 -----
