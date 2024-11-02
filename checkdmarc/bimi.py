@@ -309,6 +309,7 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
             metadata["valid"] = valid
         except X509StoreContextError as e:
             validation_errors.append(str(e))
+            metadata["validation_errors"] = validation_errors
             metadata["valid"] = valid
     except Exception as e:
         validation_errors.append(str(e))

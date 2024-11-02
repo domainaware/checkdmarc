@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.7.7
+-----
+
+- Fix VMC validation errors not appearing (close #149)
+
 5.7.6
 -----
 
