@@ -30,7 +30,7 @@ jobs:
         make html
     - name: Check code style
       run: |
-        black -V --check .
+        black --check -V .
     - name: Run unit tests
       run: |
         coverage run tests.py
