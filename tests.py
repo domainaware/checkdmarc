@@ -3,6 +3,7 @@
 
 """Automated tests"""
 
+import os
 import unittest
 from collections import OrderedDict
 
@@ -99,6 +100,7 @@ class Test(unittest.TestCase):
 
         self.assertEqual(len(results["warnings"]), 0)
 
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testSplitSPFRecord(self):
         """Split SPF records are parsed properly"""
 
@@ -108,6 +110,7 @@ class Test(unittest.TestCase):
 
         self.assertEqual(parsed_record["parsed"]["all"], "fail")
 
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testJunkAfterAll(self):
         """Ignore any mechanisms after the all mechanism, but warn about it"""
         rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"
@@ -140,6 +143,7 @@ class Test(unittest.TestCase):
             domain,
         )
 
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testTooManySPFDNSLookups(self):
         """SPF records with > 10 SPF mechanisms that cause DNS lookups raise
         SPFTooManyDNSLookups"""
@@ -161,6 +165,7 @@ class Test(unittest.TestCase):
             domain,
         )
 
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testTooManySPFVoidDNSLookups(self):
         """SPF records with > 2 void DNS lookups"""
 
@@ -274,6 +279,7 @@ class Test(unittest.TestCase):
             domain,
         )
 
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testSPFMissingMXRecord(self):
         """A warning is issued if an SPF record contains a mx mechanism
         pointing to a domain that has no MX records"""
@@ -296,8 +302,9 @@ class Test(unittest.TestCase):
             "cardinalhealth.net does not have any A/AAAA records", results["warnings"]
         )
 
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testDMARCPctLessThan100Warning(self):
-        """A warning is issued if the DMARC pvt value is less than 100"""
+        """A warning is issued if the DMARC pct value is less than 100"""
 
         dmarc_record = (
             "v=DMARC1; p=none; sp=none; fo=1; pct=50; adkim=r; "
@@ -347,6 +354,7 @@ class Test(unittest.TestCase):
             domain,
         )
 
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testBIMI(self):
         """Test BIMI checks"""
         domain = "chase.com"
