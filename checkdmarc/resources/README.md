@@ -1,7 +1,7 @@
 # About resources
 
 Currently, there only two Mark Verifying Athorities that issue Verified Mark Certificates (VMCs) for use with [BIMI standard](https://bimigroup.org/implementation-guide/): [DigiCert](https://www.digicert.com/tls-ssl/verified-mark-certificates) and [Entrust](https://store.entrust.com/default/vmc.html).
-They provide their customers with certificate chains containing the intermedate certificate and VMC. The root certificates for these certificates are different than the root certificates used fpr browsers.
+They provide their customers with certificate chains containing the intermediate certificate and VMC. The root certificates for these certificates are different than the root certificates used for browsers.
 
 - [DigiCert root Certificates download page](https://www.digicert.com/kb/digicert-root-certificates.htm)
 - [EnTrust root Certificates download page](https://www.entrust.com/knowledgebase/ssl/entrust-root-certificates)
