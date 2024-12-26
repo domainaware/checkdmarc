@@ -317,7 +317,7 @@ def check_smtp_tls_reporting(
     timeout: float = 2.0,
 ) -> OrderedDict:
     """
-    Returns a dictionary with a parsed MTA-STS policy or an error.
+    Returns a dictionary with a parsed SMTP-TLS Reporting policy or an error.
 
     Args:
         domain (str): A domain name
@@ -329,9 +329,8 @@ def check_smtp_tls_reporting(
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
 
-                       - ``id`` - The SIS-MTA DNS record ID
-                       - ``policy`` - The parsed MTA-STS policy
                        - ``valid`` - True
+                         ``tags`` - A dictionary of tags and values
                        - ``warnings`` - A ``list`` of warnings
 
                     If an error occurs, the dictionary will have the

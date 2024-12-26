@@ -39,8 +39,8 @@
 
 ```{eval-rst}
 .. automodule:: checkdmarc.smtp_tls_reporting
-   :mem
-
+   :members:
+```
 
 ## checkdmarc.smtp
 

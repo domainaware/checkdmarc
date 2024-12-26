@@ -1,6 +1,17 @@
 Changelog
 =========
 
+5.7.10
+------
+
+- Raise a warning instead of a `UnicodeDecodeError` when encountering a `TXT` record that is not decodable (Close issue [#124](https://github.com/domainaware/checkdmarc/issues/124))
+- Alow CIDR notation on SPF `a` mechanisms (Close [#128](https://github.com/domainaware/checkdmarc/issues/128))
+- Fix documentation for `check_smtp_tls_reporting` (Close [#133](https://github.com/domainaware/checkdmarc/issues/133))
+- Fix SVG verification checks for BIMI SVG files (Close [#150](https://github.com/domainaware/checkdmarc/issues/150))
+- Allow BIMI Mark Verification Certificates to be used for subdomains (Close [#151](https://github.com/domainaware/checkdmarc/issues/151))
+- Fix crash on CSV output for a domain with BIMI errors (Close issue [#153](https://github.com/domainaware/checkdmarc/issues/153))
+- Fix generation of API documentation
+
 5.7.9
 -----
 

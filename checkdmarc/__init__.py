@@ -286,13 +286,15 @@ def results_to_csv_rows(results: Union[dict, list[dict]]) -> list[dict]:
                 bimi_error = _bimi["error"]
             row["bimi_error"] = bimi_error
 
-            row["bimi_warnings"] = "|".join(_bimi["warnings"])
+            if "warnings" in _bimi:
+                row["bimi_warnings"] = "|".join(_bimi["warnings"])
             if "error" in _bimi:
                 row["bimi_error"] = _bimi["error"]
-                if "l" in _bimi["tags"]:
-                    row["bimi_l"] = _bimi["tags"]["l"]["value"]
-                if "a" in _bimi["tags"]:
-                    row["bimi_a"] = _bimi["tags"]["a"]["value"]
+                if "tags" in _bimi:
+                    if "l" in _bimi["tags"]:
+                        row["bimi_l"] = _bimi["tags"]["l"]["value"]
+                    if "a" in _bimi["tags"]:
+                        row["bimi_a"] = _bimi["tags"]["a"]["value"]
         row["mx"] = "|".join(
             list(map(lambda r: f"{r['preference']}, {r['hostname']}", mx["hosts"]))
         )

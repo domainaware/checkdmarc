@@ -127,7 +127,7 @@ def query_dns(
             try:
                 r = r.decode()
             except UnicodeDecodeError:
-                pass
+                r = "Undecodable characters"
             records.append(r)
     else:
         records = list(

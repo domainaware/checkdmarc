@@ -60,6 +60,54 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls m11‍.‍email‍.‍samsung‍.‍com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "m11‍.‍email‍.‍samsung‍.‍com"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc --skip-tls galaxylife‍.‍samsungusa‍.‍com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "m11‍.‍email‍.‍samsung‍.‍com"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc --skip-tls  n1.e-nocibe.fr",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                " n1.e-nocibe.fr"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc --skip-tls  edys.com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                " edys.com",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "tests.py",
             "type": "python",
             "request": "launch",

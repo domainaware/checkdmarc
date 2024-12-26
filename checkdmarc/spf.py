@@ -87,6 +87,10 @@ class MultipleSPFRTXTRecords(SPFError):
     """Raised when multiple TXT spf1 records are found"""
 
 
+class UndecodableCharactersInTXTRecord(_SPFWarning):
+    """Raised when a TXT record contains one or more undecodable characters"""
+
+
 class SPFSyntaxError(SPFError):
     """Raised when an SPF syntax error is found"""
 
@@ -177,6 +181,10 @@ def query_spf_record(
         )
         spf_record = None
         for record in answers:
+            if record == "Undecodable characters":
+                raise UndecodableCharactersInTXTRecord(
+                    f"A TXT record at {domain} " "contains undecodable " "characters"
+                )
             if record.startswith(txt_prefix):
                 spf_txt_records.append(record)
         if len(spf_txt_records) > 1:
@@ -325,6 +333,11 @@ def parse_spf_record(
             if mechanism == "a":
                 if value == "":
                     value = domain
+                cidr = None
+                value = domain.split("/")
+                value = value[0]
+                if len(value) == 2:
+                    cidr = value[1]
                 a_records = get_a_records(
                     value, nameservers=nameservers, resolver=resolver, timeout=timeout
                 )
@@ -333,6 +346,8 @@ def parse_spf_record(
                         f"{value.lower()} does not have any A/AAAA records"
                     )
                 for record in a_records:
+                    if cidr:
+                        record = f"{record}/{cidr}"
                     parsed[result].append(
                         OrderedDict([("value", record), ("mechanism", mechanism)])
                     )

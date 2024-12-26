@@ -188,28 +188,25 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
         raw_xml = raw_xml.decode(errors="ignore")
     try:
         xml = xmltodict.parse(raw_xml)
-        base_profile = None
         svg = xml["svg"]
-        version = svg["@version"]
+        metadata["svg_version"] = svg["@version"]
         if "@baseProfile" in svg.keys():
-            base_profile = svg["@baseProfile"]
+            metadata["base_profile"] = svg["@baseProfile"]
         view_box = svg["@viewBox"]
         view_box = view_box.split(" ")
         width = float(view_box[-2])
         height = float(view_box[-1])
-        title = None
         if "x" in svg.keys():
             metadata["x"] = svg["x"]
         if "y" in svg.keys():
             metadata["x"] = svg["y"]
         if "title" in svg.keys():
-            title = svg["title"]
+            metadata["title"] = svg["title"]
         description = None
         if "description" in svg.keys():
             description = svg["description"]
-        metadata["svg_version"] = version
-        metadata["base_profile"] = base_profile
-        metadata["title"] = title
+        if "overflow" in svg.keys():
+            metadata["overflow"] = svg["overflow"]
         if description is not None:
             metadata["description"] = description
         metadata["width"] = width
@@ -222,22 +219,32 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
 
 
 def check_svg_requirements(svg_metadata: OrderedDict) -> list[str]:
-    _warnings = []
+    _errors = []
     if svg_metadata["svg_version"] != "1.2":
-        _warnings.append(
+        _errors.append(
             f"The SVG version must be 1.2, not {svg_metadata['svg_version']}"
         )
-    if svg_metadata["base_profile"] != "tiny-ps":
-        _warnings.append(f"The SVG base profile must be tiny-ps")
+    if "base_profile" not in svg_metadata.keys():
+        _errors.append(
+            "The SVG is missing a base profile. It must have the "
+            "base profile tiny-ps and conform to its standards. "
+            "https://bimigroup.org/solving-svg-issues/"
+        )
+    else:
+        base_profile = svg_metadata["base_profile"]
+        if base_profile != "tiny-ps":
+            _errors.append(f"The SVG base profile must be tiny-ps, not {base_profile}")
     if svg_metadata["width"] != svg_metadata["height"]:
-        _warnings.append("The SVG dimensions must be square, not {width}x{height}")
+        _errors.append("The SVG dimensions must be square, not {width}x{height}")
     if "title" not in svg_metadata.keys():
-        _warnings.append("The SVG must have a title element")
-    if "x" in svg_metadata.keys() or "y" in svg_metadata.keys():
-        _warnings.append("The SVG cannot include x or y in the svg element")
+        _errors.append("The SVG must have a title element")
+    invalid_attributes = ["x", "y"]
+    for attribute in invalid_attributes:
+        if attribute in svg_metadata.keys():
+            _errors.append(f"The SVG cannot include {attribute} in the svg element")
     if float(svg_metadata["filesize"].strip(" KB")) > 32:
-        _warnings.append("The SVG file exceeds the maximum size of 32 kB")
-    return _warnings
+        _errors.append("The SVG file exceeds the maximum size of 32 KB")
+    return _errors
 
 
 def _get_certificate_san(cert: Union[X509, bytes]) -> list[str]:
@@ -314,9 +321,10 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
     except Exception as e:
         validation_errors.append(str(e))
     if domain is not None:
-        if domain.lower() not in san:
+        base_domain = get_base_domain(domain)
+        if base_domain not in san:
             validation_errors.append(
-                f"{domain} does not match the certificate domains, {san}"
+                f"{base_domain} does not match the certificate domains, {san}"
             )
             metadata["validation_errors"] = validation_errors
             metadata["valid"] = False
