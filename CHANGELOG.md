@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.7.11
+------
+
+- Do not treat subdomains ss base domains in SPF `a` mechanisms (Close [#151](https://github.com/domainaware/checkdmarc/issues/155))
+
 5.7.10
 ------
 

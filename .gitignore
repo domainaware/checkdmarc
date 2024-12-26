@@ -116,3 +116,5 @@ output/
 
 # ignore data files
 *.dat
+
+scratch.py

@@ -334,7 +334,7 @@ def parse_spf_record(
                 if value == "":
                     value = domain
                 cidr = None
-                value = domain.split("/")
+                value = value.split("/")
                 value = value[0]
                 if len(value) == 2:
                     cidr = value[1]
