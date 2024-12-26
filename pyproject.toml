@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "hatchling>=1.8.1",
+    "hatchling>=1.27.0",
 ]
 build-backend = "hatchling.build"
 
@@ -41,6 +41,19 @@ dependencies = [
     "timeout-decorator>=0.4.1",
     "xmltodict>=0.14.2",
 ]
+
+[project.optional-dependencies]
+build = [
+    "hatch>=1.14.0",
+    "myst-parser[linkify]",
+    "nose",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "sphinx",
+    "sphinx_rtd_theme",
+]
+
 
 [project.scripts]
 checkdmarc = "checkdmarc._cli:_main"
