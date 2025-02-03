@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.8.0
+-----
+
+- Add support for Microsoft national clouds via Graph API base URL (PR #590)
+- Avoid stopping processing when an invalid DMARC report is encountered (PR #587)
+- Increase `http.client._MAXHEADERS` from `100` to `200` to avoid errors connecting to Elasticsearch/OpenSearch (PR #589)
+
 5.7.11
 ------
 
