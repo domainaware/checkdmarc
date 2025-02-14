@@ -38,7 +38,7 @@ limitations under the License."""
 SPF_VERSION_TAG_REGEX_STRING = "v=spf1"
 SPF_MECHANISM_REGEX_STRING = (
     r"([+\-~?])?"
-    r"(mx:?|ip4:?|ip6:?|exists:?|include:?|all:?|a:?|redirect=|exp:?|ptr:?)"
+    r"(mx:?|ip4:?|ip6:?|exists:?|include:?|all:?|a:?|redirect=|exp:?|ptr:?|ra=|rp=|rr=)"
     r"([\w+/_.:\-{%}]*)"
 )
 AFTER_ALL_REGEX_STRING = r"([\s^][+\-~?]?all)\s+.*"
@@ -509,6 +509,21 @@ def parse_spf_record(
                     "https://tools.ietf.org/html/rfc7208"
                     "#section-5.5"
                 )
+            elif mechanism == "rr":
+                tokens = value.split(":")
+
+                for token in tokens:
+                    if token not in ["all" , "e" , "f" , "s" , "n"]:
+                        raise SPFSyntaxError(f"{token} is not a valid token for the rr tag")
+
+                parsed["rr"] = result
+            elif mechanism == "rp":
+                if not value.isdigit():
+                    raise SPFSyntaxError(f"{value} is not a valid ra tag value - should be a number")
+                if int(value) < 0 or int(value) > 100:
+                    raise SPFSyntaxError(f"{value} is not a valid ra tag value - should be a number between 0 and 100")
+
+                parsed["rp"] = result
             else:
                 parsed[result].append(
                     OrderedDict([("value", value), ("mechanism", mechanism)])
