@@ -513,15 +513,21 @@ def parse_spf_record(
                 tokens = value.split(":")
 
                 for token in tokens:
-                    if token not in ["all" , "e" , "f" , "s" , "n"]:
-                        raise SPFSyntaxError(f"{token} is not a valid token for the rr tag")
+                    if token not in ["all", "e", "f", "s", "n"]:
+                        raise SPFSyntaxError(
+                            f"{token} is not a valid token for the rr tag"
+                        )
 
                 parsed["rr"] = result
             elif mechanism == "rp":
                 if not value.isdigit():
-                    raise SPFSyntaxError(f"{value} is not a valid ra tag value - should be a number")
+                    raise SPFSyntaxError(
+                        f"{value} is not a valid ra tag value - should be a number"
+                    )
                 if int(value) < 0 or int(value) > 100:
-                    raise SPFSyntaxError(f"{value} is not a valid ra tag value - should be a number between 0 and 100")
+                    raise SPFSyntaxError(
+                        f"{value} is not a valid ra tag value - should be a number between 0 and 100"
+                    )
 
                 parsed["rp"] = result
             else:
