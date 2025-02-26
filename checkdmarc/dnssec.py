@@ -7,6 +7,7 @@ import logging
 
 import dns
 import dns.dnssec
+from dns.rdatatype import RdataType
 
 from expiringdict import ExpiringDict
 
@@ -76,6 +77,11 @@ def get_dnskey(
                         )
                     cache[domain] = None
                     return None
+                rrset = None
+                for rset in answer:
+                    if rset.rdtype != RdataType.RRSIG:
+                        rrset = rset
+                        break
                 rrset = answer[0]
                 name = dns.name.from_text(f"{domain}.")
                 key = {name: rrset}
@@ -131,8 +137,13 @@ def test_dnssec(
                     answer = response.answer
                     if len(answer) != 2:
                         continue
-                    rrset = answer[0]
-                    rrsig = answer[1]
+                    rrset = None
+                    rrsig = None
+                    for rset in answer:
+                        if rset.rdtype == RdataType.RRSIG:
+                            rrsig = rset
+                        else:
+                            rrset = rset
                     dns.dnssec.validate(rrset, rrsig, key)
                     logging.debug(f"Found a signed {rdatatype.name} record")
                     cache[domain] = True
@@ -196,8 +207,13 @@ def get_tlsa_records(
                         f"a DNSKEY record to verify them"
                     )
                     return tlsa_records
-                rrset = answer[0]
-                rrsig = answer[1]
+                rrset = None
+                rrsig = None
+                for rset in answer:
+                    if rset.rdtype == RdataType.RRSIG:
+                        rrsig = rset
+                    else:
+                        rrset = rset
                 dns.dnssec.validate(rrset, rrsig, dnskey)
                 tlsa_records = list(map(lambda x: str(x), list(rrset.items.keys())))
                 cache[query_hostname] = tlsa_records
