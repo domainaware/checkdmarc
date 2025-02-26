@@ -82,7 +82,6 @@ def get_dnskey(
                     if rset.rdtype != RdataType.RRSIG:
                         rrset = rset
                         break
-                rrset = answer[0]
                 name = dns.name.from_text(f"{domain}.")
                 key = {name: rrset}
                 cache[domain] = key

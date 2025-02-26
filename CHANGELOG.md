@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.8.1
+-----
+
+- Fix incomplete fix for issue [#159](https://github.com/domainaware/checkdmarc/issues/159)
+
 5.8.0
 -----
 
