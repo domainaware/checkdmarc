@@ -230,7 +230,7 @@ JSON CLI output.
 
 - Fix SPF query error and warning messages
 - More clear `fo` tag warning (PR #106)
-- Do not raise a `DMAECRecordNotFound` exception when the `MultipleDMARCRecordsException` is raised (PR #108)
+- Do not raise a `DMARCRecordNotFound` exception when the `MultipleDMARCRecordsException` is raised (PR #108)
 - Add support for null MX records - [RFC 7505](https://www.rfc-editor.org/rfc/rfc7505.html) (PR #109)
 
 4.8.4

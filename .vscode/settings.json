@@ -54,7 +54,9 @@
         "Pyleri",
         "qtypes",
         "RCODE",
+        "RDATA",
         "rdatatype",
+        "rdatatypes",
         "rdtype",
         "reversename",
         "rrset",
@@ -70,11 +72,13 @@
         "starttls",
         "surftown",
         "tasklist",
+        "TLSA",
         "toctree",
         "trustpilotservice",
         "undoc",
         "venv",
         "viewcode",
-        "Whalen"
+        "Whalen",
+        "xmltodict"
     ]
 }
