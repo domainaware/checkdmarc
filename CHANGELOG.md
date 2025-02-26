@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.8.0
+-----
+
+- Support `ra=`, `rp=` and `rr=` tags from [RFC 6652](https://www.rfc-editor.org/rfc/rfc6652) (PR [#158](https://github.com/domainaware/checkdmarc/pull/158))
+- Do not use static answer positions when checking DNSSEC and TLSA (Fixes [#159](https://github.com/domainaware/checkdmarc/issues/159))
+
+
 5.7.11
 ------
 
