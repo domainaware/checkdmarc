@@ -1,14 +1,16 @@
 # About resources
 
-Currently, there only two Mark Verifying Athorities that issue Verified Mark Certificates (VMCs) for use with [BIMI standard](https://bimigroup.org/implementation-guide/): [DigiCert](https://www.digicert.com/tls-ssl/verified-mark-certificates) and [Entrust](https://store.entrust.com/default/vmc.html).
-They provide their customers with certificate chains containing the intermediate certificate and VMC. The root certificates for these certificates are different than the root certificates used for browsers.
-
-- [DigiCert root Certificates download page](https://www.digicert.com/kb/digicert-root-certificates.htm)
-- [EnTrust root Certificates download page](https://www.entrust.com/knowledgebase/ssl/entrust-root-certificates)
+The resources package contains non-Python files used by `checkdmarc`.
 
 ## Root certificates
 
-DigiCert Verified Mark Root CA
+- [DigiCert root certificates download page](https://www.digicert.com/kb/digicert-root-certificates.htm)
+- [EnTrust root certificates download page](https://www.entrust.com/knowledgebase/ssl/entrust-root-certificates)
+- [SSL.com root certificates download page](https://www.ssl.com/repository/)
+
+`VMACAs.pem` contains all of these VMC CA certificates in order to verify VMCs.
+
+### DigiCert Verified Mark Root CA
 
 ```text
 Expires: 2024-09-23
@@ -19,7 +21,7 @@ SHA256 fingerprint: 50:43:86:C9:EE:89:32:FE:CC:95:FA:DE:42:7F:69:C3:E2:53:4B:73:
 
 [Download link](http://cacerts.digicert.com/DigiCertVerifiedMarkRootCA.crt.pem)
 
-Entrust Verified Mark Root Certification Authority – VMCR1
+### Entrust Verified Mark Root Certification Authority – VMCR1
 
 ```text
 Expires: 2040-12-30
@@ -30,4 +32,22 @@ SHA256 fingerprint: 78:31:D9:5A:47:D4:25:08:CD:5C:9E:62:64:F9:09:6B:AC:19:F0:4E:
 
 [Download link](https://web.entrust.com/root-certificates/VMRC1.cer)
 
-`VMACAs.pem` contains both of these certificates in order to verify VMCs.
+### SSL.com VMC ECC Root CA 2024
+
+```text
+Expires: 2048-02-13
+Serial Number: 11:47:C1:6A:2D:3F:4A:F7:67:5D:65:E5:C1:AC:AD:8E
+SHA1 fingerprint: 2C:8F:C6:88:3D:06:F1:6C:1E:DA:1A:20:65:A6:79:CB:EF:75:FC:E6
+```
+
+[Download link](https://ssl.com/repo/certs/SSL.com-VMC-Root-2024-ECC.pem)
+
+### SSL.com VMC RSA Root CA 2024
+
+```text
+Expires: 2048-02-13
+Serial Number: 70:94:6F:AE:BE:B3:CC:E0:D8:6F:B8:76:77:80:61:CB
+SHA1 fingerprint: BB:AD:CB:97:B9:6A:78:E2:24:11:EA:2C:7E:2A:F4:5A:97:46:57:C5
+```
+
+[Download link](https://ssl.com/repo/certs/SSL.com-VMC-Root-2024-RSA.pem)
