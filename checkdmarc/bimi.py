@@ -14,10 +14,11 @@ import gzip
 import hashlib
 
 try:
-    import importlib.resources as pkg_resources
+    from importlib.resources import files
 except ImportError:
-    # Try backported to PY<37 `importlib_resources`
-    import importlib_resources as pkg_resources
+    # Try backported to PY<3 `importlib_resources`
+    from importlib.resources import files
+
 
 import dns
 import requests
@@ -60,7 +61,7 @@ BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
 # Load the certificates included in MVACAs.pem into a certificate store
 X509STORE = X509Store()
-with pkg_resources.path(checkdmarc.resources, "MVACAs.pem") as path:
+with str(files(checkdmarc.resources).joinpath("MVACAs.pem")) as path:
 
     CA_PEMS = pem.parse_file(path)
 for CA_PEM in CA_PEMS:
