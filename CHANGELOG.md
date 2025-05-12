@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.8.2
+-----
+
+- Add SSL.com root MVC CA certificates to `MVCCAs.pem`
+- Replace deprecated `importlib.resources.path` call with `importlib.resources.file`
+  - Use `importlib-resources` to support older versions of Python
+
 5.8.1
 -----
 
