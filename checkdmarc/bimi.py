@@ -61,9 +61,9 @@ BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
 # Load the certificates included in MVACAs.pem into a certificate store
 X509STORE = X509Store()
-with str(files(checkdmarc.resources).joinpath("MVACAs.pem")) as path:
 
-    CA_PEMS = pem.parse_file(path)
+path = str(files(checkdmarc.resources).joinpath("MVACAs.pem"))
+CA_PEMS = pem.parse_file(path)
 for CA_PEM in CA_PEMS:
     CA = load_certificate(FILETYPE_PEM, CA_PEM.as_bytes())
     X509STORE.add_cert(CA)
