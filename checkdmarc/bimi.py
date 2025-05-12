@@ -17,7 +17,7 @@ try:
     from importlib.resources import files
 except ImportError:
     # Try backported to PY<3 `importlib_resources`
-    from importlib.resources import files
+    from importlib_resources import files
 
 
 import dns

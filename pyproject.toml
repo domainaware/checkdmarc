@@ -40,6 +40,7 @@ dependencies = [
     "requests>=2.25.0",
     "timeout-decorator>=0.4.1",
     "xmltodict>=0.14.2",
+    "importlib-resources>=6.5.2",
 ]
 
 [project.optional-dependencies]
