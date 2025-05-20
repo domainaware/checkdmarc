@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.8.3
+-----
+
+- Use timeout values for HTTP client timeouts
+
 5.8.2
 -----
 

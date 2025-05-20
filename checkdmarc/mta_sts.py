@@ -17,7 +17,7 @@ from pyleri import (
 )
 
 from checkdmarc.utils import query_dns, WSP_REGEX
-from checkdmarc._constants import SYNTAX_ERROR_MARKER, USER_AGENT
+from checkdmarc._constants import SYNTAX_ERROR_MARKER, USER_AGENT, DEFAULT_HTTP_TIMEOUT
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -308,12 +308,15 @@ def parse_mta_sts_record(
     return OrderedDict(tags=tags, warnings=warnings)
 
 
-def download_mta_sts_policy(domain: str) -> OrderedDict:
+def download_mta_sts_policy(
+    domain: str, http_timeout: float = DEFAULT_HTTP_TIMEOUT
+) -> OrderedDict:
     """
     Downloads a domains MTA-HTS policy
 
     Args:
         domain (str): A domain name
+        http_timeout (float): HTTP timeout in seconds
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -331,7 +334,7 @@ def download_mta_sts_policy(domain: str) -> OrderedDict:
     url = f"https://mta-sts.{domain}/.well-known/mta-sts.txt"
     logging.debug(f"Attempting to download HTA-MTS policy from {url}")
     try:
-        response = session.get(url)
+        response = session.get(url, timeout=http_timeout)
         response.raise_for_status()
         if "Content-Type" in response.headers:
             content_type = response.headers["Content-Type"].split(";")[0]
@@ -467,7 +470,7 @@ def check_mta_sts(
         warnings = mta_sts_record["warnings"]
         mta_sts_record = parse_mta_sts_record(mta_sts_record["record"])
         mta_sts_results["id"] = mta_sts_record["tags"]["id"]["value"]
-        policy = download_mta_sts_policy(domain)
+        policy = download_mta_sts_policy(domain, timeout=timeout)
         warnings += policy["warnings"]
         policy = parse_mta_sts_policy(policy["policy"])
         warnings += policy["warnings"]

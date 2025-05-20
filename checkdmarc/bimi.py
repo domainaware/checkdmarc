@@ -35,7 +35,7 @@ from OpenSSL.crypto import (
 )
 
 import checkdmarc.resources
-from checkdmarc._constants import SYNTAX_ERROR_MARKER, USER_AGENT
+from checkdmarc._constants import SYNTAX_ERROR_MARKER, USER_AGENT, DEFAULT_HTTP_TIMEOUT
 from checkdmarc.utils import WSP_REGEX, HTTPS_REGEX, query_dns, get_base_domain
 
 """Copyright 2019-2023 Sean Whalen
@@ -485,6 +485,7 @@ def parse_bimi_record(
     domain: str = None,
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
+    http_timeout: float = DEFAULT_HTTP_TIMEOUT,
 ) -> OrderedDict:
     """
     Parses a BIMI record
@@ -494,6 +495,7 @@ def parse_bimi_record(
         domain (str): The domain where the BIMI record was located
         include_tag_descriptions (bool): Include descriptions in parsed results
         syntax_error_marker (str): The maker for pointing out syntax errors
+        http_timeout (float): HTTP timeout in seconds
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -572,7 +574,7 @@ def parse_bimi_record(
         if tag == "l" and tag_value != "":
             raw_xml = None
             try:
-                response = session.get(tag_value)
+                response = session.get(tag_value, timeout=http_timeout)
                 response.raise_for_status()
                 raw_xml = response.content
             except Exception as e:
@@ -592,7 +594,7 @@ def parse_bimi_record(
         elif tag == "a" and tag_value != "":
             cert_metadata = None
             try:
-                response = session.get(tag_value)
+                response = session.get(tag_value, timeout=http_timeout)
                 response.raise_for_status()
                 pem_bytes = response.content
                 cert_metadata = get_certificate_metadata(pem_bytes, domain=domain)
@@ -677,6 +679,7 @@ def check_bimi(
             bimi_results["record"],
             include_tag_descriptions=include_tag_descriptions,
             domain=domain,
+            http_timeout=timeout,
         )
         bimi_results["tags"] = parsed_bimi["tags"]
         if "image" in parsed_bimi.keys():
