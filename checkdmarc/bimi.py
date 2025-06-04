@@ -281,6 +281,13 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
     validation_errors = []
     san = []
 
+    def parse_date(date: bytes) -> str:
+        date = date.decode("utf-8", errors="ignore")
+        date = datetime.strptime(date, "%Y%m%d%H%M%SZ")
+        date = date.strftime("%Y-%m-%d %H:%M:%SZ")
+
+        return date
+
     def _decode_components(components: list[tuple[bytes, bytes]]):
         new_dict = OrderedDict()
         for component in components:
@@ -300,10 +307,10 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
         metadata["issuer"] = _decode_components(vmc.get_issuer().get_components())
         metadata["subject"] = _decode_components(vmc.get_subject().get_components())
         metadata["serial_number"] = vmc.get_serial_number().__str__()
-        metadata["expires"] = vmc.get_notAfter().decode("utf-8", errors="ignore")
-        metadata["expires"] = datetime.strptime(metadata["expires"], "%Y%m%d%H%M%SZ")
-        metadata["expires"] = metadata["expires"].strftime("%Y-%m-%d %H:%M:%SZ")
-        metadata["valid"] = valid and not vmc.has_expired()
+        metadata["not_valid_before"] = parse_date(vmc.get_notBefore())
+        metadata["not_valid_after"] = parse_date(vmc.get_notAfter())
+        metadata["expired"] = vmc.has_expired()
+        metadata["valid"] = valid and not metadata["expired"]
         san = _get_certificate_san(vmc)
         metadata["domains"] = san
         metadata["logotype_sha256"] = None

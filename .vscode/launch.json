@@ -90,7 +90,7 @@
             "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
-                " n1.e-nocibe.fr"
+                "n1.e-nocibe.fr"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
@@ -102,7 +102,31 @@
             "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
-                " edys.com",
+                "edys.com",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc --skip-tls  paypal.com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "paypal.com",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc --skip-tls  kickbox.com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "kickbox.com",
             ],
             "console": "integratedTerminal",
             "justMyCode": true

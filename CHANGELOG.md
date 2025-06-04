@@ -1,6 +1,14 @@
 Changelog
 =========
 
+5.8.4
+-----
+
+- Update JSON output for BIMI
+  - Rename the `expires` field to `not_valid_after`
+  - Add `not_valid_before` field
+  - Add `expired` boolean field
+
 5.8.3
 -----
 
