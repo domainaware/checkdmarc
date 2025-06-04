@@ -1,6 +1,12 @@
 Changelog
 =========
 
+5.8.5
+-----
+
+- Remove Entrust VMC root
+- Add GlobalSign VMC root
+
 5.8.4
 -----
 
