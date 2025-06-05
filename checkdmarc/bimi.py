@@ -31,6 +31,7 @@ from OpenSSL.crypto import (
     X509Store,
     X509StoreContext,
     X509,
+    X509StoreFlags,
     X509StoreContextError,
 )
 
@@ -61,7 +62,10 @@ BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
 # Load the certificates included in MVACAs.pem into a certificate store
 X509STORE = X509Store()
-
+# Do not consider certificate invalid if a certificate extension marked critical 
+# by the issuer cannot be processed by OpenSSL.
+# https://github.com/domainaware/checkdmarc/issues/161
+X509STORE.set_flags(X509StoreFlags.IGNORE_CRITICAL)
 path = str(files(checkdmarc.resources).joinpath("MVACAs.pem"))
 CA_PEMS = pem.parse_file(path)
 for CA_PEM in CA_PEMS:
