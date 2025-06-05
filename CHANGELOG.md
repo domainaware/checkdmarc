@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.8.6
+-----
+
+- Ignore unhandled critical extensions for mark certificates (PR #162 closes issue #161)
+
 5.8.5
 -----
 
