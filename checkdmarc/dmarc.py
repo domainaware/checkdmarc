@@ -1049,7 +1049,7 @@ def parse_dmarc_record(
         warnings.append(
             str(
                 _DMARCBestPracticeWarning(
-                    "rua/ruf tag (destination for aggregate reports) not found"
+                    "rua/ruf tag (destination for aggregate/failure reports) not found"
                 )
             )
         )
