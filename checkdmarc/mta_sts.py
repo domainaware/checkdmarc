@@ -470,7 +470,7 @@ def check_mta_sts(
         warnings = mta_sts_record["warnings"]
         mta_sts_record = parse_mta_sts_record(mta_sts_record["record"])
         mta_sts_results["id"] = mta_sts_record["tags"]["id"]["value"]
-        policy = download_mta_sts_policy(domain, timeout=timeout)
+        policy = download_mta_sts_policy(domain, http_timeout=timeout)
         warnings += policy["warnings"]
         policy = parse_mta_sts_policy(policy["policy"])
         warnings += policy["warnings"]
