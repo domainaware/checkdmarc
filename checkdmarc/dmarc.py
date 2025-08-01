@@ -994,14 +994,6 @@ def parse_dmarc_record(
                     )
                 )
             )
-    else:
-        warnings.append(
-            str(
-                _DMARCBestPracticeWarning(
-                    "rua tag (destination for aggregate reports) not found"
-                )
-            )
-        )
 
     if "ruf" in tags.keys():
         parsed_uris = []
@@ -1052,6 +1044,15 @@ def parse_dmarc_record(
                     )
                 )
             )
+
+    if "rua" not in tags.keys() and "ruf" not in tags.keys():
+        warnings.append(
+            str(
+                _DMARCBestPracticeWarning(
+                    "rua/ruf tag (destination for aggregate/failure reports) not found"
+                )
+            )
+        )
 
     if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
         warnings.append(
