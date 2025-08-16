@@ -60,6 +60,18 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls google.com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "gmail.com"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls m11‍.‍email‍.‍samsung‍.‍com",
             "type": "python",
             "request": "launch",

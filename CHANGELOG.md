@@ -1,6 +1,12 @@
 Changelog
 =========
 
+5.8.7
+-----
+
+- Fix downloading of mta-sts policies (PR #166 closes #165)
+- Fix DMARC policy checks for parked domains/subdomains (PR #167)
+
 5.8.6
 -----
 
