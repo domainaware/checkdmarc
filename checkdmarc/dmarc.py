@@ -1065,10 +1065,10 @@ def parse_dmarc_record(
             "monitor results instead"
         )
         warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
-    if parked and tags["p"] != "reject":
+    if parked and tags["p"]["value"] != "reject":
         warning_msg = "Policy (p=) should be reject for parked domains"
         warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
-    if parked and tags["sp"] != "reject":
+    if parked and tags["sp"]["value"] != "reject":
         warning_msg = "Subdomain policy (sp=) should be reject for " "parked domains"
         warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
 
