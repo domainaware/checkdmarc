@@ -271,7 +271,7 @@
 <span class="sd">                     - ``record`` - the unparsed MTA-STS record string</span>
 <span class="sd">                     - ``warnings`` - warning conditions found</span>
 
-<span class="sd">     Raises:</span>
+<span class="sd">    Raises:</span>
 <span class="sd">        :exc:`checkdmarc.mta_sts.MTASTSRecordNotFound`</span>
 <span class="sd">        :exc:`checkdmarc.mta_sts.MTASTSRecordInWrongLocation`</span>
 <span class="sd">        :exc:`checkdmarc.mta_sts.MultipleMTASTSRecords`</span>
@@ -370,10 +370,10 @@
 <span class="sd">            ``include_tag_descriptions`` is set to ``True``</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        :exc:`checkdmarc.mta_sts.MTASTSSyntaxError`</span>
+<span class="sd">        :exc:`checkdmarc.mta_sts.MTASTSRecordSyntaxError`</span>
 <span class="sd">        :exc:`checkdmarc.mta_sts.InvalidMTASTSTag`</span>
-<span class="sd">        :exc:`checkdmarc.mta_sts.InvalidMTASTSTagValue`</span>
-<span class="sd">        :exc:`checkdmarc.mta_sts.SPFRecordFoundWhereSTSRecordShouldBe`</span>
+<span class="sd">        :exc:`checkdmarc.mta_sts.InvalidSTSTagValue`</span>
+<span class="sd">        :exc:`checkdmarc.mta_sts.SPFRecordFoundWhereMTASTSRecordShouldBe`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Parsing the MTA-STS record&quot;</span><span class="p">)</span>

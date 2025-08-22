@@ -864,11 +864,11 @@
 <span class="sd">        ignore_unrelated_records (bool): Ignore unrelated TXT records</span>
 <span class="sd">        resolver (dns.resolver.Resolver): A resolver object to use for DNS</span>
 <span class="sd">                                        requests</span>
-<span class="sd">      timeout (float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`</span>
-<span class="sd">        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFound`</span>
+<span class="sd">        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">source_domain</span> <span class="o">=</span> <span class="n">source_domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
@@ -973,7 +973,7 @@
 <span class="sd">        :exc:`checkdmarc.dmarc.InvalidDMARCTagValue`</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.InvalidDMARCReportURI`</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`</span>
-<span class="sd">        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFound`</span>
+<span class="sd">        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC`</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.DMARCReportEmailAddressMissingMXRecords`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1241,7 +1241,7 @@
 <span class="sd">         - ``location`` -  Where the DMARC was found</span>
 <span class="sd">         - ``parsed`` - See :meth:`checkdmarc.parse_dmarc_record`</span>
 
-<span class="sd">     Raises:</span>
+<span class="sd">    Raises:</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.DMARCRecordNotFound`</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.DMARCRecordInWrongLocation`</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.MultipleDMARCRecords`</span>
@@ -1252,7 +1252,7 @@
 <span class="sd">        :exc:`checkdmarc.dmarc.InvalidDMARCTagValue`</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.InvalidDMARCReportURI`</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`</span>
-<span class="sd">        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFound`</span>
+<span class="sd">        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC`</span>
 <span class="sd">        :exc:`checkdmarc.dmarc.DMARCReportEmailAddressMissingMXRecords`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">query</span> <span class="o">=</span> <span class="n">query_dmarc_record</span><span class="p">(</span>

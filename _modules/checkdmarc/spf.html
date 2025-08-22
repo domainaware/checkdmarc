@@ -344,10 +344,10 @@
 <span class="sd">         - ``warnings`` - A ``list`` of warnings</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        :exc:`checkdmarc.SPFIncludeLoop`</span>
-<span class="sd">        :exc:`checkdmarc.SPFRedirectLoop`</span>
-<span class="sd">        :exc:`checkdmarc.SPFSyntaxError`</span>
-<span class="sd">        :exc:`checkdmarc.SPFTooManyDNSLookups`</span>
+<span class="sd">        :exc:`checkdmarc.spf.SPFIncludeLoop`</span>
+<span class="sd">        :exc:`checkdmarc.spf.SPFRedirectLoop`</span>
+<span class="sd">        :exc:`checkdmarc.spf.SPFSyntaxError`</span>
+<span class="sd">        :exc:`checkdmarc.spf.SPFTooManyDNSLookups`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing the SPF record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">lookup_mechanisms</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;mx&quot;</span><span class="p">,</span> <span class="s2">&quot;include&quot;</span><span class="p">,</span> <span class="s2">&quot;exists&quot;</span><span class="p">,</span> <span class="s2">&quot;redirect&quot;</span><span class="p">]</span>
@@ -685,11 +685,11 @@
 <span class="sd">        OrderedDict: An SPF record parsed by result</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        :exc:`checkdmarc.SPFRecordNotFound`</span>
-<span class="sd">        :exc:`checkdmarc.SPFIncludeLoop`</span>
-<span class="sd">        :exc:`checkdmarc.SPFRedirectLoop`</span>
-<span class="sd">        :exc:`checkdmarc.SPFSyntaxError`</span>
-<span class="sd">        :exc:`checkdmarc.SPFTooManyDNSLookups`</span>
+<span class="sd">        :exc:`checkdmarc.spf.SPFRecordNotFound`</span>
+<span class="sd">        :exc:`checkdmarc.spf.SPFIncludeLoop`</span>
+<span class="sd">        :exc:`checkdmarc.spf.SPFRedirectLoop`</span>
+<span class="sd">        :exc:`checkdmarc.spf.SPFSyntaxError`</span>
+<span class="sd">        :exc:`checkdmarc.spf.SPFTooManyDNSLookups`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span>
