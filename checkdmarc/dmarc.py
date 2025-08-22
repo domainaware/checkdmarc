@@ -738,11 +738,11 @@ def verify_dmarc_report_destination(
         ignore_unrelated_records (bool): Ignore unrelated TXT records
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                         requests
-      timeout (float): number of seconds to wait for an answer from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
 
     Raises:
         :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`
-        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFound`
+        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC`
     """
 
     source_domain = source_domain.lower()
@@ -844,7 +844,7 @@ def parse_dmarc_record(
         :exc:`checkdmarc.dmarc.InvalidDMARCTagValue`
         :exc:`checkdmarc.dmarc.InvalidDMARCReportURI`
         :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`
-        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFound`
+        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC`
         :exc:`checkdmarc.dmarc.DMARCReportEmailAddressMissingMXRecords`
 
     """
@@ -1109,7 +1109,7 @@ def get_dmarc_record(
          - ``location`` -  Where the DMARC was found
          - ``parsed`` - See :meth:`checkdmarc.parse_dmarc_record`
 
-     Raises:
+    Raises:
         :exc:`checkdmarc.dmarc.DMARCRecordNotFound`
         :exc:`checkdmarc.dmarc.DMARCRecordInWrongLocation`
         :exc:`checkdmarc.dmarc.MultipleDMARCRecords`
@@ -1120,7 +1120,7 @@ def get_dmarc_record(
         :exc:`checkdmarc.dmarc.InvalidDMARCTagValue`
         :exc:`checkdmarc.dmarc.InvalidDMARCReportURI`
         :exc:`checkdmarc.dmarc.UnverifiedDMARCURIDestination`
-        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFound`
+        :exc:`checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC`
         :exc:`checkdmarc.dmarc.DMARCReportEmailAddressMissingMXRecords`
     """
     query = query_dmarc_record(

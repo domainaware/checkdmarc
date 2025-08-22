@@ -446,7 +446,7 @@ def query_bimi_record(
                      - ``location`` - the domain where the record was found
                      - ``warnings`` - warning conditions found
 
-     Raises:
+    Raises:
         :exc:`checkdmarc.bimi.BIMIRecordNotFound`
         :exc:`checkdmarc.bimi.BIMIRecordInWrongLocation`
         :exc:`checkdmarc.bimi.MultipleBIMIRecords`

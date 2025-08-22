@@ -241,7 +241,7 @@ def get_txt_records(
     Returns:
         list: A list of TXT records
 
-     Raises:
+    Raises:
         :exc:`checkdmarc.DNSException`
 
     """

@@ -149,7 +149,7 @@ def query_smtp_tls_reporting_record(
                      - ``record`` - the unparsed SMTP TLS Reporting record
                      - ``warnings`` - warning conditions found
 
-     Raises:
+    Raises:
         :exc:`checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordNotFound`
         :exc:`checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordInWrongLocation`
         :exc:`checkdmarc.smtp_tls_reporting.MultipleSMTPTLSReportingRecords`
@@ -251,7 +251,6 @@ def parse_smtp_tls_reporting_record(
         :exc:`checkdmarc.smtp_tls_reporting.InvalidSMTPTLSReportingTag`
         :exc:`checkdmarc.smtp_tls_reporting.InvalidSMTPTLSReportingTagValue`
         :exc:`checkdmarc.smtp_tls_reporting.SPFRecordFoundWhereTLSRPTShouldBe`
-
     """
     logging.debug("Parsing the SMTP TLS Reporting record")
     spf_in_smtp_error_msg = (

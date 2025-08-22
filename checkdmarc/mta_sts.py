@@ -160,7 +160,7 @@ def query_mta_sts_record(
                      - ``record`` - the unparsed MTA-STS record string
                      - ``warnings`` - warning conditions found
 
-     Raises:
+    Raises:
         :exc:`checkdmarc.mta_sts.MTASTSRecordNotFound`
         :exc:`checkdmarc.mta_sts.MTASTSRecordInWrongLocation`
         :exc:`checkdmarc.mta_sts.MultipleMTASTSRecords`
@@ -256,10 +256,10 @@ def parse_mta_sts_record(
             ``include_tag_descriptions`` is set to ``True``
 
     Raises:
-        :exc:`checkdmarc.mta_sts.MTASTSSyntaxError`
+        :exc:`checkdmarc.mta_sts.MTASTSRecordSyntaxError`
         :exc:`checkdmarc.mta_sts.InvalidMTASTSTag`
-        :exc:`checkdmarc.mta_sts.InvalidMTASTSTagValue`
-        :exc:`checkdmarc.mta_sts.SPFRecordFoundWhereSTSRecordShouldBe`
+        :exc:`checkdmarc.mta_sts.InvalidSTSTagValue`
+        :exc:`checkdmarc.mta_sts.SPFRecordFoundWhereMTASTSRecordShouldBe`
 
     """
     logging.debug("Parsing the MTA-STS record")
