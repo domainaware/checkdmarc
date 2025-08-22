@@ -1,22 +1,20 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.mta_sts &mdash; checkdmarc 5.3.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=92fd9be5" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+  <title>checkdmarc.mta_sts &mdash; checkdmarc 5.8.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
-  <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../../_static/jquery.js?v=5d32c60e"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../../_static/documentation_options.js?v=f8739c50"></script>
-        <script src="../../_static/doctools.js?v=888ff710"></script>
-        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=3db50825"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -33,9 +31,6 @@
           <a href="../../index.html" class="icon icon-home">
             checkdmarc
           </a>
-              <div class="version">
-                5.3.1
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
@@ -79,22 +74,23 @@
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sd">&quot;&quot;&quot;SMTP MTA Strict Transport Security (MTA-STS) validation&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
 
-<span class="kn">import</span> <span class="nn">dns</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">from</span> <span class="nn">pyleri</span> <span class="kn">import</span> <span class="p">(</span><span class="n">Grammar</span><span class="p">,</span>
-                    <span class="n">Regex</span><span class="p">,</span>
-                    <span class="n">Sequence</span><span class="p">,</span>
-                    <span class="n">List</span><span class="p">,</span>
-                    <span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Grammar</span><span class="p">,</span>
+    <span class="n">Regex</span><span class="p">,</span>
+    <span class="n">Sequence</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+<span class="p">)</span>
 
-<span class="kn">from</span> <span class="nn">checkdmarc.utils</span> <span class="kn">import</span> <span class="n">query_dns</span><span class="p">,</span> <span class="n">WSP_REGEX</span>
-<span class="kn">from</span> <span class="nn">checkdmarc._constants</span> <span class="kn">import</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span> <span class="n">USER_AGENT</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">query_dns</span><span class="p">,</span> <span class="n">WSP_REGEX</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span> <span class="n">USER_AGENT</span><span class="p">,</span> <span class="n">DEFAULT_HTTP_TIMEOUT</span>
 
 <span class="sd">&quot;&quot;&quot;Copyright 2019-2023 Sean Whalen</span>
 
@@ -111,8 +107,8 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">MTA_STS_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">fr</span><span class="s2">&quot;v</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*STSv1</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;&quot;</span>
-<span class="n">MTA_STS_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="sa">fr</span><span class="s2">&quot;([a-z]</span><span class="se">{{</span><span class="s2">1,2</span><span class="se">}}</span><span class="s2">)</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*([</span><span class="se">\</span>
+<span class="n">MTA_STS_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;v</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*STSv1</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;&quot;</span>
+<span class="n">MTA_STS_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;([a-z]</span><span class="se">{{</span><span class="s2">1,2</span><span class="se">}}</span><span class="s2">)</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*([</span><span class="se">\</span>
 <span class="s2">a-z0-9]+)&quot;</span>
 
 <span class="n">MTA_STS_MX_REGEX_STRING</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;[a-z0-9\-*.]+&quot;</span>
@@ -121,13 +117,14 @@
 
 <div class="viewcode-block" id="MTASTSError">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.MTASTSError">[docs]</a>
-<span class="k">class</span> <span class="nc">MTASTSError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MTASTSError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a fatal MTA-STS error occurs&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">       Args:</span>
-<span class="sd">           msg (str): The error message</span>
-<span class="sd">           data (dict): A dictionary of data to include in the results</span>
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): The error message</span>
+<span class="sd">            data (dict): A dictionary of data to include in the results</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
         <span class="ne">Exception</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span></div>
@@ -136,9 +133,10 @@
 
 <div class="viewcode-block" id="MTASTSRecordNotFound">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.MTASTSRecordNotFound">[docs]</a>
-<span class="k">class</span> <span class="nc">MTASTSRecordNotFound</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MTASTSRecordNotFound</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an MTA-STS record could not be found&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">Timeout</span><span class="p">):</span>
             <span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span></div>
 
@@ -146,102 +144,105 @@
 
 <div class="viewcode-block" id="MTASTSRecordSyntaxError">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.MTASTSRecordSyntaxError">[docs]</a>
-<span class="k">class</span> <span class="nc">MTASTSRecordSyntaxError</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MTASTSRecordSyntaxError</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an MTA-STS DNS record syntax error is found&quot;&quot;&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="InvalidMTASTSTag">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.InvalidMTASTSTag">[docs]</a>
-<span class="k">class</span> <span class="nc">InvalidMTASTSTag</span><span class="p">(</span><span class="n">MTASTSRecordSyntaxError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InvalidMTASTSTag</span><span class="p">(</span><span class="n">MTASTSRecordSyntaxError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an invalid MTA-STS tag is found&quot;&quot;&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="InvalidSTSTagValue">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.InvalidSTSTagValue">[docs]</a>
-<span class="k">class</span> <span class="nc">InvalidSTSTagValue</span><span class="p">(</span><span class="n">MTASTSRecordSyntaxError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InvalidSTSTagValue</span><span class="p">(</span><span class="n">MTASTSRecordSyntaxError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an invalid MTA-STS tag value is found&quot;&quot;&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="UnrelatedTXTRecordFoundAtMTASTS">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.UnrelatedTXTRecordFoundAtMTASTS">[docs]</a>
-<span class="k">class</span> <span class="nc">UnrelatedTXTRecordFoundAtMTASTS</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnrelatedTXTRecordFoundAtMTASTS</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a TXT record unrelated to MTA-STS is found&quot;&quot;&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="SPFRecordFoundWhereMTASTSRecordShouldBe">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.SPFRecordFoundWhereMTASTSRecordShouldBe">[docs]</a>
-<span class="k">class</span> <span class="nc">SPFRecordFoundWhereMTASTSRecordShouldBe</span><span class="p">(</span><span class="n">UnrelatedTXTRecordFoundAtMTASTS</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SPFRecordFoundWhereMTASTSRecordShouldBe</span><span class="p">(</span><span class="n">UnrelatedTXTRecordFoundAtMTASTS</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an SPF record is found where an MTA-STS record should be;</span>
-<span class="sd">        most likely, the ``_mta-sts`` subdomain</span>
-<span class="sd">        record does not actually exist, and the request for ``TXT`` records was</span>
-<span class="sd">        redirected to the base domain&quot;&quot;&quot;</span></div>
+<span class="sd">    most likely, the ``_mta-sts`` subdomain</span>
+<span class="sd">    record does not actually exist, and the request for ``TXT`` records was</span>
+<span class="sd">    redirected to the base domain&quot;&quot;&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="MTASTSRecordInWrongLocation">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.MTASTSRecordInWrongLocation">[docs]</a>
-<span class="k">class</span> <span class="nc">MTASTSRecordInWrongLocation</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MTASTSRecordInWrongLocation</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an MTA-STS record is found at the root of a domain&quot;&quot;&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="MultipleMTASTSRecords">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.MultipleMTASTSRecords">[docs]</a>
-<span class="k">class</span> <span class="nc">MultipleMTASTSRecords</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MultipleMTASTSRecords</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when multiple MTA-STS records are found&quot;&quot;&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="MTASTSPolicyError">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.MTASTSPolicyError">[docs]</a>
-<span class="k">class</span> <span class="nc">MTASTSPolicyError</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MTASTSPolicyError</span><span class="p">(</span><span class="n">MTASTSError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the MTA-STS policy cannot be downloaded or parsed&quot;&quot;&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="MTASTSPolicyDownloadError">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.MTASTSPolicyDownloadError">[docs]</a>
-<span class="k">class</span> <span class="nc">MTASTSPolicyDownloadError</span><span class="p">(</span><span class="n">MTASTSPolicyError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MTASTSPolicyDownloadError</span><span class="p">(</span><span class="n">MTASTSPolicyError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the MTA-STS policy cannot be downloaded&quot;&quot;&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="MTASTSPolicySyntaxError">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.MTASTSPolicySyntaxError">[docs]</a>
-<span class="k">class</span> <span class="nc">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="n">MTASTSPolicyError</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="n">MTASTSPolicyError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a syntax error is found in an MTA-STS policy&quot;&quot;&quot;</span></div>
 
 
 
-<span class="k">class</span> <span class="nc">_STSGrammar</span><span class="p">(</span><span class="n">Grammar</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_STSGrammar</span><span class="p">(</span><span class="n">Grammar</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Defines Pyleri grammar for MTA-STS records&quot;&quot;&quot;</span>
+
     <span class="n">version_tag</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">MTA_STS_VERSION_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
     <span class="n">tag_value</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">MTA_STS_TAG_VALUE_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
     <span class="n">START</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">(</span>
         <span class="n">version_tag</span><span class="p">,</span>
-        <span class="n">List</span><span class="p">(</span>
-            <span class="n">tag_value</span><span class="p">,</span>
-            <span class="n">delimiter</span><span class="o">=</span><span class="n">Regex</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*&quot;</span><span class="p">),</span>
-            <span class="n">opt</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="n">List</span><span class="p">(</span><span class="n">tag_value</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="n">Regex</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*&quot;</span><span class="p">),</span> <span class="n">opt</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+    <span class="p">)</span>
 
 
 <span class="n">mta_sts_tags</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-    <span class="n">v</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Version&quot;</span><span class="p">,</span>
-                  <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                  <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Currently, only &quot;STSv1&quot; is supported.&#39;</span><span class="p">),</span>
-    <span class="nb">id</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;id&quot;</span><span class="p">,</span>
-                   <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                   <span class="n">description</span><span class="o">=</span><span class="s1">&#39;A short string used to track policy &#39;</span>
-                               <span class="s1">&#39;updates.  This string MUST uniquely identify &#39;</span>
-                               <span class="s1">&#39;a given instance of a policy, such that &#39;</span>
-                               <span class="s1">&#39;senders can determine when the policy has &#39;</span>
-                               <span class="s1">&#39;been updated by comparing to the &quot;id&quot; of a &#39;</span>
-                               <span class="s1">&#39;previously seen policy. There is no implied &#39;</span>
-                               <span class="s1">&#39;ordering of &quot;id&quot; fields between revisions.&#39;</span><span class="p">)</span>
+    <span class="n">v</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Version&quot;</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Currently, only &quot;STSv1&quot; is supported.&#39;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="nb">id</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;id&quot;</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A short string used to track policy &quot;</span>
+        <span class="s2">&quot;updates.  This string MUST uniquely identify &quot;</span>
+        <span class="s2">&quot;a given instance of a policy, such that &quot;</span>
+        <span class="s2">&quot;senders can determine when the policy has &quot;</span>
+        <span class="s1">&#39;been updated by comparing to the &quot;id&quot; of a &#39;</span>
+        <span class="s2">&quot;previously seen policy. There is no implied &quot;</span>
+        <span class="s1">&#39;ordering of &quot;id&quot; fields between revisions.&#39;</span><span class="p">,</span>
+    <span class="p">),</span>
 <span class="p">)</span>
 
 <span class="n">STS_TAG_VALUE_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">MTA_STS_TAG_VALUE_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
@@ -249,10 +250,12 @@
 
 <div class="viewcode-block" id="query_mta_sts_record">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.query_mta_sts_record">[docs]</a>
-<span class="k">def</span> <span class="nf">query_mta_sts_record</span><span class="p">(</span><span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                         <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                         <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                         <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">query_mta_sts_record</span><span class="p">(</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for an MTA-STS record</span>
 
@@ -284,8 +287,9 @@
     <span class="n">unrelated_records</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">records</span> <span class="o">=</span> <span class="n">query_dns</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                            <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="n">query_dns</span><span class="p">(</span>
+            <span class="n">target</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+        <span class="p">)</span>
         <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">txt_prefix</span><span class="p">):</span>
                 <span class="n">sts_record_count</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -293,32 +297,36 @@
                 <span class="n">unrelated_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">sts_record_count</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">MultipleMTASTSRecords</span><span class="p">(</span>
-                <span class="s2">&quot;Multiple MTA-STS records are not permitted&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">MultipleMTASTSRecords</span><span class="p">(</span><span class="s2">&quot;Multiple MTA-STS records are not permitted&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unrelated_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">ur_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unrelated_records</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">UnrelatedTXTRecordFoundAtMTASTS</span><span class="p">(</span>
                 <span class="s2">&quot;Unrelated TXT records were discovered. These should be &quot;</span>
                 <span class="s2">&quot;removed, as some receivers may not expect to find &quot;</span>
                 <span class="s2">&quot;unrelated TXT records &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;at </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">ur_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">&quot;at </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">ur_str</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
         <span class="n">sts_record</span> <span class="o">=</span> <span class="n">records</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">records</span> <span class="o">=</span> <span class="n">query_dns</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span>
-                                <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
-                                <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="n">records</span> <span class="o">=</span> <span class="n">query_dns</span><span class="p">(</span>
+                <span class="n">domain</span><span class="p">,</span>
+                <span class="s2">&quot;TXT&quot;</span><span class="p">,</span>
+                <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">txt_prefix</span><span class="p">):</span>
                     <span class="k">raise</span> <span class="n">MTASTSRecordInWrongLocation</span><span class="p">(</span>
                         <span class="s2">&quot;The MTA-STS record must be located at &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
         <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">MTASTSRecordNotFound</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;The domain </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not exist&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">MTASTSRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The domain </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not exist&quot;</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">MTASTSRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
@@ -326,19 +334,20 @@
 
     <span class="k">if</span> <span class="n">sts_record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">MTASTSRecordNotFound</span><span class="p">(</span>
-            <span class="s2">&quot;An MTA-STS DNS record does not exist for this domain&quot;</span><span class="p">)</span>
+            <span class="s2">&quot;An MTA-STS DNS record does not exist for this domain&quot;</span>
+        <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">sts_record</span><span class="p">),</span>
-                        <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">sts_record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
 
 
 
 <div class="viewcode-block" id="parse_mta_sts_record">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.parse_mta_sts_record">[docs]</a>
-<span class="k">def</span> <span class="nf">parse_mta_sts_record</span><span class="p">(</span>
-        <span class="n">record</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">include_tag_descriptions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">syntax_error_marker</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_mta_sts_record</span><span class="p">(</span>
+    <span class="n">record</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">include_tag_descriptions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">syntax_error_marker</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parses an MTA-STS record</span>
 
@@ -368,11 +377,13 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Parsing the MTA-STS record&quot;</span><span class="p">)</span>
-    <span class="n">spf_in_dmarc_error_msg</span> <span class="o">=</span> <span class="s2">&quot;Found a SPF record where a MTA-STS record &quot;</span> \
-                             <span class="s2">&quot;should be; most likely, the _mta-sts &quot;</span> \
-                             <span class="s2">&quot;subdomain record does not actually exist, &quot;</span> \
-                             <span class="s2">&quot;and the request for TXT records was &quot;</span> \
-                             <span class="s2">&quot;redirected to the base domain&quot;</span>
+    <span class="n">spf_in_dmarc_error_msg</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Found a SPF record where a MTA-STS record &quot;</span>
+        <span class="s2">&quot;should be; most likely, the _mta-sts &quot;</span>
+        <span class="s2">&quot;subdomain record does not actually exist, &quot;</span>
+        <span class="s2">&quot;and the request for TXT records was &quot;</span>
+        <span class="s2">&quot;redirected to the base domain&quot;</span>
+    <span class="p">)</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=spf1&quot;</span><span class="p">):</span>
@@ -381,14 +392,20 @@
     <span class="n">parsed_record</span> <span class="o">=</span> <span class="n">sts_syntax_checker</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">parsed_record</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
         <span class="n">expecting</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">expecting</span><span class="p">)))</span>
-        <span class="n">marked_record</span> <span class="o">=</span> <span class="p">(</span><span class="n">record</span><span class="p">[:</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span><span class="p">]</span> <span class="o">+</span> <span class="n">syntax_error_marker</span> <span class="o">+</span>
-                         <span class="n">record</span><span class="p">[</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span><span class="p">:])</span>
+            <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">expecting</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">marked_record</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">record</span><span class="p">[:</span> <span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span><span class="p">]</span>
+            <span class="o">+</span> <span class="n">syntax_error_marker</span>
+            <span class="o">+</span> <span class="n">record</span><span class="p">[</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span> <span class="p">:]</span>
+        <span class="p">)</span>
         <span class="n">expecting</span> <span class="o">=</span> <span class="s2">&quot; or &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expecting</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">MTASTSRecordSyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: Expected </span><span class="si">{</span><span class="n">expecting</span><span class="si">}</span><span class="s2"> &quot;</span>
-                                      <span class="sa">f</span><span class="s2">&quot;at position </span><span class="si">{</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span><span class="si">}</span><span class="s2"> &quot;</span>
-                                      <span class="sa">f</span><span class="s2">&quot;(marked with </span><span class="si">{</span><span class="n">syntax_error_marker</span><span class="si">}</span><span class="s2">) &quot;</span>
-                                      <span class="sa">f</span><span class="s2">&quot;in: </span><span class="si">{</span><span class="n">marked_record</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">MTASTSRecordSyntaxError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Error: Expected </span><span class="si">{</span><span class="n">expecting</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;at position </span><span class="si">{</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(marked with </span><span class="si">{</span><span class="n">syntax_error_marker</span><span class="si">}</span><span class="s2">) &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;in: </span><span class="si">{</span><span class="n">marked_record</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
 
     <span class="n">pairs</span> <span class="o">=</span> <span class="n">STS_TAG_VALUE_REGEX</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
     <span class="n">tags</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
@@ -408,12 +425,15 @@
 
 <div class="viewcode-block" id="download_mta_sts_policy">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.download_mta_sts_policy">[docs]</a>
-<span class="k">def</span> <span class="nf">download_mta_sts_policy</span><span class="p">(</span><span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">download_mta_sts_policy</span><span class="p">(</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">http_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_HTTP_TIMEOUT</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Downloads a domains MTA-HTS policy</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
+<span class="sd">        http_timeout (float): HTTP timeout in seconds</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
@@ -431,17 +451,21 @@
     <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://mta-sts.</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">/.well-known/mta-sts.txt&quot;</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attempting to download HTA-MTS policy from </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">http_timeout</span><span class="p">)</span>
         <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
         <span class="k">if</span> <span class="s2">&quot;Content-Type&quot;</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">:</span>
             <span class="n">content_type</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">content_type</span> <span class="o">=</span> <span class="n">content_type</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">content_type</span> <span class="o">!=</span> <span class="n">expected_content_type</span><span class="p">:</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Content-Type header should be &quot;</span>
-                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">expected_content_type</span><span class="si">}</span><span class="s2"> not </span><span class="si">{</span><span class="n">content_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Content-Type header should be &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">expected_content_type</span><span class="si">}</span><span class="s2"> not </span><span class="si">{</span><span class="n">content_type</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;The Content-Type header is missing. It should &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;be set to </span><span class="si">{</span><span class="n">expected_content_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;The Content-Type header is missing. It should &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;be set to </span><span class="si">{</span><span class="n">expected_content_type</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
 
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">MTASTSPolicyDownloadError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
@@ -452,7 +476,7 @@
 
 <div class="viewcode-block" id="parse_mta_sts_policy">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.parse_mta_sts_policy">[docs]</a>
-<span class="k">def</span> <span class="nf">parse_mta_sts_policy</span><span class="p">(</span><span class="n">policy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_mta_sts_policy</span><span class="p">(</span><span class="n">policy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parses an MTA-STS policy</span>
 
@@ -485,13 +509,11 @@
             <span class="k">continue</span>
         <span class="n">key_value</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">key_value</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Line </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">: Not a key: value pair&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Line </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">: Not a key: value pair&quot;</span><span class="p">)</span>
         <span class="n">key</span> <span class="o">=</span> <span class="n">key_value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="n">value</span> <span class="o">=</span> <span class="n">key_value</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">acceptable_keys</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Line </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">: Unexpected key: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Line </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">: Unexpected key: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">parsed_policy</span> <span class="ow">and</span> <span class="n">key</span> <span class="o">!=</span> <span class="s2">&quot;mx&quot;</span><span class="p">:</span>
             <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Line </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">: Duplicate key: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;version&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">versions</span><span class="p">:</span>
@@ -499,8 +521,7 @@
         <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;mode&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">modes</span><span class="p">:</span>
             <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Line </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">: Invalid mode: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;max_age&quot;</span><span class="p">:</span>
-            <span class="n">error_msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;max_age must be an integer value between 0 and &quot;</span>
-                         <span class="s2">&quot;31557600&quot;</span><span class="p">)</span>
+            <span class="n">error_msg</span> <span class="o">=</span> <span class="s2">&quot;max_age must be an integer value between 0 and &quot;</span> <span class="s2">&quot;31557600&quot;</span>
             <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
@@ -513,17 +534,18 @@
             <span class="n">parsed_policy</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">MTA_STS_MX_REGEX</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">value</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Line </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">: Invalid mx &quot;</span>
-                                              <span class="sa">f</span><span class="s2">&quot;value: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Line </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">: Invalid mx &quot;</span> <span class="sa">f</span><span class="s2">&quot;value: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
             <span class="n">mx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">required_key</span> <span class="ow">in</span> <span class="n">required_keys</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">required_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">parsed_policy</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing required key: &quot;</span>
-                                          <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">required_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing required key: &quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">required_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">parsed_policy</span><span class="p">[</span><span class="s2">&quot;mode&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;none&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parsed_policy</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> mode requires &quot;</span>
-                                      <span class="sa">f</span><span class="s2">&quot;at least one mx value&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">MTASTSPolicySyntaxError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parsed_policy</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> mode requires &quot;</span> <span class="sa">f</span><span class="s2">&quot;at least one mx value&quot;</span>
+        <span class="p">)</span>
     <span class="n">parsed_policy</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mx</span>
 
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">policy</span><span class="o">=</span><span class="n">parsed_policy</span><span class="p">,</span> <span class="n">warnings</span><span class="o">=</span><span class="n">warnings</span><span class="p">)</span></div>
@@ -532,10 +554,12 @@
 
 <div class="viewcode-block" id="check_mta_sts">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.check_mta_sts">[docs]</a>
-<span class="k">def</span> <span class="nf">check_mta_sts</span><span class="p">(</span><span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                  <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                  <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                  <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_mta_sts</span><span class="p">(</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a dictionary with a parsed MTA-STS policy or an error.</span>
 
@@ -564,13 +588,12 @@
     <span class="n">mta_sts_results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)])</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">mta_sts_record</span> <span class="o">=</span> <span class="n">query_mta_sts_record</span><span class="p">(</span>
-            <span class="n">domain</span><span class="p">,</span>
-            <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
-            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+        <span class="p">)</span>
         <span class="n">warnings</span> <span class="o">=</span> <span class="n">mta_sts_record</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
         <span class="n">mta_sts_record</span> <span class="o">=</span> <span class="n">parse_mta_sts_record</span><span class="p">(</span><span class="n">mta_sts_record</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">])</span>
         <span class="n">mta_sts_results</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mta_sts_record</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;id&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
-        <span class="n">policy</span> <span class="o">=</span> <span class="n">download_mta_sts_policy</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+        <span class="n">policy</span> <span class="o">=</span> <span class="n">download_mta_sts_policy</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">http_timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
         <span class="n">warnings</span> <span class="o">+=</span> <span class="n">policy</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
         <span class="n">policy</span> <span class="o">=</span> <span class="n">parse_mta_sts_policy</span><span class="p">(</span><span class="n">policy</span><span class="p">[</span><span class="s2">&quot;policy&quot;</span><span class="p">])</span>
         <span class="n">warnings</span> <span class="o">+=</span> <span class="n">policy</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
@@ -586,8 +609,7 @@
 
 <div class="viewcode-block" id="mx_in_mta_sts_patterns">
 <a class="viewcode-back" href="../../api.html#checkdmarc.mta_sts.mx_in_mta_sts_patterns">[docs]</a>
-<span class="k">def</span> <span class="nf">mx_in_mta_sts_patterns</span><span class="p">(</span><span class="n">mx_hostname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mta_sts_mx_patterns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span>\
-        <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mx_in_mta_sts_patterns</span><span class="p">(</span><span class="n">mx_hostname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mta_sts_mx_patterns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Tests is a given MX hostname is covered by a given list of MX patterns</span>
 <span class="sd">    from an MTA-STS policy:</span>
@@ -600,8 +622,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">mta_sts_mx_patterns</span><span class="p">:</span>
         <span class="n">regex_pattern</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\.&quot;</span><span class="p">)</span>
-        <span class="n">regex_pattern</span> <span class="o">=</span> <span class="n">regex_pattern</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
-                                              <span class="sa">r</span><span class="s2">&quot;[a-z0-9\-.]+&quot;</span><span class="p">)</span>
+        <span class="n">regex_pattern</span> <span class="o">=</span> <span class="n">regex_pattern</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;[a-z0-9\-.]+&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">regex_pattern</span><span class="p">,</span> <span class="n">mx_hostname</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
     <span class="k">return</span> <span class="kc">False</span></div>

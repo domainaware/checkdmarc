@@ -1,22 +1,20 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; checkdmarc 5.3.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+  <title>Index &mdash; checkdmarc 5.8.7 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=f8739c50"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=3db50825"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -33,9 +31,6 @@
           <a href="index.html" class="icon icon-home">
             checkdmarc
           </a>
-              <div class="version">
-                5.3.1
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
@@ -80,6 +75,7 @@
  <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#M"><strong>M</strong></a>
@@ -120,7 +116,11 @@
 </li>
       <li><a href="api.html#checkdmarc.mta_sts.check_mta_sts">check_mta_sts() (in module checkdmarc.mta_sts)</a>
 </li>
+      <li><a href="api.html#checkdmarc.smtp.check_mx">check_mx() (in module checkdmarc.smtp)</a>
+</li>
       <li><a href="api.html#checkdmarc.check_ns">check_ns() (in module checkdmarc)</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.check_smtp_tls_reporting">check_smtp_tls_reporting() (in module checkdmarc.smtp_tls_reporting)</a>
 </li>
       <li><a href="api.html#checkdmarc.spf.check_spf">check_spf() (in module checkdmarc.spf)</a>
 </li>
@@ -161,6 +161,20 @@
 
       <ul>
         <li><a href="api.html#module-checkdmarc.mta_sts">module</a>
+</li>
+      </ul></li>
+      <li>
+    checkdmarc.smtp
+
+      <ul>
+        <li><a href="api.html#module-checkdmarc.smtp">module</a>
+</li>
+      </ul></li>
+      <li>
+    checkdmarc.smtp_tls_reporting
+
+      <ul>
+        <li><a href="api.html#module-checkdmarc.smtp_tls_reporting">module</a>
 </li>
       </ul></li>
       <li>
@@ -206,12 +220,22 @@
   </ul></td>
 </tr></table>
 
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#checkdmarc.bimi.extract_logo_from_certificate">extract_logo_from_certificate() (in module checkdmarc.bimi)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#checkdmarc.utils.get_a_records">get_a_records() (in module checkdmarc.utils)</a>
 </li>
       <li><a href="api.html#checkdmarc.utils.get_base_domain">get_base_domain() (in module checkdmarc.utils)</a>
+</li>
+      <li><a href="api.html#checkdmarc.bimi.get_certificate_metadata">get_certificate_metadata() (in module checkdmarc.bimi)</a>
 </li>
       <li><a href="api.html#checkdmarc.dmarc.get_dmarc_record">get_dmarc_record() (in module checkdmarc.dmarc)</a>
 </li>
@@ -221,6 +245,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#checkdmarc.smtp.get_mx_hosts">get_mx_hosts() (in module checkdmarc.smtp)</a>
+</li>
       <li><a href="api.html#checkdmarc.utils.get_mx_records">get_mx_records() (in module checkdmarc.utils)</a>
 </li>
       <li><a href="api.html#checkdmarc.utils.get_nameservers">get_nameservers() (in module checkdmarc.utils)</a>
@@ -247,13 +273,17 @@
 </li>
       <li><a href="api.html#checkdmarc.dmarc.InvalidDMARCReportURI">InvalidDMARCReportURI</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#checkdmarc.dmarc.InvalidDMARCTag">InvalidDMARCTag</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#checkdmarc.dmarc.InvalidDMARCTagValue">InvalidDMARCTagValue</a>
 </li>
       <li><a href="api.html#checkdmarc.mta_sts.InvalidMTASTSTag">InvalidMTASTSTag</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.InvalidSMTPTLSReportingTag">InvalidSMTPTLSReportingTag</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.InvalidSMTPTLSReportingTagValue">InvalidSMTPTLSReportingTagValue</a>
 </li>
       <li><a href="api.html#checkdmarc.mta_sts.InvalidSTSTagValue">InvalidSTSTagValue</a>
 </li>
@@ -277,6 +307,10 @@
 </li>
         <li><a href="api.html#module-checkdmarc.mta_sts">checkdmarc.mta_sts</a>
 </li>
+        <li><a href="api.html#module-checkdmarc.smtp">checkdmarc.smtp</a>
+</li>
+        <li><a href="api.html#module-checkdmarc.smtp_tls_reporting">checkdmarc.smtp_tls_reporting</a>
+</li>
         <li><a href="api.html#module-checkdmarc.spf">checkdmarc.spf</a>
 </li>
         <li><a href="api.html#module-checkdmarc.utils">checkdmarc.utils</a>
@@ -284,10 +318,10 @@
       </ul></li>
       <li><a href="api.html#checkdmarc.mta_sts.MTASTSError">MTASTSError</a>
 </li>
-      <li><a href="api.html#checkdmarc.mta_sts.MTASTSPolicyDownloadError">MTASTSPolicyDownloadError</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#checkdmarc.mta_sts.MTASTSPolicyDownloadError">MTASTSPolicyDownloadError</a>
+</li>
       <li><a href="api.html#checkdmarc.mta_sts.MTASTSPolicyError">MTASTSPolicyError</a>
 </li>
       <li><a href="api.html#checkdmarc.mta_sts.MTASTSPolicySyntaxError">MTASTSPolicySyntaxError</a>
@@ -303,6 +337,8 @@
       <li><a href="api.html#checkdmarc.dmarc.MultipleDMARCRecords">MultipleDMARCRecords</a>
 </li>
       <li><a href="api.html#checkdmarc.mta_sts.MultipleMTASTSRecords">MultipleMTASTSRecords</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.MultipleSMTPTLSReportingRecords">MultipleSMTPTLSReportingRecords</a>
 </li>
       <li><a href="api.html#checkdmarc.spf.MultipleSPFRTXTRecords">MultipleSPFRTXTRecords</a>
 </li>
@@ -334,6 +370,8 @@
 </li>
       <li><a href="api.html#checkdmarc.mta_sts.parse_mta_sts_record">parse_mta_sts_record() (in module checkdmarc.mta_sts)</a>
 </li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record">parse_smtp_tls_reporting_record() (in module checkdmarc.smtp_tls_reporting)</a>
+</li>
       <li><a href="api.html#checkdmarc.spf.parse_spf_record">parse_spf_record() (in module checkdmarc.spf)</a>
 </li>
   </ul></td>
@@ -346,11 +384,13 @@
 </li>
       <li><a href="api.html#checkdmarc.dmarc.query_dmarc_record">query_dmarc_record() (in module checkdmarc.dmarc)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#checkdmarc.utils.query_dns">query_dns() (in module checkdmarc.utils)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#checkdmarc.mta_sts.query_mta_sts_record">query_mta_sts_record() (in module checkdmarc.mta_sts)</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record">query_smtp_tls_reporting_record() (in module checkdmarc.smtp_tls_reporting)</a>
 </li>
       <li><a href="api.html#checkdmarc.spf.query_spf_record">query_spf_record() (in module checkdmarc.spf)</a>
 </li>
@@ -374,18 +414,30 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#checkdmarc.smtp.SMTPError">SMTPError</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.SMTPTLSReportingError">SMTPTLSReportingError</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordInWrongLocation">SMTPTLSReportingRecordInWrongLocation</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordNotFound">SMTPTLSReportingRecordNotFound</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError">SMTPTLSReportingSyntaxError</a>
+</li>
       <li><a href="api.html#checkdmarc.spf.SPFError">SPFError</a>
 </li>
       <li><a href="api.html#checkdmarc.spf.SPFIncludeLoop">SPFIncludeLoop</a>
 </li>
       <li><a href="api.html#checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe">SPFRecordFoundWhereBIMIRecordShouldBe</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#checkdmarc.dmarc.SPFRecordFoundWhereDMARCRecordShouldBe">SPFRecordFoundWhereDMARCRecordShouldBe</a>
 </li>
       <li><a href="api.html#checkdmarc.mta_sts.SPFRecordFoundWhereMTASTSRecordShouldBe">SPFRecordFoundWhereMTASTSRecordShouldBe</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.SPFRecordFoundWhereTLSRPTShouldBe">SPFRecordFoundWhereTLSRPTShouldBe</a>
+</li>
       <li><a href="api.html#checkdmarc.spf.SPFRecordNotFound">SPFRecordNotFound</a>
 </li>
       <li><a href="api.html#checkdmarc.spf.SPFRedirectLoop">SPFRedirectLoop</a>
@@ -405,11 +457,19 @@
       <li><a href="api.html#checkdmarc.dnssec.test_dnssec">test_dnssec() (in module checkdmarc.dnssec)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#checkdmarc.smtp.test_starttls">test_starttls() (in module checkdmarc.smtp)</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp.test_tls">test_tls() (in module checkdmarc.smtp)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#checkdmarc.spf.UndecodableCharactersInTXTRecord">UndecodableCharactersInTXTRecord</a>
+</li>
       <li><a href="api.html#checkdmarc.bimi.UnrelatedTXTRecordFoundAtBIMI">UnrelatedTXTRecordFoundAtBIMI</a>
 </li>
       <li><a href="api.html#checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC">UnrelatedTXTRecordFoundAtDMARC</a>
@@ -417,6 +477,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#checkdmarc.mta_sts.UnrelatedTXTRecordFoundAtMTASTS">UnrelatedTXTRecordFoundAtMTASTS</a>
+</li>
+      <li><a href="api.html#checkdmarc.smtp_tls_reporting.UnrelatedTXTRecordFoundAtTLSRPT">UnrelatedTXTRecordFoundAtTLSRPT</a>
 </li>
       <li><a href="api.html#checkdmarc.dmarc.UnverifiedDMARCURIDestination">UnverifiedDMARCURIDestination</a>
 </li>
