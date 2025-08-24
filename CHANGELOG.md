@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.8.9
+-----
+
+- Fix error message grammar
+
 5.8.8
 -----
 

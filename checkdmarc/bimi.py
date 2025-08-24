@@ -329,7 +329,7 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
         except X509StoreContextError as e:
             e_str = str(e)
             if e_str == "unable to get local issuer certificate":
-                e_str = "The certificate is not issued by a recognized Mark Verifying Authority (MVA)"
+                e_str = "The certificate was not issued by a recognized Mark Verifying Authority (MVA)"
             validation_errors.append(e_str)
             metadata["validation_errors"] = validation_errors
             metadata["valid"] = valid
