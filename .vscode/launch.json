@@ -96,6 +96,18 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls huntington.com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "huntington.com"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls  n1.e-nocibe.fr",
             "type": "python",
             "request": "launch",

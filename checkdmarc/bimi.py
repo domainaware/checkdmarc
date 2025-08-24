@@ -327,7 +327,10 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
             valid = True
             metadata["valid"] = valid
         except X509StoreContextError as e:
-            validation_errors.append(str(e))
+            e_str = str(e)
+            if e_str == "unable to get local issuer certificate":
+                e_str = "The certificate is not issued by a recognized Mark Verifying Authority (MVA)"
+            validation_errors.append(e_str)
             metadata["validation_errors"] = validation_errors
             metadata["valid"] = valid
     except Exception as e:
@@ -589,7 +592,7 @@ def parse_bimi_record(
                 response.raise_for_status()
                 raw_xml = response.content
             except Exception as e:
-                results["certificate"] = dict(
+                results["image"] = dict(
                     error=f"Failed to download BIMI image at {tag_value} - {str(e)}"
                 )
             if raw_xml is not None:
@@ -623,7 +626,7 @@ def parse_bimi_record(
     certificate_provided = hash_match and cert_metadata["valid"]
     if not certificate_provided:
         warnings.append(
-            "Most providers will not display a BIMI image without a valid mark certificate"
+            "Most email providers will not display a BIMI image without a valid mark certificate"
         )
     results["tags"] = tags
     if image_metadata is not None:

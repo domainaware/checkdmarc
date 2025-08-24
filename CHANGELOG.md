@@ -1,6 +1,12 @@
 Changelog
 =========
 
+5.8.8
+-----
+
+- Provide an easier to understand error message when a mark certificate is not is not issued by a recognized Mark Verifying Authority (MVA)
+- Bug fix: failure eto download a BIMI image is noted in the `certificate` section instead of the `image` section
+
 5.8.7
 -----
 
