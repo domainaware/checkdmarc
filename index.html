@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to checkdmarc’s documentation &mdash; checkdmarc 5.8.7 documentation</title>
+  <title>Welcome to checkdmarc’s documentation &mdash; checkdmarc 5.8.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=3db50825"></script>
+      <script src="_static/documentation_options.js?v=d5afabe7"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -83,10 +83,33 @@
 <li><p>API and CLI</p></li>
 <li><p>Can test multiple domains at once</p></li>
 <li><p>CLI output in JSON or CSV format</p></li>
-<li><p>Parses and validates MX, SPF, and DMARC records</p></li>
-<li><p>Checks for DNSSEC deployment</p></li>
-<li><p>Lists name servers</p></li>
-<li><p>Checks for STARTTLS and TLS support on each mail server</p></li>
+<li><p>Parsing and validation of many DNS records related to email</p>
+<ul>
+<li><p>MX</p>
+<ul>
+<li><p>Tests STARTTLS and TLS support on each mail server, including certificate validation</p></li>
+</ul>
+</li>
+<li><p>SPF</p>
+<ul>
+<li><p>Counts the number of DNS lookups required in each part of the SPF record</p></li>
+</ul>
+</li>
+<li><p>DMARC</p></li>
+<li><p>MTA-STS</p>
+<ul>
+<li><p>Checks both the  DNS record and the policy provided over HTTPS</p></li>
+</ul>
+</li>
+<li><p>SMTP TLS reporting</p></li>
+<li><p>BIMI</p>
+<ul>
+<li><p>Validates the SVG format and mark certificate</p></li>
+</ul>
+</li>
+<li><p>DNSSEC</p></li>
+</ul>
+</li>
 </ul>
 </section>
 <section id="further-reading">
