@@ -11,7 +11,15 @@ A Python module and command line utility for validating SPF and DMARC DNS record
 - API and CLI
 - Can test multiple domains at once
 - CLI output in JSON or CSV format
-- Parses and validates MX, SPF, and DMARC records
-- Checks for DNSSEC deployment
-- Lists name servers
-- Checks for STARTTLS and TLS support on each mail server
+- Parsing and validation of many DNS records related to email
+  - MX
+    - Tests STARTTLS and TLS support on each mail server, including certificate validation
+  - SPF
+    - Counts the number of DNS lookups required in each part of the SPF record
+  - DMARC
+  - MTA-STS
+    - Checks both the  DNS record and the policy provided over HTTPS
+  - SMTP TLS reporting
+  - BIMI
+    - Validates the SVG format and mark certificate
+  - DNSSEC
