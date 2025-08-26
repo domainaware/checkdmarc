@@ -136,6 +136,7 @@ smtp_rpt_tags = OrderedDict(
 
 def query_smtp_tls_reporting_record(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -228,6 +229,7 @@ def query_smtp_tls_reporting_record(
 
 def parse_smtp_tls_reporting_record(
     record: str,
+    *,
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> OrderedDict:
@@ -317,6 +319,7 @@ def parse_smtp_tls_reporting_record(
 
 def check_smtp_tls_reporting(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,

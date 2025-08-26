@@ -133,6 +133,7 @@ spf_qualifiers = {"": "pass", "?": "neutral", "+": "pass", "-": "fail", "~": "so
 
 def query_spf_record(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -208,6 +209,7 @@ def query_spf_record(
 def parse_spf_record(
     record: str,
     domain: str,
+    *,
     parked: bool = False,
     seen: bool = None,
     nameservers: list[str] = None,
@@ -560,6 +562,7 @@ def parse_spf_record(
 
 def get_spf_record(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -600,6 +603,7 @@ def get_spf_record(
 
 def check_spf(
     domain: str,
+    *,
     parked: bool = False,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,

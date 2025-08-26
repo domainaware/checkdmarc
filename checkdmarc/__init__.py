@@ -48,6 +48,7 @@ __version__ = checkdmarc._constants.__version__
 
 def check_domains(
     domains: list[str],
+    *,
     parked: bool = False,
     approved_nameservers: list[str] = None,
     approved_mx_hostnames: bool = None,
@@ -94,9 +95,7 @@ def check_domains(
         list(
             set(
                 map(
-                    lambda d: normalize_domain(
-                        d.rstrip(".\r\n").strip().split(",")[0]
-                    ),
+                    lambda d: normalize_domain(d.rstrip(".\r\n").strip().split(",")[0]),
                     domains,
                 )
             )
@@ -173,11 +172,11 @@ def check_domains(
         domain_results["smtp_tls_reporting"] = check_smtp_tls_reporting(
             domain, nameservers=nameservers, resolver=resolver, timeout=timeout
         )
-
         if bimi_selector is not None:
             domain_results["bimi"] = check_bimi(
                 domain,
                 selector=bimi_selector,
+                parsed_dmarc_record=domain_results["dmarc"],
                 include_tag_descriptions=include_tag_descriptions,
                 nameservers=nameservers,
                 resolver=resolver,
@@ -196,6 +195,7 @@ def check_domains(
 
 def check_ns(
     domain: str,
+    *,
     approved_nameservers: list[str] = None,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,

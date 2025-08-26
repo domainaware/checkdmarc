@@ -12,6 +12,18 @@
             "console": "integratedTerminal",
             "justMyCode": true
         },
+         {
+            "name": "checkdmarc --skip-tls badspf.seanthegeek.net",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "badspf.seanthegeek.net"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
         {
             "name": "checkdmarc --skip-tls cardinalhealth.com",
             "type": "python",

@@ -51,7 +51,7 @@ class SMTPError(Exception):
     5, timeout_exception=SMTPError, exception_message="Connection timed out"
 )
 def test_tls(
-    hostname: str, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
+    hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
 ) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
@@ -165,7 +165,7 @@ def test_tls(
     5, timeout_exception=SMTPError, exception_message="Connection timed out"
 )
 def test_starttls(
-    hostname: str, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
+    hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
 ) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support
@@ -278,6 +278,7 @@ def test_starttls(
 
 def get_mx_hosts(
     domain: str,
+    *,
     skip_tls: bool = False,
     approved_hostnames: list[str] = None,
     mta_sts_mx_patterns: list[str] = None,
@@ -447,6 +448,7 @@ def get_mx_hosts(
 
 def check_mx(
     domain: str,
+    *,
     approved_mx_hostnames: list[str] = None,
     mta_sts_mx_patterns: list[str] = None,
     skip_tls: bool = False,

@@ -283,7 +283,7 @@ def extract_logo_from_certificate(cert: Union[bytes, X509]) -> bytes:
             return logo
 
 
-def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> OrderedDict:
+def get_certificate_metadata(pem_crt: Union[str, bytes], *, domain=None) -> OrderedDict:
     """Get metadata about a Verified Mark Certificate"""
     metadata = OrderedDict()
     valid = False
@@ -353,6 +353,7 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
 
 def _query_bimi_record(
     domain: str,
+    *,
     selector: str = "default",
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
@@ -432,6 +433,7 @@ def _query_bimi_record(
 
 def query_bimi_record(
     domain: str,
+    *,
     selector: str = "default",
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
@@ -501,7 +503,9 @@ def query_bimi_record(
 
 def parse_bimi_record(
     record: str,
+    *,
     domain: str = None,
+    parsed_dmarc_record: dict = None,
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
     http_timeout: float = DEFAULT_HTTP_TIMEOUT,
@@ -512,6 +516,7 @@ def parse_bimi_record(
     Args:
         record (str): A BIMI record
         domain (str): The domain where the BIMI record was located
+        parsed_dmarc_record (dict): A parsed DMARC record
         include_tag_descriptions (bool): Include descriptions in parsed results
         syntax_error_marker (str): The maker for pointing out syntax errors
         http_timeout (float): HTTP timeout in seconds
@@ -581,6 +586,30 @@ def parse_bimi_record(
     tags = OrderedDict()
     hash_match = False
 
+    if parsed_dmarc_record and not tags["l"] == "":
+        if not parsed_dmarc_record["valid"]:
+            warnings.append(
+                "The domain does not have a valid DMARC record. A DMARC policy of quarantine or reject must be in place"
+            )
+        else:
+            if parsed_dmarc_record["tags"]["p"]["value"] not in [
+                "quarantine",
+                "reject",
+            ]:
+                warnings.append(
+                    "The DMARC policy (p tag) must not be set to quarantine or reject"
+                )
+            if parsed_dmarc_record["tags"]["sp"]["value"] not in [
+                "quarantine",
+                "reject",
+            ]:
+                warnings.append(
+                    "The DMARC subdomain policy (sp tag) must be set to quarantine or reject if it is used"
+                )
+            if parsed_dmarc_record["tags"]["pct"]["value"] != 100:
+                warnings.append(
+                    "The DMARC pct tag must be set to 100 (the implicit default) if it is used"
+                )
     for pair in pairs:
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
@@ -629,7 +658,7 @@ def parse_bimi_record(
                     error=f"Failed to download the mark certificate at {tag_value} - {str(e)}"
                 )
     certificate_provided = hash_match and cert_metadata["valid"]
-    if not certificate_provided:
+    if ("l" in tags and tags["l"] != "") and not certificate_provided:
         warnings.append(
             "Most email providers will not display a BIMI image without a valid mark certificate"
         )
@@ -645,7 +674,9 @@ def parse_bimi_record(
 
 def check_bimi(
     domain: str,
+    *,
     selector: str = "default",
+    parsed_dmarc_record: dict = None,
     include_tag_descriptions: bool = False,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
@@ -662,6 +693,8 @@ def check_bimi(
     Args:
         domain (str): A domain name
         selector (str): The BIMI selector
+        parsed_dmarc_record (dict): A parsed DMARC record
+
         include_tag_descriptions (bool): Include descriptions in parsed results
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
@@ -698,6 +731,7 @@ def check_bimi(
             bimi_results["record"],
             include_tag_descriptions=include_tag_descriptions,
             domain=domain,
+            parsed_dmarc_record=parsed_dmarc_record,
             http_timeout=timeout,
         )
         bimi_results["tags"] = parsed_bimi["tags"]

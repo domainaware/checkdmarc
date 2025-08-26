@@ -396,6 +396,7 @@ dmarc_tags = OrderedDict(
 
 def _query_dmarc_record(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -491,6 +492,7 @@ def _query_dmarc_record(
 
 def query_dmarc_record(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -659,6 +661,7 @@ def parse_dmarc_report_uri(uri: str) -> OrderedDict:
 
 def check_wildcard_dmarc_report_authorization(
     domain: str,
+    *,
     nameservers: list[str] = None,
     ignore_unrelated_records: bool = False,
     resolver: dns.resolver.Resolver = None,
@@ -722,6 +725,7 @@ def check_wildcard_dmarc_report_authorization(
 def verify_dmarc_report_destination(
     source_domain: str,
     destination_domain: str,
+    *,
     nameservers: list[str] = None,
     ignore_unrelated_records: bool = False,
     resolver: dns.resolver.Resolver = None,
@@ -801,6 +805,7 @@ def verify_dmarc_report_destination(
 def parse_dmarc_record(
     record: str,
     domain: str,
+    *,
     parked: bool = False,
     include_tag_descriptions: bool = False,
     nameservers: list[str] = None,
@@ -1093,6 +1098,7 @@ def parse_dmarc_record(
 
 def get_dmarc_record(
     domain: str,
+    *,
     include_tag_descriptions: bool = False,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
@@ -1151,6 +1157,7 @@ def get_dmarc_record(
 
 def check_dmarc(
     domain: str,
+    *,
     parked: bool = False,
     include_dmarc_tag_descriptions: bool = False,
     ignore_unrelated_records: bool = False,

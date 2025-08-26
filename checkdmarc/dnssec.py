@@ -35,6 +35,7 @@ TLSA_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 
 def get_dnskey(
     domain: str,
+    *,
     nameservers: list[str] = None,
     timeout: float = 2.0,
     cache: ExpiringDict = None,
@@ -93,6 +94,7 @@ def get_dnskey(
 
 def test_dnssec(
     domain: str,
+    *,
     nameservers: list[str] = None,
     timeout: float = 2.0,
     cache: ExpiringDict = None,
@@ -156,6 +158,7 @@ def test_dnssec(
 
 def get_tlsa_records(
     hostname: str,
+    *,
     nameservers: list[str] = None,
     timeout: float = 2.0,
     port: int = 25,

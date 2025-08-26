@@ -141,6 +141,7 @@ STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
 def query_mta_sts_record(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -230,6 +231,7 @@ def query_mta_sts_record(
 
 def parse_mta_sts_record(
     record: str,
+    *,
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> OrderedDict:
@@ -308,7 +310,7 @@ def parse_mta_sts_record(
 
 
 def download_mta_sts_policy(
-    domain: str, http_timeout: float = DEFAULT_HTTP_TIMEOUT
+    domain: str, *, http_timeout: float = DEFAULT_HTTP_TIMEOUT
 ) -> OrderedDict:
     """
     Downloads a domains MTA-HTS policy
@@ -430,6 +432,7 @@ def parse_mta_sts_policy(policy: str) -> OrderedDict:
 
 def check_mta_sts(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,

@@ -96,6 +96,7 @@ def normalize_domain(domain: str) -> str:
 def query_dns(
     domain: str,
     record_type: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -166,6 +167,7 @@ def query_dns(
 
 def get_a_records(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -209,6 +211,7 @@ def get_a_records(
 
 def get_reverse_dns(
     ip_address: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -246,6 +249,7 @@ def get_reverse_dns(
 
 def get_txt_records(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -283,6 +287,7 @@ def get_txt_records(
 
 def get_nameservers(
     domain: str,
+    *,
     approved_nameservers: list[str] = None,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
@@ -336,6 +341,7 @@ def get_nameservers(
 
 def get_mx_records(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
