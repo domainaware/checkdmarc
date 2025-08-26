@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.smtp_tls_reporting &mdash; checkdmarc 5.8.9 documentation</title>
+  <title>checkdmarc.smtp_tls_reporting &mdash; checkdmarc 5.9.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=71d72ffe"></script>
+      <script src="../../_static/documentation_options.js?v=87e9d2b1"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -85,7 +85,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grammar</span><span class="p">,</span> <span class="n">Regex</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SYNTAX_ERROR_MARKER</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">WSP_REGEX</span><span class="p">,</span> <span class="n">MAILTO_REGEX_STRING</span><span class="p">,</span> <span class="n">HTTPS_REGEX</span><span class="p">,</span> <span class="n">query_dns</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">WSP_REGEX</span><span class="p">,</span>
+    <span class="n">MAILTO_REGEX_STRING</span><span class="p">,</span>
+    <span class="n">HTTPS_REGEX</span><span class="p">,</span>
+    <span class="n">normalize_domain</span><span class="p">,</span>
+    <span class="n">query_dns</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="sd">&quot;&quot;&quot;Copyright 2019-2023 Sean Whalen</span>
 
@@ -232,6 +238,7 @@
 <a class="viewcode-back" href="../../api.html#checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">query_smtp_tls_reporting_record</span><span class="p">(</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
@@ -257,7 +264,7 @@
 <span class="sd">        :exc:`checkdmarc.smtp_tls_reporting.MultipleSMTPTLSReportingRecords`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">domain</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for an SMTP TLS Reporting record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;_smtp._tls.</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -327,6 +334,7 @@
 <a class="viewcode-back" href="../../api.html#checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_smtp_tls_reporting_record</span><span class="p">(</span>
     <span class="n">record</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">include_tag_descriptions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">syntax_error_marker</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
@@ -397,18 +405,18 @@
         <span class="n">tag_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
         <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">smtp_rpt_tags</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidSMTPTLSReportingTag</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2"> is not a valid SMTP TLS &quot;</span> <span class="sa">f</span><span class="s2">&quot;Reporting record tag&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2"> is not a valid SMTP TLS Reporting record tag&quot;</span>
             <span class="p">)</span>
         <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">tag_value</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">include_tag_descriptions</span><span class="p">:</span>
             <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">smtp_rpt_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;description&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="s2">&quot;rua&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
-        <span class="n">SMTPTLSReportingSyntaxError</span><span class="p">(</span><span class="s2">&quot;The record is missing the required rua &quot;</span> <span class="s2">&quot;tag&quot;</span><span class="p">)</span>
+        <span class="n">SMTPTLSReportingSyntaxError</span><span class="p">(</span><span class="s2">&quot;The record is missing the required rua tag&quot;</span><span class="p">)</span>
     <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;rua&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;rua&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;rua&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]:</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">SMTPTLSREPORTING_URI_REGEX</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">uri</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SMTPTLSReportingSyntaxError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">uri</span><span class="si">}</span><span class="s2"> is not a valid SMTP &quot;</span> <span class="sa">f</span><span class="s2">&quot;TLS reporting URI&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">uri</span><span class="si">}</span><span class="s2"> is not a valid SMTP TLS reporting URI&quot;</span>
             <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span> <span class="n">warnings</span><span class="o">=</span><span class="n">warnings</span><span class="p">)</span></div>
@@ -419,6 +427,7 @@
 <a class="viewcode-back" href="../../api.html#checkdmarc.smtp_tls_reporting.check_smtp_tls_reporting">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_smtp_tls_reporting</span><span class="p">(</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
@@ -446,7 +455,7 @@
 <span class="sd">                      - ``error`` - Tne error message</span>
 <span class="sd">                      - ``valid`` - False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">domain</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
     <span class="n">smtp_tls_reporting_results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)])</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">smtp_tls_reporting_record</span> <span class="o">=</span> <span class="n">query_smtp_tls_reporting_record</span><span class="p">(</span>
