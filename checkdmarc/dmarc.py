@@ -909,11 +909,12 @@ def parse_dmarc_record(
             raise InvalidDMARCTag(f"{tag} is not a valid DMARC tag")
         tag_value = tags[tag]["value"]
         allowed_values = None
+        explicit = tags[tag]["explicit"]
         if "values" in dmarc_tags[tag]:
             allowed_values = dmarc_tags[tag]["values"]
         if tag == "p" and tag_value == "none":
             warnings.append("A p tag value of none has no effect on email")
-        if tag == "sp" and tag_value == "none":
+        if tag == "sp" and tag_value == "none" and explicit:
             warnings.append("An sp tag value of none has no effect on email")
         if tag == "fo":
             tag_value = tag_value.split(":")
