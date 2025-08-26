@@ -35,9 +35,7 @@ MAILTO_REGEX_STRING = (
     r"^(mailto):([\w\-!#$%&'*+-/=?^_`{|}~]"
     r"[\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?"
 )
-ZERO_WIDTH_RE = re.compile(
-    r"[\u200B-\u200D\uFEFF]"  # includes ZWSP, ZWNJ, ZWJ, BOM
-)
+ZERO_WIDTH_RE = re.compile(r"[\u200B-\u200D\uFEFF]")  # includes ZWSP, ZWNJ, ZWJ, BOM
 
 MAILTO_REGEX = re.compile(MAILTO_REGEX_STRING, re.IGNORECASE)
 

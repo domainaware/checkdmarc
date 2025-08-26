@@ -210,7 +210,7 @@ def parse_spf_record(
     record: str,
     domain: str,
     *,
-    ignore_too_many_lookups:bool=False,
+    ignore_too_many_lookups: bool = False,
     parked: bool = False,
     seen: bool = None,
     nameservers: list[str] = None,
@@ -542,7 +542,7 @@ def parse_spf_record(
                 )
         except (SPFTooManyDNSLookups, SPFTooManyVoidDNSLookups) as e:
             if ignore_too_many_lookups:
-                 error=str(e)
+                error = str(e)
             else:
                 raise e
         except (_SPFWarning, DNSException) as warning:
@@ -559,23 +559,23 @@ def parse_spf_record(
             warnings.append(str(warning))
     if error:
         result = OrderedDict(
-        [
-            ("dns_lookups", lookup_mechanism_count),
-            ("dns_void_lookups", void_lookup_mechanism_count),
-            ("error", error),
-            ("parsed", parsed),
-            ("warnings", warnings),
-        ]
-    )
+            [
+                ("dns_lookups", lookup_mechanism_count),
+                ("dns_void_lookups", void_lookup_mechanism_count),
+                ("error", error),
+                ("parsed", parsed),
+                ("warnings", warnings),
+            ]
+        )
     else:
         result = OrderedDict(
-        [
-            ("dns_lookups", lookup_mechanism_count),
-            ("dns_void_lookups", void_lookup_mechanism_count),
-            ("parsed", parsed),
-            ("warnings", warnings),
-        ]
-    )
+            [
+                ("dns_lookups", lookup_mechanism_count),
+                ("dns_void_lookups", void_lookup_mechanism_count),
+                ("parsed", parsed),
+                ("warnings", warnings),
+            ]
+        )
     return result
 
 

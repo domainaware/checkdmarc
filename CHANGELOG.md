@@ -1,6 +1,31 @@
 Changelog
 =========
 
+5.9.0
+------
+
+Bug fixes:
+
+- Remove zero-width characters from domain inputs (Close #157)
+- Add a warning when the DMARC record `p` or `sp` value is `none` (Close #163)
+- Evaluate DMARC when checking BIMI
+- Do lot show a BIMI certificate warning when the `l` tag is set to `""`
+- Include warnings if a domain is using BIMI, but does not have an enforced DMARC policy
+
+New features:
+
+Parsed SPF record details are now provided even if it uses too many DNS lookups
+
+Having all of the details of a SPF record that is over the DNS lookup limit can help administrators see what portions of the SPF record are using the most lookups. The parsed record data can be found in the `parsed` key. In the event that a domain is over the lookup limit, `valid` will still be set to `false` and a helpful message describing the problem can be found in the `error` key. (Close #129)
+
+API changes:
+
+- Require keyword arguments to be passed as `keyword=value` pairs instead of positional arguments
+- Add the option `ignore_too_many_lookups` to `checkdmarc.spf.parse_spf_record()`
+  - This option will stop `checkdmarc.spf.parse_spf_record()` from rasing exceptions related to too many DNS lookups, in support of the new feature
+  - `False` by default to maintain backwards compatibility
+  - `checkdmarc.spf.check_spf()` uses this functionality to support the new feature
+
 5.8.9
 -----
 
