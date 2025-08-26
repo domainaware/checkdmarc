@@ -308,7 +308,7 @@ class Test(unittest.TestCase):
     def testDMARCPctLessThan100Warning(self):
         """A warning is issued if the DMARC pct value is less than 100"""
 
-        snipit= "pct value is less than 100"
+        snipit = "pct value is less than 100"
         dmarc_record = (
             "v=DMARC1; p=none; sp=none; fo=1; pct=50; adkim=r; "
             "aspf=r; rf=afrf; ri=86400; "
@@ -317,7 +317,7 @@ class Test(unittest.TestCase):
         )
         domain = "energy.gov"
         results = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
-        self.assertTrue(any( snipit in s for s in results["warnings"]))
+        self.assertTrue(any(snipit in s for s in results["warnings"]))
 
     def testInvalidDMARCURI(self):
         """An invalid DMARC report URI raises InvalidDMARCReportURI"""
