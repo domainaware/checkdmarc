@@ -37,7 +37,13 @@ from OpenSSL.crypto import (
 
 import checkdmarc.resources
 from checkdmarc._constants import SYNTAX_ERROR_MARKER, USER_AGENT, DEFAULT_HTTP_TIMEOUT
-from checkdmarc.utils import WSP_REGEX, HTTPS_REGEX, query_dns, get_base_domain
+from checkdmarc.utils import (
+    WSP_REGEX,
+    HTTPS_REGEX,
+    query_dns,
+    normalize_domain,
+    get_base_domain,
+)
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -58,7 +64,6 @@ BIMI_TAG_VALUE_REGEX_STRING = (
     rf"([a-z]{{1,2}}){WSP_REGEX}*={WSP_REGEX}*(bimi1|{HTTPS_REGEX})?"
 )
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
-
 
 # Load the certificates included in MVACAs.pem into a certificate store
 X509STORE = X509Store()
@@ -216,7 +221,7 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
             metadata["description"] = description
         metadata["width"] = width
         metadata["height"] = height
-        metadata["filesize"] = f"{getsizeof(raw_xml)/1000} KB"
+        metadata["filesize"] = f"{getsizeof(raw_xml) / 1000} KB"
         metadata["sha256"] = hashlib.sha256(raw_xml.encode("utf-8")).hexdigest()
         return metadata
     except Exception as e:
@@ -336,7 +341,7 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], domain=None) -> Ordered
     except Exception as e:
         validation_errors.append(str(e))
     if domain is not None:
-        base_domain = get_base_domain(domain)
+        base_domain = get_base_domain(domain).encode("utf-8").decode("unicode_escape")
         if base_domain not in san:
             validation_errors.append(
                 f"{base_domain} does not match the certificate domains, {san}"
@@ -367,7 +372,7 @@ def _query_bimi_record(
     Returns:
         str: A record string or None
     """
-    domain = domain.lower()
+    domain = normalize_domain(domain)
     target = f"{selector}._bimi.{domain}"
     txt_prefix = "v=BIMI1"
     bimi_record = None
@@ -408,7 +413,7 @@ def _query_bimi_record(
             for record in records:
                 if record.startswith(txt_prefix):
                     raise BIMIRecordInWrongLocation(
-                        "The BIMI record must be located at " f"{target}, not {domain}"
+                        f"The BIMI record must be located at {target}, not {domain}"
                     )
         except dns.resolver.NoAnswer:
             pass
@@ -472,7 +477,7 @@ def query_bimi_record(
         )
         for root_record in root_records:
             if root_record.startswith("v=BIMI1"):
-                warnings.append(f"BIMI record at root of {domain} " "has no effect")
+                warnings.append(f"BIMI record at root of {domain} has no effect")
     except dns.resolver.NXDOMAIN:
         raise BIMIRecordNotFound(f"The domain {domain} does not exist")
     except dns.exception.DNSException:

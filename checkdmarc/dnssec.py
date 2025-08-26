@@ -11,7 +11,7 @@ from dns.rdatatype import RdataType
 
 from expiringdict import ExpiringDict
 
-from checkdmarc.utils import get_base_domain
+from checkdmarc.utils import normalize_domain, get_base_domain
 
 
 """Copyright 2019-2023 Sean Whalen
@@ -56,7 +56,7 @@ def get_dnskey(
     if cache is None:
         cache = DNSKEY_CACHE
 
-    domain = domain.lower()
+    domain = normalize_domain(domain)
 
     if domain in cache:
         return cache[domain]

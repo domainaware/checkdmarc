@@ -13,6 +13,7 @@ from pyleri import Grammar, Regex, Sequence, Repeat
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
 from checkdmarc.utils import (
+    normalize_domain,
     query_dns,
     get_a_records,
     get_txt_records,
@@ -154,6 +155,7 @@ def query_spf_record(
     Raises:
         :exc:`checkdmarc.SPFRecordNotFound`
     """
+    domain = normalize_domain(domain)
     logging.debug(f"Checking for a SPF record on {domain}")
     txt_prefix = "v=spf1"
     warnings = []
@@ -183,7 +185,7 @@ def query_spf_record(
         for record in answers:
             if record == "Undecodable characters":
                 raise UndecodableCharactersInTXTRecord(
-                    f"A TXT record at {domain} " "contains undecodable " "characters"
+                    f"A TXT record at {domain} contains undecodable characters"
                 )
             if record.startswith(txt_prefix):
                 spf_txt_records.append(record)
@@ -192,9 +194,7 @@ def query_spf_record(
         elif len(spf_txt_records) == 1:
             spf_record = spf_txt_records[0]
         if spf_record is None:
-            raise SPFRecordNotFound(
-                f"{domain} " f"does not have a SPF TXT record", domain
-            )
+            raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record", domain)
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record", domain)
     except dns.resolver.NXDOMAIN:
@@ -245,6 +245,7 @@ def parse_spf_record(
         :exc:`checkdmarc.spf.SPFTooManyDNSLookups`
     """
     logging.debug(f"Parsing the SPF record on {domain}")
+    domain = normalize_domain(domain)
     lookup_mechanisms = ["a", "mx", "include", "exists", "redirect"]
     if seen is None:
         seen = [domain]
@@ -315,7 +316,7 @@ def parse_spf_record(
                         ipaddress.ip_network(value, strict=False), ipaddress.IPv4Network
                     ):
                         raise SPFSyntaxError(
-                            f"{value} is not a valid ipv4  " "value. Looks like ipv6"
+                            f"{value} is not a valid ipv4  value. Looks like ipv6"
                         )
                 except ValueError:
                     raise SPFSyntaxError(f"{value} is not a valid ipv4 value")
@@ -325,7 +326,7 @@ def parse_spf_record(
                         ipaddress.ip_network(value, strict=False), ipaddress.IPv6Network
                     ):
                         raise SPFSyntaxError(
-                            f"{value} is not a valid ipv6 " "value. Looks like ipv4"
+                            f"{value} is not a valid ipv6 value. Looks like ipv4"
                         )
                 except ValueError:
                     raise SPFSyntaxError(f"{value} is not a valid ipv6 value")
@@ -584,6 +585,7 @@ def get_spf_record(
         :exc:`checkdmarc.spf.SPFTooManyDNSLookups`
 
     """
+    domain = normalize_domain(domain)
     record = query_spf_record(
         domain, nameservers=nameservers, resolver=resolver, timeout=timeout
     )
@@ -630,6 +632,7 @@ def check_spf(
                       - ``error`` - Tne error message
                       - ``valid`` - False
     """
+    domain = normalize_domain(domain)
     spf_results = OrderedDict(
         [
             ("record", None),

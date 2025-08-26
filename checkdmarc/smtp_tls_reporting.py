@@ -12,7 +12,13 @@ import dns
 from pyleri import Grammar, Regex, Sequence, List
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
-from checkdmarc.utils import WSP_REGEX, MAILTO_REGEX_STRING, HTTPS_REGEX, query_dns
+from checkdmarc.utils import (
+    WSP_REGEX,
+    MAILTO_REGEX_STRING,
+    HTTPS_REGEX,
+    normalize_domain,
+    query_dns,
+)
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -155,7 +161,7 @@ def query_smtp_tls_reporting_record(
         :exc:`checkdmarc.smtp_tls_reporting.MultipleSMTPTLSReportingRecords`
 
     """
-    domain = domain.lower()
+    domain = normalize_domain(domain)
     logging.debug(f"Checking for an SMTP TLS Reporting record on {domain}")
     warnings = []
     target = f"_smtp._tls.{domain}"
@@ -292,18 +298,18 @@ def parse_smtp_tls_reporting_record(
         tag_value = str(pair[1].strip())
         if tag not in smtp_rpt_tags:
             raise InvalidSMTPTLSReportingTag(
-                f"{tag} is not a valid SMTP TLS " f"Reporting record tag"
+                f"{tag} is not a valid SMTP TLS Reporting record tag"
             )
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["description"] = smtp_rpt_tags[tag]["description"]
     if "rua" not in tags:
-        SMTPTLSReportingSyntaxError("The record is missing the required rua " "tag")
+        SMTPTLSReportingSyntaxError("The record is missing the required rua tag")
     tags["rua"]["value"] = tags["rua"]["value"].split(",")
     for uri in tags["rua"]["value"]:
         if len(SMTPTLSREPORTING_URI_REGEX.findall(uri)) != 1:
             raise SMTPTLSReportingSyntaxError(
-                f"{uri} is not a valid SMTP " f"TLS reporting URI"
+                f"{uri} is not a valid SMTP TLS reporting URI"
             )
 
     return OrderedDict(tags=tags, warnings=warnings)
@@ -338,7 +344,7 @@ def check_smtp_tls_reporting(
                       - ``error`` - Tne error message
                       - ``valid`` - False
     """
-    domain = domain.lower()
+    domain = normalize_domain(domain)
     smtp_tls_reporting_results = OrderedDict([("valid", True)])
     try:
         smtp_tls_reporting_record = query_smtp_tls_reporting_record(

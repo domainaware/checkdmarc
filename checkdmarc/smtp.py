@@ -16,6 +16,7 @@ from expiringdict import ExpiringDict
 
 from checkdmarc.utils import (
     DNSException,
+    normalize_domain,
     get_a_records,
     get_reverse_dns,
     get_mx_records,
@@ -64,6 +65,7 @@ def test_tls(
         bool: TLS supported
     """
     tls = False
+    hostname = normalize_domain(hostname)
     if cache:
         cached_result = cache.get(hostname)
         if cached_result is not None:
@@ -176,6 +178,7 @@ def test_starttls(
     Returns:
         bool: STARTTLS supported
     """
+    hostname = normalize_domain(hostname)
     starttls = False
     if cache:
         cached_result = cache.get(hostname)
@@ -352,7 +355,7 @@ def get_mx_hosts(
                 warnings.append(f"Unapproved MX hostname: {hostname}")
         if mta_sts_mx_patterns:
             if not mx_in_mta_sts_patterns(hostname, mta_sts_mx_patterns):
-                warnings.append(f"{hostname} is not included in the MTA-STS " f"policy")
+                warnings.append(f"{hostname} is not included in the MTA-STS policy")
 
         try:
             dnssec = False
@@ -392,7 +395,7 @@ def get_mx_hosts(
                 reverse_hostnames = []
             if len(reverse_hostnames) == 0:
                 warnings.append(
-                    f"{address} does not have any reverse DNS (PTR) " "records"
+                    f"{address} does not have any reverse DNS (PTR) records"
                 )
             for reverse_hostname in reverse_hostnames:
                 try:
@@ -422,7 +425,7 @@ def get_mx_hosts(
                     tls = test_tls(hostname, cache=TLS_CACHE)
 
                     if not tls:
-                        warnings.append(f"SSL/TLS is not supported on " f"{hostname}")
+                        warnings.append(f"SSL/TLS is not supported on {hostname}")
                 host["tls"] = tls
                 host["starttls"] = starttls
             except DNSException as warning:

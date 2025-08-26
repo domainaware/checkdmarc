@@ -40,14 +40,16 @@ class Test(unittest.TestCase):
             self.assertEqual(
                 result["spf"]["valid"],
                 True,
-                "Known good domain {0} failed SPF check:"
-                "\n\n{1}".format(result["domain"], spf_error),
+                "Known good domain {0} failed SPF check:\n\n{1}".format(
+                    result["domain"], spf_error
+                ),
             )
             self.assertEqual(
                 result["dmarc"]["valid"],
                 True,
-                "Known good domain {0} failed DMARC check:"
-                "\n\n{1}".format(result["domain"], dmarc_error),
+                "Known good domain {0} failed DMARC check:\n\n{1}".format(
+                    result["domain"], dmarc_error
+                ),
             )
 
     def testDMARCMixedFormatting(self):
@@ -187,7 +189,7 @@ class Test(unittest.TestCase):
         """SPF record syntax errors raise SPFSyntaxError"""
 
         spf_record = (
-            '"v=spf1 mx a:mail.cohaesio.net ' 'include: trustpilotservice.com ~all"'
+            '"v=spf1 mx a:mail.cohaesio.net include: trustpilotservice.com ~all"'
         )
         domain = "2021.ai"
         self.assertRaises(

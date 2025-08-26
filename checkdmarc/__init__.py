@@ -14,7 +14,12 @@ from io import StringIO
 from csv import DictWriter
 
 import checkdmarc._constants
-from checkdmarc.utils import get_base_domain, get_nameservers, DNSException
+from checkdmarc.utils import (
+    get_base_domain,
+    normalize_domain,
+    get_nameservers,
+    DNSException,
+)
 from checkdmarc.dnssec import test_dnssec
 from checkdmarc.mta_sts import check_mta_sts
 from checkdmarc.smtp import check_mx
@@ -87,7 +92,14 @@ def check_domains(
     """
     domains = sorted(
         list(
-            set(map(lambda d: d.rstrip(".\r\n").strip().lower().split(",")[0], domains))
+            set(
+                map(
+                    lambda d: normalize_domain(
+                        d.rstrip(".\r\n").strip().split(",")[0]
+                    ),
+                    domains,
+                )
+            )
         )
     )
     not_domains = []
@@ -100,7 +112,7 @@ def check_domains(
         domains.remove("")
     results = []
     for domain in domains:
-        domain = domain.lower()
+        domain = normalize_domain(domain)
         logging.debug(f"Checking: {domain}")
 
         domain_results = OrderedDict(

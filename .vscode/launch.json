@@ -132,6 +132,18 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls  info‍.‍fr‍.‍vorwerk‍.‍com",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "info‍.‍fr‍.‍vorwerk‍.‍com",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls  paypal.com",
             "type": "python",
             "request": "launch",
