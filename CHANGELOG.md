@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.9.1
+-----
+
+- Fix BIMI record parsing error introduced in `5.9.0`
+
 5.9.0
 ------
 

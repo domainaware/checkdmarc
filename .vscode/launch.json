@@ -168,6 +168,18 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls  proton.me",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "proton.me",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls  kickbox.com",
             "type": "python",
             "request": "launch",

@@ -586,30 +586,6 @@ def parse_bimi_record(
     tags = OrderedDict()
     hash_match = False
 
-    if parsed_dmarc_record and not tags["l"] == "":
-        if not parsed_dmarc_record["valid"]:
-            warnings.append(
-                "The domain does not have a valid DMARC record. A DMARC policy of quarantine or reject must be in place"
-            )
-        else:
-            if parsed_dmarc_record["tags"]["p"]["value"] not in [
-                "quarantine",
-                "reject",
-            ]:
-                warnings.append(
-                    "The DMARC policy (p tag) must not be set to quarantine or reject"
-                )
-            if parsed_dmarc_record["tags"]["sp"]["value"] not in [
-                "quarantine",
-                "reject",
-            ]:
-                warnings.append(
-                    "The DMARC subdomain policy (sp tag) must be set to quarantine or reject if it is used"
-                )
-            if parsed_dmarc_record["tags"]["pct"]["value"] != 100:
-                warnings.append(
-                    "The DMARC pct tag must be set to 100 (the implicit default) if it is used"
-                )
     for pair in pairs:
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
@@ -657,8 +633,32 @@ def parse_bimi_record(
                 results["certificate"] = dict(
                     error=f"Failed to download the mark certificate at {tag_value} - {str(e)}"
                 )
+    if parsed_dmarc_record and not tags["l"] == "":
+        if not parsed_dmarc_record["valid"]:
+            warnings.append(
+                "The domain does not have a valid DMARC record. A DMARC policy of quarantine or reject must be in place"
+            )
+        else:
+            if parsed_dmarc_record["tags"]["p"]["value"] not in [
+                "quarantine",
+                "reject",
+            ]:
+                warnings.append(
+                    "The DMARC policy (p tag) must not be set to quarantine or reject"
+                )
+            if parsed_dmarc_record["tags"]["sp"]["value"] not in [
+                "quarantine",
+                "reject",
+            ]:
+                warnings.append(
+                    "The DMARC subdomain policy (sp tag) must be set to quarantine or reject if it is used"
+                )
+            if parsed_dmarc_record["tags"]["pct"]["value"] != 100:
+                warnings.append(
+                    "The DMARC pct tag must be set to 100 (the implicit default) if it is used"
+                )
     certificate_provided = hash_match and cert_metadata["valid"]
-    if ("l" in tags and tags["l"] != "") and not certificate_provided:
+    if ("l" in tags and tags["l"]["value"] != "") and not certificate_provided:
         warnings.append(
             "Most email providers will not display a BIMI image without a valid mark certificate"
         )
