@@ -244,8 +244,6 @@ def check_svg_requirements(svg_metadata: OrderedDict) -> list[str]:
         base_profile = svg_metadata["base_profile"]
         if base_profile != "tiny-ps":
             _errors.append(f"The SVG base profile must be tiny-ps, not {base_profile}")
-    if svg_metadata["width"] != svg_metadata["height"]:
-        _errors.append("The SVG dimensions must be square, not {width}x{height}")
     if "title" not in svg_metadata.keys():
         _errors.append("The SVG must have a title element")
     invalid_attributes = ["x", "y"]
@@ -547,7 +545,7 @@ def parse_bimi_record(
         :exc:`checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe`
     """
     results = OrderedDict()
-    image_metadata = None
+    svg_metadata = None
     cert_metadata = None
     logging.debug("Parsing the BIMI record")
     session = requests.Session()
@@ -607,10 +605,14 @@ def parse_bimi_record(
                 )
             if raw_xml is not None:
                 try:
-                    image_metadata = get_svg_metadata(raw_xml)
-                    svg_validation_errors = check_svg_requirements(image_metadata)
+                    svg_metadata = get_svg_metadata(raw_xml)
+                    if svg_metadata["width"] != svg_metadata["height"]:
+                        warnings.append(
+                            f"It is recommended for BIMI SVG dimensions to be square, not {svg_metadata['width']}x{svg_metadata['height']}"
+                        )
+                    svg_validation_errors = check_svg_requirements(svg_metadata)
                     if len(svg_validation_errors) > 0:
-                        image_metadata["validation_errors"] = svg_validation_errors
+                        svg_metadata["validation_errors"] = svg_validation_errors
                 except Exception as e:
                     results["image"] = dict(
                         error=f"Failed to process BIMI image at {tag_value} - {str(e)}"
@@ -622,8 +624,8 @@ def parse_bimi_record(
                 response.raise_for_status()
                 pem_bytes = response.content
                 cert_metadata = get_certificate_metadata(pem_bytes, domain=domain)
-                if image_metadata is not None:
-                    if image_metadata["sha256"] == cert_metadata["logotype_sha256"]:
+                if svg_metadata is not None:
+                    if svg_metadata["sha256"] == cert_metadata["logotype_sha256"]:
                         hash_match = True
                     else:
                         warnings.append(
@@ -663,8 +665,8 @@ def parse_bimi_record(
             "Most email providers will not display a BIMI image without a valid mark certificate"
         )
     results["tags"] = tags
-    if image_metadata is not None:
-        results["image"] = image_metadata
+    if svg_metadata is not None:
+        results["image"] = svg_metadata
     if cert_metadata is not None:
         results["certificate"] = cert_metadata
     results["warnings"] = warnings

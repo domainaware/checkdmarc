@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.9.2
+-----
+
+- Treat square aspect ratio as a recommendation rather than a requirement for BIMI SVG files (Close [#168](https://github.com/domainaware/checkdmarc/issues/168))
+
 5.9.1
 -----
 
