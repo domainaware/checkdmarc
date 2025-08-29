@@ -728,6 +728,7 @@ def check_bimi(
             timeout=timeout,
         )
         bimi_results["selector"] = selector
+        bimi_results["location"] = bimi_query["location"]
         bimi_results["record"] = bimi_query["record"]
         parsed_bimi = parse_bimi_record(
             bimi_results["record"],

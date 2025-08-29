@@ -918,9 +918,13 @@ def parse_dmarc_record(
         if "values" in dmarc_tags[tag]:
             allowed_values = dmarc_tags[tag]["values"]
         if tag == "p" and tag_value == "none":
-            warnings.append("A p tag value of none has no effect on email")
+            warnings.append(
+                f"A p tag value of none has no effect on email sent as {domain}."
+            )
         if tag == "sp" and tag_value == "none" and explicit:
-            warnings.append("An sp tag value of none has no effect on email")
+            warnings.append(
+                f"An sp tag value of none has no effect on email sent as a subdomain of {domain}."
+            )
         if tag == "fo":
             tag_value = tag_value.split(":")
             if "0" in tag_value and "1" in tag_value:
@@ -1068,6 +1072,8 @@ def parse_dmarc_record(
         warnings.append(
             str(InvalidDMARCTagValue("pct value must be an integer between 0 and 100"))
         )
+    elif tags["pct"]["value"] == 0:
+        warnings.append("A pct value of 0 disables DMARC enforcement")
     elif tags["pct"]["value"] < 100:
         warning_msg = (
             "pct value is less than 100. This leads to "

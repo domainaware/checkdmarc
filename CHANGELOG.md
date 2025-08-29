@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.9.3
+-----
+
+- Clarify warnings for DMARC `p=none` and `sp=none`
+- Use a different warning if DMARC `pct` is set to `0`
+- Add `location` to the JSON output for BIMI
+
 5.9.2
 -----
 
@@ -12,7 +19,7 @@ Changelog
 - Fix BIMI record parsing error introduced in `5.9.0`
 
 5.9.0
-------
+-----
 
 Bug fixes:
 
