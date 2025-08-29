@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.9.5
+-----
+
+- Better error message formatting for BIMI certificate domain mismatch errors
+
 5.9.4
 -----
 

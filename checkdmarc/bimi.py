@@ -341,8 +341,10 @@ def get_certificate_metadata(pem_crt: Union[str, bytes], *, domain=None) -> Orde
     if domain is not None:
         base_domain = get_base_domain(domain).encode("utf-8").decode("unicode_escape")
         if base_domain not in san:
+            plural = "domain" if len(san) == 1 else "domains"
+            cert_domains = ". ".join(san)
             validation_errors.append(
-                f"{base_domain} does not match the certificate domains, {san}"
+                f"{base_domain} does not match the certificate {plural}: {cert_domains}"
             )
             metadata["validation_errors"] = validation_errors
             metadata["valid"] = False
