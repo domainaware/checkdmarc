@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.9.4
+-----
+
+- Only parse the PSL once
+
 5.9.3
 -----
 

@@ -39,6 +39,8 @@ ZERO_WIDTH_RE = re.compile(r"[\u200B-\u200D\uFEFF]")  # includes ZWSP, ZWNJ, ZWJ
 
 MAILTO_REGEX = re.compile(MAILTO_REGEX_STRING, re.IGNORECASE)
 
+PSL = publicsuffixlist.PublicSuffixList()
+
 
 class DNSException(Exception):
     """Raised when a general DNS error occurs"""
@@ -67,10 +69,8 @@ def get_base_domain(domain: str) -> str:
         str: The base domain of the given domain
 
     """
-
-    psl = publicsuffixlist.PublicSuffixList()
     domain = normalize_domain(domain)
-    return psl.privatesuffix(domain) or domain
+    return PSL.privatesuffix(domain) or domain
 
 
 def normalize_domain(domain: str) -> str:
