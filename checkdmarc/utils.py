@@ -36,9 +36,7 @@ MAILTO_REGEX_STRING = (
     r"[\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?"
 )
 ZERO_WIDTH_RE = re.compile(r"[\u200B-\u200D\uFEFF]")  # includes ZWSP, ZWNJ, ZWJ, BOM
-
 MAILTO_REGEX = re.compile(MAILTO_REGEX_STRING, re.IGNORECASE)
-
 PSL = publicsuffixlist.PublicSuffixList()
 
 
@@ -185,7 +183,6 @@ def get_a_records(
 
     Raises:
         :exc:`checkdmarc.DNSException`
-
     """
     qtypes = ["A", "AAAA"]
     addresses = []
@@ -281,6 +278,44 @@ def get_txt_records(
         raise DNSException(error)
 
     return records
+
+
+def get_soa_record(
+    domain: str,
+    *,
+    nameservers: list[str] = None,
+    resolver: dns.resolver.Resolver = None,
+    timeout: float = 2.0,
+) -> list[str]:
+    """
+    Queries DNS for an SOA record
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        str: An SOA record
+
+    Raises:
+        :exc:`checkdmarc.DNSException`
+
+    """
+    try:
+        record = query_dns(
+            domain, "SOA", nameservers=nameservers, resolver=resolver, timeout=timeout
+        )[0]
+    except dns.resolver.NXDOMAIN:
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+    except dns.resolver.NoAnswer:
+        raise DNSException(f"The domain {domain} does not have an SOA record")
+    except Exception as error:
+        raise DNSException(error)
+
+    return record
 
 
 def get_nameservers(

@@ -21,6 +21,7 @@ from checkdmarc.utils import (
     DNSException,
 )
 from checkdmarc.dnssec import test_dnssec
+from checkdmarc.soa import check_soa
 from checkdmarc.mta_sts import check_mta_sts
 from checkdmarc.smtp import check_mx
 from checkdmarc.spf import check_spf
@@ -119,6 +120,7 @@ def check_domains(
                 ("domain", domain),
                 ("base_domain", get_base_domain(domain)),
                 ("dnssec", None),
+                ("soa", {}),
                 ("ns", []),
                 ("mx", []),
             ]
@@ -126,6 +128,9 @@ def check_domains(
 
         domain_results["dnssec"] = test_dnssec(
             domain, nameservers=nameservers, timeout=timeout
+        )
+        domain_results["soa"] = check_soa(
+            domain, nameservers=nameservers, resolver=resolver, timeout=timeout
         )
 
         domain_results["ns"] = check_ns(

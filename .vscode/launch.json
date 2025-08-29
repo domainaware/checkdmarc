@@ -12,18 +12,6 @@
             "console": "integratedTerminal",
             "justMyCode": true
         },
-         {
-            "name": "checkdmarc --skip-tls badspf.seanthegeek.net",
-            "type": "python",
-            "request": "launch",
-            "module": "checkdmarc._cli",
-            "args": [
-                "--skip-tls",
-                "badspf.seanthegeek.net"
-            ],
-            "console": "integratedTerminal",
-            "justMyCode": true
-        },
         {
             "name": "checkdmarc --skip-tls cardinalhealth.com",
             "type": "python",
@@ -37,13 +25,13 @@
             "justMyCode": true
         },
         {
-            "name": "checkdmarc --skip-tls ally.com",
+            "name": "checkdmarc --skip-tls chase.com",
             "type": "python",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
-                "ally.com"
+                "chase.com"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
