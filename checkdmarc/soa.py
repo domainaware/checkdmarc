@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import List
+
 import re
 from collections import OrderedDict
 
@@ -64,7 +68,7 @@ def parse_soa_string(rr: str) -> OrderedDict:
 def check_soa(
     domain: str,
     *,
-    nameservers: list[str] = None,
+    nameservers: List[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
 ) -> OrderedDict:
