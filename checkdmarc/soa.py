@@ -100,7 +100,7 @@ def check_soa(
         )
         results = OrderedDict([("record", record)])
     except Exception as e:
-        results = OrderedDict(["error", str(e)])
+        results = OrderedDict([("error", str(e))])
     try:
         results["values"] = parse_soa_string(record)
     except Exception as e:
