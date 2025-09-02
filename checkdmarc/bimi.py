@@ -519,7 +519,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         warnings.append("The certificate will expire in less than a day")
     elif time_until_expired == timedelta(days=1):
         warnings.append("The certificate will expire in 1 day")
-    elif time_until_expired <= timedelta(days=14):
+    elif time_until_expired <= timedelta(days=14) and not expired:
         warnings.append(
             f"The certificate will expire in {time_until_expired.days} days"
         )
