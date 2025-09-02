@@ -290,7 +290,7 @@ class Test(unittest.TestCase):
         domain = "seanthegeek.net"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "does not have any MX records", results["warnings"]
+            "An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(domain), results["warnings"]
         )
 
     def testSPFMissingARecord(self):
