@@ -423,9 +423,9 @@ def check_svg_requirements(svg_metadata: OrderedDict) -> list[str]:
     return _errors
 
 
-def extract_logo_from_certificate(cert: Union [x509.Certificate, bytes]):
+def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
     try:
-        if not isinstance (cert, x509.Certificate):
+        if not isinstance(cert, x509.Certificate):
             cert = load_pem_x509_certificates(cert)[1]
         ext = cert.extensions.get_extension_for_oid(OID_LOGOTYPE)
         ext_bytes = ext.value.value
@@ -437,9 +437,7 @@ def extract_logo_from_certificate(cert: Union [x509.Certificate, bytes]):
         return None
 
 
-def get_certificate_metadata(
-    pem_crt: bytes, *, domain=None
-) -> OrderedDict:
+def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
     """Get metadata about a Verified Mark Certificate (VMC)"""
 
     def get_cert_name_components(cert_field: x509.Name):
