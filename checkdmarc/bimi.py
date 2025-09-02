@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Union
 import re
 from collections import OrderedDict
@@ -23,16 +23,23 @@ except ImportError:
 import dns
 import requests
 import xmltodict
-import pem
 from pyleri import Grammar, Regex, Sequence, List
-from OpenSSL.crypto import (
-    load_certificate,
-    FILETYPE_PEM,
-    X509Store,
-    X509StoreContext,
-    X509,
-    X509StoreFlags,
-    X509StoreContextError,
+
+from cryptography import x509
+from cryptography.x509 import (
+    ExtensionNotFound,
+    NameOID,
+    ExtensionOID,
+    ObjectIdentifier,
+    load_pem_x509_certificates,
+)
+
+from cryptography.x509.verification import (
+    Store,
+    PolicyBuilder,
+    ExtensionPolicy,
+    Criticality,
+    VerificationError,
 )
 
 import checkdmarc.resources
@@ -46,7 +53,7 @@ from checkdmarc.utils import (
 )
 
 """Copyright 2019-2023 Sean Whalen
-
+ 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -65,17 +72,154 @@ BIMI_TAG_VALUE_REGEX_STRING = (
 )
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
-# Load the certificates included in MVACAs.pem into a certificate store
-X509STORE = X509Store()
-# Do not consider certificate invalid if a certificate extension marked critical
-# by the issuer cannot be processed by OpenSSL.
-# https://github.com/domainaware/checkdmarc/issues/161
-X509STORE.set_flags(X509StoreFlags.IGNORE_CRITICAL)
-path = str(files(checkdmarc.resources).joinpath("MVACAs.pem"))
-CA_PEMS = pem.parse_file(path)
-for CA_PEM in CA_PEMS:
-    CA = load_certificate(FILETYPE_PEM, CA_PEM.as_bytes())
-    X509STORE.add_cert(CA)
+# VMC OIDs
+OID_LOGOTYPE = ObjectIdentifier("1.3.6.1.5.5.7.1.12")
+OID_MARK_TYPE = ObjectIdentifier("1.3.6.1.4.1.53087.1.13")
+OID_STATUTE_LOCALITY_NAME = ObjectIdentifier("1.3.6.1.4.1.53087.3.4")
+OID_STATUTE_STATE_OR_PROVINCE_NAME = ObjectIdentifier("1.3.6.1.4.1.53087.3.3")
+OID_STATUTE_COUNTRY_NAME = ObjectIdentifier("1.3.6.1.4.1.53087.3.2")
+OID_STATUTE_CITATION = ObjectIdentifier("1.3.6.1.4.1.53087.3.5")
+OID_STATUTE_URL = ObjectIdentifier("1.3.6.1.4.1.53087.3.6")
+OID_PRIOR_USE_MARK_URL = ObjectIdentifier("1.3.6.1.4.1.53087.5.1")
+OID_LEGAL_ENTITY_IDENTIFIER = ObjectIdentifier("1.3.6.1.4.1.53087.1.5")
+OID_TRADEMARK_COUNTRY_OR_REGION_NAME = ObjectIdentifier("1.3.6.1.4.1.53087.1.3")
+OID_TRADEMARK_OFFICE_NAME = ObjectIdentifier("1.3.6.1.4.1.53087.1.2")
+OID_TRADEMARK_IDENTIFIER = ObjectIdentifier("1.3.6.1.4.1.53087.1.4")
+OID_WORD_MARK = (ObjectIdentifier("1.3.6.1.4.1.53087.1.6"),)
+OID_ORGANIZATION_IDENTIFIER = ObjectIdentifier("2.5.4.97")
+OID_PRIOR_USE_MARK_SOURCE_URL = ObjectIdentifier("1.3.6.1.4.1.53087.5.1")
+OID_SIGNED_CERTIFICATE_TIMESTAMP_LIST = ObjectIdentifier("1.3.6.1.4.1.11129.2.4.2")
+OID_CERTIFICATE_GENERAL_POLICY_IDENTIFIER = ObjectIdentifier("1.3.6.1.4.1.53087.1.1")
+OID_KP_BIMI = ObjectIdentifier("1.3.6.1.5.5.7.3.31")
+OID_PILOT_IDENTIFIER_EXTENSION = ObjectIdentifier("1.3.6.1.4.1.53087.4.1")
+
+OID_LABELS = {
+    # Common OIDs
+    NameOID.COMMON_NAME: "commonName",
+    NameOID.ORGANIZATION_NAME: "organizationName",
+    NameOID.ORGANIZATIONAL_UNIT_NAME: "organizationalUnitName",
+    NameOID.STREET_ADDRESS: "streetAddress",
+    NameOID.LOCALITY_NAME: "localityName",
+    NameOID.STATE_OR_PROVINCE_NAME: "stateOrProvinceName",
+    NameOID.POSTAL_CODE: "postalCode",
+    NameOID.COUNTRY_NAME: "countryName",
+    ExtensionOID.SUBJECT_ALTERNATIVE_NAME: "serviceAlternativeName",
+    ExtensionOID.NAME_CONSTRAINTS: "nameConstraints",
+    # EVC OIDs
+    NameOID.JURISDICTION_LOCALITY_NAME: "jurisdictionOfIncorporationLocalityName",
+    NameOID.JURISDICTION_STATE_OR_PROVINCE_NAME: "jurisdictionOfIncorporationStateOrProvinceName",
+    NameOID.JURISDICTION_COUNTRY_NAME: "jurisdictionOfIncorporationCountryName",
+    NameOID.BUSINESS_CATEGORY: "businessCategory",
+    NameOID.SERIAL_NUMBER: "serialNumber",
+    # VMC OIDs
+    OID_LOGOTYPE: "logotype",  # Extension
+    OID_MARK_TYPE: "markType",
+    OID_STATUTE_LOCALITY_NAME: "statuteLocalityName",
+    OID_STATUTE_STATE_OR_PROVINCE_NAME: "statuteStateOrProvinceName",
+    OID_STATUTE_COUNTRY_NAME: "statuteCountryName",
+    OID_STATUTE_CITATION: "statuteCitation",
+    OID_STATUTE_URL: "statuteURL",
+    OID_PRIOR_USE_MARK_URL: "priorUseMarkURL",
+    OID_LEGAL_ENTITY_IDENTIFIER: "legalEntityIdentifier",
+    OID_TRADEMARK_COUNTRY_OR_REGION_NAME: "trademarkCountryOrRegionName",
+    OID_TRADEMARK_OFFICE_NAME: "trademarkOfficeName",
+    OID_TRADEMARK_IDENTIFIER: "trademarkIdentifier",
+    OID_WORD_MARK: "wordMark",
+    OID_ORGANIZATION_IDENTIFIER: "organizationIdentifier",
+    OID_PRIOR_USE_MARK_SOURCE_URL: "priorUseMarkSourceURL",
+    OID_SIGNED_CERTIFICATE_TIMESTAMP_LIST: "signedCertificateTimestampList",
+    OID_KP_BIMI: "id-kp-BrandIndicatorforMessageIdentification",
+    OID_PILOT_IDENTIFIER_EXTENSION: "Pilot extension",
+}
+
+
+BUSINESS_CATEGORIES = [
+    "Private Organization",
+    "Government Entity",
+    "Business Entity",
+    "Non-Commercial Entity",
+]
+
+MARK_TYPES = [
+    "Registered Mark",
+    "Government Mark",
+    "Prior Use Mark",
+    "Modified Registered Mark",
+]
+
+REQUIRED_EXTENSIONS = [
+    ExtensionOID.SUBJECT_ALTERNATIVE_NAME,
+    OID_LOGOTYPE,
+]
+FORBIDDEN_EXTENSIONS = [ExtensionOID.NAME_CONSTRAINTS]
+
+REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE = {
+    "All": [
+        "markType",
+        "organizationName",
+        "streetAddress",
+        "countryName",
+        "businessCategory",
+        "serialNumber",
+        "jurisdictionOfIncorporationCountryName",
+    ],
+    "Registered Mark": ["trademarkCountryOrRegionName", "trademarkIdentifier"],
+    "Government Mark": ["statuteCountryName", "statuteCitation"],
+    "Prior Use Mark": [],
+    "Modified Registered Mark": ["trademarkCountryOrRegionName", "trademarkIdentifier"],
+}
+
+OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE = {
+    "All": [
+        "commonName",
+        "localityName",
+        "stateOrProvinceName",
+        "postalCode",
+        "organizationalUnitName",
+        "legalEntityIdentifier",
+        "jurisdictionOfIncorporationStateOrProvinceName",
+        "jurisdictionOfIncorporationLocalityName",
+    ],
+    "Registered Mark": ["trademarkOfficeName"],
+    "Government Mark": [
+        "statuteURL",
+        "statuteStateOrProvinceName",
+        "statuteLocalityName",
+    ],
+    "Prior Use Mark": [
+        "priorUseMarkSourceURL",
+    ],
+    "Modified Registered Mark": [
+        "trademarkOfficeName",
+    ],
+}
+
+
+FIELD_REQUIRED_IF_FIELD_IS_MISSING = {
+    "All": {
+        "localityName": "stateOrProvinceName",
+        "jurisdictionOfIncorporationLocalityName": "jurisdictionOfIncorporationStateOrProvinceName",
+        "stateOrProvinceName": "localityName",
+        "jurisdictionOfIncorporationStateOrProvinceName": "jurisdictionOfIncorporationLocalityName",
+    },
+    "Government Mark": {
+        "statuteLocalityName": "statuteStateOrProvinceName",
+        "statuteStateOrProvinceName": "statuteLocalityName",
+    },
+}
+
+_ksf_dicts = [
+    REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE,
+    OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE,
+]
+KNOWN_SUBJECT_FIELDS = []
+for ksf_dict in _ksf_dicts:
+    for key in ksf_dict:
+        if isinstance(ksf_dict[key], list):
+            for i in range(len(ksf_dict[key])):
+                KNOWN_SUBJECT_FIELDS.append(ksf_dict[key][i])
+KNOWN_SUBJECT_FIELDS = set(KNOWN_SUBJECT_FIELDS)
+
 
 BIMI_TAGS = OrderedDict(
     v=OrderedDict(
@@ -120,9 +264,33 @@ BIMI_TAGS = OrderedDict(
     ),
 )
 
+_mvaca_path = str(files(checkdmarc.resources).joinpath("MVACAs.pem"))
 
-class _BIMIWarning(Exception):
-    """Raised when a non-fatal BIMI error occurs"""
+# Load the certificates included in MVACAs.pem into a certificate store
+with open(_mvaca_path, "rb") as pems:
+    _store = Store(load_pem_x509_certificates(pems.read()))
+
+# Do not consider certificate invalid if a certificate extension marked critical
+# by the issuer cannot be processed by OpenSSL.
+# https://github.com/domainaware/checkdmarc/issues/161
+_ee_policy = (
+    ExtensionPolicy.permit_all()
+    .require_present(x509.SubjectAlternativeName, Criticality.AGNOSTIC, None)
+    .may_be_present(x509.ExtendedKeyUsage, Criticality.AGNOSTIC, None)
+)
+_ca_policy = (
+    ExtensionPolicy.permit_all()
+    .require_present(x509.BasicConstraints, Criticality.AGNOSTIC, None)
+    .may_be_present(x509.ExtendedKeyUsage, Criticality.AGNOSTIC, None)
+)
+
+_builder = (
+    PolicyBuilder()
+    .store(_store)
+    .extension_policies(ee_policy=_ee_policy, ca_policy=_ca_policy)
+    .max_chain_depth(5)
+)
+_verifier = _builder.build_client_verifier()
 
 
 class BIMIError(Exception):
@@ -255,99 +423,206 @@ def check_svg_requirements(svg_metadata: OrderedDict) -> list[str]:
     return _errors
 
 
-def _get_certificate_san(cert: Union[X509, bytes]) -> list[str]:
-    """Get the subjectaltname from a PEM certificate"""
-    if type(cert) is bytes:
-        cert = load_certificate(FILETYPE_PEM, cert)
-    for cert_ext_id in range(cert.get_extension_count()):
-        cert_ext = cert.get_extension(cert_ext_id)
-        if cert_ext.get_short_name() == b"subjectAltName":
-            san = cert_ext.__str__()
-            san = san.replace("DNS:", "")
-            san = san.split(", ")
-            return san
-
-
-def extract_logo_from_certificate(cert: Union[bytes, X509]) -> bytes:
-    """Extracts the logo from a mark certificate"""
-    if type(cert) is bytes:
-        cert = load_certificate(FILETYPE_PEM, cert)
-    for cert_ext_id in range(cert.get_extension_count()):
-        cert_ext = cert.get_extension(cert_ext_id)
-        if cert_ext.get_short_name() == b"UNDEF":
-            logotype_data = cert_ext.get_data().decode("utf-8", errors="ignore")
-            logo_base64 = base64.b64decode(logotype_data.split(",")[1])
-            logo = gzip.decompress(logo_base64)
-            return logo
-
-
-def get_certificate_metadata(pem_crt: Union[str, bytes], *, domain=None) -> OrderedDict:
-    """Get metadata about a Verified Mark Certificate"""
-    metadata = OrderedDict()
-    valid = False
-    validation_errors = []
-    san = []
-
-    def parse_date(date: bytes) -> str:
-        date = date.decode("utf-8", errors="ignore")
-        date = datetime.strptime(date, "%Y%m%d%H%M%SZ")
-        date = date.strftime("%Y-%m-%d %H:%M:%SZ")
-
-        return date
-
-    def _decode_components(components: list[tuple[bytes, bytes]]):
-        new_dict = OrderedDict()
-        for component in components:
-            new_key = component[0].decode("utf-8", errors="ignore")
-            new_value = component[1].decode("utf-8", errors="ignore")
-            new_dict[new_key] = new_value
-        return new_dict
-
+def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
     try:
-        if type(pem_crt) is bytes:
-            pem_crt = pem_crt.decode(errors="ignore")
-        loaded_certs = []
-        for cert in pem.parse(pem_crt):
-            cert = load_certificate(FILETYPE_PEM, cert.as_bytes())
-            loaded_certs.append(cert)
-        vmc = loaded_certs[0]
-        metadata["issuer"] = _decode_components(vmc.get_issuer().get_components())
-        metadata["subject"] = _decode_components(vmc.get_subject().get_components())
-        metadata["serial_number"] = vmc.get_serial_number().__str__()
-        metadata["not_valid_before"] = parse_date(vmc.get_notBefore())
-        metadata["not_valid_after"] = parse_date(vmc.get_notAfter())
-        metadata["expired"] = vmc.has_expired()
-        metadata["valid"] = valid and not metadata["expired"]
-        san = _get_certificate_san(vmc)
-        metadata["domains"] = san
+        if not isinstance(cert, x509.Certificate):
+            cert = load_pem_x509_certificates(cert)[1]
+        ext = cert.extensions.get_extension_for_oid(OID_LOGOTYPE)
+        ext_bytes = ext.value.value
+        ext_str = ext_bytes.decode("utf-8", errors="ignore")
+        logo_base64 = base64.b64decode(ext_str.split(",")[1])
+        logo = gzip.decompress(logo_base64)
+        return logo
+    except ExtensionNotFound:
+        return None
+
+
+def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
+    """Get metadata about a Verified Mark Certificate (VMC)"""
+
+    def get_cert_name_components(cert_field: x509.Name):
+        mapping = []
+        for rdn in cert_field.rdns:
+            for attr in rdn:
+                label = OID_LABELS.get(attr.oid) or attr.oid.dotted_string
+                mapping.append((label, attr.value))
+        return OrderedDict(mapping)
+
+    def get_certificate_domains(cert: x509.Certificate):
+        try:
+            ext = cert.extensions.get_extension_for_oid(
+                ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+            )
+        except ExtensionNotFound:
+            return None
+        return ext.value.get_values_for_type(x509.DNSName)
+
+    metadata = OrderedDict()
+    valid = True
+    validation_errors = []
+    warnings = []
+    certs = load_pem_x509_certificates(pem_crt)
+    vmc = certs[0]
+    for ext in REQUIRED_EXTENSIONS:
+        try:
+            vmc.extensions.get_extension_for_oid(ext)
+        except ExtensionNotFound:
+            ext_label = OID_LABELS[ext]
+            validation_errors.append(
+                f"The certificate does not contain the required extension: {ext_label}."
+            )
+    for extension in FORBIDDEN_EXTENSIONS:
+        try:
+            vmc.extensions.get_extension_for_oid(extension)
+            ext_label = OID_LABELS[extension]
+            valid = False
+            validation_errors.append(
+                f"The certificate contains a forbidden extension: {ext_label}."
+            )
+        except ExtensionNotFound:
+            pass
+    if vmc.not_valid_before_utc >= datetime(
+        year=2025, month=3, day=15, tzinfo=timezone.utc
+    ):
+        try:
+            vmc.extensions.get_extension_for_oid(OID_PILOT_IDENTIFIER_EXTENSION)
+            validation_errors.append(
+                "Certificate issued on or after 2025-03-15 must not contain the Pilot identifier extension."
+            )
+            valid = False
+        except ExtensionNotFound:
+            pass
+    cert_domains = get_certificate_domains(vmc)
+    intermediates = certs[1:] if len(certs) > 0 else []
+    try:
+        _verifier.verify(vmc, intermediates)
+    except VerificationError as e:
+        e_str = str(e)
+        if "all candidates exhausted with no interior errors" in e_str:
+            e_str = "The certificate was not issued by a recognized Mark Verifying Authority (MVA)"
+        validation_errors.append(e_str)
+        metadata["valid"] = False
+    not_valid_before_timestamp = vmc.not_valid_before_utc.strftime("%Y-%m-%d %H:%M:%SZ")
+    expiration_timestamp = vmc.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%SZ")
+    not_yet_valid = datetime.now(timezone.utc) < vmc.not_valid_before_utc
+    if not_yet_valid:
+        valid = False
+        validation_errors.append(
+            f"The certificate is not valid until {not_valid_before_timestamp}"
+        )
+    expired = datetime.now(timezone.utc) > vmc.not_valid_after_utc
+    if expired:
+        valid = False
+        validation_errors.append(f"The certificate expired on {expiration_timestamp}")
+    time_until_expired = vmc.not_valid_after_utc - datetime.now(timezone.utc)
+    if time_until_expired < timedelta(days=1) and not expired:
+        warnings.append("The certificate will expire in less than a day")
+    elif time_until_expired == timedelta(days=1):
+        warnings.append("The certificate will expire in 1 day")
+    elif time_until_expired <= timedelta(days=14) and not expired:
+        warnings.append(
+            f"The certificate will expire in {time_until_expired.days} days"
+        )
+    if domain is not None:
+        base_domain = get_base_domain(domain).encode("utf-8").decode("unicode_escape")
+        if cert_domains is not None:
+            if base_domain not in cert_domains:
+                plural = "domain" if len(cert_domains) == 1 else "domains"
+                cert_domains = ". ".join(cert_domains)
+                validation_errors.append(
+                    f"{base_domain} does not match the certificate {plural}: {cert_domains}"
+                )
+                valid = False
+    try:
+        cert_issuer = get_cert_name_components(vmc.issuer)
+        cert_subject = get_cert_name_components(vmc.subject)
+        for field in cert_subject:
+            if field not in KNOWN_SUBJECT_FIELDS:
+                warnings.append(f"{field} is not a known VMC subject field.")
+        mark_type = None
+        if "markType" in cert_subject:
+            if cert_subject["markType"] in MARK_TYPES:
+                mark_type = cert_subject["markType"]
+                if (
+                    mark_type == "Prior Use Mark"
+                    and vmc.not_valid_before_utc
+                    >= datetime(year=2025, month=4, day=15, tzinfo=timezone.utc)
+                ):
+                    if "priorUseMarkSourceURL" not in cert_subject:
+                        validation_errors.append(
+                            "Certificates with a subject markType of Prior Use Mark issued on or after 2025-04-15 must have a priorUseMarkSourceURL subject field."
+                        )
+                required_fields = (
+                    REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE["All"]
+                    + REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE[mark_type]
+                )
+                for required_field in required_fields:
+                    if required_field not in cert_subject:
+                        valid = False
+                        validation_errors.append(
+                            f"The the certificate's subject is missing the field {required_field}"
+                        )
+                    for key in FIELD_REQUIRED_IF_FIELD_IS_MISSING:
+                        if key in ["All", mark_type]:
+                            if key in FIELD_REQUIRED_IF_FIELD_IS_MISSING:
+                                for (
+                                    required_field
+                                ) in FIELD_REQUIRED_IF_FIELD_IS_MISSING[key]:
+                                    if required_field not in cert_subject:
+                                        alt_field = FIELD_REQUIRED_IF_FIELD_IS_MISSING[
+                                            key
+                                        ][required_field]
+                                        if alt_field not in cert_subject:
+                                            validation_errors.append(
+                                                f"{alt_field} is required if {required_field} is not used in the subject"
+                                            )
+                                            valid = False
+                mark_type_fields = (
+                    REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE[mark_type]
+                    + OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE[mark_type]
+                )
+                other_mark_types = MARK_TYPES.copy()
+                other_mark_types.remove(mark_type)
+                for other_mark_type in other_mark_types:
+                    other_mark_type_fields = (
+                        REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE[other_mark_type]
+                        + OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE[other_mark_type]
+                    )
+                    other_mark_type_fields = set(other_mark_type_fields) - set(
+                        mark_type_fields
+                    )
+                    for field in other_mark_type_fields:
+                        if field in cert_subject:
+                            validation_errors.append(
+                                f"The subject {field} is used by {other_mark_type} certificates, not {mark_type} certificates"
+                            )
+                            valid = False
+            else:
+                valid = False
+                validation_errors.append(
+                    f"{cert_subject['markType']} is not a valid subject markType."
+                )
+        else:
+            valid = False
+            validation_errors.append("markType is missing from the subject.")
+
+        metadata["issuer"] = cert_issuer
+        metadata["subject"] = cert_subject
+        metadata["serial_number"] = vmc.serial_number
+        metadata["not_valid_before"] = not_valid_before_timestamp
+        metadata["not_valid_after"] = not_valid_before_timestamp
+        metadata["expired"] = expired
+        metadata["valid"] = valid
+        metadata["domains"] = cert_domains
         metadata["logotype_sha256"] = None
         logotype = extract_logo_from_certificate(vmc)
         if logotype is not None:
             metadata["logotype_sha256"] = hashlib.sha256(logotype).hexdigest()
-        store_context = X509StoreContext(X509STORE, vmc, chain=loaded_certs)
-        try:
-            store_context.verify_certificate()
-            valid = True
-            metadata["valid"] = valid
-        except X509StoreContextError as e:
-            e_str = str(e)
-            if e_str == "unable to get local issuer certificate":
-                e_str = "The certificate was not issued by a recognized Mark Verifying Authority (MVA)"
-            validation_errors.append(e_str)
-            metadata["validation_errors"] = validation_errors
-            metadata["valid"] = valid
+        metadata["warnings"] = warnings
+        metadata["Validation_errors"] = validation_errors
     except Exception as e:
         validation_errors.append(str(e))
-    if domain is not None:
-        base_domain = get_base_domain(domain).encode("utf-8").decode("unicode_escape")
-        if base_domain not in san:
-            plural = "domain" if len(san) == 1 else "domains"
-            cert_domains = ". ".join(san)
-            validation_errors.append(
-                f"{base_domain} does not match the certificate {plural}: {cert_domains}"
-            )
-            metadata["validation_errors"] = validation_errors
-            metadata["valid"] = False
+        metadata["Validation_errors"] = validation_errors
     return metadata
 
 
