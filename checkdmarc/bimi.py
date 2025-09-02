@@ -515,9 +515,9 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         valid = False
         validation_errors.append(f"The certificate expired on {expiration_timestamp}")
     time_until_expired = vmc.not_valid_after_utc - datetime.now(timezone.utc)
-    if time_until_expired < timedelta(days=1):
+    if time_until_expired < timedelta(days=1) and not expired:
         warnings.append("The certificate will expire in less than a day")
-    elif time_until_expired <= timedelta(days=1):
+    elif time_until_expired == timedelta(days=1):
         warnings.append("The certificate will expire in 1 day")
     elif time_until_expired <= timedelta(days=14):
         warnings.append(
