@@ -503,7 +503,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         validation_errors.append(e_str)
         metadata["valid"] = False
     not_valid_before_timestamp = vmc.not_valid_before_utc.strftime("%Y-%m-%d %H:%M:%SZ")
-    expiration_timestamp = vmc.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%SZ")
+    not_valid_after_timestamp = vmc.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%SZ")
     not_yet_valid = datetime.now(timezone.utc) < vmc.not_valid_before_utc
     if not_yet_valid:
         valid = False
@@ -513,7 +513,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
     expired = datetime.now(timezone.utc) > vmc.not_valid_after_utc
     if expired:
         valid = False
-        validation_errors.append(f"The certificate expired on {expiration_timestamp}")
+        validation_errors.append(f"The certificate expired on {not_valid_after_timestamp}")
     time_until_expired = vmc.not_valid_after_utc - datetime.now(timezone.utc)
     if time_until_expired < timedelta(days=1) and not expired:
         warnings.append("The certificate will expire in less than a day")
@@ -610,7 +610,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         metadata["subject"] = cert_subject
         metadata["serial_number"] = vmc.serial_number
         metadata["not_valid_before"] = not_valid_before_timestamp
-        metadata["not_valid_after"] = expiration_timestamp
+        metadata["not_valid_after"] = not_valid_after_timestamp
         metadata["expired"] = expired
         metadata["valid"] = valid
         metadata["domains"] = cert_domains
@@ -622,6 +622,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         metadata["Validation_errors"] = validation_errors
     except Exception as e:
         validation_errors.append(str(e))
+        metadata["valid"] = False
         metadata["Validation_errors"] = validation_errors
     return metadata
 
@@ -936,8 +937,8 @@ def parse_bimi_record(
                 warnings.append(
                     "The DMARC pct tag must be set to 100 (the implicit default) if it is used"
                 )
-    certificate_provided = hash_match and cert_metadata["valid"]
-    if ("l" in tags and tags["l"]["value"] != "") and not certificate_provided:
+    matching_certificate_provided = hash_match and cert_metadata["valid"]
+    if ("l" in tags and tags["l"]["value"] != "") and not matching_certificate_provided:
         warnings.append(
             "Most email providers will not display a BIMI image without a valid mark certificate"
         )
