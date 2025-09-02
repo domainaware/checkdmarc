@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.2
+------
+
+- Fix BIMI cert expiration time display
+
 5.10.1
 ------
 
