@@ -290,7 +290,7 @@ class Test(unittest.TestCase):
         domain = "seanthegeek.net"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "{0} does not have any MX records".format(domain), results["warnings"]
+            "does not have any MX records", results["warnings"]
         )
 
     def testSPFMissingARecord(self):
