@@ -180,6 +180,18 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls  ssa.gov",
+            "type": "python",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "ssa.gov",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "tests.py",
             "type": "python",
             "request": "launch",
