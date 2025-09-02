@@ -301,7 +301,7 @@ class Test(unittest.TestCase):
         domain = "cardinalhealth.net"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "cardinalhealth.net does not have any A/AAAA records", results["warnings"]
+            "An a mechanism points to cardinalhealth.net, but that domain/subdomain does not have any A/AAAA records.", results["warnings"]
         )
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
