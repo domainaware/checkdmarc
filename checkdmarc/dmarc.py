@@ -970,7 +970,9 @@ def parse_dmarc_record(
                 parsed_uris.append(uri)
                 email_address = uri["address"]
                 if uri["size_limit"]:
-                    warnings.append(f"Setting a size limit on rua reports sent to {email_address} could cause incomplete reporting")
+                    warnings.append(
+                        f"Setting a size limit on rua reports sent to {email_address} could cause incomplete reporting"
+                    )
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
                     verify_dmarc_report_destination(
@@ -1029,7 +1031,9 @@ def parse_dmarc_record(
                 parsed_uris.append(uri)
                 email_address = uri["address"]
                 if uri["size_limit"]:
-                    warnings.append(f"Setting a size limit on ruf reports sent to {email_address} could cause incomplete reporting")
+                    warnings.append(
+                        f"Setting a size limit on ruf reports sent to {email_address} could cause incomplete reporting"
+                    )
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
                     verify_dmarc_report_destination(
