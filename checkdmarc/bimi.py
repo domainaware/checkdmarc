@@ -481,7 +481,9 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
             )
         except ExtensionNotFound:
             pass
-    if vmc.not_valid_before >= datetime(year=2025, month=3, day=15):
+    if vmc.not_valid_before_utc >= datetime(
+        year=2025, month=3, day=15, tzinfo=timezone.utc
+    ):
         try:
             vmc.extensions.get_extension_for_oid(OID_PILOT_IDENTIFIER_EXTENSION)
             validation_errors.append(
@@ -541,8 +543,10 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         if "markType" in cert_subject:
             if cert_subject["markType"] in MARK_TYPES:
                 mark_type = cert_subject["markType"]
-                if mark_type == "Prior Use Mark" and vmc.not_valid_before >= datetime(
-                    year=2025, month=4, day=15
+                if (
+                    mark_type == "Prior Use Mark"
+                    and vmc.not_valid_before_utc
+                    >= datetime(year=2025, month=4, day=15, tzinfo=timezone.utc)
                 ):
                     if "priorUseMarkSourceURL" not in cert_subject:
                         validation_errors.append(
