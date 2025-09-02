@@ -1,6 +1,12 @@
 Changelog
 =========
 
+5.10.0
+------
+
+- Migrate BIMI certificate checks from pyOpenSSL to pyca/cryptography (PR #175 closes issues #171 and #174
+- Add SOA record parsing
+
 5.9.5
 -----
 
