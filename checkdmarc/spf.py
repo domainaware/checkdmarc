@@ -349,7 +349,7 @@ def parse_spf_record(
                 )
                 if len(a_records) == 0:
                     raise _SPFMissingRecords(
-                        f"{value.lower()} does not have any A/AAAA records"
+                        f"An a mechanism points to {value.lower()}, but that domain/subdomain does not have any A/AAAA records."
                     )
                 for record in a_records:
                     if cidr:
@@ -365,7 +365,7 @@ def parse_spf_record(
                 )
                 if len(mx_hosts) == 0:
                     raise _SPFMissingRecords(
-                        f"{value.lower()} does not have any MX records"
+                        f"An mx mechanism points to {value.lower()}, but that domain/subdomain does not have any MX records."
                     )
                 if len(mx_hosts) > 10:
                     url = "https://tools.ietf.org/html/rfc7208#section-4.6.4"
