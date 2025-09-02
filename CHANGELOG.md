@@ -1,6 +1,12 @@
 Changelog
 =========
 
+5.10.3
+------
+
+- Fix: SPF includes are not displayed beyond the 10 lookup limit (#172)
+- Add a warning when a size limit is added to a DMARC report destination
+
 5.10.2
 ------
 
