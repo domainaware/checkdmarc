@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.bimi &mdash; checkdmarc 5.9.3 documentation</title>
+  <title>checkdmarc.bimi &mdash; checkdmarc 5.10.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b01158db"></script>
+      <script src="../../_static/documentation_options.js?v=0dbde972"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -77,7 +77,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
@@ -96,16 +96,23 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xmltodict</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pem</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grammar</span><span class="p">,</span> <span class="n">Regex</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">OpenSSL.crypto</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">load_certificate</span><span class="p">,</span>
-    <span class="n">FILETYPE_PEM</span><span class="p">,</span>
-    <span class="n">X509Store</span><span class="p">,</span>
-    <span class="n">X509StoreContext</span><span class="p">,</span>
-    <span class="n">X509</span><span class="p">,</span>
-    <span class="n">X509StoreFlags</span><span class="p">,</span>
-    <span class="n">X509StoreContextError</span><span class="p">,</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cryptography</span><span class="w"> </span><span class="kn">import</span> <span class="n">x509</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.x509</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ExtensionNotFound</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="p">,</span>
+    <span class="n">ExtensionOID</span><span class="p">,</span>
+    <span class="n">ObjectIdentifier</span><span class="p">,</span>
+    <span class="n">load_pem_x509_certificates</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.x509.verification</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Store</span><span class="p">,</span>
+    <span class="n">PolicyBuilder</span><span class="p">,</span>
+    <span class="n">ExtensionPolicy</span><span class="p">,</span>
+    <span class="n">Criticality</span><span class="p">,</span>
+    <span class="n">VerificationError</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">checkdmarc.resources</span>
@@ -119,7 +126,7 @@
 <span class="p">)</span>
 
 <span class="sd">&quot;&quot;&quot;Copyright 2019-2023 Sean Whalen</span>
-
+<span class="sd"> </span>
 <span class="sd">Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
 <span class="sd">you may not use this file except in compliance with the License.</span>
 <span class="sd">You may obtain a copy of the License at</span>
@@ -138,17 +145,154 @@
 <span class="p">)</span>
 <span class="n">BIMI_TAG_VALUE_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">BIMI_TAG_VALUE_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
 
-<span class="c1"># Load the certificates included in MVACAs.pem into a certificate store</span>
-<span class="n">X509STORE</span> <span class="o">=</span> <span class="n">X509Store</span><span class="p">()</span>
-<span class="c1"># Do not consider certificate invalid if a certificate extension marked critical</span>
-<span class="c1"># by the issuer cannot be processed by OpenSSL.</span>
-<span class="c1"># https://github.com/domainaware/checkdmarc/issues/161</span>
-<span class="n">X509STORE</span><span class="o">.</span><span class="n">set_flags</span><span class="p">(</span><span class="n">X509StoreFlags</span><span class="o">.</span><span class="n">IGNORE_CRITICAL</span><span class="p">)</span>
-<span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">files</span><span class="p">(</span><span class="n">checkdmarc</span><span class="o">.</span><span class="n">resources</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s2">&quot;MVACAs.pem&quot;</span><span class="p">))</span>
-<span class="n">CA_PEMS</span> <span class="o">=</span> <span class="n">pem</span><span class="o">.</span><span class="n">parse_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">CA_PEM</span> <span class="ow">in</span> <span class="n">CA_PEMS</span><span class="p">:</span>
-    <span class="n">CA</span> <span class="o">=</span> <span class="n">load_certificate</span><span class="p">(</span><span class="n">FILETYPE_PEM</span><span class="p">,</span> <span class="n">CA_PEM</span><span class="o">.</span><span class="n">as_bytes</span><span class="p">())</span>
-    <span class="n">X509STORE</span><span class="o">.</span><span class="n">add_cert</span><span class="p">(</span><span class="n">CA</span><span class="p">)</span>
+<span class="c1"># VMC OIDs</span>
+<span class="n">OID_LOGOTYPE</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.5.5.7.1.12&quot;</span><span class="p">)</span>
+<span class="n">OID_MARK_TYPE</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.1.13&quot;</span><span class="p">)</span>
+<span class="n">OID_STATUTE_LOCALITY_NAME</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.3.4&quot;</span><span class="p">)</span>
+<span class="n">OID_STATUTE_STATE_OR_PROVINCE_NAME</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.3.3&quot;</span><span class="p">)</span>
+<span class="n">OID_STATUTE_COUNTRY_NAME</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.3.2&quot;</span><span class="p">)</span>
+<span class="n">OID_STATUTE_CITATION</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.3.5&quot;</span><span class="p">)</span>
+<span class="n">OID_STATUTE_URL</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.3.6&quot;</span><span class="p">)</span>
+<span class="n">OID_PRIOR_USE_MARK_URL</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.5.1&quot;</span><span class="p">)</span>
+<span class="n">OID_LEGAL_ENTITY_IDENTIFIER</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.1.5&quot;</span><span class="p">)</span>
+<span class="n">OID_TRADEMARK_COUNTRY_OR_REGION_NAME</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.1.3&quot;</span><span class="p">)</span>
+<span class="n">OID_TRADEMARK_OFFICE_NAME</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.1.2&quot;</span><span class="p">)</span>
+<span class="n">OID_TRADEMARK_IDENTIFIER</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.1.4&quot;</span><span class="p">)</span>
+<span class="n">OID_WORD_MARK</span> <span class="o">=</span> <span class="p">(</span><span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.1.6&quot;</span><span class="p">),)</span>
+<span class="n">OID_ORGANIZATION_IDENTIFIER</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;2.5.4.97&quot;</span><span class="p">)</span>
+<span class="n">OID_PRIOR_USE_MARK_SOURCE_URL</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.5.1&quot;</span><span class="p">)</span>
+<span class="n">OID_SIGNED_CERTIFICATE_TIMESTAMP_LIST</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.11129.2.4.2&quot;</span><span class="p">)</span>
+<span class="n">OID_CERTIFICATE_GENERAL_POLICY_IDENTIFIER</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.1.1&quot;</span><span class="p">)</span>
+<span class="n">OID_KP_BIMI</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.5.5.7.3.31&quot;</span><span class="p">)</span>
+<span class="n">OID_PILOT_IDENTIFIER_EXTENSION</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.4.1&quot;</span><span class="p">)</span>
+
+<span class="n">OID_LABELS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1"># Common OIDs</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">COMMON_NAME</span><span class="p">:</span> <span class="s2">&quot;commonName&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">ORGANIZATION_NAME</span><span class="p">:</span> <span class="s2">&quot;organizationName&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">ORGANIZATIONAL_UNIT_NAME</span><span class="p">:</span> <span class="s2">&quot;organizationalUnitName&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">STREET_ADDRESS</span><span class="p">:</span> <span class="s2">&quot;streetAddress&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">LOCALITY_NAME</span><span class="p">:</span> <span class="s2">&quot;localityName&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">STATE_OR_PROVINCE_NAME</span><span class="p">:</span> <span class="s2">&quot;stateOrProvinceName&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">POSTAL_CODE</span><span class="p">:</span> <span class="s2">&quot;postalCode&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">COUNTRY_NAME</span><span class="p">:</span> <span class="s2">&quot;countryName&quot;</span><span class="p">,</span>
+    <span class="n">ExtensionOID</span><span class="o">.</span><span class="n">SUBJECT_ALTERNATIVE_NAME</span><span class="p">:</span> <span class="s2">&quot;serviceAlternativeName&quot;</span><span class="p">,</span>
+    <span class="n">ExtensionOID</span><span class="o">.</span><span class="n">NAME_CONSTRAINTS</span><span class="p">:</span> <span class="s2">&quot;nameConstraints&quot;</span><span class="p">,</span>
+    <span class="c1"># EVC OIDs</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">JURISDICTION_LOCALITY_NAME</span><span class="p">:</span> <span class="s2">&quot;jurisdictionOfIncorporationLocalityName&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">JURISDICTION_STATE_OR_PROVINCE_NAME</span><span class="p">:</span> <span class="s2">&quot;jurisdictionOfIncorporationStateOrProvinceName&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">JURISDICTION_COUNTRY_NAME</span><span class="p">:</span> <span class="s2">&quot;jurisdictionOfIncorporationCountryName&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">BUSINESS_CATEGORY</span><span class="p">:</span> <span class="s2">&quot;businessCategory&quot;</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="o">.</span><span class="n">SERIAL_NUMBER</span><span class="p">:</span> <span class="s2">&quot;serialNumber&quot;</span><span class="p">,</span>
+    <span class="c1"># VMC OIDs</span>
+    <span class="n">OID_LOGOTYPE</span><span class="p">:</span> <span class="s2">&quot;logotype&quot;</span><span class="p">,</span>  <span class="c1"># Extension</span>
+    <span class="n">OID_MARK_TYPE</span><span class="p">:</span> <span class="s2">&quot;markType&quot;</span><span class="p">,</span>
+    <span class="n">OID_STATUTE_LOCALITY_NAME</span><span class="p">:</span> <span class="s2">&quot;statuteLocalityName&quot;</span><span class="p">,</span>
+    <span class="n">OID_STATUTE_STATE_OR_PROVINCE_NAME</span><span class="p">:</span> <span class="s2">&quot;statuteStateOrProvinceName&quot;</span><span class="p">,</span>
+    <span class="n">OID_STATUTE_COUNTRY_NAME</span><span class="p">:</span> <span class="s2">&quot;statuteCountryName&quot;</span><span class="p">,</span>
+    <span class="n">OID_STATUTE_CITATION</span><span class="p">:</span> <span class="s2">&quot;statuteCitation&quot;</span><span class="p">,</span>
+    <span class="n">OID_STATUTE_URL</span><span class="p">:</span> <span class="s2">&quot;statuteURL&quot;</span><span class="p">,</span>
+    <span class="n">OID_PRIOR_USE_MARK_URL</span><span class="p">:</span> <span class="s2">&quot;priorUseMarkURL&quot;</span><span class="p">,</span>
+    <span class="n">OID_LEGAL_ENTITY_IDENTIFIER</span><span class="p">:</span> <span class="s2">&quot;legalEntityIdentifier&quot;</span><span class="p">,</span>
+    <span class="n">OID_TRADEMARK_COUNTRY_OR_REGION_NAME</span><span class="p">:</span> <span class="s2">&quot;trademarkCountryOrRegionName&quot;</span><span class="p">,</span>
+    <span class="n">OID_TRADEMARK_OFFICE_NAME</span><span class="p">:</span> <span class="s2">&quot;trademarkOfficeName&quot;</span><span class="p">,</span>
+    <span class="n">OID_TRADEMARK_IDENTIFIER</span><span class="p">:</span> <span class="s2">&quot;trademarkIdentifier&quot;</span><span class="p">,</span>
+    <span class="n">OID_WORD_MARK</span><span class="p">:</span> <span class="s2">&quot;wordMark&quot;</span><span class="p">,</span>
+    <span class="n">OID_ORGANIZATION_IDENTIFIER</span><span class="p">:</span> <span class="s2">&quot;organizationIdentifier&quot;</span><span class="p">,</span>
+    <span class="n">OID_PRIOR_USE_MARK_SOURCE_URL</span><span class="p">:</span> <span class="s2">&quot;priorUseMarkSourceURL&quot;</span><span class="p">,</span>
+    <span class="n">OID_SIGNED_CERTIFICATE_TIMESTAMP_LIST</span><span class="p">:</span> <span class="s2">&quot;signedCertificateTimestampList&quot;</span><span class="p">,</span>
+    <span class="n">OID_KP_BIMI</span><span class="p">:</span> <span class="s2">&quot;id-kp-BrandIndicatorforMessageIdentification&quot;</span><span class="p">,</span>
+    <span class="n">OID_PILOT_IDENTIFIER_EXTENSION</span><span class="p">:</span> <span class="s2">&quot;Pilot extension&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="n">BUSINESS_CATEGORIES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Private Organization&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Government Entity&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Business Entity&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Non-Commercial Entity&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">MARK_TYPES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Registered Mark&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Government Mark&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Prior Use Mark&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Modified Registered Mark&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">REQUIRED_EXTENSIONS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">ExtensionOID</span><span class="o">.</span><span class="n">SUBJECT_ALTERNATIVE_NAME</span><span class="p">,</span>
+    <span class="n">OID_LOGOTYPE</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">FORBIDDEN_EXTENSIONS</span> <span class="o">=</span> <span class="p">[</span><span class="n">ExtensionOID</span><span class="o">.</span><span class="n">NAME_CONSTRAINTS</span><span class="p">]</span>
+
+<span class="n">REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;All&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;markType&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;organizationName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;streetAddress&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;countryName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;businessCategory&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;serialNumber&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;jurisdictionOfIncorporationCountryName&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;Registered Mark&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;trademarkCountryOrRegionName&quot;</span><span class="p">,</span> <span class="s2">&quot;trademarkIdentifier&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;Government Mark&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;statuteCountryName&quot;</span><span class="p">,</span> <span class="s2">&quot;statuteCitation&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;Prior Use Mark&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;Modified Registered Mark&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;trademarkCountryOrRegionName&quot;</span><span class="p">,</span> <span class="s2">&quot;trademarkIdentifier&quot;</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="n">OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;All&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;commonName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;localityName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;stateOrProvinceName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;postalCode&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;organizationalUnitName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;legalEntityIdentifier&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;jurisdictionOfIncorporationStateOrProvinceName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;jurisdictionOfIncorporationLocalityName&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;Registered Mark&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;trademarkOfficeName&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;Government Mark&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;statuteURL&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;statuteStateOrProvinceName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;statuteLocalityName&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;Prior Use Mark&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;priorUseMarkSourceURL&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;Modified Registered Mark&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;trademarkOfficeName&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">}</span>
+
+
+<span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;All&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;localityName&quot;</span><span class="p">:</span> <span class="s2">&quot;stateOrProvinceName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;jurisdictionOfIncorporationLocalityName&quot;</span><span class="p">:</span> <span class="s2">&quot;jurisdictionOfIncorporationStateOrProvinceName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;stateOrProvinceName&quot;</span><span class="p">:</span> <span class="s2">&quot;localityName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;jurisdictionOfIncorporationStateOrProvinceName&quot;</span><span class="p">:</span> <span class="s2">&quot;jurisdictionOfIncorporationLocalityName&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;Government Mark&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;statuteLocalityName&quot;</span><span class="p">:</span> <span class="s2">&quot;statuteStateOrProvinceName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;statuteStateOrProvinceName&quot;</span><span class="p">:</span> <span class="s2">&quot;statuteLocalityName&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">_ksf_dicts</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">,</span>
+    <span class="n">OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">KNOWN_SUBJECT_FIELDS</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">ksf_dict</span> <span class="ow">in</span> <span class="n">_ksf_dicts</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ksf_dict</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ksf_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ksf_dict</span><span class="p">[</span><span class="n">key</span><span class="p">])):</span>
+                <span class="n">KNOWN_SUBJECT_FIELDS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ksf_dict</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+<span class="n">KNOWN_SUBJECT_FIELDS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">KNOWN_SUBJECT_FIELDS</span><span class="p">)</span>
+
 
 <span class="n">BIMI_TAGS</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
     <span class="n">v</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
@@ -193,9 +337,33 @@
     <span class="p">),</span>
 <span class="p">)</span>
 
+<span class="n">_mvaca_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">files</span><span class="p">(</span><span class="n">checkdmarc</span><span class="o">.</span><span class="n">resources</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s2">&quot;MVACAs.pem&quot;</span><span class="p">))</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">_BIMIWarning</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a non-fatal BIMI error occurs&quot;&quot;&quot;</span>
+<span class="c1"># Load the certificates included in MVACAs.pem into a certificate store</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">_mvaca_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pems</span><span class="p">:</span>
+    <span class="n">_store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">load_pem_x509_certificates</span><span class="p">(</span><span class="n">pems</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
+
+<span class="c1"># Do not consider certificate invalid if a certificate extension marked critical</span>
+<span class="c1"># by the issuer cannot be processed by OpenSSL.</span>
+<span class="c1"># https://github.com/domainaware/checkdmarc/issues/161</span>
+<span class="n">_ee_policy</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ExtensionPolicy</span><span class="o">.</span><span class="n">permit_all</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">require_present</span><span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">SubjectAlternativeName</span><span class="p">,</span> <span class="n">Criticality</span><span class="o">.</span><span class="n">AGNOSTIC</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">may_be_present</span><span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">ExtendedKeyUsage</span><span class="p">,</span> <span class="n">Criticality</span><span class="o">.</span><span class="n">AGNOSTIC</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">_ca_policy</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ExtensionPolicy</span><span class="o">.</span><span class="n">permit_all</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">require_present</span><span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">BasicConstraints</span><span class="p">,</span> <span class="n">Criticality</span><span class="o">.</span><span class="n">AGNOSTIC</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">may_be_present</span><span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">ExtendedKeyUsage</span><span class="p">,</span> <span class="n">Criticality</span><span class="o">.</span><span class="n">AGNOSTIC</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">_builder</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">PolicyBuilder</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">_store</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">extension_policies</span><span class="p">(</span><span class="n">ee_policy</span><span class="o">=</span><span class="n">_ee_policy</span><span class="p">,</span> <span class="n">ca_policy</span><span class="o">=</span><span class="n">_ca_policy</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">max_chain_depth</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">_verifier</span> <span class="o">=</span> <span class="n">_builder</span><span class="o">.</span><span class="n">build_client_verifier</span><span class="p">()</span>
 
 
 <div class="viewcode-block" id="BIMIError">
@@ -358,102 +526,208 @@
     <span class="k">return</span> <span class="n">_errors</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_certificate_san</span><span class="p">(</span><span class="n">cert</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">X509</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the subjectaltname from a PEM certificate&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cert</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bytes</span><span class="p">:</span>
-        <span class="n">cert</span> <span class="o">=</span> <span class="n">load_certificate</span><span class="p">(</span><span class="n">FILETYPE_PEM</span><span class="p">,</span> <span class="n">cert</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">cert_ext_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cert</span><span class="o">.</span><span class="n">get_extension_count</span><span class="p">()):</span>
-        <span class="n">cert_ext</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">get_extension</span><span class="p">(</span><span class="n">cert_ext_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">cert_ext</span><span class="o">.</span><span class="n">get_short_name</span><span class="p">()</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;subjectAltName&quot;</span><span class="p">:</span>
-            <span class="n">san</span> <span class="o">=</span> <span class="n">cert_ext</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
-            <span class="n">san</span> <span class="o">=</span> <span class="n">san</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;DNS:&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-            <span class="n">san</span> <span class="o">=</span> <span class="n">san</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">san</span>
-
-
-<div class="viewcode-block" id="extract_logo_from_certificate">
-<a class="viewcode-back" href="../../api.html#checkdmarc.bimi.extract_logo_from_certificate">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">extract_logo_from_certificate</span><span class="p">(</span><span class="n">cert</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="n">X509</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts the logo from a mark certificate&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cert</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bytes</span><span class="p">:</span>
-        <span class="n">cert</span> <span class="o">=</span> <span class="n">load_certificate</span><span class="p">(</span><span class="n">FILETYPE_PEM</span><span class="p">,</span> <span class="n">cert</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">cert_ext_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cert</span><span class="o">.</span><span class="n">get_extension_count</span><span class="p">()):</span>
-        <span class="n">cert_ext</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">get_extension</span><span class="p">(</span><span class="n">cert_ext_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">cert_ext</span><span class="o">.</span><span class="n">get_short_name</span><span class="p">()</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;UNDEF&quot;</span><span class="p">:</span>
-            <span class="n">logotype_data</span> <span class="o">=</span> <span class="n">cert_ext</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-            <span class="n">logo_base64</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">logotype_data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">logo</span> <span class="o">=</span> <span class="n">gzip</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">logo_base64</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">logo</span></div>
-
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_logo_from_certificate</span><span class="p">(</span><span class="n">cert</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">x509</span><span class="o">.</span><span class="n">Certificate</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cert</span><span class="p">,</span> <span class="n">x509</span><span class="o">.</span><span class="n">Certificate</span><span class="p">):</span>
+            <span class="n">cert</span> <span class="o">=</span> <span class="n">load_pem_x509_certificates</span><span class="p">(</span><span class="n">cert</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get_extension_for_oid</span><span class="p">(</span><span class="n">OID_LOGOTYPE</span><span class="p">)</span>
+        <span class="n">ext_bytes</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">ext_str</span> <span class="o">=</span> <span class="n">ext_bytes</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+        <span class="n">logo_base64</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">ext_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">logo</span> <span class="o">=</span> <span class="n">gzip</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">logo_base64</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">logo</span>
+    <span class="k">except</span> <span class="n">ExtensionNotFound</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
 
 
 <div class="viewcode-block" id="get_certificate_metadata">
 <a class="viewcode-back" href="../../api.html#checkdmarc.bimi.get_certificate_metadata">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_certificate_metadata</span><span class="p">(</span><span class="n">pem_crt</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get metadata about a Verified Mark Certificate&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_certificate_metadata</span><span class="p">(</span><span class="n">pem_crt</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get metadata about a Verified Mark Certificate (VMC)&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cert_name_components</span><span class="p">(</span><span class="n">cert_field</span><span class="p">:</span> <span class="n">x509</span><span class="o">.</span><span class="n">Name</span><span class="p">):</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rdn</span> <span class="ow">in</span> <span class="n">cert_field</span><span class="o">.</span><span class="n">rdns</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">rdn</span><span class="p">:</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="n">OID_LABELS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">attr</span><span class="o">.</span><span class="n">oid</span><span class="p">)</span> <span class="ow">or</span> <span class="n">attr</span><span class="o">.</span><span class="n">oid</span><span class="o">.</span><span class="n">dotted_string</span>
+                <span class="n">mapping</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">attr</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_certificate_domains</span><span class="p">(</span><span class="n">cert</span><span class="p">:</span> <span class="n">x509</span><span class="o">.</span><span class="n">Certificate</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ext</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get_extension_for_oid</span><span class="p">(</span>
+                <span class="n">ExtensionOID</span><span class="o">.</span><span class="n">SUBJECT_ALTERNATIVE_NAME</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">ExtensionNotFound</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">ext</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">get_values_for_type</span><span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">DNSName</span><span class="p">)</span>
+
     <span class="n">metadata</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-    <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">validation_errors</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">san</span> <span class="o">=</span> <span class="p">[]</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">parse_date</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="n">date</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-        <span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">%H%M%SZ&quot;</span><span class="p">)</span>
-        <span class="n">date</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%SZ&quot;</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">date</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_decode_components</span><span class="p">(</span><span class="n">components</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]]):</span>
-        <span class="n">new_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
-            <span class="n">new_key</span> <span class="o">=</span> <span class="n">component</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-            <span class="n">new_value</span> <span class="o">=</span> <span class="n">component</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-            <span class="n">new_dict</span><span class="p">[</span><span class="n">new_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_value</span>
-        <span class="k">return</span> <span class="n">new_dict</span>
-
+    <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">certs</span> <span class="o">=</span> <span class="n">load_pem_x509_certificates</span><span class="p">(</span><span class="n">pem_crt</span><span class="p">)</span>
+    <span class="n">vmc</span> <span class="o">=</span> <span class="n">certs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">REQUIRED_EXTENSIONS</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">vmc</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get_extension_for_oid</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ExtensionNotFound</span><span class="p">:</span>
+            <span class="n">ext_label</span> <span class="o">=</span> <span class="n">OID_LABELS</span><span class="p">[</span><span class="n">ext</span><span class="p">]</span>
+            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The certificate does not contain the required extension: </span><span class="si">{</span><span class="n">ext_label</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+    <span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">FORBIDDEN_EXTENSIONS</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">vmc</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get_extension_for_oid</span><span class="p">(</span><span class="n">extension</span><span class="p">)</span>
+            <span class="n">ext_label</span> <span class="o">=</span> <span class="n">OID_LABELS</span><span class="p">[</span><span class="n">extension</span><span class="p">]</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The certificate contains a forbidden extension: </span><span class="si">{</span><span class="n">ext_label</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">ExtensionNotFound</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">if</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_before_utc</span> <span class="o">&gt;=</span> <span class="n">datetime</span><span class="p">(</span>
+        <span class="n">year</span><span class="o">=</span><span class="mi">2025</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span>
+    <span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">vmc</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get_extension_for_oid</span><span class="p">(</span><span class="n">OID_PILOT_IDENTIFIER_EXTENSION</span><span class="p">)</span>
+            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Certificate issued on or after 2025-03-15 must not contain the Pilot identifier extension.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">except</span> <span class="n">ExtensionNotFound</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="n">cert_domains</span> <span class="o">=</span> <span class="n">get_certificate_domains</span><span class="p">(</span><span class="n">vmc</span><span class="p">)</span>
+    <span class="n">intermediates</span> <span class="o">=</span> <span class="n">certs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">certs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">[]</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">pem_crt</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bytes</span><span class="p">:</span>
-            <span class="n">pem_crt</span> <span class="o">=</span> <span class="n">pem_crt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-        <span class="n">loaded_certs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">cert</span> <span class="ow">in</span> <span class="n">pem</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">pem_crt</span><span class="p">):</span>
-            <span class="n">cert</span> <span class="o">=</span> <span class="n">load_certificate</span><span class="p">(</span><span class="n">FILETYPE_PEM</span><span class="p">,</span> <span class="n">cert</span><span class="o">.</span><span class="n">as_bytes</span><span class="p">())</span>
-            <span class="n">loaded_certs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cert</span><span class="p">)</span>
-        <span class="n">vmc</span> <span class="o">=</span> <span class="n">loaded_certs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;issuer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_decode_components</span><span class="p">(</span><span class="n">vmc</span><span class="o">.</span><span class="n">get_issuer</span><span class="p">()</span><span class="o">.</span><span class="n">get_components</span><span class="p">())</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;subject&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_decode_components</span><span class="p">(</span><span class="n">vmc</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">get_components</span><span class="p">())</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;serial_number&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vmc</span><span class="o">.</span><span class="n">get_serial_number</span><span class="p">()</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;not_valid_before&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_date</span><span class="p">(</span><span class="n">vmc</span><span class="o">.</span><span class="n">get_notBefore</span><span class="p">())</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;not_valid_after&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_date</span><span class="p">(</span><span class="n">vmc</span><span class="o">.</span><span class="n">get_notAfter</span><span class="p">())</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;expired&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vmc</span><span class="o">.</span><span class="n">has_expired</span><span class="p">()</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">valid</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;expired&quot;</span><span class="p">]</span>
-        <span class="n">san</span> <span class="o">=</span> <span class="n">_get_certificate_san</span><span class="p">(</span><span class="n">vmc</span><span class="p">)</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;domains&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">san</span>
+        <span class="n">_verifier</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">vmc</span><span class="p">,</span> <span class="n">intermediates</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">VerificationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">e_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;all candidates exhausted with no interior errors&quot;</span> <span class="ow">in</span> <span class="n">e_str</span><span class="p">:</span>
+            <span class="n">e_str</span> <span class="o">=</span> <span class="s2">&quot;The certificate was not issued by a recognized Mark Verifying Authority (MVA)&quot;</span>
+        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_str</span><span class="p">)</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">not_valid_before_timestamp</span> <span class="o">=</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_before_utc</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%SZ&quot;</span><span class="p">)</span>
+    <span class="n">expiration_timestamp</span> <span class="o">=</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_after_utc</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%SZ&quot;</span><span class="p">)</span>
+    <span class="n">not_yet_valid</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_before_utc</span>
+    <span class="k">if</span> <span class="n">not_yet_valid</span><span class="p">:</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The certificate is not valid until </span><span class="si">{</span><span class="n">not_valid_before_timestamp</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="n">expired</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_after_utc</span>
+    <span class="k">if</span> <span class="n">expired</span><span class="p">:</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The certificate expired on </span><span class="si">{</span><span class="n">expiration_timestamp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">time_until_expired</span> <span class="o">=</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_after_utc</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">time_until_expired</span> <span class="o">&lt;</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">expired</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;The certificate will expire in less than a day&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">time_until_expired</span> <span class="o">==</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;The certificate will expire in 1 day&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">time_until_expired</span> <span class="o">&lt;=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">expired</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The certificate will expire in </span><span class="si">{</span><span class="n">time_until_expired</span><span class="o">.</span><span class="n">days</span><span class="si">}</span><span class="s2"> days&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">domain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">base_domain</span> <span class="o">=</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;unicode_escape&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cert_domains</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">base_domain</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_domains</span><span class="p">:</span>
+                <span class="n">plural</span> <span class="o">=</span> <span class="s2">&quot;domain&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cert_domains</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;domains&quot;</span>
+                <span class="n">cert_domains</span> <span class="o">=</span> <span class="s2">&quot;. &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cert_domains</span><span class="p">)</span>
+                <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_domain</span><span class="si">}</span><span class="s2"> does not match the certificate </span><span class="si">{</span><span class="n">plural</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">cert_domains</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cert_issuer</span> <span class="o">=</span> <span class="n">get_cert_name_components</span><span class="p">(</span><span class="n">vmc</span><span class="o">.</span><span class="n">issuer</span><span class="p">)</span>
+        <span class="n">cert_subject</span> <span class="o">=</span> <span class="n">get_cert_name_components</span><span class="p">(</span><span class="n">vmc</span><span class="o">.</span><span class="n">subject</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">KNOWN_SUBJECT_FIELDS</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2"> is not a known VMC subject field.&quot;</span><span class="p">)</span>
+        <span class="n">mark_type</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s2">&quot;markType&quot;</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cert_subject</span><span class="p">[</span><span class="s2">&quot;markType&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">MARK_TYPES</span><span class="p">:</span>
+                <span class="n">mark_type</span> <span class="o">=</span> <span class="n">cert_subject</span><span class="p">[</span><span class="s2">&quot;markType&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">mark_type</span> <span class="o">==</span> <span class="s2">&quot;Prior Use Mark&quot;</span>
+                    <span class="ow">and</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_before_utc</span>
+                    <span class="o">&gt;=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">2025</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="k">if</span> <span class="s2">&quot;priorUseMarkSourceURL&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+                        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="s2">&quot;Certificates with a subject markType of Prior Use Mark issued on or after 2025-04-15 must have a priorUseMarkSourceURL subject field.&quot;</span>
+                        <span class="p">)</span>
+                <span class="n">required_fields</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="s2">&quot;All&quot;</span><span class="p">]</span>
+                    <span class="o">+</span> <span class="n">REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="n">mark_type</span><span class="p">]</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">required_field</span> <span class="ow">in</span> <span class="n">required_fields</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">required_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+                        <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;The the certificate&#39;s subject is missing the field </span><span class="si">{</span><span class="n">required_field</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;All&quot;</span><span class="p">,</span> <span class="n">mark_type</span><span class="p">]:</span>
+                            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">:</span>
+                                <span class="k">for</span> <span class="p">(</span>
+                                    <span class="n">required_field</span>
+                                <span class="p">)</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span>
+                                    <span class="k">if</span> <span class="n">required_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+                                        <span class="n">alt_field</span> <span class="o">=</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">[</span>
+                                            <span class="n">key</span>
+                                        <span class="p">][</span><span class="n">required_field</span><span class="p">]</span>
+                                        <span class="k">if</span> <span class="n">alt_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+                                            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">alt_field</span><span class="si">}</span><span class="s2"> is required if </span><span class="si">{</span><span class="n">required_field</span><span class="si">}</span><span class="s2"> is not used in the subject&quot;</span>
+                                            <span class="p">)</span>
+                                            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">mark_type_fields</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="n">mark_type</span><span class="p">]</span>
+                    <span class="o">+</span> <span class="n">OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="n">mark_type</span><span class="p">]</span>
+                <span class="p">)</span>
+                <span class="n">other_mark_types</span> <span class="o">=</span> <span class="n">MARK_TYPES</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">other_mark_types</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">mark_type</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">other_mark_type</span> <span class="ow">in</span> <span class="n">other_mark_types</span><span class="p">:</span>
+                    <span class="n">other_mark_type_fields</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="n">other_mark_type</span><span class="p">]</span>
+                        <span class="o">+</span> <span class="n">OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="n">other_mark_type</span><span class="p">]</span>
+                    <span class="p">)</span>
+                    <span class="n">other_mark_type_fields</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">other_mark_type_fields</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span>
+                        <span class="n">mark_type_fields</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">other_mark_type_fields</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+                            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;The subject </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2"> is used by </span><span class="si">{</span><span class="n">other_mark_type</span><span class="si">}</span><span class="s2"> certificates, not </span><span class="si">{</span><span class="n">mark_type</span><span class="si">}</span><span class="s2"> certificates&quot;</span>
+                            <span class="p">)</span>
+                            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cert_subject</span><span class="p">[</span><span class="s1">&#39;markType&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> is not a valid subject markType.&quot;</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;markType is missing from the subject.&quot;</span><span class="p">)</span>
+
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;issuer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cert_issuer</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;subject&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cert_subject</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;serial_number&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vmc</span><span class="o">.</span><span class="n">serial_number</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;not_valid_before&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">not_valid_before_timestamp</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;not_valid_after&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">not_valid_before_timestamp</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;expired&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">expired</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">valid</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;domains&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cert_domains</span>
         <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;logotype_sha256&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">logotype</span> <span class="o">=</span> <span class="n">extract_logo_from_certificate</span><span class="p">(</span><span class="n">vmc</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">logotype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;logotype_sha256&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">logotype</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
-        <span class="n">store_context</span> <span class="o">=</span> <span class="n">X509StoreContext</span><span class="p">(</span><span class="n">X509STORE</span><span class="p">,</span> <span class="n">vmc</span><span class="p">,</span> <span class="n">chain</span><span class="o">=</span><span class="n">loaded_certs</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">store_context</span><span class="o">.</span><span class="n">verify_certificate</span><span class="p">()</span>
-            <span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">valid</span>
-        <span class="k">except</span> <span class="n">X509StoreContextError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">e_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">e_str</span> <span class="o">==</span> <span class="s2">&quot;unable to get local issuer certificate&quot;</span><span class="p">:</span>
-                <span class="n">e_str</span> <span class="o">=</span> <span class="s2">&quot;The certificate was not issued by a recognized Mark Verifying Authority (MVA)&quot;</span>
-            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_str</span><span class="p">)</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;validation_errors&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validation_errors</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">valid</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">warnings</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;Validation_errors&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validation_errors</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">domain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">base_domain</span> <span class="o">=</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;unicode_escape&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">base_domain</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">san</span><span class="p">:</span>
-            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_domain</span><span class="si">}</span><span class="s2"> does not match the certificate domains, </span><span class="si">{</span><span class="n">san</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;validation_errors&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validation_errors</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;Validation_errors&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validation_errors</span>
     <span class="k">return</span> <span class="n">metadata</span></div>
 
 

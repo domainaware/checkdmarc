@@ -12,6 +12,7 @@
 - Can test multiple domains at once
 - CLI output in JSON or CSV format
 - Parsing and validation of many DNS records related to email
+  - SOA
   - MX
     - Tests STARTTLS and TLS support on each mail server, including certificate validation
   - SPF

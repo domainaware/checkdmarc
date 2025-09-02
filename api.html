@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; checkdmarc 5.9.3 documentation</title>
+  <title>API &mdash; checkdmarc 5.10.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=b01158db"></script>
+      <script src="_static/documentation_options.js?v=0dbde972"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -66,7 +66,6 @@
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe"><code class="docutils literal notranslate"><span class="pre">SPFRecordFoundWhereBIMIRecordShouldBe</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.bimi.UnrelatedTXTRecordFoundAtBIMI"><code class="docutils literal notranslate"><span class="pre">UnrelatedTXTRecordFoundAtBIMI</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.bimi.check_bimi"><code class="docutils literal notranslate"><span class="pre">check_bimi()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.bimi.extract_logo_from_certificate"><code class="docutils literal notranslate"><span class="pre">extract_logo_from_certificate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.bimi.get_certificate_metadata"><code class="docutils literal notranslate"><span class="pre">get_certificate_metadata()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.bimi.parse_bimi_record"><code class="docutils literal notranslate"><span class="pre">parse_bimi_record()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.bimi.query_bimi_record"><code class="docutils literal notranslate"><span class="pre">query_bimi_record()</span></code></a></li>
@@ -146,6 +145,12 @@
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.smtp.test_tls"><code class="docutils literal notranslate"><span class="pre">test_tls()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#module-checkdmarc.soa">checkdmarc.soa</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.soa.check_soa"><code class="docutils literal notranslate"><span class="pre">check_soa()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.soa.parse_soa_string"><code class="docutils literal notranslate"><span class="pre">parse_soa_string()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.soa.soa_rname_to_email"><code class="docutils literal notranslate"><span class="pre">soa_rname_to_email()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#module-checkdmarc.spf">checkdmarc.spf</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.spf.MultipleSPFRTXTRecords"><code class="docutils literal notranslate"><span class="pre">MultipleSPFRTXTRecords</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.spf.SPFError"><code class="docutils literal notranslate"><span class="pre">SPFError</span></code></a></li>
@@ -170,6 +175,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.utils.get_mx_records"><code class="docutils literal notranslate"><span class="pre">get_mx_records()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.utils.get_nameservers"><code class="docutils literal notranslate"><span class="pre">get_nameservers()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.utils.get_reverse_dns"><code class="docutils literal notranslate"><span class="pre">get_reverse_dns()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#checkdmarc.utils.get_soa_record"><code class="docutils literal notranslate"><span class="pre">get_soa_record()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.utils.get_txt_records"><code class="docutils literal notranslate"><span class="pre">get_txt_records()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.utils.normalize_domain"><code class="docutils literal notranslate"><span class="pre">normalize_domain()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#checkdmarc.utils.query_dns"><code class="docutils literal notranslate"><span class="pre">query_dns()</span></code></a></li>
@@ -543,15 +549,9 @@ following keys:</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="checkdmarc.bimi.extract_logo_from_certificate">
-<span class="sig-prename descclassname"><span class="pre">checkdmarc.bimi.</span></span><span class="sig-name descname"><span class="pre">extract_logo_from_certificate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cert</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">X509</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="_modules/checkdmarc/bimi.html#extract_logo_from_certificate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.bimi.extract_logo_from_certificate" title="Link to this definition"></a></dt>
-<dd><p>Extracts the logo from a mark certificate</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.bimi.get_certificate_metadata">
-<span class="sig-prename descclassname"><span class="pre">checkdmarc.bimi.</span></span><span class="sig-name descname"><span class="pre">get_certificate_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pem_crt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">OrderedDict</span></span></span><a class="reference internal" href="_modules/checkdmarc/bimi.html#get_certificate_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.bimi.get_certificate_metadata" title="Link to this definition"></a></dt>
-<dd><p>Get metadata about a Verified Mark Certificate</p>
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.bimi.</span></span><span class="sig-name descname"><span class="pre">get_certificate_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pem_crt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">OrderedDict</span></span></span><a class="reference internal" href="_modules/checkdmarc/bimi.html#get_certificate_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.bimi.get_certificate_metadata" title="Link to this definition"></a></dt>
+<dd><p>Get metadata about a Verified Mark Certificate (VMC)</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1914,6 +1914,62 @@ requests</p></li>
 </dd></dl>
 
 </section>
+<section id="module-checkdmarc.soa">
+<span id="checkdmarc-soa"></span><h2>checkdmarc.soa<a class="headerlink" href="#module-checkdmarc.soa" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.soa.check_soa">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.soa.</span></span><span class="sig-name descname"><span class="pre">check_soa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Resolver</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">OrderedDict</span></span></span><a class="reference internal" href="_modules/checkdmarc/soa.html#check_soa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.soa.check_soa" title="Link to this definition"></a></dt>
+<dd><p>Returns a dictionary of a domain’s SOA record and a parsed version of the record or a dictionary with an
+the record and an error.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
+requests</p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for a record from DNS</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>A dictionary with the following keys:</p>
+<blockquote>
+<div><blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - The SOA record as a string</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">values</span></code>  - A parsed version of the SOA record</p></li>
+</ul>
+</div></blockquote>
+<p>If a parsing error occurs, the dictionary will have the following
+keys:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - the SOA record</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">error</span></code>  - An error message</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.soa.parse_soa_string">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.soa.</span></span><span class="sig-name descname"><span class="pre">parse_soa_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">OrderedDict</span></span></span><a class="reference internal" href="_modules/checkdmarc/soa.html#parse_soa_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.soa.parse_soa_string" title="Link to this definition"></a></dt>
+<dd><p>Parses a raw SOA record string and returns an OrderedDict with validated fields.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.soa.soa_rname_to_email">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.soa.</span></span><span class="sig-name descname"><span class="pre">soa_rname_to_email</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/checkdmarc/soa.html#soa_rname_to_email"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.soa.soa_rname_to_email" title="Link to this definition"></a></dt>
+<dd><p>Converts a SOA RNAME domain-style name into an RFC 822 email address.</p>
+</dd></dl>
+
+</section>
 <section id="module-checkdmarc.spf">
 <span id="checkdmarc-spf"></span><h2>checkdmarc.spf<a class="headerlink" href="#module-checkdmarc.spf" title="Link to this heading"></a></h2>
 <p>Sender Policy framework (SPF) record validation</p>
@@ -2327,6 +2383,32 @@ requests</p></li>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>checkdmarc.DNSException</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="checkdmarc.utils.get_soa_record">
+<span class="sig-prename descclassname"><span class="pre">checkdmarc.utils.</span></span><span class="sig-name descname"><span class="pre">get_soa_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Resolver</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/checkdmarc/utils.html#get_soa_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.utils.get_soa_record" title="Link to this definition"></a></dt>
+<dd><p>Queries DNS for an SOA record</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
+<li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
+<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
+requests</p></li>
+<li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An SOA record</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>checkdmarc.DNSException</strong> – </p>
