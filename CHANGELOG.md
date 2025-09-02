@@ -4,7 +4,7 @@ Changelog
 5.10.4
 ------
 
-- Provide a clearer description SPF void lookup warnings #173
+- Provide a clearer description of SPF void lookup warnings #173
 
 5.10.3
 ------
