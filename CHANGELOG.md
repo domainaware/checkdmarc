@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.1
+------
+
+- Update the `cryptography` requirement to work with the BIMI module rewrite
+
 5.10.0
 ------
 
