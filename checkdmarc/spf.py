@@ -466,6 +466,18 @@ def parse_spf_record(
                         resolver=resolver,
                         timeout=timeout,
                     )
+                    include = OrderedDict(
+                        [
+                            ("domain", value),
+                            ("record", include_record),
+                            ("dns_lookups", include["dns_lookups"]),
+                            ("dns_void_lookups", include["dns_void_lookups"]),
+                            ("parsed", include["parsed"]),
+                            ("warnings", include["warnings"]),
+                        ]
+                    )
+                    parsed["include"].append(include)
+                    warnings += include["warnings"]
                     lookup_mechanism_count += include["dns_lookups"]
                     void_lookup_mechanism_count += include["dns_void_lookups"]
                     if lookup_mechanism_count > 10:
@@ -486,18 +498,6 @@ def parse_spf_record(
                             f"{u}",
                             dns_void_lookups=void_lookup_mechanism_count,
                         )
-                    include = OrderedDict(
-                        [
-                            ("domain", value),
-                            ("record", include_record),
-                            ("dns_lookups", include["dns_lookups"]),
-                            ("dns_void_lookups", include["dns_void_lookups"]),
-                            ("parsed", include["parsed"]),
-                            ("warnings", include["warnings"]),
-                        ]
-                    )
-                    parsed["include"].append(include)
-                    warnings += include["warnings"]
 
                 except DNSException as error:
                     if isinstance(error, DNSExceptionNXDOMAIN):
