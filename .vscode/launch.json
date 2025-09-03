@@ -6,15 +6,26 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --help",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--help"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls cardinalhealth.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -26,7 +37,7 @@
         },
         {
             "name": "checkdmarc --skip-tls chase.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -38,7 +49,7 @@
         },
         {
             "name": "checkdmarc --skip-tls dhs.gov",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -50,7 +61,7 @@
         },
         {
             "name": "checkdmarc gmail.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -61,7 +72,7 @@
         },
         {
             "name": "checkdmarc --skip-tls google.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -73,7 +84,7 @@
         },
         {
             "name": "checkdmarc --skip-tls m11‍.‍email‍.‍samsung‍.‍com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -85,7 +96,7 @@
         },
         {
             "name": "checkdmarc --skip-tls galaxylife‍.‍samsungusa‍.‍com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -97,7 +108,7 @@
         },
         {
             "name": "checkdmarc --skip-tls huntington.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -109,7 +120,7 @@
         },
         {
             "name": "checkdmarc --skip-tls  n1.e-nocibe.fr",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -121,7 +132,7 @@
         },
         {
             "name": "checkdmarc --skip-tls  edys.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -133,7 +144,7 @@
         },
         {
             "name": "checkdmarc --skip-tls  info‍.‍fr‍.‍vorwerk‍.‍com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -145,7 +156,7 @@
         },
         {
             "name": "checkdmarc --skip-tls  paypal.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -157,7 +168,7 @@
         },
         {
             "name": "checkdmarc --skip-tls  proton.me",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -169,7 +180,7 @@
         },
         {
             "name": "checkdmarc --skip-tls  kickbox.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -181,7 +192,7 @@
         },
         {
             "name": "checkdmarc --skip-tls  ssa.gov",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -193,7 +204,7 @@
         },
         {
             "name": "tests.py",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "tests.py",
             "args": [],

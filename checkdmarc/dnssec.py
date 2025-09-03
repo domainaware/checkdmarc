@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import logging
 
-import dns
+import dns.query
+import dns.resolver
+import dns.message
 import dns.dnssec
 from dns.rdatatype import RdataType
 
@@ -66,7 +68,7 @@ def get_dnskey(
     request = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec=True)
     for nameserver in nameservers:
         try:
-            response = dns.query.udp(request, nameserver, timeout=timeout)
+            response = dns.query.tcp(request, nameserver, timeout=timeout)
             if response is not None:
                 answer = response.answer
                 if len(answer) == 0:
@@ -133,7 +135,7 @@ def test_dnssec(
         request = dns.message.make_query(domain, rdatatype, want_dnssec=True)
         for nameserver in nameservers:
             try:
-                response = dns.query.udp(request, nameserver, timeout=timeout)
+                response = dns.query.tcp(request, nameserver, timeout=timeout)
                 if response is not None:
                     answer = response.answer
                     if len(answer) != 2:
@@ -195,7 +197,7 @@ def get_tlsa_records(
     )
     for nameserver in nameservers:
         try:
-            response = dns.query.udp(request, nameserver, timeout=timeout)
+            response = dns.query.tcp(request, nameserver, timeout=timeout)
             if response is not None:
                 answer = response.answer
                 if len(answer) != 2:

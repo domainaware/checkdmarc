@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.5
+------
+
+- Switch from DNS over UDP to DNS over TCP for DNSSEC and TLSA queries (Close #176)
+
 5.10.4
 ------
 
