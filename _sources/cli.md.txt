@@ -46,6 +46,18 @@ checkdmarc --skip-tls proton.me
   "domain": "proton.me",
   "base_domain": "proton.me",
   "dnssec": true,
+  "soa": {
+    "record": "ns1.proton.me. support.proton.me. 2025082186 1200 144 1814400 7200",
+    "values": {
+      "primary_nameserver": "ns1.proton.me",
+      "rname_email_address": "support@proton.me",
+      "serial": 2025082186,
+      "refresh": 1200,
+      "retry": 144,
+      "expire": 1814400,
+      "minimum": 7200
+    }
+  },
   "ns": {
     "hostnames": [
       "ns1.proton.me",
@@ -117,7 +129,7 @@ checkdmarc --skip-tls proton.me
       "include": [
         {
           "domain": "_spf.protonmail.ch",
-          "record": "v=spf1 ip4:185.70.40.0/24 ip4:185.70.41.0/24 ip4:185.70.43.0/24 include:_spf2.protonmail.ch ~all",
+          "record": "v=spf1 ip4:185.70.40.0/24 ip4:185.70.41.0/24 ip4:185.70.43.0/24 ip4:79.135.106.0/24 ip4:79.135.107.0/24 ip4:109.224.244.0/24 include:_spf2.protonmail.ch ~all",
           "dns_lookups": 1,
           "dns_void_lookups": 0,
           "parsed": {
@@ -133,6 +145,18 @@ checkdmarc --skip-tls proton.me
               {
                 "value": "185.70.43.0/24",
                 "mechanism": "ip4"
+              },
+              {
+                "value": "79.135.106.0/24",
+                "mechanism": "ip4"
+              },
+              {
+                "value": "79.135.107.0/24",
+                "mechanism": "ip4"
+              },
+              {
+                "value": "109.224.244.0/24",
+                "mechanism": "ip4"
               }
             ],
             "neutral": [],
@@ -141,7 +165,7 @@ checkdmarc --skip-tls proton.me
             "include": [
               {
                 "domain": "_spf2.protonmail.ch",
-                "record": "v=spf1 ip4:51.89.119.103 ip4:91.134.188.129 ip4:51.77.79.158 ip4:54.38.221.122 ip4:188.165.51.139 ip4:54.36.149.183 ~all",
+                "record": "v=spf1 ip4:51.89.119.103 ip4:91.134.188.129 ip4:51.77.79.158 ip4:54.38.221.122 ip4:188.165.51.139 ip4:54.36.149.183 ip4:85.9.206.169 ip4:85.9.210.45 ip4:51.83.17.38 ip4:57.129.93.249 ~all",
                 "dns_lookups": 0,
                 "dns_void_lookups": 0,
                 "parsed": {
@@ -168,6 +192,22 @@ checkdmarc --skip-tls proton.me
                     },
                     {
                       "value": "54.36.149.183",
+                      "mechanism": "ip4"
+                    },
+                    {
+                      "value": "85.9.206.169",
+                      "mechanism": "ip4"
+                    },
+                    {
+                      "value": "85.9.210.45",
+                      "mechanism": "ip4"
+                    },
+                    {
+                      "value": "51.83.17.38",
+                      "mechanism": "ip4"
+                    },
+                    {
+                      "value": "57.129.93.249",
                       "mechanism": "ip4"
                     }
                   ],
@@ -250,6 +290,24 @@ checkdmarc --skip-tls proton.me
         "value": [
           "https://reports.proton.me/reports/smtptls"
         ]
+      }
+    },
+    "warnings": []
+  },
+  "bimi": {
+    "record": "v=BIMI1; l=; a=;",
+    "valid": true,
+    "selector": "default",
+    "location": "proton.me",
+    "tags": {
+      "v": {
+        "value": "BIMI1"
+      },
+      "l": {
+        "value": ""
+      },
+      "a": {
+        "value": ""
       }
     },
     "warnings": []

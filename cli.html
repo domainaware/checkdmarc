@@ -119,6 +119,18 @@ options:
 <span class="w">  </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;proton.me&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;base_domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;proton.me&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;dnssec&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;soa&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ns1.proton.me. support.proton.me. 2025082186 1200 144 1814400 7200&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;primary_nameserver&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ns1.proton.me&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;rname_email_address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;support@proton.me&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;serial&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2025082186</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;refresh&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1200</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;retry&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">144</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;expire&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1814400</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7200</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">&quot;ns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;hostnames&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">      </span><span class="s2">&quot;ns1.proton.me&quot;</span><span class="p">,</span>
@@ -190,7 +202,7 @@ options:
 <span class="w">      </span><span class="nt">&quot;include&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;_spf.protonmail.ch&quot;</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=spf1 ip4:185.70.40.0/24 ip4:185.70.41.0/24 ip4:185.70.43.0/24 include:_spf2.protonmail.ch ~all&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=spf1 ip4:185.70.40.0/24 ip4:185.70.41.0/24 ip4:185.70.43.0/24 ip4:79.135.106.0/24 ip4:79.135.107.0/24 ip4:109.224.244.0/24 include:_spf2.protonmail.ch ~all&quot;</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">&quot;dns_void_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">&quot;parsed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -206,6 +218,18 @@ options:
 <span class="w">              </span><span class="p">{</span>
 <span class="w">                </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;185.70.43.0/24&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">              </span><span class="p">},</span>
+<span class="w">              </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;79.135.106.0/24&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">              </span><span class="p">},</span>
+<span class="w">              </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;79.135.107.0/24&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">              </span><span class="p">},</span>
+<span class="w">              </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;109.224.244.0/24&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
 <span class="w">              </span><span class="p">}</span>
 <span class="w">            </span><span class="p">],</span>
 <span class="w">            </span><span class="nt">&quot;neutral&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
@@ -214,7 +238,7 @@ options:
 <span class="w">            </span><span class="nt">&quot;include&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">              </span><span class="p">{</span>
 <span class="w">                </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;_spf2.protonmail.ch&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=spf1 ip4:51.89.119.103 ip4:91.134.188.129 ip4:51.77.79.158 ip4:54.38.221.122 ip4:188.165.51.139 ip4:54.36.149.183 ~all&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=spf1 ip4:51.89.119.103 ip4:91.134.188.129 ip4:51.77.79.158 ip4:54.38.221.122 ip4:188.165.51.139 ip4:54.36.149.183 ip4:85.9.206.169 ip4:85.9.210.45 ip4:51.83.17.38 ip4:57.129.93.249 ~all&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="nt">&quot;dns_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">                </span><span class="nt">&quot;dns_void_lookups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">                </span><span class="nt">&quot;parsed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -241,6 +265,22 @@ options:
 <span class="w">                    </span><span class="p">},</span>
 <span class="w">                    </span><span class="p">{</span>
 <span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;54.36.149.183&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;85.9.206.169&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;85.9.210.45&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;51.83.17.38&quot;</span><span class="p">,</span>
+<span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="p">{</span>
+<span class="w">                      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;57.129.93.249&quot;</span><span class="p">,</span>
 <span class="w">                      </span><span class="nt">&quot;mechanism&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ip4&quot;</span>
 <span class="w">                    </span><span class="p">}</span>
 <span class="w">                  </span><span class="p">],</span>
@@ -323,6 +363,24 @@ options:
 <span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">          </span><span class="s2">&quot;https://reports.proton.me/reports/smtptls&quot;</span>
 <span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;bimi&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;record&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v=BIMI1; l=; a=;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;selector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;location&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;proton.me&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;v&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BIMI1&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;l&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;a&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">&quot;warnings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
