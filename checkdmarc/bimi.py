@@ -266,9 +266,9 @@ BIMI_TAGS = OrderedDict(
         name="Avatar Preference",
         required=False,
         default="brand",
-        description="For mail sent to those mailbox providers that both participate in BIMI and " \
-        "support the display of personal avatars, this flag is a way for the Domain " \
-        "Owner to express its preference as to whether to show the BIMI logo or the " \
+        description="For mail sent to those mailbox providers that both participate in BIMI and "
+        "support the display of personal avatars, this flag is a way for the Domain "
+        "Owner to express its preference as to whether to show the BIMI logo or the "
         "personal avatar.",
     ),
 )
@@ -925,9 +925,11 @@ def parse_bimi_record(
                 results["certificate"] = dict(
                     error=f"Failed to download the mark certificate at {tag_value} - {str(e)}"
                 )
-        elif tag  == "avp":
+        elif tag == "avp":
             if tag_value not in ["brand", "personal"]:
-                raise BIMISyntaxError(f"Acceptable avp tag values are personal or brand, not {tag_value}")
+                raise BIMISyntaxError(
+                    f"Acceptable avp tag values are personal or brand, not {tag_value}"
+                )
     if parsed_dmarc_record and not tags["l"] == "":
         if not parsed_dmarc_record["valid"]:
             warnings.append(
