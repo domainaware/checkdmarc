@@ -68,7 +68,7 @@ limitations under the License."""
 
 BIMI_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*BIMI1{WSP_REGEX}*;"
 BIMI_TAG_VALUE_REGEX_STRING = (
-    rf"([a-z]{{1,2}}){WSP_REGEX}*={WSP_REGEX}*(bimi1|{HTTPS_REGEX})?"
+    rf"([a-z]{{1,3}}){WSP_REGEX}*={WSP_REGEX}*(bimi1|{HTTPS_REGEX}|avatar|brand)?"
 )
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
@@ -261,6 +261,15 @@ BIMI_TAGS = OrderedDict(
         "URI representing the location of a Brand "
         "Indicator file. The only supported transport "
         "is HTTPS.",
+    ),
+    avp=OrderedDict(
+        name="Avatar Preference",
+        required=False,
+        default="brand",
+        description="For mail sent to those mailbox providers that both participate in BIMI and " \
+        "support the display of personal avatars, this flag is a way for the Domain " \
+        "Owner to express its preference as to whether to show the BIMI logo or the " \
+        "personal avatar.",
     ),
 )
 
@@ -916,6 +925,9 @@ def parse_bimi_record(
                 results["certificate"] = dict(
                     error=f"Failed to download the mark certificate at {tag_value} - {str(e)}"
                 )
+        elif tag  == "avp":
+            if tag_value not in ["brand", "personal"]:
+                raise BIMISyntaxError(f"Acceptable avp tag values are personal or brand, not {tag_value}")
     if parsed_dmarc_record and not tags["l"] == "":
         if not parsed_dmarc_record["valid"]:
             warnings.append(
