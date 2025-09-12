@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.bimi &mdash; checkdmarc 5.10.5 documentation</title>
+  <title>checkdmarc.bimi &mdash; checkdmarc 5.10.6 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=55b477cc"></script>
+      <script src="../../_static/documentation_options.js?v=624cfda6"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -141,7 +141,7 @@
 
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;v</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*BIMI1</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;&quot;</span>
 <span class="n">BIMI_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="sa">rf</span><span class="s2">&quot;([a-z]</span><span class="se">{{</span><span class="s2">1,2</span><span class="se">}}</span><span class="s2">)</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*(bimi1|</span><span class="si">{</span><span class="n">HTTPS_REGEX</span><span class="si">}</span><span class="s2">)?&quot;</span>
+    <span class="sa">rf</span><span class="s2">&quot;([a-z]</span><span class="se">{{</span><span class="s2">1,3</span><span class="se">}}</span><span class="s2">)</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*(bimi1|</span><span class="si">{</span><span class="n">HTTPS_REGEX</span><span class="si">}</span><span class="s2">|personal|brand)?&quot;</span>
 <span class="p">)</span>
 <span class="n">BIMI_TAG_VALUE_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">BIMI_TAG_VALUE_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
 
@@ -334,6 +334,15 @@
         <span class="s2">&quot;URI representing the location of a Brand &quot;</span>
         <span class="s2">&quot;Indicator file. The only supported transport &quot;</span>
         <span class="s2">&quot;is HTTPS.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">avp</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Avatar Preference&quot;</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;brand&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;For mail sent to those mailbox providers that both participate in BIMI and &quot;</span>
+        <span class="s2">&quot;support the display of personal avatars, this flag is a way for the Domain &quot;</span>
+        <span class="s2">&quot;Owner to express its preference as to whether to show the BIMI logo or the &quot;</span>
+        <span class="s2">&quot;personal avatar.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
 <span class="p">)</span>
 
@@ -603,10 +612,11 @@
         <span class="n">_verifier</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">vmc</span><span class="p">,</span> <span class="n">intermediates</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">VerificationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">e_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Certificate ValidationError exception: </span><span class="si">{</span><span class="n">e_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="s2">&quot;all candidates exhausted with no interior errors&quot;</span> <span class="ow">in</span> <span class="n">e_str</span><span class="p">:</span>
             <span class="n">e_str</span> <span class="o">=</span> <span class="s2">&quot;The certificate was not issued by a recognized Mark Verifying Authority (MVA)&quot;</span>
-        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_str</span><span class="p">)</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_str</span><span class="p">)</span>
     <span class="n">not_valid_before_timestamp</span> <span class="o">=</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_before_utc</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%SZ&quot;</span><span class="p">)</span>
     <span class="n">not_valid_after_timestamp</span> <span class="o">=</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_after_utc</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%SZ&quot;</span><span class="p">)</span>
     <span class="n">not_yet_valid</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">vmc</span><span class="o">.</span><span class="n">not_valid_before_utc</span>
@@ -669,21 +679,21 @@
                         <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                             <span class="sa">f</span><span class="s2">&quot;The the certificate&#39;s subject is missing the field </span><span class="si">{</span><span class="n">required_field</span><span class="si">}</span><span class="s2">&quot;</span>
                         <span class="p">)</span>
-                    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;All&quot;</span><span class="p">,</span> <span class="n">mark_type</span><span class="p">]:</span>
-                            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">:</span>
-                                <span class="k">for</span> <span class="p">(</span>
-                                    <span class="n">required_field</span>
-                                <span class="p">)</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span>
-                                    <span class="k">if</span> <span class="n">required_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
-                                        <span class="n">alt_field</span> <span class="o">=</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">[</span>
-                                            <span class="n">key</span>
-                                        <span class="p">][</span><span class="n">required_field</span><span class="p">]</span>
-                                        <span class="k">if</span> <span class="n">alt_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
-                                            <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">alt_field</span><span class="si">}</span><span class="s2"> is required if </span><span class="si">{</span><span class="n">required_field</span><span class="si">}</span><span class="s2"> is not used in the subject&quot;</span>
-                                            <span class="p">)</span>
-                                            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;All&quot;</span><span class="p">,</span> <span class="n">mark_type</span><span class="p">]:</span>
+                        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">required_field</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">[</span>
+                                <span class="n">key</span>
+                            <span class="p">]:</span>
+                                <span class="k">if</span> <span class="n">required_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+                                    <span class="n">alt_field</span> <span class="o">=</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">[</span><span class="n">key</span><span class="p">][</span>
+                                        <span class="n">required_field</span>
+                                    <span class="p">]</span>
+                                    <span class="k">if</span> <span class="n">alt_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+                                        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">alt_field</span><span class="si">}</span><span class="s2"> is required in the certificate subject if </span><span class="si">{</span><span class="n">required_field</span><span class="si">}</span><span class="s2"> is not used in the certificate subject&quot;</span>
+                                        <span class="p">)</span>
+                                        <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
                 <span class="n">mark_type_fields</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="n">REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="n">mark_type</span><span class="p">]</span>
                     <span class="o">+</span> <span class="n">OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="n">mark_type</span><span class="p">]</span>
@@ -1025,6 +1035,11 @@
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">results</span><span class="p">[</span><span class="s2">&quot;certificate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
                     <span class="n">error</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Failed to download the mark certificate at </span><span class="si">{</span><span class="n">tag_value</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;avp&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tag_value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;brand&quot;</span><span class="p">,</span> <span class="s2">&quot;personal&quot;</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="n">BIMISyntaxError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Acceptable avp tag values are personal or brand, not </span><span class="si">{</span><span class="n">tag_value</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
     <span class="k">if</span> <span class="n">parsed_dmarc_record</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;l&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">parsed_dmarc_record</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]:</span>
