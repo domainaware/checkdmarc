@@ -68,7 +68,7 @@ limitations under the License."""
 
 BIMI_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*BIMI1{WSP_REGEX}*;"
 BIMI_TAG_VALUE_REGEX_STRING = (
-    rf"([a-z]{{1,2}}){WSP_REGEX}*={WSP_REGEX}*(bimi1|{HTTPS_REGEX})?"
+    rf"([a-z]{{1,3}}){WSP_REGEX}*={WSP_REGEX}*(bimi1|{HTTPS_REGEX}|personal|brand)?"
 )
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
@@ -261,6 +261,15 @@ BIMI_TAGS = OrderedDict(
         "URI representing the location of a Brand "
         "Indicator file. The only supported transport "
         "is HTTPS.",
+    ),
+    avp=OrderedDict(
+        name="Avatar Preference",
+        required=False,
+        default="brand",
+        description="For mail sent to those mailbox providers that both participate in BIMI and "
+        "support the display of personal avatars, this flag is a way for the Domain "
+        "Owner to express its preference as to whether to show the BIMI logo or the "
+        "personal avatar.",
     ),
 )
 
@@ -498,10 +507,11 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         _verifier.verify(vmc, intermediates)
     except VerificationError as e:
         e_str = str(e)
+        metadata["valid"] = False
+        logging.debug(f"Certificate ValidationError exception: {e_str}")
         if "all candidates exhausted with no interior errors" in e_str:
             e_str = "The certificate was not issued by a recognized Mark Verifying Authority (MVA)"
-        validation_errors.append(e_str)
-        metadata["valid"] = False
+            validation_errors.append(e_str)
     not_valid_before_timestamp = vmc.not_valid_before_utc.strftime("%Y-%m-%d %H:%M:%SZ")
     not_valid_after_timestamp = vmc.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%SZ")
     not_yet_valid = datetime.now(timezone.utc) < vmc.not_valid_before_utc
@@ -564,21 +574,21 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
                         validation_errors.append(
                             f"The the certificate's subject is missing the field {required_field}"
                         )
-                    for key in FIELD_REQUIRED_IF_FIELD_IS_MISSING:
-                        if key in ["All", mark_type]:
-                            if key in FIELD_REQUIRED_IF_FIELD_IS_MISSING:
-                                for (
-                                    required_field
-                                ) in FIELD_REQUIRED_IF_FIELD_IS_MISSING[key]:
-                                    if required_field not in cert_subject:
-                                        alt_field = FIELD_REQUIRED_IF_FIELD_IS_MISSING[
-                                            key
-                                        ][required_field]
-                                        if alt_field not in cert_subject:
-                                            validation_errors.append(
-                                                f"{alt_field} is required if {required_field} is not used in the subject"
-                                            )
-                                            valid = False
+                for key in FIELD_REQUIRED_IF_FIELD_IS_MISSING:
+                    if key in ["All", mark_type]:
+                        if key in FIELD_REQUIRED_IF_FIELD_IS_MISSING:
+                            for required_field in FIELD_REQUIRED_IF_FIELD_IS_MISSING[
+                                key
+                            ]:
+                                if required_field not in cert_subject:
+                                    alt_field = FIELD_REQUIRED_IF_FIELD_IS_MISSING[key][
+                                        required_field
+                                    ]
+                                    if alt_field not in cert_subject:
+                                        validation_errors.append(
+                                            f"{alt_field} is required in the certificate subject if {required_field} is not used in the certificate subject"
+                                        )
+                                        valid = False
                 mark_type_fields = (
                     REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE[mark_type]
                     + OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE[mark_type]
@@ -914,6 +924,11 @@ def parse_bimi_record(
             except Exception as e:
                 results["certificate"] = dict(
                     error=f"Failed to download the mark certificate at {tag_value} - {str(e)}"
+                )
+        elif tag == "avp":
+            if tag_value not in ["brand", "personal"]:
+                raise BIMISyntaxError(
+                    f"Acceptable avp tag values are personal or brand, not {tag_value}"
                 )
     if parsed_dmarc_record and not tags["l"] == "":
         if not parsed_dmarc_record["valid"]:

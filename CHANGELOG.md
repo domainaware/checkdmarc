@@ -1,6 +1,12 @@
 Changelog
 =========
 
+5.10.6
+-----
+
+- Fix BIMI certificate validation error generation, close #177
+- Add support for the avp bimi tag, closes  #179
+
 5.10.5
 ------
 
