@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.8
+------
+
+- Return the proper error message when checking an SOA record for a domain that exist
+
 5.10.7
 ------
 
