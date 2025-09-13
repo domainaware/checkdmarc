@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.7
+------
+
+- Set `use_signals=False` when using timeout decorator to allow it to be used in multithreaded applications such as web applications
+
 5.10.6
 -----
 

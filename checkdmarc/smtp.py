@@ -48,7 +48,10 @@ class SMTPError(Exception):
 
 
 @timeout_decorator.timeout(
-    5, timeout_exception=SMTPError, exception_message="Connection timed out"
+    5,
+    timeout_exception=SMTPError,
+    exception_message="Connection timed out",
+    use_signals=False,
 )
 def test_tls(
     hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
@@ -162,7 +165,10 @@ def test_tls(
 
 
 @timeout_decorator.timeout(
-    5, timeout_exception=SMTPError, exception_message="Connection timed out"
+    5,
+    timeout_exception=SMTPError,
+    exception_message="Connection timed out",
+    use_signals=False,
 )
 def test_starttls(
     hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
