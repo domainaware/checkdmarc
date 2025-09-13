@@ -572,7 +572,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
                     if required_field not in cert_subject:
                         valid = False
                         validation_errors.append(
-                            f"The the certificate's subject is missing the field {required_field}"
+                            f"The the certificate's subject is missing the required field {required_field}."
                         )
                 for key in FIELD_REQUIRED_IF_FIELD_IS_MISSING:
                     if key in ["All", mark_type]:
@@ -586,7 +586,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
                                     ]
                                     if alt_field not in cert_subject:
                                         validation_errors.append(
-                                            f"{alt_field} is required in the certificate subject if {required_field} is not used in the certificate subject"
+                                            f"{alt_field} is required in the certificate subject if {required_field} is not used in the certificate subject."
                                         )
                                         valid = False
                 mark_type_fields = (
@@ -606,7 +606,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
                     for field in other_mark_type_fields:
                         if field in cert_subject:
                             validation_errors.append(
-                                f"The subject {field} is used by {other_mark_type} certificates, not {mark_type} certificates"
+                                f"The subject {field} is used by {other_mark_type} certificates, not {mark_type} certificates."
                             )
                             valid = False
             else:
@@ -767,9 +767,9 @@ def query_bimi_record(
         )
         for root_record in root_records:
             if root_record.startswith("v=BIMI1"):
-                warnings.append(f"BIMI record at root of {domain} has no effect")
+                warnings.append(f"BIMI record at root of {domain} has no effect.")
     except dns.resolver.NXDOMAIN:
-        raise BIMIRecordNotFound(f"The domain {domain} does not exist")
+        raise BIMIRecordNotFound(f"The domain {domain} does not exist.")
     except dns.exception.DNSException:
         pass
 
@@ -781,7 +781,7 @@ def query_bimi_record(
     if record is None:
         raise BIMIRecordNotFound(
             f"A BIMI record does not exist at the {selector} selector for "
-            f"this domain or its base domain"
+            f"this domain or its base domain."
         )
 
     return OrderedDict(
@@ -845,7 +845,7 @@ def parse_bimi_record(
         "should be; most likely, the _bimi "
         "subdomain record does not actually exist, "
         "and the request for TXT records was "
-        "redirected to the base domain"
+        "redirected to the base domain."
     )
     warnings = []
     record = record.strip('"')
@@ -878,7 +878,7 @@ def parse_bimi_record(
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
         if tag not in BIMI_TAGS:
-            raise InvalidBIMITag(f"{tag} is not a valid BIMI record tag")
+            raise InvalidBIMITag(f"{tag} is not a valid BIMI record tag.")
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["name"] = BIMI_TAGS[tag]["name"]
@@ -898,7 +898,7 @@ def parse_bimi_record(
                     svg_metadata = get_svg_metadata(raw_xml)
                     if svg_metadata["width"] != svg_metadata["height"]:
                         warnings.append(
-                            f"It is recommended for BIMI SVG dimensions to be square, not {svg_metadata['width']}x{svg_metadata['height']}"
+                            f"It is recommended for BIMI SVG dimensions to be square, not {svg_metadata['width']}x{svg_metadata['height']}."
                         )
                     svg_validation_errors = check_svg_requirements(svg_metadata)
                     if len(svg_validation_errors) > 0:
@@ -919,7 +919,7 @@ def parse_bimi_record(
                         hash_match = True
                     else:
                         warnings.append(
-                            "The image at the l= tag URL does not match the image embedded in the certificate"
+                            "The image at the l= tag URL does not match the image embedded in the certificate."
                         )
             except Exception as e:
                 results["certificate"] = dict(
@@ -933,7 +933,7 @@ def parse_bimi_record(
     if parsed_dmarc_record and not tags["l"] == "":
         if not parsed_dmarc_record["valid"]:
             warnings.append(
-                "The domain does not have a valid DMARC record. A DMARC policy of quarantine or reject must be in place"
+                "The domain does not have a valid DMARC record. A DMARC policy of quarantine or reject must be in place."
             )
         else:
             if parsed_dmarc_record["tags"]["p"]["value"] not in [
@@ -941,23 +941,23 @@ def parse_bimi_record(
                 "reject",
             ]:
                 warnings.append(
-                    "The DMARC policy (p tag) must not be set to quarantine or reject"
+                    "The DMARC policy (p tag) must not be set to quarantine or reject."
                 )
             if parsed_dmarc_record["tags"]["sp"]["value"] not in [
                 "quarantine",
                 "reject",
             ]:
                 warnings.append(
-                    "The DMARC subdomain policy (sp tag) must be set to quarantine or reject if it is used"
+                    "The DMARC subdomain policy (sp tag) must be set to quarantine or reject if it is used."
                 )
             if parsed_dmarc_record["tags"]["pct"]["value"] != 100:
                 warnings.append(
-                    "The DMARC pct tag must be set to 100 (the implicit default) if it is used"
+                    "The DMARC pct tag must be set to 100 (the implicit default) if it is used."
                 )
     matching_certificate_provided = hash_match and cert_metadata["valid"]
     if ("l" in tags and tags["l"]["value"] != "") and not matching_certificate_provided:
         warnings.append(
-            "Most email providers will not display a BIMI image without a valid mark certificate"
+            "Most email providers will not display a BIMI image without a valid mark certificate."
         )
     results["tags"] = tags
     if svg_metadata is not None:

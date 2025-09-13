@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.10
+-------
+
+- Add missing periods at the end of BIMI error messages  and warnings
+
 5.10.9
 ------
 
