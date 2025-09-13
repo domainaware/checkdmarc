@@ -187,7 +187,7 @@ def query_mta_sts_record(
                 unrelated_records.append(record)
 
         if sts_record_count > 1:
-            raise MultipleMTASTSRecords("Multiple MTA-STS records are not permitted")
+            raise MultipleMTASTSRecords("Multiple MTA-STS records are not permitted.")
         if len(unrelated_records) > 0:
             ur_str = "\n\n".join(unrelated_records)
             raise UnrelatedTXTRecordFoundAtMTASTS(
@@ -210,12 +210,12 @@ def query_mta_sts_record(
             for record in records:
                 if record.startswith(txt_prefix):
                     raise MTASTSRecordInWrongLocation(
-                        f"The MTA-STS record must be located at {target}, not {domain}"
+                        f"The MTA-STS record must be located at {target}, not {domain}."
                     )
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
-            raise MTASTSRecordNotFound(f"The domain {domain} does not exist")
+            raise MTASTSRecordNotFound(f"The domain {domain} does not exist.")
         except Exception as error:
             raise MTASTSRecordNotFound(error)
     except Exception as error:
@@ -223,7 +223,7 @@ def query_mta_sts_record(
 
     if sts_record is None:
         raise MTASTSRecordNotFound(
-            "An MTA-STS DNS record does not exist for this domain"
+            "An MTA-STS DNS record does not exist for this domain."
         )
 
     return OrderedDict([("record", sts_record), ("warnings", warnings)])
@@ -301,7 +301,7 @@ def parse_mta_sts_record(
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
         if tag not in mta_sts_tags:
-            raise InvalidMTASTSTag(f"{tag} is not a valid MTA-STS record tag")
+            raise InvalidMTASTSTag(f"{tag} is not a valid MTA-STS record tag.")
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["description"] = mta_sts_tags[tag]["description"]
@@ -381,7 +381,7 @@ def parse_mta_sts_policy(policy: str) -> OrderedDict:
     acceptable_keys = required_keys.copy()
     acceptable_keys.append("mx")
     if "\n" in policy and "\r\n" not in policy:
-        warnings.append("MTA-STS policy lines should end with CRLF not LF")
+        warnings.append("MTA-STS policy lines should end with CRLF not LF.")
         policy = policy.replace("\n", "\r\n")
     lines = policy.split("\r\n")
     for i in range(len(lines)):
@@ -390,7 +390,7 @@ def parse_mta_sts_policy(policy: str) -> OrderedDict:
             continue
         key_value = lines[i].split(":")
         if len(key_value) != 2:
-            raise MTASTSPolicySyntaxError(f"Line {line}: Not a key: value pair")
+            raise MTASTSPolicySyntaxError(f"Line {line}: Not a key: value pair.")
         key = key_value[0].strip()
         value = key_value[1].strip()
         if key not in acceptable_keys:
@@ -402,7 +402,7 @@ def parse_mta_sts_policy(policy: str) -> OrderedDict:
         elif key == "mode" and value not in modes:
             MTASTSPolicySyntaxError(f"Line {line}: Invalid mode: {value}")
         elif key == "max_age":
-            error_msg = "max_age must be an integer value between 0 and 31557600"
+            error_msg = "max_age must be an integer value between 0 and 31557600."
             if "." in value:
                 raise MTASTSPolicySyntaxError(error_msg)
             try:
@@ -419,11 +419,11 @@ def parse_mta_sts_policy(policy: str) -> OrderedDict:
             mx.append(value)
     for required_key in required_keys:
         if required_key not in parsed_policy:
-            raise MTASTSPolicySyntaxError(f"Missing required key: {required_key}")
+            raise MTASTSPolicySyntaxError(f"Missing required key: {required_key}.")
 
     if parsed_policy["mode"] != "none" and len(mx) == 0:
         raise MTASTSPolicySyntaxError(
-            f"{parsed_policy['mode']} mode requires at least one mx value"
+            f"{parsed_policy['mode']} mode requires at least one mx value."
         )
     parsed_policy["mx"] = mx
 

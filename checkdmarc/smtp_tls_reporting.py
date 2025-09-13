@@ -183,7 +183,7 @@ def query_smtp_tls_reporting_record(
 
         if sts_record_count > 1:
             raise MultipleSMTPTLSReportingRecords(
-                "Multiple SMTP TLS Reporting records are not permitted"
+                "Multiple SMTP TLS Reporting records are not permitted."
             )
         if len(unrelated_records) > 0:
             ur_str = "\n\n".join(unrelated_records)
@@ -213,7 +213,7 @@ def query_smtp_tls_reporting_record(
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
-            raise SMTPTLSReportingRecordNotFound(f"The domain {domain} does not exist")
+            raise SMTPTLSReportingRecordNotFound(f"The domain {domain} does not exist.")
         except Exception as error:
             raise SMTPTLSReportingRecordNotFound(error)
     except Exception as error:
@@ -221,7 +221,7 @@ def query_smtp_tls_reporting_record(
 
     if sts_record is None:
         raise SMTPTLSReportingRecordNotFound(
-            "An SMTP TLS Reporting DNS record does not exist for this domain"
+            "An SMTP TLS Reporting DNS record does not exist for this domain."
         )
 
     return OrderedDict([("record", sts_record), ("warnings", warnings)])
@@ -300,18 +300,18 @@ def parse_smtp_tls_reporting_record(
         tag_value = str(pair[1].strip())
         if tag not in smtp_rpt_tags:
             raise InvalidSMTPTLSReportingTag(
-                f"{tag} is not a valid SMTP TLS Reporting record tag"
+                f"{tag} is not a valid SMTP TLS Reporting record tag."
             )
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["description"] = smtp_rpt_tags[tag]["description"]
     if "rua" not in tags:
-        SMTPTLSReportingSyntaxError("The record is missing the required rua tag")
+        SMTPTLSReportingSyntaxError("The record is missing the required rua tag.")
     tags["rua"]["value"] = tags["rua"]["value"].split(",")
     for uri in tags["rua"]["value"]:
         if len(SMTPTLSREPORTING_URI_REGEX.findall(uri)) != 1:
             raise SMTPTLSReportingSyntaxError(
-                f"{uri} is not a valid SMTP TLS reporting URI"
+                f"{uri} is not a valid SMTP TLS reporting URI."
             )
 
     return OrderedDict(tags=tags, warnings=warnings)

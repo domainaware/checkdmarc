@@ -33,7 +33,7 @@ def parse_soa_string(rr: str) -> OrderedDict:
     Parses a raw SOA record string and returns an OrderedDict with validated fields.
     """
     if not isinstance(rr, str) or not rr.strip():
-        raise ValueError("SOA rrdata must be a non-empty string")
+        raise ValueError("SOA rrdata must be a non-empty string.")
 
     tokens = rr.strip().split()
     if len(tokens) != 7:

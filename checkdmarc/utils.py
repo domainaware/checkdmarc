@@ -193,7 +193,7 @@ def get_a_records(
                 domain, qt, nameservers=nameservers, resolver=resolver, timeout=timeout
             )
         except dns.resolver.NXDOMAIN:
-            raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+            raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
         except dns.resolver.NoAnswer:
             # Sometimes a domain will only have A or AAAA records, but not both
             pass
@@ -271,9 +271,9 @@ def get_txt_records(
             domain, "TXT", nameservers=nameservers, resolver=resolver, timeout=timeout
         )
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
-        raise DNSException(f"The domain {domain} does not have any TXT records")
+        raise DNSException(f"The domain {domain} does not have any TXT records.")
     except Exception as error:
         raise DNSException(error)
 
@@ -309,9 +309,9 @@ def get_soa_record(
             domain, "SOA", nameservers=nameservers, resolver=resolver, timeout=timeout
         )[0]
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
-        raise DNSException(f"The domain {domain} does not have an SOA record")
+        raise DNSException(f"The domain {domain} does not have an SOA record.")
     except Exception as error:
         raise DNSException(error)
 
@@ -351,7 +351,7 @@ def get_nameservers(
             domain, "NS", nameservers=nameservers, resolver=resolver, timeout=timeout
         )
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
@@ -415,7 +415,7 @@ def get_mx_records(
             )
         hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:

@@ -382,7 +382,7 @@ def get_mx_hosts(
             if len(tlsa_records) > 0:
                 host["tlsa"] = tlsa_records
             if len(host["addresses"]) == 0:
-                warnings.append(f"{hostname} does not have any A or AAAA DNS records")
+                warnings.append(f"{hostname} does not have any A or AAAA DNS records.")
         except Exception as e:
             if hostname.lower().endswith(".msv1.invalid"):
                 warnings.append(
@@ -428,11 +428,11 @@ def get_mx_hosts(
                 starttls = test_starttls(hostname, cache=STARTTLS_CACHE)
                 tls = starttls
                 if not starttls:
-                    warnings.append(f"STARTTLS is not supported on {hostname}")
+                    warnings.append(f"STARTTLS is not supported on {hostname}.")
                     tls = test_tls(hostname, cache=TLS_CACHE)
 
                     if not tls:
-                        warnings.append(f"SSL/TLS is not supported on {hostname}")
+                        warnings.append(f"SSL/TLS is not supported on {hostname}.")
                 host["tls"] = tls
                 host["starttls"] = starttls
             except DNSException as warning:

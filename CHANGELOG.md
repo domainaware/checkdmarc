@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.9
+------
+
+- Add periods at the end of error messages to make them nicer for web apps
+
 5.10.8
 ------
 

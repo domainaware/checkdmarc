@@ -186,7 +186,7 @@ def query_spf_record(
         for record in answers:
             if record == "Undecodable characters":
                 raise UndecodableCharactersInTXTRecord(
-                    f"A TXT record at {domain} contains undecodable characters"
+                    f"A TXT record at {domain} contains undecodable characters."
                 )
             if record.startswith(txt_prefix):
                 spf_txt_records.append(record)
@@ -195,11 +195,11 @@ def query_spf_record(
         elif len(spf_txt_records) == 1:
             spf_record = spf_txt_records[0]
         if spf_record is None:
-            raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record", domain)
+            raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record.", domain)
     except dns.resolver.NoAnswer:
-        raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record", domain)
+        raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record.", domain)
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordNotFound(f"The domain {domain} does not exist", domain)
+        raise SPFRecordNotFound(f"The domain {domain} does not exist.", domain)
     except Exception as error:
         raise SPFRecordNotFound(error, domain)
 
@@ -266,7 +266,7 @@ def parse_spf_record(
                 f"{correct_record} not: {record}"
             )
     if len(AFTER_ALL_REGEX.findall(record)) > 0:
-        warnings.append("Any text after the all mechanism is ignored")
+        warnings.append("Any text after the all mechanism is ignored.")
         record = AFTER_ALL_REGEX.sub(r"\1", record)
     parsed_record = spf_syntax_checker.parse(record)
     if not parsed_record.is_valid:
@@ -321,20 +321,20 @@ def parse_spf_record(
                         ipaddress.ip_network(value, strict=False), ipaddress.IPv4Network
                     ):
                         raise SPFSyntaxError(
-                            f"{value} is not a valid ipv4  value. Looks like ipv6"
+                            f"{value} is not a valid ipv4  value. Looks like ipv6."
                         )
                 except ValueError:
-                    raise SPFSyntaxError(f"{value} is not a valid ipv4 value")
+                    raise SPFSyntaxError(f"{value} is not a valid ipv4 value.")
             elif mechanism == "ip6":
                 try:
                     if not isinstance(
                         ipaddress.ip_network(value, strict=False), ipaddress.IPv6Network
                     ):
                         raise SPFSyntaxError(
-                            f"{value} is not a valid ipv6 value. Looks like ipv4"
+                            f"{value} is not a valid ipv6 value. Looks like ipv4."
                         )
                 except ValueError:
-                    raise SPFSyntaxError(f"{value} is not a valid ipv6 value")
+                    raise SPFSyntaxError(f"{value} is not a valid ipv6 value.")
 
             if mechanism == "a":
                 if value == "":
@@ -521,18 +521,18 @@ def parse_spf_record(
                 for token in tokens:
                     if token not in ["all", "e", "f", "s", "n"]:
                         raise SPFSyntaxError(
-                            f"{token} is not a valid token for the rr tag"
+                            f"{token} is not a valid token for the rr tag."
                         )
 
                 parsed["rr"] = result
             elif mechanism == "rp":
                 if not value.isdigit():
                     raise SPFSyntaxError(
-                        f"{value} is not a valid ra tag value - should be a number"
+                        f"{value} is not a valid ra tag value - should be a number."
                     )
                 if int(value) < 0 or int(value) > 100:
                     raise SPFSyntaxError(
-                        f"{value} is not a valid ra tag value - should be a number between 0 and 100"
+                        f"{value} is not a valid ra tag value - should be a number between 0 and 100."
                     )
 
                 parsed["rp"] = result

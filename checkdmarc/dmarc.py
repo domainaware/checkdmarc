@@ -467,12 +467,12 @@ def _query_dmarc_record(
             for record in records:
                 if record.startswith(txt_prefix):
                     raise DMARCRecordInWrongLocation(
-                        f"The DMARC record must be located at {target}, not {domain}"
+                        f"The DMARC record must be located at {target}, not {domain}."
                     )
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
-            raise DMARCRecordNotFound(f"The domain {0} does not exist".format(domain))
+            raise DMARCRecordNotFound(f"The domain {0} does not exist.".format(domain))
         except Exception as error:
             raise DMARCRecordNotFound(error)
 
@@ -547,9 +547,9 @@ def query_dmarc_record(
         )
         for root_record in root_records:
             if root_record.startswith("v=DMARC1"):
-                warnings.append(f"DMARC record at root of {domain} has no effect")
+                warnings.append(f"DMARC record at root of {domain} has no effect.")
     except dns.resolver.NXDOMAIN:
-        raise DMARCRecordNotFound(f"The domain {domain} does not exist")
+        raise DMARCRecordNotFound(f"The domain {domain} does not exist.")
     except dns.exception.DNSException:
         pass
 
@@ -564,7 +564,7 @@ def query_dmarc_record(
         location = base_domain
     if record is None:
         raise DMARCRecordNotFound(
-            "A DMARC record does not exist for this domain or its base domain"
+            "A DMARC record does not exist for this domain or its base domain."
         )
 
     return OrderedDict(
@@ -860,7 +860,7 @@ def parse_dmarc_record(
         "should be; most likely, the _dmarc "
         "subdomain record does not actually exist, "
         "and the request for TXT records was "
-        "redirected to the base domain"
+        "redirected to the base domain."
     )
     warnings = []
     record = record.strip('"')
@@ -901,17 +901,17 @@ def parse_dmarc_record(
                 [("value", dmarc_tags[tag]["default"]), ("explicit", False)]
             )
     if "p" not in tags:
-        raise DMARCSyntaxError('The record is missing the required policy ("p") tag')
+        raise DMARCSyntaxError('The record is missing the required policy ("p") tag.')
     tags["p"]["value"] = tags["p"]["value"].lower()
     if "sp" not in tags:
         tags["sp"] = OrderedDict([("value", tags["p"]["value"]), ("explicit", False)])
     if list(tags.keys())[1] != "p":
-        raise DMARCSyntaxError("the p tag must immediately follow the v tag")
+        raise DMARCSyntaxError("the p tag must immediately follow the v tag.")
     tags["v"]["value"] = tags["v"]["value"].upper()
     # Validate tag values
     for tag in tags:
         if tag not in dmarc_tags:
-            raise InvalidDMARCTag(f"{tag} is not a valid DMARC tag")
+            raise InvalidDMARCTag(f"{tag} is not a valid DMARC tag.")
         tag_value = tags[tag]["value"]
         allowed_values = None
         explicit = tags[tag]["explicit"]
@@ -929,19 +929,19 @@ def parse_dmarc_record(
             tag_value = tag_value.split(":")
             if "0" in tag_value and "1" in tag_value:
                 warnings.append(
-                    "When 1 is present in the fo tag, including 0 is redundant"
+                    "When 1 is present in the fo tag, including in the fo tag 0 is redundant."
                 )
             for value in tag_value:
                 if value not in allowed_values:
                     raise InvalidDMARCTagValue(
-                        f"{value} is not a valid option for the DMARC fo tag"
+                        f"{value} is not a valid option for the DMARC fo tag."
                     )
         elif tag == "rf":
             tag_value = tag_value.lower().split(":")
             for value in tag_value:
                 if value not in allowed_values:
                     raise InvalidDMARCTagValue(
-                        f"{value} is not a valid option for the DMARC rf tag"
+                        f"{value} is not a valid option for the DMARC rf tag."
                     )
 
         elif allowed_values and tag_value not in allowed_values:
@@ -954,12 +954,12 @@ def parse_dmarc_record(
     try:
         tags["pct"]["value"] = int(tags["pct"]["value"])
     except ValueError:
-        raise InvalidDMARCTagValue("The value of the pct tag must be an integer")
+        raise InvalidDMARCTagValue("The value of the pct tag must be an integer.")
 
     try:
         tags["ri"]["value"] = int(tags["ri"]["value"])
     except ValueError:
-        raise InvalidDMARCTagValue("The value of the ri tag must be an integer")
+        raise InvalidDMARCTagValue("The value of the ri tag must be an integer.")
 
     if "rua" in tags:
         parsed_uris = []
@@ -971,7 +971,7 @@ def parse_dmarc_record(
                 email_address = uri["address"]
                 if uri["size_limit"]:
                     warnings.append(
-                        f"Setting a size limit on rua reports sent to {email_address} could cause incomplete reporting"
+                        f"Setting a size limit on rua reports sent to {email_address} could cause incomplete reporting."
                     )
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
@@ -993,7 +993,7 @@ def parse_dmarc_record(
                     if len(hosts) == 0:
                         raise DMARCReportEmailAddressMissingMXRecords(
                             "The domain for rua email address "
-                            f"{email_address} has no MX records"
+                            f"{email_address} has no MX records."
                         )
                 except DNSException as warning:
                     raise DMARCReportEmailAddressMissingMXRecords(
@@ -1009,7 +1009,7 @@ def parse_dmarc_record(
             warnings.append(
                 str(
                     _DMARCBestPracticeWarning(
-                        "Some DMARC reporters might not send to more than two rua URIs"
+                        "Some DMARC reporters might not send to more than two rua URIs."
                     )
                 )
             )
@@ -1017,7 +1017,7 @@ def parse_dmarc_record(
         warnings.append(
             str(
                 _DMARCBestPracticeWarning(
-                    "rua tag (destination for aggregate reports) not found"
+                    "rua tag (destination for aggregate reports) not found."
                 )
             )
         )
@@ -1032,7 +1032,7 @@ def parse_dmarc_record(
                 email_address = uri["address"]
                 if uri["size_limit"]:
                     warnings.append(
-                        f"Setting a size limit on ruf reports sent to {email_address} could cause incomplete reporting"
+                        f"Setting a size limit on ruf reports sent to {email_address} could cause incomplete reporting."
                     )
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
@@ -1071,30 +1071,30 @@ def parse_dmarc_record(
             warnings.append(
                 str(
                     _DMARCBestPracticeWarning(
-                        "Some DMARC reporters might not send to more than two ruf URIs"
+                        "Some DMARC reporters might not send to more than two ruf URIs."
                     )
                 )
             )
 
     if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
         warnings.append(
-            str(InvalidDMARCTagValue("pct value must be an integer between 0 and 100"))
+            str(InvalidDMARCTagValue("pct value must be an integer between 0 and 100."))
         )
     elif tags["pct"]["value"] == 0:
-        warnings.append("A pct value of 0 disables DMARC enforcement")
+        warnings.append("A pct value of 0 disables DMARC enforcement.")
     elif tags["pct"]["value"] < 100:
         warning_msg = (
             "pct value is less than 100. This leads to "
             "inconsistent and unpredictable policy "
             "enforcement. Consider using p=none to "
-            "monitor results instead"
+            "monitor results instead."
         )
         warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
     if parked and tags["p"]["value"] != "reject":
-        warning_msg = "Policy (p=) should be reject for parked domains"
+        warning_msg = "Policy (p=) should be reject for parked domains."
         warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
     if parked and tags["sp"]["value"] != "reject":
-        warning_msg = "Subdomain policy (sp=) should be reject for parked domains"
+        warning_msg = "Subdomain policy (sp=) should be reject for parked domains."
         warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
 
     # Add descriptions if requested

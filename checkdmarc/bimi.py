@@ -679,7 +679,7 @@ def _query_bimi_record(
                 unrelated_records.append(record)
 
         if bimi_record_count > 1:
-            raise MultipleBIMIRecords("Multiple BMI records are not permitted")
+            raise MultipleBIMIRecords("Multiple BMI records are not permitted.")
         if len(unrelated_records) > 0:
             ur_str = "\n\n".join(unrelated_records)
             raise UnrelatedTXTRecordFoundAtBIMI(
@@ -702,12 +702,12 @@ def _query_bimi_record(
             for record in records:
                 if record.startswith(txt_prefix):
                     raise BIMIRecordInWrongLocation(
-                        f"The BIMI record must be located at {target}, not {domain}"
+                        f"The BIMI record must be located at {target}, not {domain}."
                     )
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
-            raise BIMIRecordNotFound(f"The domain {domain} does not exist")
+            raise BIMIRecordNotFound(f"The domain {domain} does not exist.")
         except Exception as error:
             BIMIRecordNotFound(error)
 
