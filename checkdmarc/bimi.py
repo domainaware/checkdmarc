@@ -510,7 +510,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         metadata["valid"] = False
         logging.debug(f"Certificate ValidationError exception: {e_str}")
         if "all candidates exhausted with no interior errors" in e_str:
-            e_str = "The certificate was not issued by a recognized Mark Verifying Authority (MVA)"
+            e_str = "The certificate was not issued by a recognized Mark Verifying Authority (MVA)."
             validation_errors.append(e_str)
     not_valid_before_timestamp = vmc.not_valid_before_utc.strftime("%Y-%m-%d %H:%M:%SZ")
     not_valid_after_timestamp = vmc.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%SZ")
@@ -750,10 +750,11 @@ def query_bimi_record(
         :exc:`checkdmarc.bimi.MultipleBIMIRecords`
 
     """
+    domain = normalize_domain(domain)
     logging.debug(f"Checking for a BIMI record at {selector}._bimi.{domain}")
     warnings = []
     base_domain = get_base_domain(domain)
-    location = domain.lower()
+    location = domain
     record = _query_bimi_record(
         domain,
         selector=selector,
@@ -779,10 +780,16 @@ def query_bimi_record(
         )
         location = base_domain
     if record is None:
-        raise BIMIRecordNotFound(
-            f"A BIMI record does not exist at the {selector} selector for "
-            f"this domain or its base domain."
-        )
+        if domain == base_domain:
+            raise BIMIRecordNotFound(
+                f"A BIMI record does not exist at the {selector} selector for "
+                f"this domain."
+            )
+        else:
+            raise BIMIRecordNotFound(
+                f"A BIMI record does not exist at the {selector} selector for "
+                "this subdomain or its base domain."
+            )
 
     return OrderedDict(
         [("record", record), ("location", location), ("warnings", warnings)]
