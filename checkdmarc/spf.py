@@ -212,7 +212,7 @@ def query_spf_record(
     except dns.resolver.NoAnswer:
         raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record.", domain)
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordNotFound(f"The domain {domain} does not exist", domain)
+        raise SPFRecordNotFound(f"The domain {domain} does not exist.", domain)
     except SPFRecordNotFound as error:
         raise error
     except Exception as error:
