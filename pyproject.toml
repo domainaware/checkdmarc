@@ -31,7 +31,7 @@ classifiers = [
 ]
 dependencies = [
     "dnspython>=2.0.0",
-    "cryptography>=41.0.7",
+    "cryptography~=45.0",
     "pyopenssl>=24.2.1",
     "pem>=23.1.0",
     "expiringdict>=1.1.4",

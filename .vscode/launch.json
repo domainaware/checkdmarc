@@ -6,15 +6,26 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --help",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--help"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls cardinalhealth.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -25,20 +36,32 @@
             "justMyCode": true
         },
         {
-            "name": "checkdmarc --skip-tls ally.com",
-            "type": "python",
+            "name": "checkdmarc --skip-tls chase.com",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
-                "ally.com"
+                "chase.com"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc --skip-tls doesnotexistexample.com",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "doesnotexistexample.com"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
         },
         {
             "name": "checkdmarc --skip-tls dhs.gov",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -50,7 +73,7 @@
         },
         {
             "name": "checkdmarc gmail.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -60,8 +83,20 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls google.com",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "gmail.com"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls m11‍.‍email‍.‍samsung‍.‍com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -73,7 +108,7 @@
         },
         {
             "name": "checkdmarc --skip-tls galaxylife‍.‍samsungusa‍.‍com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -84,8 +119,20 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls huntington.com",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "huntington.com"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls  n1.e-nocibe.fr",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -97,7 +144,7 @@
         },
         {
             "name": "checkdmarc --skip-tls  edys.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -108,8 +155,20 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls  info‍.‍fr‍.‍vorwerk‍.‍com",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "info‍.‍fr‍.‍vorwerk‍.‍com",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls  paypal.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -120,8 +179,20 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls  proton.me",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "proton.me",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls  kickbox.com",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
@@ -132,8 +203,20 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls  ssa.gov",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "ssa.gov",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "tests.py",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "tests.py",
             "args": [],

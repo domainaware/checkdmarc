@@ -7,6 +7,7 @@ import logging
 import dns
 import dns.resolver
 import re
+import unicodedata
 from collections import OrderedDict
 
 import publicsuffixlist
@@ -34,8 +35,9 @@ MAILTO_REGEX_STRING = (
     r"^(mailto):([\w\-!#$%&'*+-/=?^_`{|}~]"
     r"[\w\-.!#$%&'*+-/=?^_`{|}~]*@[\w\-.]+)(!\w+)?"
 )
-
+ZERO_WIDTH_RE = re.compile(r"[\u200B-\u200D\uFEFF]")  # includes ZWSP, ZWNJ, ZWJ, BOM
 MAILTO_REGEX = re.compile(MAILTO_REGEX_STRING, re.IGNORECASE)
+PSL = publicsuffixlist.PublicSuffixList()
 
 
 class DNSException(Exception):
@@ -65,15 +67,32 @@ def get_base_domain(domain: str) -> str:
         str: The base domain of the given domain
 
     """
+    domain = normalize_domain(domain)
+    return PSL.privatesuffix(domain) or domain
 
-    psl = publicsuffixlist.PublicSuffixList()
-    domain = domain.lower()
-    return psl.privatesuffix(domain) or domain
+
+def normalize_domain(domain: str) -> str:
+    """
+    Normalize an input domain by removing zero-width characters and lowering it
+
+    Args:
+        domain (str): A domain or subdomain
+
+    Returns:
+        str: A normalized domain
+    """
+    # 1. Normalize Unicode (NFC form for consistency)
+    domain = unicodedata.normalize("NFC", domain)
+    # 2. Remove zero-width and similar hidden chars
+    domain = ZERO_WIDTH_RE.sub("", domain)
+    # 3. Lowercase for case-insensitivity (domains are case-insensitive)
+    return domain.lower()
 
 
 def query_dns(
     domain: str,
     record_type: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -94,7 +113,7 @@ def query_dns(
     Returns:
         list: A list of answers
     """
-    domain = domain.lower()
+    domain = normalize_domain(domain)
     record_type = record_type.upper()
     cache_key = f"{domain}_{record_type}"
     if cache is None:
@@ -144,6 +163,7 @@ def query_dns(
 
 def get_a_records(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -163,7 +183,6 @@ def get_a_records(
 
     Raises:
         :exc:`checkdmarc.DNSException`
-
     """
     qtypes = ["A", "AAAA"]
     addresses = []
@@ -174,7 +193,7 @@ def get_a_records(
                 domain, qt, nameservers=nameservers, resolver=resolver, timeout=timeout
             )
         except dns.resolver.NXDOMAIN:
-            raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+            raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
         except dns.resolver.NoAnswer:
             # Sometimes a domain will only have A or AAAA records, but not both
             pass
@@ -187,6 +206,7 @@ def get_a_records(
 
 def get_reverse_dns(
     ip_address: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -224,6 +244,7 @@ def get_reverse_dns(
 
 def get_txt_records(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -241,7 +262,7 @@ def get_txt_records(
     Returns:
         list: A list of TXT records
 
-     Raises:
+    Raises:
         :exc:`checkdmarc.DNSException`
 
     """
@@ -250,17 +271,56 @@ def get_txt_records(
             domain, "TXT", nameservers=nameservers, resolver=resolver, timeout=timeout
         )
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
-        raise DNSException(f"The domain {domain} does not have any TXT records")
+        raise DNSException(f"The domain {domain} does not have any TXT records.")
     except Exception as error:
         raise DNSException(error)
 
     return records
 
 
+def get_soa_record(
+    domain: str,
+    *,
+    nameservers: list[str] = None,
+    resolver: dns.resolver.Resolver = None,
+    timeout: float = 2.0,
+) -> list[str]:
+    """
+    Queries DNS for an SOA record
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        str: An SOA record
+
+    Raises:
+        :exc:`checkdmarc.DNSException`
+
+    """
+    try:
+        record = query_dns(
+            domain, "SOA", nameservers=nameservers, resolver=resolver, timeout=timeout
+        )[0]
+    except dns.resolver.NXDOMAIN:
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
+    except dns.resolver.NoAnswer:
+        raise DNSException(f"The domain {domain} does not have an SOA record.")
+    except Exception as error:
+        raise DNSException(error)
+
+    return record
+
+
 def get_nameservers(
     domain: str,
+    *,
     approved_nameservers: list[str] = None,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
@@ -287,12 +347,11 @@ def get_nameservers(
 
     ns_records = []
     try:
-
         ns_records = query_dns(
             domain, "NS", nameservers=nameservers, resolver=resolver, timeout=timeout
         )
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
@@ -315,6 +374,7 @@ def get_nameservers(
 
 def get_mx_records(
     domain: str,
+    *,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -355,7 +415,7 @@ def get_mx_records(
             )
         hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:

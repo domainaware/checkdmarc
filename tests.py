@@ -40,14 +40,16 @@ class Test(unittest.TestCase):
             self.assertEqual(
                 result["spf"]["valid"],
                 True,
-                "Known good domain {0} failed SPF check:"
-                "\n\n{1}".format(result["domain"], spf_error),
+                "Known good domain {0} failed SPF check:\n\n{1}".format(
+                    result["domain"], spf_error
+                ),
             )
             self.assertEqual(
                 result["dmarc"]["valid"],
                 True,
-                "Known good domain {0} failed DMARC check:"
-                "\n\n{1}".format(result["domain"], dmarc_error),
+                "Known good domain {0} failed DMARC check:\n\n{1}".format(
+                    result["domain"], dmarc_error
+                ),
             )
 
     def testDMARCMixedFormatting(self):
@@ -187,7 +189,7 @@ class Test(unittest.TestCase):
         """SPF record syntax errors raise SPFSyntaxError"""
 
         spf_record = (
-            '"v=spf1 mx a:mail.cohaesio.net ' 'include: trustpilotservice.com ~all"'
+            '"v=spf1 mx a:mail.cohaesio.net include: trustpilotservice.com ~all"'
         )
         domain = "2021.ai"
         self.assertRaises(
@@ -288,7 +290,10 @@ class Test(unittest.TestCase):
         domain = "seanthegeek.net"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "{0} does not have any MX records".format(domain), results["warnings"]
+            "An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
+                domain
+            ),
+            results["warnings"],
         )
 
     def testSPFMissingARecord(self):
@@ -299,13 +304,15 @@ class Test(unittest.TestCase):
         domain = "cardinalhealth.net"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "cardinalhealth.net does not have any A/AAAA records", results["warnings"]
+            "An a mechanism points to cardinalhealth.net, but that domain/subdomain does not have any A/AAAA records.",
+            results["warnings"],
         )
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testDMARCPctLessThan100Warning(self):
         """A warning is issued if the DMARC pct value is less than 100"""
 
+        snipit = "pct value is less than 100"
         dmarc_record = (
             "v=DMARC1; p=none; sp=none; fo=1; pct=50; adkim=r; "
             "aspf=r; rf=afrf; ri=86400; "
@@ -314,7 +321,7 @@ class Test(unittest.TestCase):
         )
         domain = "energy.gov"
         results = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
-        self.assertIn("pct value is less than 100", results["warnings"][0])
+        self.assertTrue(any(snipit in s for s in results["warnings"]))
 
     def testInvalidDMARCURI(self):
         """An invalid DMARC report URI raises InvalidDMARCReportURI"""

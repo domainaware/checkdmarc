@@ -49,6 +49,13 @@
    :members:
 ```
 
+## checkdmarc.soa
+
+```{eval-rst}
+.. automodule:: checkdmarc.soa
+   :members:
+```
+
 ## checkdmarc.spf
 
 ```{eval-rst}

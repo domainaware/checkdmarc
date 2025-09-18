@@ -14,8 +14,14 @@ from io import StringIO
 from csv import DictWriter
 
 import checkdmarc._constants
-from checkdmarc.utils import get_base_domain, get_nameservers, DNSException
+from checkdmarc.utils import (
+    get_base_domain,
+    normalize_domain,
+    get_nameservers,
+    DNSException,
+)
 from checkdmarc.dnssec import test_dnssec
+from checkdmarc.soa import check_soa
 from checkdmarc.mta_sts import check_mta_sts
 from checkdmarc.smtp import check_mx
 from checkdmarc.spf import check_spf
@@ -43,6 +49,7 @@ __version__ = checkdmarc._constants.__version__
 
 def check_domains(
     domains: list[str],
+    *,
     parked: bool = False,
     approved_nameservers: list[str] = None,
     approved_mx_hostnames: bool = None,
@@ -87,7 +94,12 @@ def check_domains(
     """
     domains = sorted(
         list(
-            set(map(lambda d: d.rstrip(".\r\n").strip().lower().split(",")[0], domains))
+            set(
+                map(
+                    lambda d: normalize_domain(d.rstrip(".\r\n").strip().split(",")[0]),
+                    domains,
+                )
+            )
         )
     )
     not_domains = []
@@ -100,7 +112,7 @@ def check_domains(
         domains.remove("")
     results = []
     for domain in domains:
-        domain = domain.lower()
+        domain = normalize_domain(domain)
         logging.debug(f"Checking: {domain}")
 
         domain_results = OrderedDict(
@@ -108,6 +120,7 @@ def check_domains(
                 ("domain", domain),
                 ("base_domain", get_base_domain(domain)),
                 ("dnssec", None),
+                ("soa", {}),
                 ("ns", []),
                 ("mx", []),
             ]
@@ -115,6 +128,9 @@ def check_domains(
 
         domain_results["dnssec"] = test_dnssec(
             domain, nameservers=nameservers, timeout=timeout
+        )
+        domain_results["soa"] = check_soa(
+            domain, nameservers=nameservers, resolver=resolver, timeout=timeout
         )
 
         domain_results["ns"] = check_ns(
@@ -161,11 +177,11 @@ def check_domains(
         domain_results["smtp_tls_reporting"] = check_smtp_tls_reporting(
             domain, nameservers=nameservers, resolver=resolver, timeout=timeout
         )
-
         if bimi_selector is not None:
             domain_results["bimi"] = check_bimi(
                 domain,
                 selector=bimi_selector,
+                parsed_dmarc_record=domain_results["dmarc"],
                 include_tag_descriptions=include_tag_descriptions,
                 nameservers=nameservers,
                 resolver=resolver,
@@ -184,6 +200,7 @@ def check_domains(
 
 def check_ns(
     domain: str,
+    *,
     approved_nameservers: list[str] = None,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,

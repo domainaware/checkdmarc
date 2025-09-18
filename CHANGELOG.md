@@ -1,6 +1,138 @@
 Changelog
 =========
 
+5.10.11
+-------
+
+- Make BIMI error messages clearer
+
+5.10.10
+-------
+
+- Add missing periods at the end of BIMI error messages and warnings
+
+5.10.9
+------
+
+- Add periods at the end of error messages to make them nicer for web apps
+
+5.10.8
+------
+
+- Return the proper error message when checking an SOA record for a domain that exist
+
+5.10.7
+------
+
+- Set `use_signals=False` when using timeout decorator to allow it to be used in multithreaded applications such as web applications
+
+5.10.6
+-----
+
+- Fix BIMI certificate validation error generation, close #177
+- Add support for the avp bimi tag, closes  #179
+
+5.10.5
+------
+
+- Switch from DNS over UDP to DNS over TCP for DNSSEC and TLSA queries (Close #176)
+
+5.10.4
+------
+
+- Provide a clearer description of SPF void lookup warnings #173
+
+5.10.3
+------
+
+- Fix: SPF includes are not displayed beyond the 10 lookup limit (#172)
+- Add a warning when a size limit is added to a DMARC report destination
+
+5.10.2
+------
+
+- Fix BIMI cert expiration time display
+
+5.10.1
+------
+
+- Update the `cryptography` requirement to work with the BIMI module rewrite
+
+5.10.0
+------
+
+- Migrate BIMI certificate checks from pyOpenSSL to pyca/cryptography (PR #175 closes issues #171 and #174
+- Add SOA record parsing
+
+5.9.5
+-----
+
+- Better error message formatting for BIMI certificate domain mismatch errors
+
+5.9.4
+-----
+
+- Only parse the PSL once
+
+5.9.3
+-----
+
+- Clarify warnings for DMARC `p=none` and `sp=none`
+- Use a different warning if DMARC `pct` is set to `0`
+- Add `location` to the JSON output for BIMI
+
+5.9.2
+-----
+
+- Treat square aspect ratio as a recommendation rather than a requirement for BIMI SVG files (Close [#168](https://github.com/domainaware/checkdmarc/issues/168))
+
+5.9.1
+-----
+
+- Fix BIMI record parsing error introduced in `5.9.0`
+
+5.9.0
+-----
+
+Bug fixes:
+
+- Remove zero-width characters from domain inputs (Close #157)
+- Add a warning when the DMARC record `p` or `sp` value is `none` (Close #163)
+- Evaluate DMARC when checking BIMI
+- Do lot show a BIMI certificate warning when the `l` tag is set to `""`
+- Include warnings if a domain is using BIMI, but does not have an enforced DMARC policy
+
+New features:
+
+Parsed SPF record details are now provided even if it uses too many DNS lookups
+
+Having all of the details of a SPF record that is over the DNS lookup limit can help administrators see what portions of the SPF record are using the most lookups. The parsed record data can be found in the `parsed` key. In the event that a domain is over the lookup limit, `valid` will still be set to `false` and a helpful message describing the problem can be found in the `error` key. (Close #129)
+
+API changes:
+
+- Require keyword arguments to be passed as `keyword=value` pairs instead of positional arguments
+- Add the option `ignore_too_many_lookups` to `checkdmarc.spf.parse_spf_record()`
+  - This option will stop `checkdmarc.spf.parse_spf_record()` from rasing exceptions related to too many DNS lookups, in support of the new feature
+  - `False` by default to maintain backwards compatibility
+  - `checkdmarc.spf.check_spf()` uses this functionality to support the new feature
+
+5.8.9
+-----
+
+- Fix error message grammar
+
+5.8.8
+-----
+
+- Provide an easier to understand error message when a mark certificate is not is not issued by a recognized Mark Verifying Authority (MVA)
+- Bug fix: failure to download a BIMI image is noted in the `certificate` section instead of the `image` section
+
+5.8.7
+-----
+
+- Fix downloading of mta-sts policies (PR #166 closes #165)
+- Fix DMARC policy checks for parked domains/subdomains (PR #167)
+
 5.8.6
 -----
 

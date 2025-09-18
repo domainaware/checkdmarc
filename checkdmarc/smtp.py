@@ -16,6 +16,7 @@ from expiringdict import ExpiringDict
 
 from checkdmarc.utils import (
     DNSException,
+    normalize_domain,
     get_a_records,
     get_reverse_dns,
     get_mx_records,
@@ -47,10 +48,13 @@ class SMTPError(Exception):
 
 
 @timeout_decorator.timeout(
-    5, timeout_exception=SMTPError, exception_message="Connection timed out"
+    5,
+    timeout_exception=SMTPError,
+    exception_message="Connection timed out",
+    use_signals=False,
 )
 def test_tls(
-    hostname: str, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
+    hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
 ) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
@@ -64,6 +68,7 @@ def test_tls(
         bool: TLS supported
     """
     tls = False
+    hostname = normalize_domain(hostname)
     if cache:
         cached_result = cache.get(hostname)
         if cached_result is not None:
@@ -160,10 +165,13 @@ def test_tls(
 
 
 @timeout_decorator.timeout(
-    5, timeout_exception=SMTPError, exception_message="Connection timed out"
+    5,
+    timeout_exception=SMTPError,
+    exception_message="Connection timed out",
+    use_signals=False,
 )
 def test_starttls(
-    hostname: str, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
+    hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
 ) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support
@@ -176,6 +184,7 @@ def test_starttls(
     Returns:
         bool: STARTTLS supported
     """
+    hostname = normalize_domain(hostname)
     starttls = False
     if cache:
         cached_result = cache.get(hostname)
@@ -275,6 +284,7 @@ def test_starttls(
 
 def get_mx_hosts(
     domain: str,
+    *,
     skip_tls: bool = False,
     approved_hostnames: list[str] = None,
     mta_sts_mx_patterns: list[str] = None,
@@ -352,7 +362,7 @@ def get_mx_hosts(
                 warnings.append(f"Unapproved MX hostname: {hostname}")
         if mta_sts_mx_patterns:
             if not mx_in_mta_sts_patterns(hostname, mta_sts_mx_patterns):
-                warnings.append(f"{hostname} is not included in the MTA-STS " f"policy")
+                warnings.append(f"{hostname} is not included in the MTA-STS policy")
 
         try:
             dnssec = False
@@ -372,7 +382,7 @@ def get_mx_hosts(
             if len(tlsa_records) > 0:
                 host["tlsa"] = tlsa_records
             if len(host["addresses"]) == 0:
-                warnings.append(f"{hostname} does not have any A or AAAA DNS records")
+                warnings.append(f"{hostname} does not have any A or AAAA DNS records.")
         except Exception as e:
             if hostname.lower().endswith(".msv1.invalid"):
                 warnings.append(
@@ -392,7 +402,7 @@ def get_mx_hosts(
                 reverse_hostnames = []
             if len(reverse_hostnames) == 0:
                 warnings.append(
-                    f"{address} does not have any reverse DNS (PTR) " "records"
+                    f"{address} does not have any reverse DNS (PTR) records"
                 )
             for reverse_hostname in reverse_hostnames:
                 try:
@@ -418,11 +428,11 @@ def get_mx_hosts(
                 starttls = test_starttls(hostname, cache=STARTTLS_CACHE)
                 tls = starttls
                 if not starttls:
-                    warnings.append(f"STARTTLS is not supported on {hostname}")
+                    warnings.append(f"STARTTLS is not supported on {hostname}.")
                     tls = test_tls(hostname, cache=TLS_CACHE)
 
                     if not tls:
-                        warnings.append(f"SSL/TLS is not supported on " f"{hostname}")
+                        warnings.append(f"SSL/TLS is not supported on {hostname}.")
                 host["tls"] = tls
                 host["starttls"] = starttls
             except DNSException as warning:
@@ -444,6 +454,7 @@ def get_mx_hosts(
 
 def check_mx(
     domain: str,
+    *,
     approved_mx_hostnames: list[str] = None,
     mta_sts_mx_patterns: list[str] = None,
     skip_tls: bool = False,
