@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.10.11 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.10.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=058fb1f9"></script>
+      <script src="../../_static/documentation_options.js?v=32773b93"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -290,8 +290,22 @@
                 <span class="k">raise</span> <span class="n">UndecodableCharactersInTXTRecord</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;A TXT record at </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> contains undecodable characters.&quot;</span>
                 <span class="p">)</span>
-            <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">txt_prefix</span><span class="p">):</span>
+            <span class="c1"># https://datatracker.ietf.org/doc/html/rfc7208#section-4.5</span>
+            <span class="c1">#</span>
+            <span class="c1"># Starting with the set of records that were returned by the lookup,</span>
+            <span class="c1"># discard records that do not begin with a version section of exactly</span>
+            <span class="c1"># &quot;v=spf1&quot;.  Note that the version section is terminated by either an</span>
+            <span class="c1"># SP character or the end of the record.  As an example, a record with</span>
+            <span class="c1">#  a version section of &quot;v=spf10&quot; does not match and is discarded.</span>
+            <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">txt_prefix</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">record</span> <span class="o">==</span> <span class="n">txt_prefix</span><span class="p">:</span>
                 <span class="n">spf_txt_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">txt_prefix</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span>
+                    <span class="s2">&quot;According to RFC7208 section 4.5, a SPF record should be&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; equal to </span><span class="si">{</span><span class="n">txt_prefix</span><span class="si">}</span><span class="s2"> or begin with </span><span class="si">{</span><span class="n">txt_prefix</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="s2">&quot;followed by a space.&quot;</span><span class="p">,</span>
+                    <span class="n">domain</span><span class="p">,</span>
+                <span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spf_txt_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">MultipleSPFRTXTRecords</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> has multiple SPF TXT records&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">spf_txt_records</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -302,6 +316,8 @@
         <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not have a SPF TXT record.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The domain </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">SPFRecordNotFound</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">error</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 

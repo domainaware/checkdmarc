@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.dmarc &mdash; checkdmarc 5.10.11 documentation</title>
+  <title>checkdmarc.dmarc &mdash; checkdmarc 5.10.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=058fb1f9"></script>
+      <script src="../../_static/documentation_options.js?v=32773b93"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -336,7 +336,7 @@
     <span class="p">),</span>
     <span class="n">p</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Requested Mail Receiver Policy&quot;</span><span class="p">,</span>
-        <span class="n">reqired</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Specifies the policy to &quot;</span>
         <span class="s2">&quot;be enacted by the &quot;</span>
         <span class="s2">&quot;Receiver at the &quot;</span>
@@ -490,7 +490,7 @@
     <span class="p">),</span>
     <span class="n">v</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Version&quot;</span><span class="p">,</span>
-        <span class="n">reqired</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Identifies the record &quot;</span>
         <span class="s2">&quot;retrieved as a DMARC &quot;</span>
         <span class="s2">&quot;record. It MUST have the &quot;</span>
@@ -543,7 +543,7 @@
                 <span class="n">dmarc_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">record</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">txt_prefix</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">DMARCRecordStartsWithWhitespace</span><span class="p">(</span>
-                    <span class="s2">&quot;Found a DMARC record that starts with whitespace. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Found a DMARC record at </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2"> that starts with whitespace. &quot;</span>
                     <span class="s2">&quot;Please remove the whitespace, as some implementations &quot;</span>
                     <span class="s2">&quot;may not process it correctly.&quot;</span>
                 <span class="p">)</span>
