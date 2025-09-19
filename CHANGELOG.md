@@ -1,6 +1,13 @@
 Changelog
 =========
 
+5.10.12
+-------
+
+- Proper checking for the start of an SPF record (PR #184)
+- Improve error messages and fix typos (Close issue #182)
+- Remove warning when no MX records are found
+
 5.10.11
 -------
 
