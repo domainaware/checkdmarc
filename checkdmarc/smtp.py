@@ -339,8 +339,6 @@ def get_mx_hosts(
         )
     if parked and len(hosts) > 0:
         warnings.append("MX records found on parked domains")
-    elif not parked and len(hosts) == 0:
-        warnings.append("No MX records found. Is the domain parked?")
 
     if approved_hostnames:
         approved_hostnames = list(map(lambda h: h.lower(), approved_hostnames))
