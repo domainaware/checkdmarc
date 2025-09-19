@@ -431,7 +431,7 @@ def _query_dmarc_record(
                 dmarc_records.append(record)
             elif record.strip().startswith(txt_prefix):
                 raise DMARCRecordStartsWithWhitespace(
-                    "Found a DMARC record that starts with whitespace. "
+                    f"Found a DMARC record at {target} that starts with whitespace. "
                     "Please remove the whitespace, as some implementations "
                     "may not process it correctly."
                 )
