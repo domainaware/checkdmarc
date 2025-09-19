@@ -224,7 +224,7 @@ dmarc_tags = OrderedDict(
     ),
     p=OrderedDict(
         name="Requested Mail Receiver Policy",
-        reqired=True,
+        required=True,
         description="Specifies the policy to "
         "be enacted by the "
         "Receiver at the "
@@ -378,7 +378,7 @@ dmarc_tags = OrderedDict(
     ),
     v=OrderedDict(
         name="Version",
-        reqired=True,
+        required=True,
         description="Identifies the record "
         "retrieved as a DMARC "
         "record. It MUST have the "
