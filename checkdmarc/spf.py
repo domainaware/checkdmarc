@@ -195,13 +195,14 @@ def query_spf_record(
             # "v=spf1".  Note that the version section is terminated by either an
             # SP character or the end of the record.  As an example, a record with
             #  a version section of "v=spf10" does not match and is discarded.
-            if record.startswith(txt_prefix + " ") or record == txt_prefix:
+            if record.startswith(f"{txt_prefix} ") or record == txt_prefix:
                 spf_txt_records.append(record)
             elif record.startswith(txt_prefix):
                 raise SPFRecordNotFound(
                     "According to RFC7208 section 4.5, a SPF record should be"
                     f" equal to {txt_prefix} or begin with {txt_prefix} "
-                    "followed by a space.", domain
+                    "followed by a space.",
+                    domain,
                 )
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords(f"{domain} has multiple SPF TXT records")
