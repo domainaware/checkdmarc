@@ -188,8 +188,22 @@ def query_spf_record(
                 raise UndecodableCharactersInTXTRecord(
                     f"A TXT record at {domain} contains undecodable characters."
                 )
-            if record.startswith(txt_prefix):
+            # https://datatracker.ietf.org/doc/html/rfc7208#section-4.5
+            #
+            # Starting with the set of records that were returned by the lookup,
+            # discard records that do not begin with a version section of exactly
+            # "v=spf1".  Note that the version section is terminated by either an
+            # SP character or the end of the record.  As an example, a record with
+            #  a version section of "v=spf10" does not match and is discarded.
+            if record.startswith(f"{txt_prefix} ") or record == txt_prefix:
                 spf_txt_records.append(record)
+            elif record.startswith(txt_prefix):
+                raise SPFRecordNotFound(
+                    "According to RFC7208 section 4.5, a SPF record should be"
+                    f" equal to {txt_prefix} or begin with {txt_prefix} "
+                    "followed by a space.",
+                    domain,
+                )
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords(f"{domain} has multiple SPF TXT records")
         elif len(spf_txt_records) == 1:
@@ -200,6 +214,8 @@ def query_spf_record(
         raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record.", domain)
     except dns.resolver.NXDOMAIN:
         raise SPFRecordNotFound(f"The domain {domain} does not exist.", domain)
+    except SPFRecordNotFound as error:
+        raise error
     except Exception as error:
         raise SPFRecordNotFound(error, domain)
 
