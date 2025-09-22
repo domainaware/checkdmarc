@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+- Fix macOS multiprocessing compatibility with timeout decorators
+
 5.10.12
 -------
 
