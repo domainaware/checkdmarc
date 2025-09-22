@@ -43,6 +43,36 @@ TLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 STARTTLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
 
 
+def _get_timeout_method():
+    """
+    Determine the best timeout method based on platform and environment.
+    
+    Returns:
+        bool: True to use signals, False to use multiprocessing
+    """
+    # On macOS, use signals to avoid multiprocessing spawn issues
+    if platform.system() == "Darwin":
+        return True
+    
+    # On Windows, signals are not available, so use multiprocessing
+    if platform.system() == "Windows":
+        return False
+    
+    # On Linux and other Unix-like systems, prefer signals for better performance
+    # unless we detect we're in a multithreaded environment
+    try:
+        # Check if we're in a multithreaded environment by looking for threading
+        import threading
+        if threading.active_count() > 1:
+            # Multiple threads detected, use multiprocessing to avoid signal conflicts
+            return False
+    except ImportError:
+        pass
+    
+    # Default to signals for better performance on Unix-like systems
+    return True
+
+
 class SMTPError(Exception):
     """Raised when SMTP error occurs"""
 
@@ -51,7 +81,7 @@ class SMTPError(Exception):
     5,
     timeout_exception=SMTPError,
     exception_message="Connection timed out",
-    use_signals=False,
+    use_signals=_get_timeout_method(),
 )
 def test_tls(
     hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
@@ -168,7 +198,7 @@ def test_tls(
     5,
     timeout_exception=SMTPError,
     exception_message="Connection timed out",
-    use_signals=False,
+    use_signals=_get_timeout_method(),
 )
 def test_starttls(
     hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
