@@ -9,13 +9,13 @@ import re
 from collections import OrderedDict
 
 import dns
-from pyleri import Grammar, Regex, Sequence, List
+from pyleri import Grammar, List, Regex, Sequence
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
 from checkdmarc.utils import (
-    WSP_REGEX,
-    MAILTO_REGEX_STRING,
     HTTPS_REGEX,
+    MAILTO_REGEX_STRING,
+    WSP_REGEX,
     normalize_domain,
     query_dns,
 )
@@ -213,7 +213,7 @@ def query_smtp_tls_reporting_record(
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
-            raise SMTPTLSReportingRecordNotFound(f"The domain {domain} does not exist.")
+            raise SMTPTLSReportingRecordNotFound("The domain does not exist.")
         except Exception as error:
             raise SMTPTLSReportingRecordNotFound(error)
     except Exception as error:

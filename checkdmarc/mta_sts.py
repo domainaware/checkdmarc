@@ -11,13 +11,13 @@ import dns
 import requests
 from pyleri import (
     Grammar,
+    List,
     Regex,
     Sequence,
-    List,
 )
 
-from checkdmarc.utils import normalize_domain, query_dns, WSP_REGEX
-from checkdmarc._constants import SYNTAX_ERROR_MARKER, USER_AGENT, DEFAULT_HTTP_TIMEOUT
+from checkdmarc._constants import DEFAULT_HTTP_TIMEOUT, SYNTAX_ERROR_MARKER, USER_AGENT
+from checkdmarc.utils import WSP_REGEX, normalize_domain, query_dns
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -215,7 +215,7 @@ def query_mta_sts_record(
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
-            raise MTASTSRecordNotFound(f"The domain {domain} does not exist.")
+            raise MTASTSRecordNotFound("The domain does not exist.")
         except Exception as error:
             raise MTASTSRecordNotFound(error)
     except Exception as error:

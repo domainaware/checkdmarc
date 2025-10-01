@@ -3,15 +3,15 @@
 
 from __future__ import annotations
 
-import logging
-from datetime import datetime, timedelta, timezone
-from typing import Union
-import re
-from collections import OrderedDict
-from sys import getsizeof
 import base64
 import gzip
 import hashlib
+import logging
+import re
+from collections import OrderedDict
+from datetime import datetime, timedelta, timezone
+from sys import getsizeof
+from typing import Union
 
 try:
     from importlib.resources import files
@@ -23,33 +23,31 @@ except ImportError:
 import dns
 import requests
 import xmltodict
-from pyleri import Grammar, Regex, Sequence, List
-
 from cryptography import x509
 from cryptography.x509 import (
     ExtensionNotFound,
-    NameOID,
     ExtensionOID,
+    NameOID,
     ObjectIdentifier,
     load_pem_x509_certificates,
 )
-
 from cryptography.x509.verification import (
-    Store,
-    PolicyBuilder,
-    ExtensionPolicy,
     Criticality,
+    ExtensionPolicy,
+    PolicyBuilder,
+    Store,
     VerificationError,
 )
+from pyleri import Grammar, List, Regex, Sequence
 
 import checkdmarc.resources
-from checkdmarc._constants import SYNTAX_ERROR_MARKER, USER_AGENT, DEFAULT_HTTP_TIMEOUT
+from checkdmarc._constants import DEFAULT_HTTP_TIMEOUT, SYNTAX_ERROR_MARKER, USER_AGENT
 from checkdmarc.utils import (
-    WSP_REGEX,
     HTTPS_REGEX,
-    query_dns,
-    normalize_domain,
+    WSP_REGEX,
     get_base_domain,
+    normalize_domain,
+    query_dns,
 )
 
 """Copyright 2019-2023 Sean Whalen
@@ -707,7 +705,7 @@ def _query_bimi_record(
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
-            raise BIMIRecordNotFound(f"The domain {domain} does not exist.")
+            raise BIMIRecordNotFound("The domain does not exist.")
         except Exception as error:
             BIMIRecordNotFound(error)
 
@@ -770,7 +768,7 @@ def query_bimi_record(
             if root_record.startswith("v=BIMI1"):
                 warnings.append(f"BIMI record at root of {domain} has no effect.")
     except dns.resolver.NXDOMAIN:
-        raise BIMIRecordNotFound(f"The domain {domain} does not exist.")
+        raise BIMIRecordNotFound("The domain does not exist.")
     except dns.exception.DNSException:
         pass
 

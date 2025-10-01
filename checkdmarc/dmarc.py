@@ -11,22 +11,21 @@ from typing import Union
 import dns
 from pyleri import (
     Grammar,
+    List,
     Regex,
     Sequence,
-    List,
 )
 
-
-from checkdmarc.utils import (
-    WSP_REGEX,
-    query_dns,
-    normalize_domain,
-    get_base_domain,
-    MAILTO_REGEX,
-    DNSException,
-)
-from checkdmarc.utils import get_mx_records
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
+from checkdmarc.utils import (
+    MAILTO_REGEX,
+    WSP_REGEX,
+    DNSException,
+    get_base_domain,
+    get_mx_records,
+    normalize_domain,
+    query_dns,
+)
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -549,7 +548,7 @@ def query_dmarc_record(
             if root_record.startswith("v=DMARC1"):
                 warnings.append(f"DMARC record at root of {domain} has no effect.")
     except dns.resolver.NXDOMAIN:
-        raise DMARCRecordNotFound(f"The domain {domain} does not exist.")
+        raise DMARCRecordNotFound("The domain does not exist.")
     except dns.exception.DNSException:
         pass
 
@@ -563,9 +562,12 @@ def query_dmarc_record(
         )
         location = base_domain
     if record is None:
-        raise DMARCRecordNotFound(
-            "A DMARC record does not exist for this domain or its base domain."
-        )
+        error_str = "A DMARC record does not exist for this "
+        if domain == base_domain:
+            error_str += "domain."
+        else:
+            error_str += "subdomain or its base domain."
+        raise DMARCRecordNotFound(error_str)
 
     return OrderedDict(
         [("record", record), ("location", location), ("warnings", warnings)]

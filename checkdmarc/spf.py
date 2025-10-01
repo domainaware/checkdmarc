@@ -3,23 +3,23 @@
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import re
 from collections import OrderedDict
 
 import dns
-import ipaddress
-from pyleri import Grammar, Regex, Sequence, Repeat
+from pyleri import Grammar, Regex, Repeat, Sequence
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
 from checkdmarc.utils import (
-    normalize_domain,
-    query_dns,
-    get_a_records,
-    get_txt_records,
-    get_mx_records,
     DNSException,
     DNSExceptionNXDOMAIN,
+    get_a_records,
+    get_mx_records,
+    get_txt_records,
+    normalize_domain,
+    query_dns,
 )
 
 """Copyright 2019-2023 Sean Whalen
@@ -186,7 +186,7 @@ def query_spf_record(
         for record in answers:
             if record == "Undecodable characters":
                 raise UndecodableCharactersInTXTRecord(
-                    f"A TXT record at {domain} contains undecodable characters."
+                    "A TXT record contains undecodable characters."
                 )
             # https://datatracker.ietf.org/doc/html/rfc7208#section-4.5
             #
@@ -205,15 +205,15 @@ def query_spf_record(
                     domain,
                 )
         if len(spf_txt_records) > 1:
-            raise MultipleSPFRTXTRecords(f"{domain} has multiple SPF TXT records")
+            raise MultipleSPFRTXTRecords("The domain has multiple SPF TXT records")
         elif len(spf_txt_records) == 1:
             spf_record = spf_txt_records[0]
         if spf_record is None:
-            raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record.", domain)
+            raise SPFRecordNotFound("An SPF record does not exist.", domain)
     except dns.resolver.NoAnswer:
-        raise SPFRecordNotFound(f"{domain} does not have a SPF TXT record.", domain)
+        raise SPFRecordNotFound("An SPF record does not exist.", domain)
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordNotFound(f"The domain {domain} does not exist.", domain)
+        raise SPFRecordNotFound("The domain does not exist.", domain)
     except SPFRecordNotFound as error:
         raise error
     except Exception as error:
