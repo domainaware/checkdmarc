@@ -30,6 +30,7 @@ jobs:
         make html
     - name: Check code style
       run: |
+        ruff --check --show-errors
         black --check --diff .
     - name: Run unit tests
       run: |
