@@ -1,4 +1,14 @@
 {
+     "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter",
+      "editor.formatOnSave": true,
+
+    // Let Ruff handle lint fixes + import sorting on save
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
     "cSpell.words": [
         "adkim",
         "afrf",
