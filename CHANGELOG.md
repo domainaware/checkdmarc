@@ -1,10 +1,12 @@
 Changelog
 =========
 
-Unreleased
-----------
+5.10.13
+-------
 
-- Fix macOS multiprocessing compatibility with timeout decorators
+- Fix macOS multiprocessing compatibility with timeout decorators (PR #186 closes #185)
+- Updated dependencies to allow cryptography 46 to be used (PR #187)
+- Make error messages consistent
 
 5.10.12
 -------

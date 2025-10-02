@@ -780,8 +780,7 @@ def query_bimi_record(
     if record is None:
         if domain == base_domain:
             raise BIMIRecordNotFound(
-                f"A BIMI record does not exist at the {selector} selector for "
-                f"this domain."
+                f"A BIMI record does not exist at the {selector} selector."
             )
         else:
             raise BIMIRecordNotFound(

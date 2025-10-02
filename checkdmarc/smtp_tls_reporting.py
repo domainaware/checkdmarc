@@ -221,7 +221,7 @@ def query_smtp_tls_reporting_record(
 
     if sts_record is None:
         raise SMTPTLSReportingRecordNotFound(
-            "An SMTP TLS Reporting DNS record does not exist for this domain."
+            "An SMTP TLS Reporting record does not exist."
         )
 
     return OrderedDict([("record", sts_record), ("warnings", warnings)])

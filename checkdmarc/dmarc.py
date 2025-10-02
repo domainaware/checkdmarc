@@ -566,7 +566,7 @@ def query_dmarc_record(
         if domain == base_domain:
             error_str += "."
         else:
-            error_str += " for this subdomain or its base domain."
+            error_str += "for this subdomain or its base domain."
         raise DMARCRecordNotFound(error_str)
 
     return OrderedDict(
