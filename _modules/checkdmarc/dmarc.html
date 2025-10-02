@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.dmarc &mdash; checkdmarc 5.10.12 documentation</title>
+  <title>checkdmarc.dmarc &mdash; checkdmarc 5.10.13 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=32773b93"></script>
+      <script src="../../_static/documentation_options.js?v=960fbf8a"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -84,22 +84,21 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Grammar</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
     <span class="n">Regex</span><span class="p">,</span>
     <span class="n">Sequence</span><span class="p">,</span>
-    <span class="n">List</span><span class="p">,</span>
 <span class="p">)</span>
 
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">WSP_REGEX</span><span class="p">,</span>
-    <span class="n">query_dns</span><span class="p">,</span>
-    <span class="n">normalize_domain</span><span class="p">,</span>
-    <span class="n">get_base_domain</span><span class="p">,</span>
-    <span class="n">MAILTO_REGEX</span><span class="p">,</span>
-    <span class="n">DNSException</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_mx_records</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SYNTAX_ERROR_MARKER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MAILTO_REGEX</span><span class="p">,</span>
+    <span class="n">WSP_REGEX</span><span class="p">,</span>
+    <span class="n">DNSException</span><span class="p">,</span>
+    <span class="n">get_base_domain</span><span class="p">,</span>
+    <span class="n">get_mx_records</span><span class="p">,</span>
+    <span class="n">normalize_domain</span><span class="p">,</span>
+    <span class="n">query_dns</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="sd">&quot;&quot;&quot;Copyright 2019-2023 Sean Whalen</span>
 
@@ -663,7 +662,7 @@
             <span class="k">if</span> <span class="n">root_record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=DMARC1&quot;</span><span class="p">):</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DMARC record at root of </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> has no effect.&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The domain </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="s2">&quot;The domain does not exist.&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span><span class="p">:</span>
         <span class="k">pass</span>
 
@@ -677,9 +676,12 @@
         <span class="p">)</span>
         <span class="n">location</span> <span class="o">=</span> <span class="n">base_domain</span>
     <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span>
-            <span class="s2">&quot;A DMARC record does not exist for this domain or its base domain.&quot;</span>
-        <span class="p">)</span>
+        <span class="n">error_str</span> <span class="o">=</span> <span class="s2">&quot;A DMARC record does not exist&quot;</span>
+        <span class="k">if</span> <span class="n">domain</span> <span class="o">==</span> <span class="n">base_domain</span><span class="p">:</span>
+            <span class="n">error_str</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">error_str</span> <span class="o">+=</span> <span class="s2">&quot;for this subdomain or its base domain.&quot;</span>
+        <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="n">error_str</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span>
         <span class="p">[(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="n">location</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)]</span>

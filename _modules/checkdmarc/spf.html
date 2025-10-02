@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.10.12 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.10.13 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=32773b93"></script>
+      <script src="../../_static/documentation_options.js?v=960fbf8a"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -76,23 +76,23 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">ipaddress</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">ipaddress</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grammar</span><span class="p">,</span> <span class="n">Regex</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Repeat</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grammar</span><span class="p">,</span> <span class="n">Regex</span><span class="p">,</span> <span class="n">Repeat</span><span class="p">,</span> <span class="n">Sequence</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SYNTAX_ERROR_MARKER</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">normalize_domain</span><span class="p">,</span>
-    <span class="n">query_dns</span><span class="p">,</span>
-    <span class="n">get_a_records</span><span class="p">,</span>
-    <span class="n">get_txt_records</span><span class="p">,</span>
-    <span class="n">get_mx_records</span><span class="p">,</span>
     <span class="n">DNSException</span><span class="p">,</span>
     <span class="n">DNSExceptionNXDOMAIN</span><span class="p">,</span>
+    <span class="n">get_a_records</span><span class="p">,</span>
+    <span class="n">get_mx_records</span><span class="p">,</span>
+    <span class="n">get_txt_records</span><span class="p">,</span>
+    <span class="n">normalize_domain</span><span class="p">,</span>
+    <span class="n">query_dns</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="sd">&quot;&quot;&quot;Copyright 2019-2023 Sean Whalen</span>
@@ -288,7 +288,7 @@
         <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">answers</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">record</span> <span class="o">==</span> <span class="s2">&quot;Undecodable characters&quot;</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">UndecodableCharactersInTXTRecord</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;A TXT record at </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> contains undecodable characters.&quot;</span>
+                    <span class="s2">&quot;A TXT record contains undecodable characters.&quot;</span>
                 <span class="p">)</span>
             <span class="c1"># https://datatracker.ietf.org/doc/html/rfc7208#section-4.5</span>
             <span class="c1">#</span>
@@ -307,15 +307,15 @@
                     <span class="n">domain</span><span class="p">,</span>
                 <span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spf_txt_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">MultipleSPFRTXTRecords</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> has multiple SPF TXT records&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">MultipleSPFRTXTRecords</span><span class="p">(</span><span class="s2">&quot;The domain has multiple SPF TXT records&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">spf_txt_records</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">spf_record</span> <span class="o">=</span> <span class="n">spf_txt_records</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">spf_record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not have a SPF TXT record.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="s2">&quot;An SPF record does not exist.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not have a SPF TXT record.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="s2">&quot;An SPF record does not exist.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The domain </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="s2">&quot;The domain does not exist.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">SPFRecordNotFound</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">error</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>

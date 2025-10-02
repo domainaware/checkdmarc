@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.smtp &mdash; checkdmarc 5.10.12 documentation</title>
+  <title>checkdmarc.smtp &mdash; checkdmarc 5.10.13 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=32773b93"></script>
+      <script src="../../_static/documentation_options.js?v=960fbf8a"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -116,6 +116,37 @@
 <span class="n">STARTTLS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span><span class="n">max_len</span><span class="o">=</span><span class="mi">200000</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="mi">1800</span><span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_timeout_method</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the best timeout method based on platform and environment.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True to use signals, False to use multiprocessing</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># On macOS, use signals to avoid multiprocessing spawn issues</span>
+    <span class="k">if</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Darwin&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="c1"># On Windows, signals are not available, so use multiprocessing</span>
+    <span class="k">if</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Windows&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># On Linux and other Unix-like systems, prefer signals for better performance</span>
+    <span class="c1"># unless we detect we&#39;re in a multithreaded environment</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Check if we&#39;re in a multithreaded environment by looking for threading</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+
+        <span class="k">if</span> <span class="n">threading</span><span class="o">.</span><span class="n">active_count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># Multiple threads detected, use multiprocessing to avoid signal conflicts</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Default to signals for better performance on Unix-like systems</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
 <div class="viewcode-block" id="SMTPError">
 <a class="viewcode-back" href="../../api.html#checkdmarc.smtp.SMTPError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SMTPError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
@@ -129,7 +160,7 @@
     <span class="mi">5</span><span class="p">,</span>
     <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>
     <span class="n">exception_message</span><span class="o">=</span><span class="s2">&quot;Connection timed out&quot;</span><span class="p">,</span>
-    <span class="n">use_signals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_signals</span><span class="o">=</span><span class="n">_get_timeout_method</span><span class="p">(),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_tls</span><span class="p">(</span>
     <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ssl_context</span><span class="p">:</span> <span class="n">ssl</span><span class="o">.</span><span class="n">SSLContext</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">ExpiringDict</span> <span class="o">=</span> <span class="kc">None</span>
@@ -249,7 +280,7 @@
     <span class="mi">5</span><span class="p">,</span>
     <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>
     <span class="n">exception_message</span><span class="o">=</span><span class="s2">&quot;Connection timed out&quot;</span><span class="p">,</span>
-    <span class="n">use_signals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_signals</span><span class="o">=</span><span class="n">_get_timeout_method</span><span class="p">(),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_starttls</span><span class="p">(</span>
     <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ssl_context</span><span class="p">:</span> <span class="n">ssl</span><span class="o">.</span><span class="n">SSLContext</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">ExpiringDict</span> <span class="o">=</span> <span class="kc">None</span>

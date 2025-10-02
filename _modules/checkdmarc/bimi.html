@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.bimi &mdash; checkdmarc 5.10.12 documentation</title>
+  <title>checkdmarc.bimi &mdash; checkdmarc 5.10.13 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=32773b93"></script>
+      <script src="../../_static/documentation_options.js?v=960fbf8a"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -76,15 +76,15 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sys</span><span class="w"> </span><span class="kn">import</span> <span class="n">getsizeof</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">gzip</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sys</span><span class="w"> </span><span class="kn">import</span> <span class="n">getsizeof</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">files</span>
@@ -96,33 +96,31 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xmltodict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grammar</span><span class="p">,</span> <span class="n">Regex</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography</span><span class="w"> </span><span class="kn">import</span> <span class="n">x509</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.x509</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ExtensionNotFound</span><span class="p">,</span>
-    <span class="n">NameOID</span><span class="p">,</span>
     <span class="n">ExtensionOID</span><span class="p">,</span>
+    <span class="n">NameOID</span><span class="p">,</span>
     <span class="n">ObjectIdentifier</span><span class="p">,</span>
     <span class="n">load_pem_x509_certificates</span><span class="p">,</span>
 <span class="p">)</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.x509.verification</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">Store</span><span class="p">,</span>
-    <span class="n">PolicyBuilder</span><span class="p">,</span>
-    <span class="n">ExtensionPolicy</span><span class="p">,</span>
     <span class="n">Criticality</span><span class="p">,</span>
+    <span class="n">ExtensionPolicy</span><span class="p">,</span>
+    <span class="n">PolicyBuilder</span><span class="p">,</span>
+    <span class="n">Store</span><span class="p">,</span>
     <span class="n">VerificationError</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grammar</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Regex</span><span class="p">,</span> <span class="n">Sequence</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">checkdmarc.resources</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span> <span class="n">USER_AGENT</span><span class="p">,</span> <span class="n">DEFAULT_HTTP_TIMEOUT</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_HTTP_TIMEOUT</span><span class="p">,</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span> <span class="n">USER_AGENT</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">WSP_REGEX</span><span class="p">,</span>
     <span class="n">HTTPS_REGEX</span><span class="p">,</span>
-    <span class="n">query_dns</span><span class="p">,</span>
-    <span class="n">normalize_domain</span><span class="p">,</span>
+    <span class="n">WSP_REGEX</span><span class="p">,</span>
     <span class="n">get_base_domain</span><span class="p">,</span>
+    <span class="n">normalize_domain</span><span class="p">,</span>
+    <span class="n">query_dns</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="sd">&quot;&quot;&quot;Copyright 2019-2023 Sean Whalen</span>
@@ -813,7 +811,7 @@
         <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">BIMIRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The domain </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">BIMIRecordNotFound</span><span class="p">(</span><span class="s2">&quot;The domain does not exist.&quot;</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
             <span class="n">BIMIRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
@@ -878,7 +876,7 @@
             <span class="k">if</span> <span class="n">root_record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=BIMI1&quot;</span><span class="p">):</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;BIMI record at root of </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> has no effect.&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">BIMIRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The domain </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">BIMIRecordNotFound</span><span class="p">(</span><span class="s2">&quot;The domain does not exist.&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span><span class="p">:</span>
         <span class="k">pass</span>
 
@@ -890,8 +888,7 @@
     <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">domain</span> <span class="o">==</span> <span class="n">base_domain</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BIMIRecordNotFound</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;A BIMI record does not exist at the </span><span class="si">{</span><span class="n">selector</span><span class="si">}</span><span class="s2"> selector for &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;this domain.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;A BIMI record does not exist at the </span><span class="si">{</span><span class="n">selector</span><span class="si">}</span><span class="s2"> selector.&quot;</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BIMIRecordNotFound</span><span class="p">(</span>
