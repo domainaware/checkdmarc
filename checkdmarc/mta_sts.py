@@ -222,9 +222,7 @@ def query_mta_sts_record(
         raise MTASTSRecordNotFound(error)
 
     if sts_record is None:
-        raise MTASTSRecordNotFound(
-            "An MTA-STS DNS record does not exist."
-        )
+        raise MTASTSRecordNotFound("An MTA-STS DNS record does not exist.")
 
     return OrderedDict([("record", sts_record), ("warnings", warnings)])
 
