@@ -215,6 +215,18 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls  wellforce.org",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "wellforce.org",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "tests.py",
             "type": "debugpy",
             "request": "launch",

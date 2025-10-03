@@ -462,7 +462,9 @@ def parse_spf_record(
                     raise _SPFDuplicateInclude(f"Duplicate include: {value.lower()}")
                 seen.append(value.lower())
                 if "%{" in value:
-                    include = OrderedDict([("domain", value)])
+                    include = OrderedDict(
+                        [("domain", value), ("dns_lookups", 1), ("dns_void_lookups", 0)]
+                    )
                     parsed["include"].append(include)
                     continue
                 try:

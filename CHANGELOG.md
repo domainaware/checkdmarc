@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.14
+-------
+
+- Include lookup counts under `include` SPF mechanisms that use SPF macros
+
 5.10.13
 -------
 
