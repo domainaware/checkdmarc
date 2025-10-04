@@ -629,11 +629,11 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         if logotype is not None:
             metadata["logotype_sha256"] = hashlib.sha256(logotype).hexdigest()
         metadata["warnings"] = warnings
-        metadata["Validation_errors"] = validation_errors
+        metadata["validation_errors"] = validation_errors
     except Exception as e:
         validation_errors.append(str(e))
         metadata["valid"] = False
-        metadata["Validation_errors"] = validation_errors
+        metadata["validation_errors"] = validation_errors
     return metadata
 
 

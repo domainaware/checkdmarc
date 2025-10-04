@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.15
+-------
+
+- Rename `Validation_errors` key to `validation_errors` in BIMI results
+
 5.10.14
 -------
 
