@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.10.13 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.10.15 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=960fbf8a"></script>
+      <script src="../../_static/documentation_options.js?v=f9feab5e"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -567,7 +567,9 @@
                     <span class="k">raise</span> <span class="n">_SPFDuplicateInclude</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duplicate include: </span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
                 <span class="k">if</span> <span class="s2">&quot;%{&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
-                    <span class="n">include</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">)])</span>
+                    <span class="n">include</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+                        <span class="p">[(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;dns_void_lookups&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+                    <span class="p">)</span>
                     <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;include&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">include</span><span class="p">)</span>
                     <span class="k">continue</span>
                 <span class="k">try</span><span class="p">:</span>
