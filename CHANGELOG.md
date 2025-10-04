@@ -1,6 +1,11 @@
 Changelog
 =========
 
+5.10.16
+-------
+
+- Ensure `valid` is set to `False` if a mark validation certificate was not issues by a recognized Mark Verifying Authority (MVA)
+
 5.10.15
 -------
 

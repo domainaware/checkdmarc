@@ -510,6 +510,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
         if "all candidates exhausted with no interior errors" in e_str:
             e_str = "The certificate was not issued by a recognized Mark Verifying Authority (MVA)."
             validation_errors.append(e_str)
+            valid = False
     not_valid_before_timestamp = vmc.not_valid_before_utc.strftime("%Y-%m-%d %H:%M:%SZ")
     not_valid_after_timestamp = vmc.not_valid_after_utc.strftime("%Y-%m-%d %H:%M:%SZ")
     not_yet_valid = datetime.now(timezone.utc) < vmc.not_valid_before_utc
