@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.smtp &mdash; checkdmarc 5.10.16 documentation</title>
+  <title>checkdmarc.smtp &mdash; checkdmarc 5.11.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=ce062134"></script>
+      <script src="../../_static/documentation_options.js?v=7c68a32b"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -43,6 +43,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../environment_variables.html">Environment variables</a></li>
 </ul>
 
         </div>
@@ -96,6 +97,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.mta_sts</span><span class="w"> </span><span class="kn">import</span> <span class="n">mx_in_mta_sts_patterns</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.dnssec</span><span class="w"> </span><span class="kn">import</span> <span class="n">test_dnssec</span><span class="p">,</span> <span class="n">get_tlsa_records</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMTP_CACHE_MAX_LEN</span><span class="p">,</span> <span class="n">SMTP_CACHE_MAX_AGE_SECONDS</span>
 
 <span class="sd">&quot;&quot;&quot;Copyright 2019-2023 Sean Whalen</span>
 
@@ -112,8 +114,12 @@
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
 
-<span class="n">TLS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span><span class="n">max_len</span><span class="o">=</span><span class="mi">200000</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="mi">1800</span><span class="p">)</span>
-<span class="n">STARTTLS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span><span class="n">max_len</span><span class="o">=</span><span class="mi">200000</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="mi">1800</span><span class="p">)</span>
+<span class="n">TLS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span>
+    <span class="n">max_len</span><span class="o">=</span><span class="n">SMTP_CACHE_MAX_LEN</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="n">SMTP_CACHE_MAX_AGE_SECONDS</span>
+<span class="p">)</span>
+<span class="n">STARTTLS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span>
+    <span class="n">max_len</span><span class="o">=</span><span class="n">SMTP_CACHE_MAX_LEN</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="n">SMTP_CACHE_MAX_AGE_SECONDS</span>
+<span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_timeout_method</span><span class="p">():</span>

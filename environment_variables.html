@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; checkdmarc 5.11.0 documentation</title>
+  <title>Environment variables &mdash; checkdmarc 5.11.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -19,8 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API" href="api.html" />
-    <link rel="prev" title="Welcome to checkdmarc’s documentation" href="index.html" /> 
+    <link rel="prev" title="CLI" href="cli.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -43,10 +42,10 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
-<li class="toctree-l1"><a class="reference internal" href="environment_variables.html">Environment variables</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Environment variables</a></li>
 </ul>
 
         </div>
@@ -63,9 +62,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Installation</li>
+      <li class="breadcrumb-item active">Environment variables</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/installation.md.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/environment_variables.md.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -73,34 +72,26 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section class="tex2jax_ignore mathjax_ignore" id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> requires Python 3.</p>
-<p>On Debian or Ubuntu systems, run:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>sudo apt-get install python3-pip
-</pre></div>
-</div>
-<p>Python 3 installers for Windows and macOS can be found at <a class="reference external" href="https://www.python.org/downloads/">https://www.python.org/downloads/</a></p>
-<p>To install or upgrade to the latest stable release of <code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> on macOS or Linux, run</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>pip3 install -U checkdmarc
-</pre></div>
-</div>
-<p>Or, install the latest development release directly from GitHub:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>pip3 install -U git+https://github.com/domainaware/checkdmarc.git
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>On Windows, <code class="docutils literal notranslate"><span class="pre">pip3</span></code> is <code class="docutils literal notranslate"><span class="pre">pip</span></code>, even with Python 3.</p>
-</div>
+  <section class="tex2jax_ignore mathjax_ignore" id="environment-variables">
+<h1>Environment variables<a class="headerlink" href="#environment-variables" title="Link to this heading"></a></h1>
+<p>Starting in version <code class="docutils literal notranslate"><span class="pre">5.11.0</span></code>, caches can be controlled via environment variables.</p>
+<p>All caches have the default length of <code class="docutils literal notranslate"><span class="pre">200000</span></code> and the the default max age of <code class="docutils literal notranslate"><span class="pre">1800</span></code> seconds. These defaults can be overridden using the environment variables <code class="docutils literal notranslate"><span class="pre">CACHE_MAX_LEN</span></code> and <code class="docutils literal notranslate"><span class="pre">CACHE_MAX_AGE_SECONDS</span></code> respectively.</p>
+<p>Values for specific caches can be set using:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">DNS_CACHE_MAX_LEN</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DNS_CACHE_MAX_AGE_SECONDS</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DNSSEC_CACHE_MAX_LEN</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DNSSEC_CACHE_MAX_AGE_SECONDS</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMTP_CACHE_MAX_LEN</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMTP_CACHE_MAX_AGE_SECONDS</span></code></p></li>
+</ul>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to checkdmarc’s documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="api.html" class="btn btn-neutral float-right" title="API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="cli.html" class="btn btn-neutral float-left" title="CLI" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
