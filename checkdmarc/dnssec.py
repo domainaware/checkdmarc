@@ -14,6 +14,7 @@ from dns.rdatatype import RdataType
 from expiringdict import ExpiringDict
 
 from checkdmarc.utils import normalize_domain, get_base_domain
+from checkdmarc._constants import DNSSEC_CACHE_MAX_LEN, DNSSEC_CACHE_MAX_AGE_SECONDS
 
 
 """Copyright 2019-2023 Sean Whalen
@@ -30,9 +31,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-DNSSEC_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
-DNSKEY_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
-TLSA_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
+DNSSEC_CACHE = ExpiringDict(
+    max_len=DNSSEC_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
+)
+DNSKEY_CACHE = ExpiringDict(
+    max_len=DNSSEC_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
+)
+TLSA_CACHE = ExpiringDict(
+    max_len=DNSSEC_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
+)
 
 
 def get_dnskey(

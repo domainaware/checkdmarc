@@ -32,8 +32,9 @@
 maxdepth: 1
 ---
 installation
-api
 cli
+environment_variables
+api
 ```
 
 ### Indices and tables

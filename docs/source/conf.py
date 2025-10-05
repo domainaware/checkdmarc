@@ -20,7 +20,7 @@ from checkdmarc import __version__
 # -- Project information -----------------------------------------------------
 
 project = "checkdmarc"
-copyright = "2017, Sean Whalen"
+copyright = "2025, Sean Whalen"
 author = "Sean Whalen"
 
 # The version info for the project you're documenting, acts as replacement for

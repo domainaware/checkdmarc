@@ -23,6 +23,7 @@ from checkdmarc.utils import (
 )
 from checkdmarc.mta_sts import mx_in_mta_sts_patterns
 from checkdmarc.dnssec import test_dnssec, get_tlsa_records
+from checkdmarc._constants import SMTP_CACHE_MAX_LEN, SMTP_CACHE_MAX_AGE_SECONDS
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -39,8 +40,12 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-TLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
-STARTTLS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
+TLS_CACHE = ExpiringDict(
+    max_len=SMTP_CACHE_MAX_LEN, max_age_seconds=SMTP_CACHE_MAX_AGE_SECONDS
+)
+STARTTLS_CACHE = ExpiringDict(
+    max_len=SMTP_CACHE_MAX_LEN, max_age_seconds=SMTP_CACHE_MAX_AGE_SECONDS
+)
 
 
 def _get_timeout_method():

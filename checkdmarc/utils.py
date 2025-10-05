@@ -13,6 +13,8 @@ import dns.resolver
 import publicsuffixlist
 from expiringdict import ExpiringDict
 
+from checkdmarc._constants import DNS_CACHE_MAX_LEN, DNSSEC_CACHE_MAX_AGE_SECONDS
+
 """Copyright 2019-2023 Sean Whalen
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +29,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-DNS_CACHE = ExpiringDict(max_len=200000, max_age_seconds=1800)
+DNS_CACHE = ExpiringDict(
+    max_len=DNS_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
+)
 
 WSP_REGEX = r"[ \t]"
 HTTPS_REGEX = r"(https:\/\/)([\w\-]+\.)+[\w-]+([\w\- ,.\/?%&=]*)"
