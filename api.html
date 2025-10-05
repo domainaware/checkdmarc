@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; checkdmarc 5.11.0 documentation</title>
+  <title>API &mdash; checkdmarc 5.11.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=7c68a32b"></script>
+      <script src="_static/documentation_options.js?v=d8102732"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -2093,16 +2093,13 @@ keys:</p>
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>parked</strong> (<em>bool</em>) – The domain is parked</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
-<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
-requests</p></li>
+<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><p>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</p>
-<blockquote>
-<div><blockquote>
-<div><ul class="simple">
+<dd class="field-even"><p><dl class="simple">
+<dt>An <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> with the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">record</span></code> - The SPF record string</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">parsed</span></code> - The parsed SPF record</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dns_lookups</span></code> - The number of DNS lookups</p></li>
@@ -2110,16 +2107,13 @@ requests</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">valid</span></code> - True</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">warnings</span></code> - A <code class="docutils literal notranslate"><span class="pre">list</span></code> of warnings</p></li>
 </ul>
-</div></blockquote>
-<p>If a DNS error occurs, the dictionary will have the
-following keys:</p>
-<blockquote>
-<div><ul class="simple">
+</dd>
+<dt>If a DNS error occurs, the dictionary will have the following keys:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">error</span></code> - Tne error message</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">valid</span></code> - False</p></li>
 </ul>
-</div></blockquote>
-</div></blockquote>
+</dd>
+</dl>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -2137,8 +2131,7 @@ following keys:</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
-<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
-requests</p></li>
+<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – Number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
@@ -2163,8 +2156,7 @@ requests</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="checkdmarc.spf.parse_spf_record">
 <span class="sig-prename descclassname"><span class="pre">checkdmarc.spf.</span></span><span class="sig-name descname"><span class="pre">parse_spf_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_too_many_lookups</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nameservers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Resolver</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursion</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OrderedDict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">syntax_error_marker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'➞'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">OrderedDict</span></span></span><a class="reference internal" href="_modules/checkdmarc/spf.html#parse_spf_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkdmarc.spf.parse_spf_record" title="Link to this definition"></a></dt>
-<dd><p>Parses an SPF record, including resolving <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">mx</span></code>, and <code class="docutils literal notranslate"><span class="pre">include</span></code>
-mechanisms</p>
+<dd><p>Parses an SPF record, including resolving <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">mx</span></code>, and <code class="docutils literal notranslate"><span class="pre">include</span></code> mechanisms</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2174,8 +2166,7 @@ mechanisms</p>
 <li><p><strong>ignore_too_many_lookups</strong> (<em>bool</em>) – Do not raise an exception for too many lookups</p></li>
 <li><p><strong>seen</strong> (<em>list</em>) – A list of domains seen in past loops</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
-<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
-requests</p></li>
+<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS requests</p></li>
 <li><p><strong>recursion</strong> (<em>OrderedDict</em>) – Results from a previous call</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 <li><p><strong>syntax_error_marker</strong> (<em>str</em>) – The maker for pointing out syntax errors</p></li>
@@ -2215,8 +2206,7 @@ requests</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>domain</strong> (<em>str</em>) – A domain name</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of nameservers to query</p></li>
-<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
-requests</p></li>
+<li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – number of seconds to wait for an answer from DNS</p></li>
 </ul>
 </dd>
