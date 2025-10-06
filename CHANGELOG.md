@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.11.3
+
+- Fix reading environment variables
+
 ## 5.11.2
 
 - Add warnings if an SPF record is too long or too large (Close #70)
