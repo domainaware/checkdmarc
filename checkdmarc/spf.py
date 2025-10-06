@@ -213,6 +213,44 @@ def query_spf_record(
     except Exception as error:
         raise SPFRecordNotFound(error, domain)
 
+    # Per RFC 7208 §3.3: any single TXT "character-string" must be ≤255 octets.
+    # Per RFC 7208 §3.4: keep overall SPF record small enough for UDP (advise ~450B, warn at >512B).
+    try:
+        quoted_chunks = re.findall(r'"([^"]*)"', spf_record) if spf_record else []
+        if quoted_chunks:
+            for i, chunk in enumerate(quoted_chunks, 1):
+                blen = len(chunk.encode("utf-8"))
+                if blen > 255:
+                    warnings.append(
+                        f"SPF TXT string chunk #{i} for {domain} is {blen} bytes (>255). "
+                        "Each individual TXT character-string must be ≤255 octets (RFC 7208 §3.3)."
+                    )
+            joined = "".join(quoted_chunks)
+        else:
+            joined = spf_record or ""
+            blen = len(joined.encode("utf-8"))
+            if blen > 255:
+                warnings.append(
+                    f"SPF TXT for {domain} appears to be a single {blen}-byte string; "
+                    "a single TXT character-string must be ≤255 octets (RFC 7208 §3.3). "
+                    "Consider splitting into multiple quoted strings."
+                )
+
+        total_bytes = len(joined.encode("utf-8"))
+        if total_bytes > 512:
+            warnings.append(
+                f"SPF record for {domain} is {total_bytes} bytes (>512). "
+                "This likely exceeds reliable UDP response size; some verifiers may ignore or fail it (RFC 7208 §3.4)."
+            )
+        elif total_bytes > 450:
+            warnings.append(
+                f"SPF record for {domain} is {total_bytes} bytes. "
+                "RFC 7208 §3.4 recommends keeping answers under ~450 bytes so the whole DNS message fits in 512 bytes."
+            )
+    except Exception:
+        # Never let the size check impact normal operation
+        pass
+
     return OrderedDict([("record", spf_record), ("warnings", warnings)])
 
 
@@ -418,7 +456,7 @@ def parse_spf_record(
                         OrderedDict([("value", hostname), ("mechanism", mechanism)])
                     )
 
-                    # --- NEW: perform A/AAAA resolution for each MX host ---
+                    # --- perform A/AAAA resolution for each MX host ---
                     try:
                         # Each MX target requires address lookups; count them individually
                         _addresses = get_a_records(

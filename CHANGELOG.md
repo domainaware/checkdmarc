@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.11.2
+
+- Add warnings if an SPF record is too long or too large (Close #70)
+
+
 ## 5.11.1
 
 ### 🧩 SPF Parser Fixes and Improvements
