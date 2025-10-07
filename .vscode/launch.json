@@ -155,13 +155,25 @@
             "justMyCode": true
         },
         {
-            "name": "checkdmarc --skip-tls  info‍.‍fr‍.‍vorwerk‍.‍com",
+            "name": "checkdmarc --skip-tls info‍.‍fr‍.‍vorwerk‍.‍com",
             "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
                 "info‍.‍fr‍.‍vorwerk‍.‍com",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc --skip-tls npr.org",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "npr.org",
             ],
             "console": "integratedTerminal",
             "justMyCode": true

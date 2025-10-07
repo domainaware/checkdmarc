@@ -77,7 +77,11 @@ class SPFRecordNotFound(SPFError):
     def __init__(self, error, domain):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+        self.error = error
         self.domain = domain
+
+    def __str__(self):
+        return f"{self.domain}: {str(self.error)}"
 
 
 class MultipleSPFRTXTRecords(SPFError):
@@ -337,7 +341,6 @@ def parse_spf_record(
             f"(marked with {syntax_error_marker}) in: {marked_record}"
         )
 
-    error = None
     matches = SPF_MECHANISM_REGEX.findall(record.lower())
 
     parsed = OrderedDict(
@@ -355,6 +358,7 @@ def parse_spf_record(
 
     lookup_mechanism_count = 0
     void_lookup_mechanism_count = 0
+    error = None
 
     for match in matches:
         mechanism = match[1].lower().strip(":=")
@@ -632,13 +636,9 @@ def parse_spf_record(
                             f"{u}",
                             dns_void_lookups=void_lookup_mechanism_count,
                         )
-                except DNSException as error:
-                    if isinstance(error, DNSExceptionNXDOMAIN):
-                        void_lookup_mechanism_count += 1
-                    raise _SPFWarning(str(error))
-                except SPFRecordNotFound as error:
+                except SPFRecordNotFound as e:
                     void_lookup_mechanism_count += 1
-                    raise error
+                    raise _SPFWarning(str(e))
 
             elif mechanism == "ptr":
                 parsed[result].append(

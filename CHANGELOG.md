@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.11.4
+
+Fix bug where including a domain that did not would act as if the whole domain didn't exist
+
+**Scope:** `checkdmarc/spf.py`
+
+**Example:**: `npr.org` includes `c9eb27a2d7.berenice.eoidentity.com`
+
 ## 5.11.3
 
 - Fix reading environment variables
@@ -7,7 +15,6 @@
 ## 5.11.2
 
 - Add warnings if an SPF record is too long or too large (Close #70)
-
 
 ## 5.11.1
 

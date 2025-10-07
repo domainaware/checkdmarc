@@ -127,23 +127,14 @@ class Test(unittest.TestCase):
         self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
 
     def testIncludeMissingSPF(self):
-        """SPF records that include domains that are missing SPF records
-        raise SPFRecordNotFound"""
+        """A warning is included for SPF records that include domains that are missing SPF records"""
 
         spf_record = (
-            '"v=spf1 include:spf.comendosystems.com '
-            "include:bounce.peytz.dk include:etrack.indicia.dk "
-            "include:etrack1.com include:mail1.dialogportal.com "
-            "include:mail2.dialogportal.com a:mailrelay.jppol.dk "
-            'a:sendmail.jppol.dk ?all"'
+            '"v=spf1 include:example.local ~all"'
         )
-        domain = "ekstrabladet.dk"
-        self.assertRaises(
-            checkdmarc.spf.SPFRecordNotFound,
-            checkdmarc.spf.parse_spf_record,
-            spf_record,
-            domain,
-        )
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertTrue("example.local: The domain does not exist." in results["warnings"])
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testTooManySPFDNSLookups(self):
