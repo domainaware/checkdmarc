@@ -28,7 +28,7 @@ A Python module, command line utility, and [web application](https://github.com/
   - IPv4 and IPv6 addresses
   - Checks for STARTTLS (optional; currently disabled on the production website)
   - Use of DNSSEC/TLSA/DANE to pin certificates
-- SMTP-STS
+- MTA-STS
 - SMTP TLS reporting
   - Record and policy parsing and validation
   - Record validation and parsing
