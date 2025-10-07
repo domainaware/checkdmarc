@@ -77,41 +77,51 @@
 <p><a class="reference external" href="https://github.com/domainaware/checkdmarc/actions/workflows/python-tests.yaml"><img alt="Python tests" src="https://github.com/domainaware/checkdmarc/actions/workflows/python-tests.yaml/badge.svg" /></a>
 <a class="reference external" href="https://pypi.org/project/checkdmarc/"><img alt="PyPI" src="https://img.shields.io/pypi/v/checkdmarc" /></a>
 <a class="reference external" href="https://pypistats.org/packages/checkdmarc"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/checkdmarc?color=blue" /></a></p>
-<p><code class="docutils literal notranslate"><span class="pre">checkdmarc</span></code> is a Python module and command line parser for SPF and DMARC DNS records</p>
+<p>A Python module, command line utility, and <a class="reference external" href="https://github.com/domainaware/checkdmarc-web-frontend">web application</a> for validating SPF and DMARC DNS records.</p>
 <section id="features">
 <h2>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p>API and CLI</p></li>
+<li><p>API, CLI, and web interfaces</p></li>
 <li><p>Can test multiple domains at once</p></li>
 <li><p>CLI output in JSON or CSV format</p></li>
-<li><p>Parsing and validation of many DNS records related to email</p>
-<ul>
-<li><p>SOA</p></li>
-<li><p>MX</p>
-<ul>
-<li><p>Tests STARTTLS and TLS support on each mail server, including certificate validation</p></li>
-</ul>
-</li>
+<li><p>DNSSEC validation</p></li>
 <li><p>SPF</p>
 <ul>
-<li><p>Counts the number of DNS lookups required in each part of the SPF record</p></li>
+<li><p>Record validation</p></li>
+<li><p>Counting of DNS lookups and void lookups</p></li>
+<li><p>Counting of lookups per include</p></li>
 </ul>
 </li>
-<li><p>DMARC</p></li>
-<li><p>MTA-STS</p>
+<li><p>DMARC</p>
 <ul>
-<li><p>Checks both the  DNS record and the policy provided over HTTPS</p></li>
+<li><p>Validation and parsing of DMARC records</p></li>
+<li><p>Shows warnings when the DMARC record is made ineffective by <code class="docutils literal notranslate"><span class="pre">pct</span></code> or <code class="docutils literal notranslate"><span class="pre">sp</span></code> values</p></li>
+<li><p>Checks for authorization records on reporting email addresses</p></li>
 </ul>
 </li>
-<li><p>SMTP TLS reporting</p></li>
 <li><p>BIMI</p>
 <ul>
-<li><p>Validates the SVG format and mark certificate</p></li>
+<li><p>Validation of the mark format and certificate</p></li>
+<li><p>Parsing of the mark certificate</p></li>
 </ul>
 </li>
-<li><p>DNSSEC</p></li>
+<li><p>MX records</p>
+<ul>
+<li><p>Preference</p></li>
+<li><p>IPv4 and IPv6 addresses</p></li>
+<li><p>Checks for STARTTLS (optional; currently disabled on the production website)</p></li>
+<li><p>Use of DNSSEC/TLSA/DANE to pin certificates</p></li>
 </ul>
 </li>
+<li><p>SMTP-STS</p></li>
+<li><p>SMTP TLS reporting</p>
+<ul>
+<li><p>Record and policy parsing and validation</p></li>
+<li><p>Record validation and parsing</p></li>
+</ul>
+</li>
+<li><p>SOA record parsing</p></li>
+<li><p>Nameserver listing</p></li>
 </ul>
 </section>
 <section id="further-reading">

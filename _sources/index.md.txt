@@ -4,26 +4,36 @@
 [![PyPI](https://img.shields.io/pypi/v/checkdmarc)](https://pypi.org/project/checkdmarc/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/checkdmarc?color=blue)](https://pypistats.org/packages/checkdmarc)
 
-`checkdmarc` is a Python module and command line parser for SPF and DMARC DNS records
+A Python module, command line utility, and [web application](https://github.com/domainaware/checkdmarc-web-frontend) for validating SPF and DMARC DNS records.
 
 ## Features
 
-- API and CLI
+- API, CLI, and web interfaces
 - Can test multiple domains at once
 - CLI output in JSON or CSV format
-- Parsing and validation of many DNS records related to email
-  - SOA
-  - MX
-    - Tests STARTTLS and TLS support on each mail server, including certificate validation
-  - SPF
-    - Counts the number of DNS lookups required in each part of the SPF record
-  - DMARC
-  - MTA-STS
-    - Checks both the  DNS record and the policy provided over HTTPS
-  - SMTP TLS reporting
-  - BIMI
-    - Validates the SVG format and mark certificate
-  - DNSSEC
+- DNSSEC validation
+- SPF
+  - Record validation
+  - Counting of DNS lookups and void lookups
+  - Counting of lookups per include
+- DMARC
+  - Validation and parsing of DMARC records
+  - Shows warnings when the DMARC record is made ineffective by `pct` or `sp` values
+  - Checks for authorization records on reporting email addresses
+- BIMI
+  - Validation of the mark format and certificate
+  - Parsing of the mark certificate
+- MX records
+  - Preference
+  - IPv4 and IPv6 addresses
+  - Checks for STARTTLS (optional; currently disabled on the production website)
+  - Use of DNSSEC/TLSA/DANE to pin certificates
+- SMTP-STS
+- SMTP TLS reporting
+  - Record and policy parsing and validation
+  - Record validation and parsing
+- SOA record parsing
+- Nameserver listing
 
 ## Further reading
 
