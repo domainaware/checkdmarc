@@ -129,12 +129,12 @@ class Test(unittest.TestCase):
     def testIncludeMissingSPF(self):
         """A warning is included for SPF records that include domains that are missing SPF records"""
 
-        spf_record = (
-            '"v=spf1 include:example.local ~all"'
-        )
+        spf_record = "v=spf1 include:example.local ~all"
         domain = "example.com"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
-        self.assertTrue("example.local: The domain does not exist." in results["warnings"])
+        self.assertTrue(
+            "example.local: The domain does not exist." in results["warnings"]
+        )
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testTooManySPFDNSLookups(self):
