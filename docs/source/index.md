@@ -26,7 +26,7 @@ A Python module, command line utility, and [web application](https://github.com/
 - MX records
   - Preference
   - IPv4 and IPv6 addresses
-  - Checks for STARTTLS (optional; currently disabled on the production website)
+  - Checks for STARTTLS
   - Use of DNSSEC/TLSA/DANE to pin certificates
 - MTA-STS
 - SMTP TLS reporting
