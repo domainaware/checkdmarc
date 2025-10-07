@@ -537,7 +537,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
     if domain is not None:
         base_domain = get_base_domain(domain).encode("utf-8").decode("unicode_escape")
         if cert_domains is not None:
-            if base_domain not in cert_domains:
+            if domain not in cert_domains and base_domain not in cert_domains:
                 plural = "domain" if len(cert_domains) == 1 else "domains"
                 cert_domains = ". ".join(cert_domains)
                 validation_errors.append(

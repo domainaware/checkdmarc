@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.11.5
+
+- Allow for matching subdomain or base domain when validating VMCs
+
 ## 5.11.4
 
 Fix bug where including a domain that did not would act as if the whole domain didn't exist
