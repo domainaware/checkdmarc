@@ -126,7 +126,7 @@ class Test(unittest.TestCase):
         """Test known good DNSSEC"""
         self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
 
-    # TODO: Figure out ehy this passes on my system, but fails on GitHub Workflows 
+    # TODO: Figure out ehy this passes on my system, but fails on GitHub Workflows
     @unittest.skip()
     def testIncludeMissingSPF(self):
         """A warning is included for SPF records that include domains that are missing SPF records"""
