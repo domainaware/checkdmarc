@@ -126,6 +126,7 @@ class Test(unittest.TestCase):
         """Test known good DNSSEC"""
         self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
 
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testIncludeMissingSPF(self):
         """A warning is included for SPF records that include domains that are missing SPF records"""
 
