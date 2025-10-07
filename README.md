@@ -31,6 +31,5 @@ A Python module, command line utility, and [web application](https://github.com/
 - MTA-STS
 - SMTP TLS reporting
   - Record and policy parsing and validation
-  - Record validation and parsing
 - SOA record parsing
 - Nameserver listing
