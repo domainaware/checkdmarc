@@ -134,6 +134,7 @@ class Test(unittest.TestCase):
         spf_record = "v=spf1 include:example.doesnotexist ~all"
         domain = "example.com"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        print(results)
         self.assertTrue(
             "example.local: The domain does not exist." in results["warnings"]
         )
