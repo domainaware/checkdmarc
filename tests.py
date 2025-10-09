@@ -126,7 +126,6 @@ class Test(unittest.TestCase):
         """Test known good DNSSEC"""
         self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
 
-    # TODO: Figure out ehy this passes on my system, but fails on GitHub Workflows
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testIncludeMissingSPF(self):
         """A warning is included for SPF records that include domains that are missing SPF records"""
@@ -134,9 +133,8 @@ class Test(unittest.TestCase):
         spf_record = "v=spf1 include:example.doesnotexist ~all"
         domain = "example.com"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
-        print(results)
         self.assertTrue(
-            "example.local: The domain does not exist." in results["warnings"]
+            "example.doesnotexist: The domain does not exist." in results["warnings"]
         )
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
