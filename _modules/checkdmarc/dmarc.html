@@ -1051,11 +1051,11 @@
             <span class="n">allowed_values</span> <span class="o">=</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;values&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;p&quot;</span> <span class="ow">and</span> <span class="n">tag_value</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;A p tag value of none has no effect on email sent as </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;A p tag value of none makes DMARC ineffective on email sent as </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;sp&quot;</span> <span class="ow">and</span> <span class="n">tag_value</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span> <span class="ow">and</span> <span class="n">explicit</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;An sp tag value of none has no effect on email sent as a subdomain of </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;An sp tag value of none makes DMARC ineffective on email sent as a subdomain of </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;fo&quot;</span><span class="p">:</span>
             <span class="n">tag_value</span> <span class="o">=</span> <span class="n">tag_value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
