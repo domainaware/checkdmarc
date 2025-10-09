@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.11.6
+
+- Remove inaccurate warning about SMTP-STS policy line endings
+- Clarify DMARC `none` policy warnings
+
 ## 5.11.5
 
 - Allow for matching subdomain or base domain when validating VMCs

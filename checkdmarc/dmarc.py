@@ -921,11 +921,11 @@ def parse_dmarc_record(
             allowed_values = dmarc_tags[tag]["values"]
         if tag == "p" and tag_value == "none":
             warnings.append(
-                f"A p tag value of none has no effect on email sent as {domain}."
+                f"A p tag value of none makes DMARC ineffective on email sent as {domain}."
             )
         if tag == "sp" and tag_value == "none" and explicit:
             warnings.append(
-                f"An sp tag value of none has no effect on email sent as a subdomain of {domain}."
+                f"An sp tag value of none makes DMARC ineffective on email sent as a subdomain of {domain}."
             )
         if tag == "fo":
             tag_value = tag_value.split(":")
