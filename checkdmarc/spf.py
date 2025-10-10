@@ -592,8 +592,7 @@ def parse_spf_record(
                     raise _SPFWarning(str(error))
 
             elif mechanism == "exp":
-                mechanism_dns_lookups += 1
-                total_dns_lookups += 1
+                # exp is a modifier that does not count as a DNS lookup
                 # Thread resolver/timeouts and handle empty TXT gracefully.
                 txts = get_txt_records(
                     value,
@@ -602,7 +601,6 @@ def parse_spf_record(
                     timeout=timeout,
                 )
                 parsed["exp"]["value"] = txts[0] if txts else None
-                parsed["exp"].append(("dns_lookups", mechanism_dns_lookups))
 
             elif mechanism == "all":
                 parsed["all"] = result
