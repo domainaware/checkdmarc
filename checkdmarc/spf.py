@@ -343,11 +343,7 @@ def parse_spf_record(
 
     parsed = OrderedDict(
         [
-            ("pass", []),
-            ("neutral", []),
-            ("softfail", []),
-            ("fail", []),
-            ("include", []),
+            ("mechanisms", []),
             ("redirect", None),
             ("exp", None),
             ("all", "neutral"),
@@ -361,7 +357,7 @@ def parse_spf_record(
     for match in matches:
         mechanism_dns_lookups = 0
         mechanism_void_dns_lookups = 0
-        result = spf_qualifiers[match[0]]
+        action = spf_qualifiers[match[0]]
         mechanism = match[1].strip(":=")
         value = match[2]
         try:
@@ -415,10 +411,10 @@ def parse_spf_record(
                         ("mechanism", mechanism),
                         ("value", record),
                         ("dns_lookups", mechanism_dns_lookups),
+                        ("void_dns_lookups", mechanism_void_dns_lookups),
+                        ("action", action)
                     ]
-                    if mechanism_void_dns_lookups:
-                        pairs.append(("void_dns_lookups", mechanism_void_dns_lookups))
-                    parsed[result].append(OrderedDict(pairs))
+                    parsed["mechanisms"].append(OrderedDict(pairs))
                     if len(a_records) == 0:
                         raise _SPFMissingRecords(
                             f"An a mechanism points to {value.lower()}, but that domain/subdomain does not have any A/AAAA records."
@@ -506,11 +502,11 @@ def parse_spf_record(
                     ("mechanism", mechanism),
                     ("value", value),
                     ("dns_lookups", mechanism_dns_lookups),
+                    ("void_dns_lookups", mechanism_void_dns_lookups), 
+                    ("action", action),
                 ]
-                if mechanism_void_dns_lookups:
-                    pairs.append(("void_dns_lookups", mechanism_void_dns_lookups))
                 pairs.append(("hosts", host_ips))
-                parsed[result].append(OrderedDict(pairs))
+                parsed["mechanisms"].append(OrderedDict(pairs))
 
             elif mechanism == "exists":
                 mechanism_dns_lookups += 1
@@ -522,7 +518,7 @@ def parse_spf_record(
                         ("dns_lookups", mechanism_dns_lookups),
                     ]
                 )
-                parsed[result].append(OrderedDict(pairs))
+                parsed["mechanisms"].append(OrderedDict(pairs))
                 if total_dns_lookups > 10:
                     raise SPFTooManyDNSLookups(
                         "Parsing the SPF record requires "
@@ -603,7 +599,7 @@ def parse_spf_record(
                 parsed["exp"]["value"] = txts[0] if txts else None
 
             elif mechanism == "all":
-                parsed["all"] = result
+                parsed["all"] = action
             
             elif mechanism == "include":
                 mechanism_dns_lookups += 1
@@ -638,22 +634,25 @@ def parse_spf_record(
                         resolver=resolver,
                         timeout=timeout,
                     )
+                    total_dns_lookups += include["dns_lookups"]
+                    total_void_dns_lookups += include["void_dns_lookups"]
+                    combined_mechanism_lookups = mechanism_dns_lookups + include["dns_lookups"]
+                    combined_mechanism_void_dns_lookups = mechanism_void_dns_lookups + include["void_dns_lookups"]
                     include = OrderedDict(
                         [
-                            ("domain", value),
+                            ("mechanism", mechanism),
+                            ("value", value),
                             ("record", include_record),
-                            ("dns_lookups", include["dns_lookups"]),
-                            ("void_dns_lookups", include["void_dns_lookups"]),
+                            ("dns_lookups", combined_mechanism_lookups),
+                            ("void_dns_lookups", combined_mechanism_void_dns_lookups),
                             ("parsed", include["parsed"]),
                             ("warnings", include["warnings"]),
                         ]
                     )
-                    parsed["include"].append(include)
+                    parsed["mechanisms"].append(include)
                     warnings += include["warnings"]
                     mechanism_dns_lookups += include["dns_lookups"]
-                    total_dns_lookups += include["dns_lookups"]
                     mechanism_void_dns_lookups += include["void_dns_lookups"]
-                    total_void_dns_lookups += include["void_dns_lookups"]
                     if total_dns_lookups > 10:
                         raise SPFTooManyDNSLookups(
                             "Parsing the SPF record requires "
@@ -680,12 +679,14 @@ def parse_spf_record(
             elif mechanism == "ptr":
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
-                parsed[result].append(
+                parsed["mechanisms"].append(
                     OrderedDict(
                         [
                             ("mechanism", mechanism),
                             ("value", value),
                             ("dns_lookups", mechanism_dns_lookups),
+                            ("mechanism_void_dns_lookups", mechanism_void_dns_lookups),
+                            ("action", action),
                         ]
                     )
                 )
@@ -701,7 +702,7 @@ def parse_spf_record(
                         raise SPFSyntaxError(
                             f"{token} is not a valid token for the rr tag."
                         )
-                parsed["rr"] = result
+                parsed["rr"] = action
 
             elif mechanism == "rp":
                 if not value.isdigit():
@@ -712,7 +713,7 @@ def parse_spf_record(
                     raise SPFSyntaxError(
                         f"{value} is not a valid rp tag value - should be a number between 0 and 100."
                     )
-                parsed["rp"] = result
+                parsed["rp"] = action
 
             else:
                 pairs = [
@@ -722,7 +723,8 @@ def parse_spf_record(
                 if mechanism_dns_lookups > 0:
                     pairs.append(("dns_lookups", mechanism_dns_lookups))
                     pairs.append("void_dns_lookups", mechanism_void_dns_lookups)
-                parsed[result].append(OrderedDict(pairs))
+                pairs.append(("action", action))
+                parsed["mechanisms"].append(OrderedDict(pairs))
 
         except (SPFTooManyDNSLookups, SPFTooManyVoidDNSLookups) as e:
             if ignore_too_many_lookups:
