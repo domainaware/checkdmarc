@@ -516,6 +516,7 @@ def parse_spf_record(
                         ("mechanism", mechanism),
                         ("value", value),
                         ("dns_lookups", mechanism_dns_lookups),
+                        ("void_dns_lookups", mechanism_void_dns_lookups)
                     ]
                 )
                 parsed["mechanisms"].append(OrderedDict(pairs))
@@ -550,7 +551,7 @@ def parse_spf_record(
                         timeout=timeout,
                         is_included_record=True
                     )
-                     
+                    parsed["all"] = redirect["all"]
                     mechanism_dns_lookups += redirect["dns_lookups"]
                     mechanism_void_dns_lookups += redirect["void_dns_lookups"]
                     if total_dns_lookups > 10:
@@ -673,6 +674,16 @@ def parse_spf_record(
                         )
                 except SPFRecordNotFound as e:
                     total_void_dns_lookups += 1
+                    include = OrderedDict(
+                        [
+                            ("mechanism", mechanism),
+                            ("value", value),
+                            ("record", None),
+                            ("dns_lookups", 1),
+                            ("void_dns_lookups", 1),
+                        ]
+                    )
+                    parsed["mechanisms"].append(include)
                     raise _SPFWarning(str(e))
 
 
