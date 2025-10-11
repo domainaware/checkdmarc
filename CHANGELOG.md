@@ -1,5 +1,127 @@
 # Changelog
 
+## 5.12.0
+
+### ⚠️ Breaking Changes
+
+#### 1. SPF Record Parsing Structure
+
+- **Before**: The `parse_spf_record()` function returned a `parsed` dictionary with top-level keys like `"pass"`, `"neutral"`, `"softfail"`, `"fail"`, along with `"include"`, `"redirect"`, `"exp"`, and `"all"`.
+- **After**: The `parsed` structure now contains a list of dictionaries under the `"mechanisms"` key. Each entry describes a mechanism (e.g., `mx`, `a`, `include`), and includes additional data such as DNS lookup counts and associated addresses.
+
+   **Example:**
+
+- Before:
+
+     ```json
+     "pass": [...]
+     ```
+
+- After:
+
+     ```json
+     "mechanisms": [
+       {
+         "mechanism": "mx",
+         "value": "example.com",
+         "dns_lookups": 3,
+         "void_dns_lookups": 0,
+         "action": "pass",
+         "hosts": {
+           "mx1.example.com": ["203.0.113.10"]
+         }
+       }
+     ]
+     ```
+
+#### 2. DNS Lookup Counting Changes
+
+- DNS lookup counts are now tracked per mechanism and globally. The total number of DNS lookups is counted and limited (including `mx` lookups).
+- An exception is raised for DNS lookups if more than **9 MX records** are found (reduced from **10** in `5.11.0`), ensuring that the overall limit of 10 DNS queries per SPF evaluation is respected.
+
+#### 3. DNS void fields
+
+- The field for void DNS lookups in exceptions is now `void_dns_lookups`, as opposed to `dns_void_lookups` in the master branch. Code reading exception data should be updated to reflect this change.
+
+   **Example:**
+
+- Before:
+
+     ```python
+     e.data["dns_void_lookups"]
+     ```
+
+- After:
+
+     ```python
+     e.data["void_dns_lookups"]
+     ```
+
+#### 4. Redirect Handling
+
+- The `redirect` mechanism now propagates the terminal policy (i.e., `all`) from the redirected SPF record. The effective `all` policy is now available directly under `parsed["all"]` after resolving redirects.
+
+---
+
+### 🛠️ Improvements
+
+#### Enhanced Output Data for Mechanisms
+
+- Each mechanism entry that uses DNS lookups now includes detailed information such as DNS lookup counts (`dns_lookups`), void DNS lookups (`void_dns_lookups`), and resolved addresses (`hosts` for `mx` mechanisms).
+
+---
+
+### 🧰 Migration Notes
+
+#### 1. Handling SPF Parsing Results
+
+- Update how you iterate over SPF record results. Previously, you could directly access the `"pass"`, `"neutral"`, etc., keys. In the new structure, you must filter the `"mechanisms"` list based on the `action` key.
+
+**Before**:
+
+ ```python
+ for item in parsed["pass"]:
+     ...
+ ```
+
+**After**:
+
+ ```python
+ for m in parsed["mechanisms"]:
+     if m["action"] == "pass":
+         ...
+ ```
+
+#### 2. Error Payload Field Updates
+
+- Code that references `e.data["dns_void_lookups"]` must update to `e.data["void_dns_lookups"]`.
+
+---
+
+### 🚨 Potential Compatibility Breaks for Consumers
+
+- If you are consuming SPF evaluation results in JSON format (via `--json` flag or other means), note that the structure of the output has changed. The old format with top-level `pass`, `fail`, and other categories has been replaced with a list of mechanisms.
+- Consumers should update to handle the new format, which organizes data by individual mechanisms and includes detailed DNS lookup statistics.
+  
+---
+
+### 🧑‍💻 For CLI Users
+
+- **SPF Record Parsing**: The output format has changed. You will now see a list of mechanisms under `mechanisms`, each containing information like DNS lookups, void lookups, and resolved addresses.
+- **Lookup Limits**: If your SPF record exceeds the DNS lookup limit (especially with MX records), you'll see an error message when more than **9 MX records** are found.
+- **Warnings**: Expect warnings for oversized TXT records or overly large SPF records (exceeding RFC limits).
+
+---
+
+### ✨ Summary of Changes
+
+- The **SPF parsing structure** has been overhauled for more detailed reporting.
+- **DNS lookup counting** has been improved with more granular tracking of DNS queries per mechanism.
+- **Exceptions** and error data formats have been streamlined.
+- **Redirect handling** has been enhanced, making the terminal policy easier to trace after redirects.
+  
+This release introduces significant changes that improve the clarity, flexibility, and robustness of SPF record evaluation. Please ensure your codebase is compatible with these new structures and exception formats.
+
 ## 5.11.6
 
 - Remove inaccurate warning about SMTP-STS policy line endings
