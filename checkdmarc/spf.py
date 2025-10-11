@@ -412,7 +412,7 @@ def parse_spf_record(
                         ("value", record),
                         ("dns_lookups", mechanism_dns_lookups),
                         ("void_dns_lookups", mechanism_void_dns_lookups),
-                        ("action", action)
+                        ("action", action),
                     ]
                     parsed["mechanisms"].append(OrderedDict(pairs))
                     if len(a_records) == 0:
@@ -502,7 +502,7 @@ def parse_spf_record(
                     ("mechanism", mechanism),
                     ("value", value),
                     ("dns_lookups", mechanism_dns_lookups),
-                    ("void_dns_lookups", mechanism_void_dns_lookups), 
+                    ("void_dns_lookups", mechanism_void_dns_lookups),
                     ("action", action),
                 ]
                 pairs.append(("hosts", host_ips))
@@ -516,7 +516,7 @@ def parse_spf_record(
                         ("mechanism", mechanism),
                         ("value", value),
                         ("dns_lookups", mechanism_dns_lookups),
-                        ("void_dns_lookups", mechanism_void_dns_lookups)
+                        ("void_dns_lookups", mechanism_void_dns_lookups),
                     ]
                 )
                 parsed["mechanisms"].append(OrderedDict(pairs))
@@ -549,7 +549,6 @@ def parse_spf_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
-                        is_included_record=True
                     )
                     parsed["all"] = redirect["all"]
                     mechanism_dns_lookups += redirect["dns_lookups"]
@@ -601,7 +600,7 @@ def parse_spf_record(
 
             elif mechanism == "all":
                 parsed["all"] = action
-            
+
             elif mechanism == "include":
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
@@ -637,8 +636,12 @@ def parse_spf_record(
                     )
                     total_dns_lookups += include["dns_lookups"]
                     total_void_dns_lookups += include["void_dns_lookups"]
-                    combined_mechanism_lookups = mechanism_dns_lookups + include["dns_lookups"]
-                    combined_mechanism_void_dns_lookups = mechanism_void_dns_lookups + include["void_dns_lookups"]
+                    combined_mechanism_lookups = (
+                        mechanism_dns_lookups + include["dns_lookups"]
+                    )
+                    combined_mechanism_void_dns_lookups = (
+                        mechanism_void_dns_lookups + include["void_dns_lookups"]
+                    )
                     include = OrderedDict(
                         [
                             ("mechanism", mechanism),
@@ -685,7 +688,6 @@ def parse_spf_record(
                     )
                     parsed["mechanisms"].append(include)
                     raise _SPFWarning(str(e))
-
 
             elif mechanism == "ptr":
                 mechanism_dns_lookups += 1
