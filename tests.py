@@ -288,8 +288,9 @@ class Test(unittest.TestCase):
             results["warnings"],
         )
 
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testSPFMissingARecord(self):
-        """A warning is issued if an SPF record contains a mx mechanism
+        """A warning is issued if an SPF record contains an a mechanism
         pointing to a domain that has no A records"""
 
         spf_record = '"v=spf1 a ~all"'
