@@ -407,16 +407,18 @@ def parse_spf_record(
                     raise _SPFMissingRecords(
                         f"An a mechanism points to {value.lower()}, but that domain/subdomain does not have any A/AAAA records."
                     )
-                for record in a_records:
+                for i in range(len(a_records)):
                     if cidr:
-                        record = f"{record}/{cidr}"
-                    pairs = [
-                        ("mechanism", mechanism),
-                        ("value", record),
-                        ("dns_lookups", mechanism_dns_lookups),
-                        ("void_dns_lookups", mechanism_void_dns_lookups),
-                        ("action", action),
-                    ]
+                        a_records[i] = f"{a_records[i]}/{cidr}"
+                pairs = [
+                    ("mechanism", mechanism),
+                    ("value", domain),
+                    ("addresses", a_records),
+                    ("dns_lookups", mechanism_dns_lookups),
+                    ("void_dns_lookups", mechanism_void_dns_lookups),
+                    ("action", action),
+                ]
+                parsed["mechanisms"].append(pairs)
 
             elif mechanism == "mx":
                 mechanism_dns_lookups += 1
