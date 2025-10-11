@@ -22,22 +22,25 @@ from checkdmarc.utils import (
     query_dns,
 )
 
-"""
-Copyright 2019-2023 Sean Whalen
+"""Copyright 2019-2025 Sean Whalen
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-compliance with the License. You may obtain a copy of the License at https://www.apache.org/licenses/LICENSE-2.0
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific
-language governing permissions and limitations under the License.
-"""
+   https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License."""
 
 SPF_VERSION_TAG_REGEX_STRING = "v=spf1"
 
 SPF_MECHANISM_REGEX_STRING = (
     r"([+\-~?])?"
-    r"(mx:?|ip4:?|ip6:?|exists:?|include:?|all|a:?|redirect=|exp=|ptr:?|ra=|rp=|rr=)"
+    r"(mx:?|ip4:?|ip6:?|exists:?|include:?|all|a:?|redirect=|exp=|ptr:?)"
     r"([\w+/_.:\-{}%]*)"
 )
 AFTER_ALL_REGEX_STRING = r"((?:^|\s)[+\-~?]?all)\s+.*"
@@ -707,27 +710,6 @@ def parse_spf_record(
                     "The ptr mechanism should not be used - "
                     "https://tools.ietf.org/html/rfc7208#section-5.5"
                 )
-
-            elif mechanism == "rr":
-                tokens = value.split(":")
-                for token in tokens:
-                    if token not in ["all", "e", "f", "s", "n"]:
-                        raise SPFSyntaxError(
-                            f"{token} is not a valid token for the rr tag."
-                        )
-                parsed["rr"] = action
-
-            elif mechanism == "rp":
-                if not value.isdigit():
-                    raise SPFSyntaxError(
-                        f"{value} is not a valid rp tag value - should be a number."
-                    )
-                if int(value) < 0 or int(value) > 100:
-                    raise SPFSyntaxError(
-                        f"{value} is not a valid rp tag value - should be a number between 0 and 100."
-                    )
-                parsed["rp"] = action
-
             else:
                 pairs = [
                     ("mechanism", mechanism),
