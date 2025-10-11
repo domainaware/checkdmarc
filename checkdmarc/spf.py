@@ -412,7 +412,7 @@ def parse_spf_record(
                         a_records[i] = f"{a_records[i]}/{cidr}"
                 pairs = [
                     ("mechanism", mechanism),
-                    ("value", domain),
+                    ("value", value),
                     ("addresses", a_records),
                     ("dns_lookups", mechanism_dns_lookups),
                     ("void_dns_lookups", mechanism_void_dns_lookups),
