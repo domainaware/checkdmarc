@@ -123,8 +123,7 @@ def test_tls(
             server.close()
         except Exception as e:
             logging.debug(e)
-        finally:
-            return tls
+        return tls
 
     except socket.gaierror:
         error = "DNS resolution failed"
