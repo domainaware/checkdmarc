@@ -416,12 +416,12 @@ def parse_spf_record(
                 pairs = [
                     ("mechanism", mechanism),
                     ("value", value),
-                    ("addresses", a_records),
                     ("dns_lookups", mechanism_dns_lookups),
                     ("void_dns_lookups", mechanism_void_dns_lookups),
                     ("action", action),
+                    ("addresses", a_records),
                 ]
-                parsed["mechanisms"].append(pairs)
+                parsed["mechanisms"].append(OrderedDict(pairs))
 
             elif mechanism == "mx":
                 mechanism_dns_lookups += 1

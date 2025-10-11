@@ -30,6 +30,17 @@
          "hosts": {
            "mx1.example.com": ["203.0.113.10"]
          }
+       },
+       {
+         "mechanism": "a",
+         "value": "example.com",
+         "dns_lookups": 1,
+         "void_dns_lookups": 0,
+         "action", "pass",
+         "addresses": [
+          "23.192.228.80",
+          "2600:1406:5e00:6::17ce:bc12"
+        ]
        }
      ]
      ```
