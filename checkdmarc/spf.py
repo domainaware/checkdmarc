@@ -414,11 +414,11 @@ def parse_spf_record(
                     if cidr:
                         a_records[i] = f"{a_records[i]}/{cidr}"
                 pairs = [
+                    ("action", action),
                     ("mechanism", mechanism),
                     ("value", value),
                     ("dns_lookups", mechanism_dns_lookups),
                     ("void_dns_lookups", mechanism_void_dns_lookups),
-                    ("action", action),
                     ("addresses", a_records),
                 ]
                 parsed["mechanisms"].append(OrderedDict(pairs))
@@ -502,11 +502,11 @@ def parse_spf_record(
                                 )
                         raise _SPFWarning(str(error))
                 pairs = [
+                    ("action", action),
                     ("mechanism", mechanism),
                     ("value", value),
                     ("dns_lookups", mechanism_dns_lookups),
                     ("void_dns_lookups", mechanism_void_dns_lookups),
-                    ("action", action),
                 ]
                 pairs.append(("hosts", host_ips))
                 parsed["mechanisms"].append(OrderedDict(pairs))
@@ -516,6 +516,7 @@ def parse_spf_record(
                 total_dns_lookups += 1
                 pairs = OrderedDict(
                     [
+                        ("action", action),
                         ("mechanism", mechanism),
                         ("value", value),
                         ("dns_lookups", mechanism_dns_lookups),
@@ -615,10 +616,14 @@ def parse_spf_record(
                 seen.append(value.lower())
 
                 if "%{" in value:
-                    include = OrderedDict(
-                        [("domain", value), ("dns_lookups", 1), ("dns_void_lookups", 0)]
-                    )
-                    parsed["include"].append(include)
+                    include = OrderedDict([
+                        ("action", action),
+                        ("mechanism", mechanism),
+                        ("value", value),
+                        ("dns_lookups", mechanism_dns_lookups),
+                        ("void_dns_lookups", mechanism_void_dns_lookups),
+                    ])
+                    parsed["mechanisms"].append(include)
                     continue
                 try:
                     include_record = query_spf_record(
@@ -698,11 +703,11 @@ def parse_spf_record(
                 parsed["mechanisms"].append(
                     OrderedDict(
                         [
+                            ("action", action),
                             ("mechanism", mechanism),
                             ("value", value),
                             ("dns_lookups", mechanism_dns_lookups),
                             ("mechanism_void_dns_lookups", mechanism_void_dns_lookups),
-                            ("action", action),
                         ]
                     )
                 )

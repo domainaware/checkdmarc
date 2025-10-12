@@ -7,7 +7,7 @@
 #### 1. SPF Record Parsing Structure
 
 - **Before**: The `parse_spf_record()` function returned a `parsed` dictionary with top-level keys like `"pass"`, `"neutral"`, `"softfail"`, `"fail"`, along with `"include"`, `"redirect"`, `"exp"`, and `"all"`.
-- **After**: The `parsed` structure now contains a list of dictionaries under the `"mechanisms"` key. Each entry describes a mechanism (e.g., `mx`, `a`, `include`), and includes additional data such as DNS lookup counts and associated addresses.
+- **After**: The `parsed` structure now contains a list of dictionaries under the `"mechanisms"` key. Each entry describes a mechanism (e.g., `mx`, `a`, `include`), and includes additional data such as DNS lookup counts and associated addresses. `"redirect"`, `"exp"`, and `"all"` remain unchanged.
 
    **Example:**
 
