@@ -616,13 +616,15 @@ def parse_spf_record(
                 seen.append(value.lower())
 
                 if "%{" in value:
-                    include = OrderedDict([
-                        ("action", action),
-                        ("mechanism", mechanism),
-                        ("value", value),
-                        ("dns_lookups", mechanism_dns_lookups),
-                        ("void_dns_lookups", mechanism_void_dns_lookups),
-                    ])
+                    include = OrderedDict(
+                        [
+                            ("action", action),
+                            ("mechanism", mechanism),
+                            ("value", value),
+                            ("dns_lookups", mechanism_dns_lookups),
+                            ("void_dns_lookups", mechanism_void_dns_lookups),
+                        ]
+                    )
                     parsed["mechanisms"].append(include)
                     continue
                 try:
