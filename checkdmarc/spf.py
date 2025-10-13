@@ -200,7 +200,7 @@ def query_spf_record(
                 spf_txt_records.append(record)
             elif record.startswith(txt_prefix):
                 raise SPFRecordNotFound(
-                    "According to RFC7208 section 4.5, a SPF record should be"
+                    "According to RFC 7208 section 4.5, an SPF record should be"
                     f" equal to {txt_prefix} or begin with {txt_prefix} "
                     "followed by a space.",
                     domain,
@@ -220,8 +220,8 @@ def query_spf_record(
     except Exception as error:
         raise SPFRecordNotFound(error, domain)
 
-    # Per RFC 7208 §3.3: any single TXT "character-string" must be ≤255 octets.
-    # Per RFC 7208 §3.4: keep overall SPF record small enough for UDP (advise ~450B, warn at >512B).
+    # Per RFC 7208 § 3.3: any single TXT "character-string" must be ≤255 characters.
+    # Per RFC 7208 § 3.4: keep overall SPF record small enough for UDP (advise ~450B, warn at >512B).
     try:
         quoted_chunks = re.findall(r'"([^"]*)"', spf_record) if spf_record else []
         if quoted_chunks:
@@ -229,8 +229,8 @@ def query_spf_record(
                 blen = len(chunk.encode("utf-8"))
                 if blen > 255:
                     warnings.append(
-                        f"SPF TXT string chunk #{i} for {domain} is {blen} bytes (>255). "
-                        "Each individual TXT character-string must be ≤255 octets (RFC 7208 §3.3)."
+                        f"SPF TXT string chunk #{i} for {domain} is {blen} characters (>255). "
+                        "Each individual TXT character-string must be ≤255 characters (RFC 7208 § 3.3)."
                     )
             joined = "".join(quoted_chunks)
         else:
@@ -238,8 +238,8 @@ def query_spf_record(
             blen = len(joined.encode("utf-8"))
             if blen > 255:
                 warnings.append(
-                    f"SPF TXT for {domain} appears to be a single {blen}-byte string; "
-                    "a single TXT character-string must be ≤255 octets (RFC 7208 §3.3). "
+                    f"SPF TXT for {domain} appears to be a single {blen}-character string; "
+                    "a single TXT character-string must be ≤255 characters (RFC 7208 § 3.3). "
                     "Consider splitting into multiple quoted strings."
                 )
 
@@ -247,12 +247,12 @@ def query_spf_record(
         if total_bytes > 512:
             warnings.append(
                 f"SPF record for {domain} is {total_bytes} bytes (>512). "
-                "This likely exceeds reliable UDP response size; some verifiers may ignore or fail it (RFC 7208 §3.4)."
+                "This likely exceeds reliable UDP response size; some verifiers may ignore or fail it (RFC 7208 § 3.4)."
             )
         elif total_bytes > 450:
             warnings.append(
                 f"SPF record for {domain} is {total_bytes} bytes. "
-                "RFC 7208 §3.4 recommends keeping answers under ~450 bytes so the whole DNS message fits in 512 bytes."
+                "RFC 7208 § 3.4 recommends keeping answers under ~450 bytes so the whole DNS message fits in 512 bytes."
             )
     except Exception:
         # Never let the size check impact normal operation
@@ -446,11 +446,11 @@ def parse_spf_record(
                         "but that domain/subdomain does not have any MX records."
                     )
 
-                # RFC 7208 §4.6.4: no more than 10 DNS queries total per evaluation
+                # RFC 7208 § 4.6.4: no more than 10 DNS queries total per evaluation
                 if len(mx_hosts) > 9:
                     raise SPFTooManyDNSLookups(
                         f"{value} has more than 9 MX records - "
-                        "https://tools.ietf.org/html/rfc7208#section-4.6.4",
+                        "(RFC 7208 § 4.6.4)",
                         dns_lookups=len(mx_hosts),
                     )
                 host_ips = {}
@@ -477,7 +477,7 @@ def parse_spf_record(
                                 raise SPFTooManyVoidDNSLookups(
                                     "Parsing the SPF record has "
                                     f"{total_void_dns_lookups}/2 maximum void DNS lookups - "
-                                    "https://tools.ietf.org/html/rfc7208#section-4.6.4",
+                                    "(RFC 7208 § 4.6.4)",
                                     void_dns_lookups=total_void_dns_lookups,
                                 )
 
@@ -485,7 +485,7 @@ def parse_spf_record(
                             raise SPFTooManyDNSLookups(
                                 "Parsing the SPF record requires "
                                 f"{total_dns_lookups}/10 maximum DNS lookups - "
-                                "https://tools.ietf.org/html/rfc7208#section-4.6.4",
+                                "(RFC 7208 § 4.6.4)",
                                 dns_lookups=total_dns_lookups,
                             )
 
@@ -496,8 +496,8 @@ def parse_spf_record(
                             if total_void_dns_lookups > 2:
                                 raise SPFTooManyVoidDNSLookups(
                                     "Parsing the SPF record has "
-                                    f"{total_void_dns_lookups}/2 maximum void DNS lookups - "
-                                    "https://tools.ietf.org/html/rfc7208#section-4.6.4",
+                                    f"{total_void_dns_lookups}/2 maximum void DNS lookups "
+                                    "(RFC 7208 § 4.6.4)",
                                     void_dns_lookups=total_void_dns_lookups,
                                 )
                         raise _SPFWarning(str(error))
@@ -527,8 +527,8 @@ def parse_spf_record(
                 if total_dns_lookups > 10:
                     raise SPFTooManyDNSLookups(
                         "Parsing the SPF record requires "
-                        f"{total_dns_lookups}/10 maximum DNS lookups - "
-                        "https://tools.ietf.org/html/rfc7208#section-4.6.4",
+                        f"{total_dns_lookups}/10 maximum DNS lookups "
+                        "(RFC 7208 § 4.6.4)",
                         dns_lookups=total_dns_lookups,
                     )
             elif mechanism == "redirect":
@@ -563,17 +563,16 @@ def parse_spf_record(
                         raise SPFTooManyDNSLookups(
                             "Parsing the SPF record requires "
                             f"{total_dns_lookups}/10 maximum "
-                            "DNS lookups - "
-                            "https://tools.ietf.org/html/rfc7208"
-                            "#section-4.6.4",
+                            "DNS lookups "
+                            "(RFC 7208 § 4.6.4)",
                             dns_lookups=total_dns_lookups,
                         )
                     if total_void_dns_lookups > 2:
-                        u = "https://tools.ietf.org/html/rfc7208#section-4.6.4"
+                        u = "(RFC 7208 § 4.6.4)"
                         raise SPFTooManyVoidDNSLookups(
                             "Parsing the SPF record has "
                             f"{total_void_dns_lookups}/2 maximum void "
-                            "DNS lookups - "
+                            "DNS lookups "
                             f"{u}",
                             void_dns_lookups=total_void_dns_lookups,
                         )
@@ -674,12 +673,11 @@ def parse_spf_record(
                             "Parsing the SPF record requires "
                             f"{total_dns_lookups}/10 maximum "
                             "DNS lookups - "
-                            "https://tools.ietf.org/html/rfc7208"
-                            "#section-4.6.4",
+                            "(RFC 7208 § 4.6.4)",
                             dns_lookups=total_dns_lookups,
                         )
                     if total_void_dns_lookups > 2:
-                        u = "https://tools.ietf.org/html/rfc7208#section-4.6.4"
+                        u = "(RFC 7208 § 4.6.4)"
                         raise SPFTooManyVoidDNSLookups(
                             "Parsing the SPF record has "
                             f"{total_void_dns_lookups}/2 maximum void "
@@ -716,8 +714,8 @@ def parse_spf_record(
                     )
                 )
                 raise _SPFWarning(
-                    "The ptr mechanism should not be used - "
-                    "https://tools.ietf.org/html/rfc7208#section-5.5"
+                    "The ptr mechanism should not be used - (RFC 7208 § 5.5)"
+               
                 )
             else:
                 pairs = [
@@ -744,8 +742,7 @@ def parse_spf_record(
                     raise SPFTooManyVoidDNSLookups(
                         "Parsing the SPF record has "
                         f"{total_void_dns_lookups}/2 maximum void DNS "
-                        "lookups - "
-                        "https://tools.ietf.org/html/rfc7208#section-4.6.4",
+                        "lookups (RFC 7208 § 4.6.4)",
                         void_dns_lookups=total_void_dns_lookups,
                     )
             warnings.append(str(warning))

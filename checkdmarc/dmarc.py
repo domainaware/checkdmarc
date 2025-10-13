@@ -126,7 +126,7 @@ class UnverifiedDMARCURIDestination(_DMARCWarning):
 
 class MultipleDMARCRecords(DMARCError):
     """Raised when multiple DMARC records are found, in violation of
-    RFC 7486, section 6.6.3"""
+    RFC 7486, § 6.6.3"""
 
 
 class _DMARCGrammar(Grammar):
@@ -165,7 +165,7 @@ dmarc_tags = OrderedDict(
         default="r",
         description="In relaxed mode, "
         "the SPF-authenticated "
-        "domain and RFC5322 "
+        "domain and RFC 5322 "
         "From domain must have "
         "the same "
         "Organizational Domain. "
@@ -735,7 +735,7 @@ def verify_dmarc_report_destination(
 ) -> None:
     """
     Checks if the report destination accepts reports for the source domain
-    per RFC 7489, section 7.1. Raises
+    per RFC 7489, § 7.1. Raises
     `checkdmarc.dmarc.UnverifiedDMARCURIDestination` if it doesn't accept.
 
     Args:
