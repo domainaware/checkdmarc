@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.12.5 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.12.6 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b61ee37e"></script>
+      <script src="../../_static/documentation_options.js?v=81e66914"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -333,7 +333,7 @@
                 <span class="k">if</span> <span class="n">blen</span> <span class="o">&gt;</span> <span class="mi">255</span><span class="p">:</span>
                     <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;SPF TXT string chunk #</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">blen</span><span class="si">}</span><span class="s2"> characters (&gt;255). &quot;</span>
-                        <span class="s2">&quot;Each individual TXT character-string should be ≤255 characters (RFC 7208 § 3.3).&quot;</span>
+                        <span class="s2">&quot;Each individual TXT character-string should be ≤ 255 characters (RFC 7208 § 3.3).&quot;</span>
                     <span class="p">)</span>
             <span class="n">joined</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">quoted_chunks</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -341,20 +341,20 @@
             <span class="n">blen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">joined</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">blen</span> <span class="o">&gt;</span> <span class="mi">255</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;SPF TXT for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> appears to be a single </span><span class="si">{</span><span class="n">blen</span><span class="si">}</span><span class="s2">-character string; &quot;</span>
-                    <span class="s2">&quot;a single TXT character-string should be ≤255 characters (RFC 7208 § 3.3). &quot;</span>
-                    <span class="s2">&quot;Consider splitting into multiple quoted strings.&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; The SPF record for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> appears to be a single </span><span class="si">{</span><span class="n">blen</span><span class="si">}</span><span class="s2">-character string; &quot;</span>
+                    <span class="s2">&quot;a single TXT character-string should be ≤ 255 characters (RFC 7208 § 3.3). &quot;</span>
+                    <span class="s2">&quot;Consider splitting it into multiple quoted strings.&quot;</span>
                 <span class="p">)</span>
 
         <span class="n">total_bytes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">joined</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">total_bytes</span> <span class="o">&gt;</span> <span class="mi">512</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;SPF record for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">total_bytes</span><span class="si">}</span><span class="s2"> bytes (&gt;512). &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;The SPF record for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> is &gt; 512 bytes (</span><span class="si">{</span><span class="n">total_bytes</span><span class="si">}</span><span class="s2"> bytes). &quot;</span>
                 <span class="s2">&quot;This likely exceeds reliable UDP response size; some verifiers may ignore or fail it (RFC 7208 § 3.4).&quot;</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="n">total_bytes</span> <span class="o">&gt;</span> <span class="mi">450</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;SPF record for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">total_bytes</span><span class="si">}</span><span class="s2"> bytes. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;The SPF record for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">total_bytes</span><span class="si">}</span><span class="s2"> bytes. &quot;</span>
                 <span class="s2">&quot;RFC 7208 § 3.4 recommends keeping answers under ~450 bytes so the whole DNS message fits in 512 bytes.&quot;</span>
             <span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
