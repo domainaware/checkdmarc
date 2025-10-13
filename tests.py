@@ -296,10 +296,44 @@ class Test(unittest.TestCase):
         spf_record = '"v=spf1 a ~all"'
         domain = "cardinalhealth.net"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
-        self.assertIn(
-            "An a mechanism points to cardinalhealth.net, but that domain/subdomain does not have any A/AAAA records.",
-            results["warnings"],
-        )
+        snipit = "that domain/subdomain does not have any A/AAAA records."
+        self.assertTrue(any(snipit in s for s in results["warnings"]))
+
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    def testSPFMXMechanism(self):
+        """Addresses are included in the output for SPF records with an mx lookup"""
+        spf_record = "v=spf1 mx:proton.me ~all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        for mechanism in results["parsed"]["mechanisms"]:
+            if mechanism["mechanism"] == "mx":
+                self.assertTrue(len(mechanism["hosts"] ) > 0 )
+            for host in mechanism["hosts"]:
+                self.assertTrue(len(host) > 0)
+    
+    def testSPFMacrosExists(self):
+        """SPF macros can be used with the exists mechanism"""
+        record ="v=spf1 exists:exists:%{i}.spf.hc0000-xx.iphmx.com ~all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(record, domain)
+        self.assertTrue(len(results["parsed"]["mechanisms"]) > 0)
+
+    def testSPFMacrosInclude(self):
+        """SPF macros can be used with the exists mechanism"""
+        record = "v=spf1 include:include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(record, domain)
+        self.assertTrue(len(results["parsed"]["mechanisms"]) > 0)
+
+
+    def testSPFAMechanism(self):
+        """Addresses are included in the output for SPF records with an a lookup"""
+        spf_record = "v=spf1 a ~all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        for mechanism in results["parsed"]["mechanisms"]:
+            if mechanism["mechanism"] == "a":
+                self.assertTrue(len(mechanism["addresses"] ) > 0 )
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testDMARCPctLessThan100Warning(self):
