@@ -239,7 +239,7 @@ def query_spf_record(
             if blen > 255:
                 warnings.append(
                     f"SPF TXT for {domain} appears to be a single {blen}-character string; "
-                    "a single TXT character-string must be ≤255 characters (RFC 7208 § 3.3). "
+                    "a single TXT character-string should be ≤255 characters (RFC 7208 § 3.3). "
                     "Consider splitting into multiple quoted strings."
                 )
 

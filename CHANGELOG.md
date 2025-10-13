@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.5
+
+- Update another SPF TXT length warning language to match the RFC
+
 ## 5.12.4
 
 - Update the SPF TXT length warning language to match the RFC
