@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.6
+
+- More improvements to the SPF warning messages
+
 ## 5.12.5
 
 - Update another SPF TXT length warning language to match the RFC
@@ -14,7 +18,7 @@
 
 ## 5.12.2
 
-- Fix redirect counts for redirects
+- Fix DNS lookup counts for redirects
 
 ## 5.12.1
 

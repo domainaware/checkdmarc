@@ -230,7 +230,7 @@ def query_spf_record(
                 if blen > 255:
                     warnings.append(
                         f"SPF TXT string chunk #{i} for {domain} is {blen} characters (>255). "
-                        "Each individual TXT character-string should be ≤255 characters (RFC 7208 § 3.3)."
+                        "Each individual TXT character-string should be ≤ 255 characters (RFC 7208 § 3.3)."
                     )
             joined = "".join(quoted_chunks)
         else:
@@ -238,20 +238,20 @@ def query_spf_record(
             blen = len(joined.encode("utf-8"))
             if blen > 255:
                 warnings.append(
-                    f"SPF TXT for {domain} appears to be a single {blen}-character string; "
-                    "a single TXT character-string should be ≤255 characters (RFC 7208 § 3.3). "
-                    "Consider splitting into multiple quoted strings."
+                    f" The SPF record for {domain} appears to be a single {blen}-character string; "
+                    "a single TXT character-string should be ≤ 255 characters (RFC 7208 § 3.3). "
+                    "Consider splitting it into multiple quoted strings."
                 )
 
         total_bytes = len(joined.encode("utf-8"))
         if total_bytes > 512:
             warnings.append(
-                f"SPF record for {domain} is {total_bytes} bytes (>512). "
-                "This likely exceeds reliable UDP response size; some verifiers may ignore or fail it (RFC 7208 § 3.4)."
+                f"The SPF record for {domain} is > 512 bytes ({total_bytes} bytes). "
+                "This likely exceeds the reliable UDP response size; some verifiers may ignore or fail it (RFC 7208 § 3.4)."
             )
         elif total_bytes > 450:
             warnings.append(
-                f"SPF record for {domain} is {total_bytes} bytes. "
+                f"The SPF record for {domain} is {total_bytes} bytes. "
                 "RFC 7208 § 3.4 recommends keeping answers under ~450 bytes so the whole DNS message fits in 512 bytes."
             )
     except Exception:
