@@ -47,11 +47,11 @@ checkdmarc --skip-tls proton.me
   "base_domain": "proton.me",
   "dnssec": true,
   "soa": {
-    "record": "ns1.proton.me. support.proton.me. 2025082186 1200 144 1814400 7200",
+    "record": "ns1.proton.me. support.proton.me. 2025091157 1200 144 1814400 7200",
     "values": {
       "primary_nameserver": "ns1.proton.me",
       "rname_email_address": "support@proton.me",
-      "serial": 2025082186,
+      "serial": 2025091157,
       "refresh": 1200,
       "retry": 144,
       "expire": 1814400,
@@ -111,110 +111,83 @@ checkdmarc --skip-tls proton.me
         "mailsec.protonmail.ch"
       ]
     },
-    "warnings": [
-      "MTA-STS policy lines should end with CRLF not LF"
-    ]
+    "warnings": []
   },
   "spf": {
     "record": "v=spf1 include:_spf.protonmail.ch ~all",
     "valid": true,
     "dns_lookups": 2,
-    "dns_void_lookups": 0,
+    "void_dns_lookups": 0,
     "warnings": [],
     "parsed": {
-      "pass": [],
-      "neutral": [],
-      "softfail": [],
-      "fail": [],
-      "include": [
+      "mechanisms": [
         {
-          "domain": "_spf.protonmail.ch",
+          "mechanism": "include",
+          "value": "_spf.protonmail.ch",
           "record": "v=spf1 ip4:185.70.40.0/24 ip4:185.70.41.0/24 ip4:185.70.43.0/24 ip4:79.135.106.0/24 ip4:79.135.107.0/24 ip4:109.224.244.0/24 include:_spf2.protonmail.ch ~all",
-          "dns_lookups": 1,
-          "dns_void_lookups": 0,
+          "dns_lookups": 2,
+          "void_dns_lookups": 0,
           "parsed": {
-            "pass": [
+            "mechanisms": [
               {
+                "mechanism": "ip4",
                 "value": "185.70.40.0/24",
-                "mechanism": "ip4"
+                "action": "pass"
               },
               {
+                "mechanism": "ip4",
                 "value": "185.70.41.0/24",
-                "mechanism": "ip4"
+                "action": "pass"
               },
               {
+                "mechanism": "ip4",
                 "value": "185.70.43.0/24",
-                "mechanism": "ip4"
+                "action": "pass"
               },
               {
+                "mechanism": "ip4",
                 "value": "79.135.106.0/24",
-                "mechanism": "ip4"
+                "action": "pass"
               },
               {
+                "mechanism": "ip4",
                 "value": "79.135.107.0/24",
-                "mechanism": "ip4"
+                "action": "pass"
               },
               {
+                "mechanism": "ip4",
                 "value": "109.224.244.0/24",
-                "mechanism": "ip4"
-              }
-            ],
-            "neutral": [],
-            "softfail": [],
-            "fail": [],
-            "include": [
+                "action": "pass"
+              },
               {
-                "domain": "_spf2.protonmail.ch",
-                "record": "v=spf1 ip4:51.89.119.103 ip4:91.134.188.129 ip4:51.77.79.158 ip4:54.38.221.122 ip4:188.165.51.139 ip4:54.36.149.183 ip4:85.9.206.169 ip4:85.9.210.45 ip4:51.83.17.38 ip4:57.129.93.249 ~all",
-                "dns_lookups": 0,
-                "dns_void_lookups": 0,
+                "mechanism": "include",
+                "value": "_spf2.protonmail.ch",
+                "record": "v=spf1 ip4:85.9.206.169 ip4:85.9.210.45 ip4:188.165.51.139 ip4:57.129.93.249 ~all",
+                "dns_lookups": 1,
+                "void_dns_lookups": 0,
                 "parsed": {
-                  "pass": [
+                  "mechanisms": [
                     {
-                      "value": "51.89.119.103",
-                      "mechanism": "ip4"
-                    },
-                    {
-                      "value": "91.134.188.129",
-                      "mechanism": "ip4"
-                    },
-                    {
-                      "value": "51.77.79.158",
-                      "mechanism": "ip4"
-                    },
-                    {
-                      "value": "54.38.221.122",
-                      "mechanism": "ip4"
-                    },
-                    {
-                      "value": "188.165.51.139",
-                      "mechanism": "ip4"
-                    },
-                    {
-                      "value": "54.36.149.183",
-                      "mechanism": "ip4"
-                    },
-                    {
+                      "mechanism": "ip4",
                       "value": "85.9.206.169",
-                      "mechanism": "ip4"
+                      "action": "pass"
                     },
                     {
+                      "mechanism": "ip4",
                       "value": "85.9.210.45",
-                      "mechanism": "ip4"
+                      "action": "pass"
                     },
                     {
-                      "value": "51.83.17.38",
-                      "mechanism": "ip4"
+                      "mechanism": "ip4",
+                      "value": "188.165.51.139",
+                      "action": "pass"
                     },
                     {
+                      "mechanism": "ip4",
                       "value": "57.129.93.249",
-                      "mechanism": "ip4"
+                      "action": "pass"
                     }
                   ],
-                  "neutral": [],
-                  "softfail": [],
-                  "fail": [],
-                  "include": [],
                   "redirect": null,
                   "exp": null,
                   "all": "softfail"
@@ -239,7 +212,7 @@ checkdmarc --skip-tls proton.me
     "valid": true,
     "location": "proton.me",
     "warnings": [
-      "rua tag (destination for aggregate reports) not found"
+      "rua tag (destination for aggregate reports) not found."
     ],
     "tags": {
       "v": {
