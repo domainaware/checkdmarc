@@ -554,7 +554,7 @@ def parse_spf_record(
                         resolver=resolver,
                         timeout=timeout,
                     )
-                    parsed["all"] = redirect["all"]
+                    parsed["all"] = redirect["parsed"]["all"]
                     mechanism_dns_lookups += redirect["dns_lookups"]
                     mechanism_void_dns_lookups += redirect["void_dns_lookups"]
                     if total_dns_lookups > 10:

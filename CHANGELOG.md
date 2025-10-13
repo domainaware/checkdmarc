@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.1
+
+- Fix crash when parsing SPF redirect
+
 ## 5.12.0
 
 ### ⚠️ Breaking Changes
