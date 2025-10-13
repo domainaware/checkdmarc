@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.12.0 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.12.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=ee177dc0"></script>
+      <script src="../../_static/documentation_options.js?v=4a6ff9d9"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -660,7 +660,7 @@
                         <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
                         <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
                     <span class="p">)</span>
-                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;parsed&quot;</span><span class="p">][</span><span class="s2">&quot;all&quot;</span><span class="p">]</span>
                     <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
                     <span class="n">mechanism_void_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
                     <span class="k">if</span> <span class="n">total_dns_lookups</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
