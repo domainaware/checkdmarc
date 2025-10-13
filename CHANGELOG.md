@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.12.4
+
+- Update the SPF TXT length warning language to match the RFC
+
+## 5.12.3
+
+- Standardize SPF error and warning messages
+
+## 5.12.2
+
+- Fix redirect counts for redirects
+
 ## 5.12.1
 
 - Fix crash when parsing SPF redirect

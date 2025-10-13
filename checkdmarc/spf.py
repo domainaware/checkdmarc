@@ -220,7 +220,7 @@ def query_spf_record(
     except Exception as error:
         raise SPFRecordNotFound(error, domain)
 
-    # Per RFC 7208 § 3.3: any single TXT "character-string" must be ≤255 characters.
+    # Per RFC 7208 § 3.3: any single TXT "character-string" should be ≤255 characters.
     # Per RFC 7208 § 3.4: keep overall SPF record small enough for UDP (advise ~450B, warn at >512B).
     try:
         quoted_chunks = re.findall(r'"([^"]*)"', spf_record) if spf_record else []
@@ -230,7 +230,7 @@ def query_spf_record(
                 if blen > 255:
                     warnings.append(
                         f"SPF TXT string chunk #{i} for {domain} is {blen} characters (>255). "
-                        "Each individual TXT character-string must be ≤255 characters (RFC 7208 § 3.3)."
+                        "Each individual TXT character-string should be ≤255 characters (RFC 7208 § 3.3)."
                     )
             joined = "".join(quoted_chunks)
         else:
