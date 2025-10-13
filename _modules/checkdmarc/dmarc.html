@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.dmarc &mdash; checkdmarc 5.12.2 documentation</title>
+  <title>checkdmarc.dmarc &mdash; checkdmarc 5.12.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=7d9773b3"></script>
+      <script src="../../_static/documentation_options.js?v=d9eff7aa"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -238,7 +238,7 @@
 <a class="viewcode-back" href="../../api.html#checkdmarc.dmarc.MultipleDMARCRecords">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MultipleDMARCRecords</span><span class="p">(</span><span class="n">DMARCError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when multiple DMARC records are found, in violation of</span>
-<span class="sd">    RFC 7486, section 6.6.3&quot;&quot;&quot;</span></div>
+<span class="sd">    RFC 7486, § 6.6.3&quot;&quot;&quot;</span></div>
 
 
 
@@ -278,7 +278,7 @@
         <span class="n">default</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;In relaxed mode, &quot;</span>
         <span class="s2">&quot;the SPF-authenticated &quot;</span>
-        <span class="s2">&quot;domain and RFC5322 &quot;</span>
+        <span class="s2">&quot;domain and RFC 5322 &quot;</span>
         <span class="s2">&quot;From domain must have &quot;</span>
         <span class="s2">&quot;the same &quot;</span>
         <span class="s2">&quot;Organizational Domain. &quot;</span>
@@ -862,7 +862,7 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Checks if the report destination accepts reports for the source domain</span>
-<span class="sd">    per RFC 7489, section 7.1. Raises</span>
+<span class="sd">    per RFC 7489, § 7.1. Raises</span>
 <span class="sd">    `checkdmarc.dmarc.UnverifiedDMARCURIDestination` if it doesn&#39;t accept.</span>
 
 <span class="sd">    Args:</span>
