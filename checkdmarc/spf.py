@@ -557,6 +557,8 @@ def parse_spf_record(
                     parsed["all"] = redirect["parsed"]["all"]
                     mechanism_dns_lookups += redirect["dns_lookups"]
                     mechanism_void_dns_lookups += redirect["void_dns_lookups"]
+                    total_dns_lookups += redirect["dns_lookups"]
+                    total_dns_lookups += redirect["void_dns_lookups"]
                     if total_dns_lookups > 10:
                         raise SPFTooManyDNSLookups(
                             "Parsing the SPF record requires "

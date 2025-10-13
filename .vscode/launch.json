@@ -82,6 +82,18 @@
             "console": "integratedTerminal",
             "justMyCode": true
         },
+         {
+            "name": "checkdmarc gmail.com --skip-tls",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "gmail.com",
+                "--skip-tls"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
         {
             "name": "checkdmarc --skip-tls google.com",
             "type": "debugpy",
@@ -95,25 +107,25 @@
             "justMyCode": true
         },
         {
-            "name": "checkdmarc --skip-tls m11‍.‍email‍.‍samsung‍.‍com",
+            "name": "checkdmarc --skip-tls m1ema1.il.samsung.com",
             "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
-                "m11‍.‍email‍.‍samsung‍.‍com"
+                "m11.email.samsung.com"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
         },
         {
-            "name": "checkdmarc --skip-tls galaxylife‍.‍samsungusa‍.‍com",
+            "name": "checkdmarc --skip-tls galaxylife.samsungusa.com",
             "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
-                "m11‍.‍email‍.‍samsung‍.‍com"
+                "m11.email.samsung.com"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
@@ -155,13 +167,13 @@
             "justMyCode": true
         },
         {
-            "name": "checkdmarc --skip-tls info‍.‍fr‍.‍vorwerk‍.‍com",
+            "name": "checkdmarc --skip-tls info‍.fr‍.vorwerk‍.com",
             "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
-                "info‍.‍fr‍.‍vorwerk‍.‍com",
+                "info‍.fr‍.vorwerk‍.com",
             ],
             "console": "integratedTerminal",
             "justMyCode": true
