@@ -449,8 +449,7 @@ def parse_spf_record(
                 # RFC 7208 § 4.6.4: no more than 10 DNS queries total per evaluation
                 if len(mx_hosts) > 9:
                     raise SPFTooManyDNSLookups(
-                        f"{value} has more than 9 MX records - "
-                        "(RFC 7208 § 4.6.4)",
+                        f"{value} has more than 9 MX records - " "(RFC 7208 § 4.6.4)",
                         dns_lookups=len(mx_hosts),
                     )
                 host_ips = {}
@@ -715,7 +714,6 @@ def parse_spf_record(
                 )
                 raise _SPFWarning(
                     "The ptr mechanism should not be used - (RFC 7208 § 5.5)"
-               
                 )
             else:
                 pairs = [
