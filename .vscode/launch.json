@@ -48,13 +48,13 @@
             "justMyCode": true
         },
         {
-            "name": "checkdmarc --skip-tls doesnotexistexample.com",
+            "name": "checkdmarc --skip-tls doesnotexistexample.local",
             "type": "debugpy",
             "request": "launch",
             "module": "checkdmarc._cli",
             "args": [
                 "--skip-tls",
-                "doesnotexistexample.com"
+                "doesnotexistexample.local"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
@@ -67,6 +67,18 @@
             "args": [
                 "--skip-tls",
                 "dhs.gov"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "checkdmarc --skip-tls foo",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "foo"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
