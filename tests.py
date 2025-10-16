@@ -14,7 +14,7 @@ import checkdmarc.dmarc
 import checkdmarc.dnssec
 import checkdmarc.bimi
 
-known_good_domains = ["fbi.gov", "pm.me"]
+known_good_domains = ["fbi.gov", "pm.me", "ssa.gov"]
 
 
 class Test(unittest.TestCase):

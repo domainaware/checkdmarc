@@ -600,7 +600,7 @@ def parse_spf_record(
                     resolver=resolver,
                     timeout=timeout,
                 )
-                parsed["exp"]["value"] = txts[0] if txts else None
+                parsed["exp"] = txts[0] if txts else None
 
             elif mechanism == "all":
                 parsed["all"] = action

@@ -1,5 +1,9 @@
 # Changelog
 
+5.12.7
+
+- Fix parsing of SPF exp mechanism
+
 ## 5.12.6
 
 - More improvements to the SPF warning messages
