@@ -260,6 +260,11 @@ BIMI_TAGS = OrderedDict(
         "Indicator file. The only supported transport "
         "is HTTPS.",
     ),
+    lps=OrderedDict(
+        name="Local-Part Selectors",
+        default="",
+        description="A comma separated list of allowed Local-Part Selectors",
+    ),
     avp=OrderedDict(
         name="Avatar Preference",
         required=False,
@@ -935,6 +940,11 @@ def parse_bimi_record(
                 raise BIMISyntaxError(
                     f"Acceptable avp tag values are personal or brand, not {tag_value}"
                 )
+        elif tag == "lps":
+            tag_value = tag_value.split(",")
+            for i in range(len(tag_value)):
+                tag_value[i] = tag_value[i].lower()
+
     if parsed_dmarc_record and not tags["l"] == "":
         if not parsed_dmarc_record["valid"]:
             warnings.append(

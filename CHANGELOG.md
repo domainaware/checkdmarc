@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.8
+
+- Add support for the `lps` (Local-Part Selectors) BIMI assertion record tag
+
 ## 5.12.7
 
 - Fix parsing of SPF exp mechanism
