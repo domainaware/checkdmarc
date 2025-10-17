@@ -267,7 +267,7 @@ BIMI_TAGS = OrderedDict(
         description="For mail sent to those mailbox providers that both participate in BIMI and "
         "support the display of personal avatars, this flag is a way for the Domain "
         "Owner to express its preference as to whether to show the BIMI logo or the "
-        "personal avatar.",
+        "personal avatar. Options are personal or brand",
     ),
 )
 
