@@ -1,6 +1,6 @@
 # Changelog
 
-5.12.7
+## 5.12.7
 
 - Fix parsing of SPF exp mechanism
 
