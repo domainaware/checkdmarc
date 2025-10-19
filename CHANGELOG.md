@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.11
+
+- Remove unneeded `finally` blocks in `smtp.py` that were causing warnings in Python 3.14 (Close #178)
+
 ## 5.12.10
 
 - Always use the base domain when querying for the SOA record

@@ -101,7 +101,9 @@ def test_tls(
         ssl_context (SSLContext): A SSL context
 
     Returns:
-        bool: TLS supported
+        bool: True if TLS supported
+    Raises:
+        checkdmarc.smtp.SMTPError: SMTP connection failed
     """
     tls = False
     hostname = normalize_domain(hostname)
@@ -118,6 +120,7 @@ def test_tls(
         server = smtplib.SMTP_SSL(hostname, context=ssl_context)
         server.ehlo_or_helo_if_needed()
         tls = True
+        cache[hostname] = dict(tls=tls, error=None)
         try:
             server.quit()
             server.close()
@@ -193,10 +196,6 @@ def test_tls(
         if cache:
             cache[hostname] = dict(tls=False, error=error)
         raise SMTPError(error)
-    finally:
-        if cache:
-            cache[hostname] = dict(tls=tls, error=None)
-        return tls
 
 
 @timeout_decorator.timeout(
@@ -217,7 +216,9 @@ def test_starttls(
         ssl_context: A SSL context
 
     Returns:
-        bool: STARTTLS supported
+        bool: True if STARTTLS supported
+    Raises:
+        checkdmarc.smtp.SMTPError: SMTP connection failed
     """
     hostname = normalize_domain(hostname)
     starttls = False
@@ -237,15 +238,15 @@ def test_starttls(
             server.starttls(context=ssl_context)
             server.ehlo()
             starttls = True
+            if cache:
+                cache[hostname] = dict(starttls=starttls, error=None)
         try:
             server.quit()
             server.close()
+
         except Exception as e:
             logging.debug(e)
-        finally:
-            if cache:
-                cache[hostname] = dict(starttls=starttls, error=None)
-            return starttls
+        return starttls
 
     except socket.gaierror:
         error = "DNS resolution failed"
