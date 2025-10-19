@@ -308,6 +308,7 @@ def get_soa_record(
         :exc:`checkdmarc.DNSException`
 
     """
+    domain = get_base_domain(domain)
     try:
         record = query_dns(
             domain, "SOA", nameservers=nameservers, resolver=resolver, timeout=timeout

@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.10
+
+- Always use the base domain when querying for the SOA record
+
 ## 5.12.9
 
 - Fix bug in counting SPF DNS lookups involving the `a` mechanism
