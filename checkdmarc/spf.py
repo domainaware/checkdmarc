@@ -389,7 +389,7 @@ def parse_spf_record(
                     raise SPFSyntaxError(f"{value} is not a valid ipv6 value.")
 
             if mechanism == "a":
-                mechanism_dns_lookups = 1
+                mechanism_dns_lookups += 1
                 total_dns_lookups += 1
                 if value == "":
                     value = domain

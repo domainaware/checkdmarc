@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.9
+
+- Fix bug in counting SPF DNS lookups involving the `a` mechanism
+
 ## 5.12.8
 
 - Add support for the `lps` (Local-Part Selectors) BIMI assertion record tag
