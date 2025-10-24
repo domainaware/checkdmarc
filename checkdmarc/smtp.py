@@ -181,8 +181,11 @@ def test_tls(
         raise SMTPError(error)
     except smtplib.SMTPException as e:
         error = e.__str__()
-        error_code = error.lstrip("(").split(",")[0]
-        error = f"SMTP error code {error_code}"
+        try:
+            error_code = error.lstrip("(").split(",")[0]
+            error = f"SMTP error code {error_code}"
+        except ValueError:
+            pass
         if cache:
             cache[hostname] = dict(tls=False, error=error)
         raise SMTPError(error)
@@ -300,9 +303,12 @@ def test_starttls(
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)
     except smtplib.SMTPException as e:
-        message = e.__str__()
-        error_code = int(message.lstrip("(").split(",")[0])
-        error = f"SMTP error code {error_code}"
+        error = e.__str__()
+        try:
+            error_code = error.lstrip("(").split(",")[0]
+            error = f"SMTP error code {error_code}"
+        except ValueError:
+            pass
         if cache:
             cache[hostname] = dict(starttls=False, error=error)
         raise SMTPError(error)

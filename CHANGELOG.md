@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.12
+
+- Do not attempt to include an SMTP error code when none is provided (Close #189)
+
 ## 5.12.11
 
 - Remove unneeded `finally` blocks in `smtp.py` that were causing warnings in Python 3.14 (Close #178)
