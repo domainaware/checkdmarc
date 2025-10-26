@@ -100,6 +100,8 @@ def query_dns(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
+    _attempt: int = 0,
     cache: ExpiringDict = None,
 ) -> list[str]:
     """
@@ -112,6 +114,7 @@ def query_dns(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): Sets the DNS timeout in seconds
+        timeout_retries (int): The number of times to reattempt a query after a timeout
         cache (ExpiringDict): Cache storage
 
     Returns:
@@ -134,10 +137,25 @@ def query_dns(
         resolver.timeout = timeout
         resolver.lifetime = timeout
     if record_type == "TXT":
+        try:
+            answers = resolver.resolve(domain, record_type, lifetime=timeout)
+        except dns.resolver.LifetimeTimeout as e:
+            _attempt += 1
+            if _attempt > timeout_retries:
+                raise e
+            return query_dns(
+                domain,
+                record_type,
+                nameservers,
+                resolver=resolver,
+                timeout=timeout,
+                timeout_retries=timeout_retries,
+                _attempt=_attempt,
+            )
         resource_records = list(
             map(
                 lambda r: r.strings,
-                resolver.resolve(domain, record_type, lifetime=timeout),
+                answers,
             )
         )
         _resource_record = [
@@ -153,10 +171,25 @@ def query_dns(
                 r = "Undecodable characters"
             records.append(r)
     else:
+        try:
+            answers = resolver.resolve(domain, record_type, lifetime=timeout)
+        except dns.resolver.LifetimeTimeout as e:
+            _attempt += 1
+            if _attempt > timeout_retries:
+                raise e
+            return query_dns(
+                domain,
+                record_type,
+                nameservers,
+                resolver=resolver,
+                timeout=timeout,
+                timeout_retries=timeout_retries,
+                _attempt=_attempt,
+            )
         records = list(
             map(
                 lambda r: r.to_text().replace('"', "").rstrip("."),
-                resolver.resolve(domain, record_type, lifetime=timeout),
+                answers,
             )
         )
     if type(cache) is ExpiringDict:
@@ -171,6 +204,7 @@ def get_a_records(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> list[str]:
     """
     Queries DNS for A and AAAA records
@@ -194,7 +228,12 @@ def get_a_records(
         try:
             logging.debug(f"Getting {qt} records for {domain}")
             addresses += query_dns(
-                domain, qt, nameservers=nameservers, resolver=resolver, timeout=timeout
+                domain,
+                qt,
+                nameservers=nameservers,
+                resolver=resolver,
+                timeout=timeout,
+                timeout_retries=timeout_retries,
             )
         except dns.resolver.NXDOMAIN:
             raise DNSExceptionNXDOMAIN("The domain does not exist.")
@@ -214,6 +253,7 @@ def get_reverse_dns(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> list[str]:
     """
     Queries for an IP addresses reverse DNS hostname(s)
@@ -224,6 +264,7 @@ def get_reverse_dns(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         list: A list of reverse DNS hostnames
@@ -236,7 +277,12 @@ def get_reverse_dns(
         name = str(dns.reversename.from_address(ip_address))
         logging.debug(f"Getting PTR records for {ip_address}")
         hostnames = query_dns(
-            name, "PTR", nameservers=nameservers, resolver=resolver, timeout=timeout
+            name,
+            "PTR",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
     except dns.resolver.NXDOMAIN:
         return []
@@ -252,6 +298,7 @@ def get_txt_records(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> list[str]:
     """
     Queries DNS for TXT records
@@ -262,6 +309,7 @@ def get_txt_records(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         list: A list of TXT records
@@ -290,6 +338,7 @@ def get_soa_record(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> list[str]:
     """
     Queries DNS for an SOA record
@@ -300,6 +349,7 @@ def get_soa_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         str: An SOA record
@@ -311,7 +361,12 @@ def get_soa_record(
     domain = get_base_domain(domain)
     try:
         record = query_dns(
-            domain, "SOA", nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            "SOA",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )[0]
     except dns.resolver.NXDOMAIN:
         raise DNSExceptionNXDOMAIN("The domain does not exist.")
@@ -330,6 +385,7 @@ def get_nameservers(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> dict:
     """
     Gets a list of nameservers for a given domain
@@ -341,6 +397,7 @@ def get_nameservers(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         OrderedDict: A dictionary with the following keys:
@@ -353,7 +410,12 @@ def get_nameservers(
     ns_records = []
     try:
         ns_records = query_dns(
-            domain, "NS", nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            "NS",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
     except dns.resolver.NXDOMAIN:
         raise DNSExceptionNXDOMAIN("The domain does not exist.")
@@ -383,6 +445,7 @@ def get_mx_records(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> list[OrderedDict]:
     """
     Queries DNS for a list of Mail Exchange hosts
@@ -393,6 +456,7 @@ def get_mx_records(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         list: A list of ``OrderedDicts``; each containing a ``preference``
