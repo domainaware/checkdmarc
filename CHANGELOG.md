@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.17
+
+- Fix crash on DNS retry
+
 ## 5.12.16
 
 - Fix crash on DNS retry
