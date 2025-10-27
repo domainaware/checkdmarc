@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.12.17 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.12.18 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=4ff2dd19"></script>
+      <script src="../../_static/documentation_options.js?v=a7e87edb"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -864,6 +864,16 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">warning</span><span class="p">,</span> <span class="p">(</span><span class="n">_SPFMissingRecords</span><span class="p">,</span> <span class="n">DNSExceptionNXDOMAIN</span><span class="p">)):</span>
                 <span class="n">mechanism_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">mechanism</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                        <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mechanism</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">total_void_dns_lookups</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFTooManyVoidDNSLookups</span><span class="p">(</span>
                         <span class="s2">&quot;Parsing the SPF record has &quot;</span>
@@ -871,7 +881,7 @@
                         <span class="s2">&quot;lookups (RFC 7208 § 4.6.4)&quot;</span><span class="p">,</span>
                         <span class="n">void_dns_lookups</span><span class="o">=</span><span class="n">total_void_dns_lookups</span><span class="p">,</span>
                     <span class="p">)</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">))</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
@@ -928,11 +938,20 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span>
-        <span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+        <span class="n">domain</span><span class="p">,</span>
+        <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+        <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+        <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]</span>
     <span class="n">parsed_record</span> <span class="o">=</span> <span class="n">parse_spf_record</span><span class="p">(</span>
-        <span class="n">record</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+        <span class="n">record</span><span class="p">,</span>
+        <span class="n">domain</span><span class="p">,</span>
+        <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+        <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+        <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parsed_record</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span>
     <span class="k">return</span> <span class="n">parsed_record</span></div>
