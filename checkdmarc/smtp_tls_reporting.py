@@ -140,6 +140,7 @@ def query_smtp_tls_reporting_record(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Queries DNS for an SMTP TLS Reporting record
@@ -150,6 +151,7 @@ def query_smtp_tls_reporting_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -173,7 +175,12 @@ def query_smtp_tls_reporting_record(
 
     try:
         records = query_dns(
-            target, "TXT", nameservers=nameservers, resolver=resolver, timeout=timeout
+            target,
+            "TXT",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         for record in records:
             if record.startswith(txt_prefix):
@@ -203,6 +210,7 @@ def query_smtp_tls_reporting_record(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
+                timeout_retries=timeout_retries,
             )
             for record in records:
                 if record.startswith(txt_prefix):
@@ -323,6 +331,7 @@ def check_smtp_tls_reporting(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Returns a dictionary with a parsed SMTP-TLS Reporting policy or an error.
@@ -333,6 +342,7 @@ def check_smtp_tls_reporting(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -351,7 +361,11 @@ def check_smtp_tls_reporting(
     smtp_tls_reporting_results = OrderedDict([("valid", True)])
     try:
         smtp_tls_reporting_record = query_smtp_tls_reporting_record(
-            domain, nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         warnings = smtp_tls_reporting_record["warnings"]
         smtp_tls_reporting_record = parse_smtp_tls_reporting_record(

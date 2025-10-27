@@ -71,6 +71,7 @@ def check_soa(
     nameservers: List[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Returns a dictionary of a domain's SOA record and a parsed version of the record or a dictionary with an
@@ -82,6 +83,7 @@ def check_soa(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
     Returns:
         OrderedDict: A dictionary with the following keys:
 
@@ -96,7 +98,11 @@ def check_soa(
     """
     try:
         record = get_soa_record(
-            domain, nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         results = OrderedDict([("record", record)])
     except Exception as e:

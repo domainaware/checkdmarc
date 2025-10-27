@@ -81,6 +81,13 @@ def _main():
         default=2.0,
     )
     arg_parser.add_argument(
+        "--timeout-retries",
+        help="number of times to reattempt a query after a timeout (default 2)",
+        type=int,
+        default=2,
+    )
+
+    arg_parser.add_argument(
         "-b", "--bimi-selector", default="default", help="the BIMI selector to use"
     )
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
@@ -137,6 +144,7 @@ def _main():
         include_tag_descriptions=args.descriptions,
         nameservers=args.nameserver,
         timeout=args.timeout,
+        timeout_retries=args.timeout_retries,
         bimi_selector=args.bimi_selector,
         wait=args.wait,
     )

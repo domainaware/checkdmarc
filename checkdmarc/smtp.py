@@ -334,6 +334,7 @@ def get_mx_hosts(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ):
     """
     Gets MX hostname and their addresses
@@ -367,7 +368,11 @@ def get_mx_hosts(
     dupe_hostnames = set()
     logging.debug(f"Getting MX records for {domain}")
     mx_records = get_mx_records(
-        domain, nameservers=nameservers, resolver=resolver, timeout=timeout
+        domain,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        timeout_retries=timeout_retries,
     )
     for record in mx_records:
         hosts.append(
@@ -407,16 +412,28 @@ def get_mx_hosts(
         try:
             dnssec = False
             try:
-                dnssec = test_dnssec(hostname, nameservers=nameservers, timeout=timeout)
+                dnssec = test_dnssec(
+                    hostname,
+                    nameservers=nameservers,
+                    timeout=timeout,
+                    timeout_retries=timeout_retries,
+                )
             except Exception as e:
                 logging.debug(e)
             host["dnssec"] = dnssec
             host["addresses"] = []
             host["addresses"] = get_a_records(
-                hostname, nameservers=nameservers, resolver=resolver, timeout=timeout
+                hostname,
+                nameservers=nameservers,
+                resolver=resolver,
+                timeout=timeout,
+                timeout_retries=timeout_retries,
             )
             tlsa_records = get_tlsa_records(
-                hostname, nameservers=nameservers, timeout=timeout
+                hostname,
+                nameservers=nameservers,
+                timeout=timeout,
+                timeout_retries=timeout_retries,
             )
 
             if len(tlsa_records) > 0:
@@ -436,7 +453,11 @@ def get_mx_hosts(
         for address in host["addresses"]:
             try:
                 reverse_hostnames = get_reverse_dns(
-                    address, nameservers=nameservers, resolver=resolver, timeout=timeout
+                    address,
+                    nameservers=nameservers,
+                    resolver=resolver,
+                    timeout=timeout,
+                    timeout_retries=timeout_retries,
                 )
             except DNSException:
                 reverse_hostnames = []
@@ -446,7 +467,12 @@ def get_mx_hosts(
                 )
             for reverse_hostname in reverse_hostnames:
                 try:
-                    _addresses = get_a_records(reverse_hostname, resolver=resolver)
+                    _addresses = get_a_records(
+                        reverse_hostname,
+                        resolver=resolver,
+                        timeout=timeout,
+                        timeout_retries=timeout_retries,
+                    )
                 except DNSException as warning:
                     warnings.append(str(warning))
                     _addresses = []
@@ -501,6 +527,7 @@ def check_mx(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Gets MX hostname and their addresses, or an empty list of hosts and an
@@ -515,6 +542,7 @@ def check_mx(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -541,6 +569,7 @@ def check_mx(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
+            timeout_retries=timeout_retries,
         )
     except DNSException as error:
         mx_results = OrderedDict([("hosts", []), ("error", str(error))])

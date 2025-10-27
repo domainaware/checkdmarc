@@ -140,6 +140,7 @@ def query_spf_record(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Queries DNS for an SPF record
@@ -149,6 +150,7 @@ def query_spf_record(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -166,7 +168,12 @@ def query_spf_record(
     spf_txt_records = []
     try:
         spf_type_records += query_dns(
-            domain, "SPF", nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            "SPF",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
     except (dns.resolver.NoAnswer, Exception):
         pass
@@ -181,7 +188,12 @@ def query_spf_record(
         warnings.append(message)
     try:
         answers = query_dns(
-            domain, "TXT", nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            "TXT",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         spf_record = None
         for record in answers:
@@ -272,6 +284,7 @@ def parse_spf_record(
     resolver: dns.resolver.Resolver = None,
     recursion: OrderedDict = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> OrderedDict:
     """
@@ -287,6 +300,7 @@ def parse_spf_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         recursion (OrderedDict): Results from a previous call
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
         syntax_error_marker (str): The maker for pointing out syntax errors
 
     Returns:
@@ -403,6 +417,7 @@ def parse_spf_record(
                     nameservers=nameservers,
                     resolver=resolver,
                     timeout=timeout,
+                    timeout_retries=timeout_retries,
                 )
                 if len(a_records) == 0:
                     mechanism_void_dns_lookups += 1
@@ -436,6 +451,7 @@ def parse_spf_record(
                     nameservers=nameservers,
                     resolver=resolver,
                     timeout=timeout,
+                    timeout_retries=timeout_retries,
                 )
 
                 if len(mx_hosts) == 0:
@@ -465,6 +481,7 @@ def parse_spf_record(
                             nameservers=nameservers,
                             resolver=resolver,
                             timeout=timeout,
+                            timeout_retries=timeout_retries,
                         )
                         host_ips[hostname] = _addresses
 
@@ -542,6 +559,7 @@ def parse_spf_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
+                        timeout_retries=timeout_retries,
                     )
                     redirect_record = redirect_record["record"]
                     redirect = parse_spf_record(
@@ -552,6 +570,7 @@ def parse_spf_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
+                        timeout_retries=timeout_retries,
                     )
                     parsed["all"] = redirect["parsed"]["all"]
                     mechanism_dns_lookups += redirect["dns_lookups"]
@@ -599,6 +618,7 @@ def parse_spf_record(
                     nameservers=nameservers,
                     resolver=resolver,
                     timeout=timeout,
+                    timeout_retries=timeout_retries,
                 )
                 parsed["exp"] = txts[0] if txts else None
 
@@ -633,6 +653,7 @@ def parse_spf_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
+                        timeout_retries=timeout_retries,
                     )
                     include_record = include_record["record"]
                     include = parse_spf_record(
@@ -643,6 +664,7 @@ def parse_spf_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
+                        timeout_retries=timeout_retries,
                     )
                     total_dns_lookups += include["dns_lookups"]
                     total_void_dns_lookups += include["void_dns_lookups"]
@@ -773,6 +795,7 @@ def get_spf_record(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Retrieves and parses an SPF record
@@ -782,6 +805,7 @@ def get_spf_record(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         timeout (float): Number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         OrderedDict: An SPF record parsed by result
@@ -812,6 +836,7 @@ def check_spf(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Returns a dictionary with a parsed SPF record or an error.
@@ -822,6 +847,7 @@ def check_spf(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -847,7 +873,11 @@ def check_spf(
     )
     try:
         spf_query = query_spf_record(
-            domain, nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         spf_results["record"] = spf_query["record"]
         spf_results["warnings"] = spf_query["warnings"]
@@ -860,6 +890,7 @@ def check_spf(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
+            timeout_retries=timeout_retries,
         )
 
         spf_results["dns_lookups"] = parsed_spf["dns_lookups"]
