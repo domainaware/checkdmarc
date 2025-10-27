@@ -180,7 +180,7 @@ def query_dns(
             return query_dns(
                 domain,
                 record_type,
-                nameservers,
+                nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
                 timeout_retries=timeout_retries,
