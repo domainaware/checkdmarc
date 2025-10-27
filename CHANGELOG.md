@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.15
+
+- Fix bug in MX TLSA detection introduced in `5.12.13`
+
 ## 5.12.14
 
 - Fix bug in MX DNSSEC detection introduced in `5.12.13`

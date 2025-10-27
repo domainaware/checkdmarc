@@ -432,7 +432,6 @@ def get_mx_hosts(
                 hostname,
                 nameservers=nameservers,
                 timeout=timeout,
-                timeout_retries=timeout_retries,
             )
 
             if len(tlsa_records) > 0:
