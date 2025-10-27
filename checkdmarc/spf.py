@@ -488,8 +488,8 @@ def parse_spf_record(
                                 dns_lookups=total_dns_lookups,
                             )
 
-                    except DNSException as error:
-                        if isinstance(error, DNSExceptionNXDOMAIN):
+                    except DNSException as dnserror:
+                        if isinstance(dnserror, DNSExceptionNXDOMAIN):
                             mechanism_void_dns_lookups += 1
                             total_void_dns_lookups += 1
                             if total_void_dns_lookups > 2:
@@ -499,7 +499,7 @@ def parse_spf_record(
                                     "(RFC 7208 § 4.6.4)",
                                     void_dns_lookups=total_void_dns_lookups,
                                 )
-                        raise _SPFWarning(str(error))
+                        raise _SPFWarning(str(dnserror))
                 pairs = [
                     ("action", action),
                     ("mechanism", mechanism),
