@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.18
+
+- Fix void `a` SPF mechanism lookup output
+
 ## 5.12.17
 
 - Fix crash on DNS retry

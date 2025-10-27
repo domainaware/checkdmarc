@@ -227,6 +227,18 @@
             "justMyCode": true
         },
         {
+            "name": "checkdmarc --skip-tls python.org",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "python.org"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --skip-tls  kickbox.com",
             "type": "debugpy",
             "request": "launch",
