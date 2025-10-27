@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc &mdash; checkdmarc 5.12.12 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 5.12.13 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=17fb43a7"></script>
+      <script src="../_static/documentation_options.js?v=b383c7be"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -134,6 +134,7 @@
     <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
     <span class="n">wait</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">OrderedDict</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrderedDict</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -154,6 +155,7 @@
 <span class="sd">        resolver (dns.resolver.Resolver): A resolver object to use for DNS</span>
 <span class="sd">                                          requests</span>
 <span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
+<span class="sd">        timeout_retries (int): The number of times to reattempt a query after a timeout</span>
 <span class="sd">        wait (float): number of seconds to wait between processing domains</span>
 
 <span class="sd">    Returns:</span>
@@ -214,11 +216,16 @@
             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">mta_sts_mx_patterns</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;mta_sts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">check_mta_sts</span><span class="p">(</span>
-            <span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+            <span class="n">domain</span><span class="p">,</span>
+            <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+            <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;mta_sts&quot;</span><span class="p">][</span><span class="s2">&quot;valid&quot;</span><span class="p">]:</span>
             <span class="n">mta_sts_mx_patterns</span> <span class="o">=</span> <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;mta_sts&quot;</span><span class="p">][</span><span class="s2">&quot;policy&quot;</span><span class="p">][</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span>
@@ -230,6 +237,7 @@
             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;spf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">check_spf</span><span class="p">(</span>
@@ -238,6 +246,7 @@
             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;dmarc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">check_dmarc</span><span class="p">(</span>
@@ -247,10 +256,15 @@
             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;smtp_tls_reporting&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">check_smtp_tls_reporting</span><span class="p">(</span>
-            <span class="n">domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+            <span class="n">domain</span><span class="p">,</span>
+            <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+            <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">bimi_selector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">domain_results</span><span class="p">[</span><span class="s2">&quot;bimi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">check_bimi</span><span class="p">(</span>
@@ -261,6 +275,7 @@
                 <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
                 <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
                 <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+                <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_results</span><span class="p">)</span>
@@ -283,6 +298,7 @@
     <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a dictionary of nameservers and warnings or a dictionary with an</span>
@@ -314,6 +330,7 @@
             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="n">ns_results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hostnames&quot;</span><span class="p">,</span> <span class="p">[]),</span> <span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())])</span>
