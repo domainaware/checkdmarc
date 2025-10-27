@@ -758,13 +758,15 @@ def parse_spf_record(
             if isinstance(warning, (_SPFMissingRecords, DNSExceptionNXDOMAIN)):
                 mechanism_void_dns_lookups += 1
                 total_void_dns_lookups += 1
-                mechanism = OrderedDict([
-                    ("mechanism", mechanism),
-                    ("value", value),
-                    ("record", None),
-                    ("dns_lookups", 1),
-                    ("void_dns_lookups", 1),
-                ])
+                mechanism = OrderedDict(
+                    [
+                        ("mechanism", mechanism),
+                        ("value", value),
+                        ("record", None),
+                        ("dns_lookups", 1),
+                        ("void_dns_lookups", 1),
+                    ]
+                )
                 parsed["mechanisms"].append(mechanism)
                 if total_void_dns_lookups > 2:
                     raise SPFTooManyVoidDNSLookups(
