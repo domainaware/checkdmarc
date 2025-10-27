@@ -141,12 +141,16 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries
+            timeout_retries=timeout_retries,
         )
 
         mta_sts_mx_patterns = None
         domain_results["mta_sts"] = check_mta_sts(
-            domain, nameservers=nameservers, resolver=resolver, timeout=timeout, timeout_retries=timeout_retries
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         if domain_results["mta_sts"]["valid"]:
             mta_sts_mx_patterns = domain_results["mta_sts"]["policy"]["mx"]
@@ -158,7 +162,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries
+            timeout_retries=timeout_retries,
         )
 
         domain_results["spf"] = check_spf(
@@ -167,7 +171,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries
+            timeout_retries=timeout_retries,
         )
 
         domain_results["dmarc"] = check_dmarc(
@@ -177,11 +181,15 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries
+            timeout_retries=timeout_retries,
         )
 
         domain_results["smtp_tls_reporting"] = check_smtp_tls_reporting(
-            domain, nameservers=nameservers, resolver=resolver, timeout=timeout,timeout_retries=timeout_retries
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         if bimi_selector is not None:
             domain_results["bimi"] = check_bimi(
@@ -192,7 +200,7 @@ def check_domains(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
-                timeout_retries=timeout_retries
+                timeout_retries=timeout_retries,
             )
 
         results.append(domain_results)
@@ -244,8 +252,7 @@ def check_ns(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries
-
+            timeout_retries=timeout_retries,
         )
     except DNSException as error:
         ns_results = OrderedDict([("hostnames", []), ("error", error.__str__())])

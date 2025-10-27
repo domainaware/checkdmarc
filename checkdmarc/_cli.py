@@ -86,7 +86,7 @@ def _main():
         type=int,
         default=2,
     )
-    arg_parser.a
+
     arg_parser.add_argument(
         "-b", "--bimi-selector", default="default", help="the BIMI selector to use"
     )
