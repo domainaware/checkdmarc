@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.12.13
+
+- Add timeout retry options to the CLI and API (Closes #90 and #180)
+- Rename caught exception value in SPF parsing parsing (PR #192 closes #191)
+
 ## 5.12.12
 
 - Do not attempt to include an SMTP error code when none is provided (Close #189)
