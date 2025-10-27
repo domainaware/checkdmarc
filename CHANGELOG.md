@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.14
+
+- Fix bug in MX DNSSEC detection introduced in `5.12.13`
+
 ## 5.12.13
 
 - Add timeout retry options to the CLI and API (Closes #90 and #180)
