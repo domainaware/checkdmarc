@@ -59,6 +59,7 @@ def check_domains(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
     wait: float = 0.0,
 ) -> Union[OrderedDict, list[OrderedDict]]:
     """
@@ -79,6 +80,7 @@ def check_domains(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
         wait (float): number of seconds to wait between processing domains
 
     Returns:
@@ -139,11 +141,12 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
+            timeout_retries=timeout_retries
         )
 
         mta_sts_mx_patterns = None
         domain_results["mta_sts"] = check_mta_sts(
-            domain, nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain, nameservers=nameservers, resolver=resolver, timeout=timeout, timeout_retries=timeout_retries
         )
         if domain_results["mta_sts"]["valid"]:
             mta_sts_mx_patterns = domain_results["mta_sts"]["policy"]["mx"]
@@ -155,6 +158,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
+            timeout_retries=timeout_retries
         )
 
         domain_results["spf"] = check_spf(
@@ -163,6 +167,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
+            timeout_retries=timeout_retries
         )
 
         domain_results["dmarc"] = check_dmarc(
@@ -172,10 +177,11 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
+            timeout_retries=timeout_retries
         )
 
         domain_results["smtp_tls_reporting"] = check_smtp_tls_reporting(
-            domain, nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain, nameservers=nameservers, resolver=resolver, timeout=timeout,timeout_retries=timeout_retries
         )
         if bimi_selector is not None:
             domain_results["bimi"] = check_bimi(
@@ -186,6 +192,7 @@ def check_domains(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
+                timeout_retries=timeout_retries
             )
 
         results.append(domain_results)
@@ -205,6 +212,7 @@ def check_ns(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Returns a dictionary of nameservers and warnings or a dictionary with an
@@ -236,6 +244,8 @@ def check_ns(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
+            timeout_retries=timeout_retries
+
         )
     except DNSException as error:
         ns_results = OrderedDict([("hostnames", []), ("error", error.__str__())])
