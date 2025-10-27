@@ -145,6 +145,7 @@ def query_mta_sts_record(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Queries DNS for an MTA-STS record
@@ -155,6 +156,8 @@ def query_mta_sts_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
+
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -178,7 +181,12 @@ def query_mta_sts_record(
 
     try:
         records = query_dns(
-            target, "TXT", nameservers=nameservers, resolver=resolver, timeout=timeout
+            target,
+            "TXT",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         for record in records:
             if record.startswith(txt_prefix):
@@ -206,6 +214,7 @@ def query_mta_sts_record(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
+                timeout_retries=timeout_retries,
             )
             for record in records:
                 if record.startswith(txt_prefix):
@@ -433,6 +442,7 @@ def check_mta_sts(
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> OrderedDict:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.
@@ -443,6 +453,8 @@ def check_mta_sts(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
+        timeout_retries (int): The number of times to reattempt a query after a timeout
+
 
     Returns:
         OrderedDict: An ``OrderedDict`` with the following keys:
@@ -462,7 +474,11 @@ def check_mta_sts(
     mta_sts_results = OrderedDict([("valid", True)])
     try:
         mta_sts_record = query_mta_sts_record(
-            domain, nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         warnings = mta_sts_record["warnings"]
         mta_sts_record = parse_mta_sts_record(mta_sts_record["record"])
