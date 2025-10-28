@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.22
+
+- Restore `SPFRecordNotFound.__init__()` that was accidentally deleted in 5.2.19 (closes #189)
+
 ## 5.2.21
 
 - Fix typo in the DMARC record does not exist error message (Closes #195)

@@ -77,6 +77,12 @@ class _SPFDuplicateInclude(_SPFWarning):
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
 
+    def __init__(self, error, domain):
+        if isinstance(error, dns.exception.Timeout):
+            error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+        self.error = error
+        self.domain = domain
+
 
 class MultipleSPFRTXTRecords(SPFError):
     """Raised when multiple TXT spf1 records are found"""

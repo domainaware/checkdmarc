@@ -250,6 +250,18 @@
             "console": "integratedTerminal",
             "justMyCode": true
         },
+         {
+            "name": "checkdmarc --skip-tls  rt.bic.com",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "checkdmarc._cli",
+            "args": [
+                "--skip-tls",
+                "rt.bic.com",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
         {
             "name": "checkdmarc --skip-tls  ssa.gov",
             "type": "debugpy",
