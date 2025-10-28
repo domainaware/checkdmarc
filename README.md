@@ -34,6 +34,6 @@ A Python module, command line utility, and [web application](https://github.com/
 - SOA record parsing
 - Nameserver listing
 
-## Run using docker
+## Docker support
 - Build the image using docker `build . -t checkdmarc`
 - Use the image with a command like `docker run --rm checkdmarc google.nl`
