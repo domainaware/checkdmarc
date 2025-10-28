@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.12.19 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.12.20 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=0390fac2"></script>
+      <script src="../../_static/documentation_options.js?v=292b3d18"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -560,16 +560,13 @@
                     <span class="p">)</span>
 
                 <span class="c1"># RFC 7208 § 4.6.4: no more than 10 DNS queries total per evaluation</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mx_hosts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">9</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mx_hosts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFTooManyDNSLookups</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> has more than 9 MX records - &quot;</span> <span class="s2">&quot;(RFC 7208 § 4.6.4)&quot;</span><span class="p">,</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> has more than 10 MX records - &quot;</span> <span class="s2">&quot;(RFC 7208 § 4.6.4)&quot;</span><span class="p">,</span>
                         <span class="n">dns_lookups</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">mx_hosts</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="n">host_ips</span> <span class="o">=</span> <span class="p">{}</span>
                 <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">mx_hosts</span><span class="p">:</span>
-                    <span class="c1"># count one DNS query per MX target</span>
-                    <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="n">hostname</span> <span class="o">=</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
                     <span class="c1"># --- perform A/AAAA resolution for each MX host ---</span>
                     <span class="k">try</span><span class="p">:</span>
