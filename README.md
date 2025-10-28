@@ -35,5 +35,5 @@ A Python module, command line utility, and [web application](https://github.com/
 - Nameserver listing
 
 ## Docker support
-- Build the image using docker `build . -t checkdmarc`
-- Use the image with a command like `docker run --rm checkdmarc google.nl`
+1. Build the image using docker `build . -t checkdmarc`
+2. Use the image with a command like `docker run --rm checkdmarc google.nl`
