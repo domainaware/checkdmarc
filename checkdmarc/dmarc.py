@@ -575,7 +575,7 @@ def query_dmarc_record(
         )
         location = base_domain
     if record is None:
-        error_str = "A DMARC record does not exist"
+        error_str = "A DMARC record does not exist "
         if domain == base_domain:
             error_str += "."
         else:

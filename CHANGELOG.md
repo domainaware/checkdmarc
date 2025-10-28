@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.21
+
+- Fix typo in the DMARC record does not exist error message (Closes #195)
+
 ## 5.2.20
 
 - Don't overcount lookups caused by the `mx` mechanism (Closes #197)
