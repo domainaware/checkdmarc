@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.20
+
+- Don't overcount lookups caused by the `mx` mechanism (Closes #197)
+
 ## 5.2.19
 
 - Make warning text consistent

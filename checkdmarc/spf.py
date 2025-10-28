@@ -454,16 +454,13 @@ def parse_spf_record(
                     )
 
                 # RFC 7208 § 4.6.4: no more than 10 DNS queries total per evaluation
-                if len(mx_hosts) > 9:
+                if len(mx_hosts) > 10:
                     raise SPFTooManyDNSLookups(
-                        f"{value} has more than 9 MX records - " "(RFC 7208 § 4.6.4)",
+                        f"{value} has more than 10 MX records - " "(RFC 7208 § 4.6.4)",
                         dns_lookups=len(mx_hosts),
                     )
                 host_ips = {}
                 for host in mx_hosts:
-                    # count one DNS query per MX target
-                    mechanism_dns_lookups += 1
-                    total_dns_lookups += 1
                     hostname = host["hostname"]
                     # --- perform A/AAAA resolution for each MX host ---
                     try:
