@@ -83,6 +83,9 @@ class SPFRecordNotFound(SPFError):
         self.error = error
         self.domain = domain
 
+    def __str__(self):
+        return str(self.error)
+
 
 class MultipleSPFRTXTRecords(SPFError):
     """Raised when multiple TXT spf1 records are found"""
