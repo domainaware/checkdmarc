@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.19
+
+- Make warning text consistent
+
 ## 5.2.18
 
 - Fix void `a` SPF mechanism lookup output

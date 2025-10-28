@@ -282,7 +282,7 @@ class Test(unittest.TestCase):
         domain = "seanthegeek.net"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
+            "{0}: An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
                 domain
             ),
             results["warnings"],
