@@ -77,6 +77,15 @@ class _SPFDuplicateInclude(_SPFWarning):
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
 
+    def __init__(self, error, domain):
+        if isinstance(error, dns.exception.Timeout):
+            error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+        self.error = error
+        self.domain = domain
+
+    def __str__(self):
+        return str(self.error)
+
 
 class MultipleSPFRTXTRecords(SPFError):
     """Raised when multiple TXT spf1 records are found"""
@@ -763,7 +772,7 @@ def parse_spf_record(
                         "lookups (RFC 7208 § 4.6.4)",
                         void_dns_lookups=total_void_dns_lookups,
                     )
-            warnings.append(f"{value}: {str(warning)}")
+            warnings.append(f"{value or domain}: {str(warning)}")
 
     if error:
         result = OrderedDict(

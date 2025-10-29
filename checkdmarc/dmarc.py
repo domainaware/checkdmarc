@@ -493,7 +493,7 @@ def _query_dmarc_record(
     except MultipleDMARCRecords as error:
         raise error
     except Exception as error:
-        raise DMARCRecordNotFound(error)
+        raise DMARCError(error)
 
     return dmarc_record
 
@@ -554,7 +554,12 @@ def query_dmarc_record(
 
     try:
         root_records = query_dns(
-            domain, "TXT", nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            "TXT",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         for root_record in root_records:
             if root_record.startswith("v=DMARC1"):
@@ -575,11 +580,11 @@ def query_dmarc_record(
         )
         location = base_domain
     if record is None:
-        error_str = "A DMARC record does not exist "
+        error_str = "A DMARC record does not exist"
         if domain == base_domain:
             error_str += "."
         else:
-            error_str += "for this subdomain or its base domain."
+            error_str += " for this subdomain or its base domain."
         raise DMARCRecordNotFound(error_str)
 
     return OrderedDict(
