@@ -772,7 +772,7 @@ def parse_spf_record(
                         "lookups (RFC 7208 § 4.6.4)",
                         void_dns_lookups=total_void_dns_lookups,
                     )
-            warnings.append(f"{value}: {str(warning)}")
+            warnings.append(f"{value or domain}: {str(warning)}")
 
     if error:
         result = OrderedDict(
