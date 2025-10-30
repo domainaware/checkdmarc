@@ -97,6 +97,7 @@ def query_dns(
     domain: str,
     record_type: str,
     *,
+    quoted_txt_segments: bool = False,
     nameservers: list[str] = None,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
@@ -110,6 +111,7 @@ def query_dns(
     Args:
         domain (str): The domain or subdomain to query about
         record_type (str): The record type to query for
+        quoted_txt_segments (bool): Preserve quotes in TXT records
         nameservers (list): A list of one or more nameservers to use
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
@@ -122,7 +124,7 @@ def query_dns(
     """
     domain = normalize_domain(domain)
     record_type = record_type.upper()
-    cache_key = f"{domain}_{record_type}"
+    cache_key = f"{domain}_{record_type}_{quoted_txt_segments}"
     if cache is None:
         cache = DNS_CACHE
     if type(cache) is ExpiringDict:
@@ -158,11 +160,20 @@ def query_dns(
                 answers,
             )
         )
-        _resource_record = [
-            resource_record[0][:0].join(resource_record)
-            for resource_record in resource_records
-            if resource_record
-        ]
+        if quoted_txt_segments:
+            # Join each sequence of byte chunks, adding quotes around each
+            _resource_record = [
+                b"".join(b'"' + part + b'"' for part in record)
+                for record in resource_records
+                if record  # skip empty or None
+            ]
+        else:
+            # Join each sequence of byte chunks into a single bytes object
+            _resource_record = [
+                b"".join(record)
+                for record in resource_records
+                if record  # skip empty or None
+            ]
         records = []
         for r in _resource_record:
             try:
@@ -188,7 +199,7 @@ def query_dns(
             )
         records = list(
             map(
-                lambda r: r.to_text().replace('"', "").rstrip("."),
+                lambda r: r.to_text().rstrip("."),
                 answers,
             )
         )
@@ -296,6 +307,7 @@ def get_txt_records(
     domain: str,
     *,
     nameservers: list[str] = None,
+    quoted_txt_segments: bool = False,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -305,6 +317,7 @@ def get_txt_records(
 
     Args:
         domain (str): A domain name
+        quoted_txt_segments (bool): Preserve quotes in TXT records
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
@@ -320,7 +333,13 @@ def get_txt_records(
     """
     try:
         records = query_dns(
-            domain, "TXT", nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            "TXT",
+            quoted_txt_segments=quoted_txt_segments,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
     except dns.resolver.NXDOMAIN:
         raise DNSExceptionNXDOMAIN("The domain does not exist.")
@@ -470,7 +489,12 @@ def get_mx_records(
     try:
         logging.debug(f"Checking for MX records on {domain}")
         answers = query_dns(
-            domain, "MX", nameservers=nameservers, resolver=resolver, timeout=timeout
+            domain,
+            "MX",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
         )
         if answers == ["0 "]:
             logging.debug('"No Service" MX record found')

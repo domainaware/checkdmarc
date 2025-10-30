@@ -138,6 +138,7 @@ def query_spf_record(
     domain: str,
     *,
     nameservers: list[str] = None,
+    quoted_txt_segments: bool = False,
     resolver: dns.resolver.Resolver = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -147,6 +148,7 @@ def query_spf_record(
 
     Args:
         domain (str): A domain name
+        quoted_txt_segments (bool): Retain quotes around TXT segments
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         timeout (float): number of seconds to wait for an answer from DNS
@@ -170,6 +172,7 @@ def query_spf_record(
         spf_type_records += query_dns(
             domain,
             "SPF",
+            quoted_txt_segments=quoted_txt_segments,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
@@ -190,6 +193,7 @@ def query_spf_record(
         answers = query_dns(
             domain,
             "TXT",
+            quoted_txt_segments=quoted_txt_segments,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
@@ -208,7 +212,7 @@ def query_spf_record(
             # "v=spf1".  Note that the version section is terminated by either an
             # SP character or the end of the record. As an example, a record with
             # a version section of "v=spf10" does not match and is discarded.
-            if record.startswith(f"{txt_prefix} ") or record == txt_prefix:
+            if record.strip('"').startswith(txt_prefix):
                 spf_txt_records.append(record)
             elif record.startswith(txt_prefix):
                 raise SPFRecordNotFound(
@@ -317,6 +321,7 @@ def parse_spf_record(
     """
     logging.debug(f"Parsing the SPF record on {domain}")
     domain = normalize_domain(domain)
+    record.replace('"', "")
 
     if seen is None:
         seen = [domain]
@@ -890,6 +895,7 @@ def check_spf(
     try:
         spf_query = query_spf_record(
             domain,
+            quoted_txt_segments=True,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
