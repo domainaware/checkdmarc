@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.12.24
+
+- Properly detect SPF records split with quotes (Closes #200)
+- Always show the related domain in SPF warnings (Closes #199)
+- Fix typo in the DMARC record does not exist error message (Closes #195)
+- Use `timeout_retries` when querying for MX records
+
 ## 5.12.23
 
 - Restore constant warning messages without breaking anything
