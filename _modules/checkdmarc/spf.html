@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.12.23 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.12.24 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1ed3b772"></script>
+      <script src="../../_static/documentation_options.js?v=d55a27bf"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -241,6 +241,7 @@
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">quoted_txt_segments</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
     <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
@@ -250,6 +251,7 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        domain (str): A domain name</span>
+<span class="sd">        quoted_txt_segments (bool): Retain quotes around TXT segments</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
 <span class="sd">        resolver (dns.resolver.Resolver): A resolver object to use for DNS requests</span>
 <span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
@@ -273,6 +275,7 @@
         <span class="n">spf_type_records</span> <span class="o">+=</span> <span class="n">query_dns</span><span class="p">(</span>
             <span class="n">domain</span><span class="p">,</span>
             <span class="s2">&quot;SPF&quot;</span><span class="p">,</span>
+            <span class="n">quoted_txt_segments</span><span class="o">=</span><span class="n">quoted_txt_segments</span><span class="p">,</span>
             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
@@ -293,6 +296,7 @@
         <span class="n">answers</span> <span class="o">=</span> <span class="n">query_dns</span><span class="p">(</span>
             <span class="n">domain</span><span class="p">,</span>
             <span class="s2">&quot;TXT&quot;</span><span class="p">,</span>
+            <span class="n">quoted_txt_segments</span><span class="o">=</span><span class="n">quoted_txt_segments</span><span class="p">,</span>
             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
@@ -311,7 +315,7 @@
             <span class="c1"># &quot;v=spf1&quot;.  Note that the version section is terminated by either an</span>
             <span class="c1"># SP character or the end of the record. As an example, a record with</span>
             <span class="c1"># a version section of &quot;v=spf10&quot; does not match and is discarded.</span>
-            <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">txt_prefix</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">record</span> <span class="o">==</span> <span class="n">txt_prefix</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">txt_prefix</span><span class="p">):</span>
                 <span class="n">spf_txt_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">txt_prefix</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span>
@@ -423,6 +427,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing the SPF record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+    <span class="n">record</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">seen</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">seen</span> <span class="o">=</span> <span class="p">[</span><span class="n">domain</span><span class="p">]</span>
@@ -878,7 +883,7 @@
                         <span class="s2">&quot;lookups (RFC 7208 § 4.6.4)&quot;</span><span class="p">,</span>
                         <span class="n">void_dns_lookups</span><span class="o">=</span><span class="n">total_void_dns_lookups</span><span class="p">,</span>
                     <span class="p">)</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">domain</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
@@ -1002,6 +1007,7 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="n">spf_query</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span>
             <span class="n">domain</span><span class="p">,</span>
+            <span class="n">quoted_txt_segments</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
             <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>

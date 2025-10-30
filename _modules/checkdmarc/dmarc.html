@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.dmarc &mdash; checkdmarc 5.12.23 documentation</title>
+  <title>checkdmarc.dmarc &mdash; checkdmarc 5.12.24 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1ed3b772"></script>
+      <script src="../../_static/documentation_options.js?v=d55a27bf"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -606,7 +606,7 @@
     <span class="k">except</span> <span class="n">MultipleDMARCRecords</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">error</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">DMARCError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">dmarc_record</span>
 
@@ -669,7 +669,12 @@
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">root_records</span> <span class="o">=</span> <span class="n">query_dns</span><span class="p">(</span>
-            <span class="n">domain</span><span class="p">,</span> <span class="s2">&quot;TXT&quot;</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+            <span class="n">domain</span><span class="p">,</span>
+            <span class="s2">&quot;TXT&quot;</span><span class="p">,</span>
+            <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+            <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">for</span> <span class="n">root_record</span> <span class="ow">in</span> <span class="n">root_records</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">root_record</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;v=DMARC1&quot;</span><span class="p">):</span>
@@ -690,11 +695,11 @@
         <span class="p">)</span>
         <span class="n">location</span> <span class="o">=</span> <span class="n">base_domain</span>
     <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">error_str</span> <span class="o">=</span> <span class="s2">&quot;A DMARC record does not exist &quot;</span>
+        <span class="n">error_str</span> <span class="o">=</span> <span class="s2">&quot;A DMARC record does not exist&quot;</span>
         <span class="k">if</span> <span class="n">domain</span> <span class="o">==</span> <span class="n">base_domain</span><span class="p">:</span>
             <span class="n">error_str</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">error_str</span> <span class="o">+=</span> <span class="s2">&quot;for this subdomain or its base domain.&quot;</span>
+            <span class="n">error_str</span> <span class="o">+=</span> <span class="s2">&quot; for this subdomain or its base domain.&quot;</span>
         <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="n">error_str</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span>
