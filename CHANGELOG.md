@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.12.25
+
+- Remove quotes from SPF record output (Closes #202)
+
 ## 5.12.24
 
 - Properly detect SPF records split with quotes (Closes #200)

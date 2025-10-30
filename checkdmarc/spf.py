@@ -248,7 +248,7 @@ def query_spf_record(
                         f"SPF TXT string chunk #{i} for {domain} is {blen} characters (>255). "
                         "Each individual TXT character-string should be ≤ 255 characters (RFC 7208 § 3.3)."
                     )
-            joined = "".join(quoted_chunks)
+            joined = "".join(quoted_chunks).replace('"', "")
         else:
             joined = spf_record or ""
             blen = len(joined.encode("utf-8"))
@@ -273,6 +273,8 @@ def query_spf_record(
     except Exception:
         # Never let the size check impact normal operation
         pass
+
+    spf_record = spf_record.replace('"', "")
 
     return OrderedDict([("record", spf_record), ("warnings", warnings)])
 
