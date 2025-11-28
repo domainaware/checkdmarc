@@ -374,6 +374,38 @@ dmarc_tags = OrderedDict(
         'specified by the "p" '
         "tag MUST be applied "
         "for subdomains.",
+        values={
+            "none": "The Domain Owner requests "
+            "no specific action be "
+            "taken regarding delivery "
+            "of messages.",
+            "quarantine": "The Domain Owner "
+            "wishes to have "
+            "email that fails "
+            "the DMARC mechanism "
+            "check be treated by "
+            "Mail Receivers as "
+            "suspicious. "
+            "Depending on the "
+            "capabilities of the "
+            "MailReceiver, "
+            "this can mean "
+            '"place into spam '
+            'folder", '
+            '"scrutinize '
+            "with additional "
+            'intensity", and/or '
+            '"flag as '
+            'suspicious".',
+            "reject": "The Domain Owner wishes "
+            "for Mail Receivers to "
+            "reject "
+            "email that fails the "
+            "DMARC mechanism check. "
+            "Rejection SHOULD "
+            "occur during the SMTP "
+            "transaction.",
+        },
     ),
     v=OrderedDict(
         name="Version",
@@ -937,6 +969,8 @@ def parse_dmarc_record(
     tags["p"]["value"] = tags["p"]["value"].lower()
     if "sp" not in tags:
         tags["sp"] = OrderedDict([("value", tags["p"]["value"]), ("explicit", False)])
+    # Normalize sp value for validation consistency (mirrors p behavior)
+    tags["sp"]["value"] = tags["sp"]["value"].lower()
     if list(tags.keys())[1] != "p":
         raise DMARCSyntaxError("the p tag must immediately follow the v tag.")
     tags["v"]["value"] = tags["v"]["value"].upper()
