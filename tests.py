@@ -261,6 +261,18 @@ class Test(unittest.TestCase):
             domain,
         )
 
+    def testSPFInvalidMissingSpaceBeforeAllMechanism(self):
+        """There is not a space between the IP4 and all mechanism in the SPF record."""
+        spf_record = "v=spf1 ip4:8.8.8.8~all"
+        domain = "example.com"
+
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            spf_record,
+            domain,
+        )
+
     def testSPFIncludeLoop(self):
         """SPF record with include loop raises SPFIncludeLoop"""
 

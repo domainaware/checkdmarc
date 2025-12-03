@@ -48,6 +48,14 @@ AFTER_ALL_REGEX_STRING = r"((?:^|\s)[+\-~?]?all)\s+.*"
 SPF_MECHANISM_REGEX = re.compile(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re.IGNORECASE)
 
+# Detect an 'all' mechanism glued to the previous term without required
+# whitespace, e.g., "ip4:203.0.113.7~all". This should be rejected as a
+# syntax error per RFC 7208 (terms must be space-separated).
+# We require that the qualifier character (one of + - ~ ?) immediately precedes
+# 'all' and that 'all' ends the term (followed by whitespace or end of string),
+# so we don't falsely match hostnames like 'foo-all.example'.
+CONCATENATED_ALL_REGEX = re.compile(r"\S([+\-~?])all(?=\s|$)", re.IGNORECASE)
+
 
 class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
@@ -128,6 +136,9 @@ class _SPFGrammar(Grammar):
 
     version_tag = Regex(SPF_VERSION_TAG_REGEX_STRING)
     mechanism = Regex(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
+    # Note: Pyleri skips whitespace by default; explicitly matching whitespace
+    # would break many valid records. We keep the grammar permissive here and
+    # perform whitespace separation checks in Python before invoking the grammar.
     START = Sequence(version_tag, Repeat(mechanism))
 
 
@@ -348,6 +359,17 @@ def parse_spf_record(
     if len(AFTER_ALL_REGEX.findall(record)) > 0:
         warnings.append("Any text after the all mechanism is ignored.")
         record = AFTER_ALL_REGEX.sub(r"\1", record)
+
+    # Reject records where an 'all' mechanism is concatenated to the previous
+    # term without a separating space, e.g., "ip4:203.0.113.7~all".
+    m = CONCATENATED_ALL_REGEX.search(record)
+    if m:
+        pos = m.start(1)
+        marked_record = record[:pos] + syntax_error_marker + record[pos:]
+        raise SPFSyntaxError(
+            f"{domain}: Expected whitespace before 'all' at position {pos} "
+            f"(marked with {syntax_error_marker}) in: {marked_record}"
+        )
 
     parsed_record = spf_syntax_checker.parse(record)
 
