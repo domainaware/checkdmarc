@@ -615,16 +615,15 @@ def parse_spf_record(
                     raise _SPFWarning(str(error))
 
             elif mechanism == "exp":
-                # exp is a modifier that does not count as a DNS lookup
-                # Thread resolver/timeouts and handle empty TXT gracefully.
-                txts = get_txt_records(
-                    value,
-                    nameservers=nameservers,
-                    resolver=resolver,
-                    timeout=timeout,
-                    timeout_retries=timeout_retries,
-                )
-                parsed["exp"] = txts[0] if txts else None
+                # RFC 7208 § 6.2 (exp modifier): The explanation string is
+                # evaluated at runtime (after result == fail) and may contain
+                # macros. It MUST NOT contribute to DNS lookup counting and
+                # SHOULD NOT be resolved during static parsing.
+                #
+                # Therefore, do not perform any DNS lookups here. Simply
+                # preserve the provided value (which may include macros) so a
+                # caller with SMTP context can expand it at evaluation time.
+                parsed["exp"] = value
 
             elif mechanism == "all":
                 parsed["all"] = action
