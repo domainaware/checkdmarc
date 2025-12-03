@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.12.26
+
+### Fixes
+
+- SPF void miscount (PR #212 closes issue #211)
+- Reject SPF records with an `all` mechanism that is not preceded by whitespace (PR #210)
+
 ## 5.12.25
 
 - Remove quotes from SPF record output (Closes #202)
