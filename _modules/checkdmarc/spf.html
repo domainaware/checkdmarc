@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.12.25 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.12.26 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=7122a3a6"></script>
+      <script src="../../_static/documentation_options.js?v=46da29cc"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -122,6 +122,14 @@
 <span class="n">SPF_MECHANISM_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">SPF_MECHANISM_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
 <span class="n">AFTER_ALL_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">AFTER_ALL_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
 
+<span class="c1"># Detect an &#39;all&#39; mechanism glued to the previous term without required</span>
+<span class="c1"># whitespace, e.g., &quot;ip4:203.0.113.7~all&quot;. This should be rejected as a</span>
+<span class="c1"># syntax error per RFC 7208 (terms must be space-separated).</span>
+<span class="c1"># We require that the qualifier character (one of + - ~ ?) immediately precedes</span>
+<span class="c1"># &#39;all&#39; and that &#39;all&#39; ends the term (followed by whitespace or end of string),</span>
+<span class="c1"># so we don&#39;t falsely match hostnames like &#39;foo-all.example&#39;.</span>
+<span class="n">CONCATENATED_ALL_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\S([+\-~?])all(?=\s|$)&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
 
 <div class="viewcode-block" id="SPFError">
 <a class="viewcode-back" href="../../api.html#checkdmarc.spf.SPFError">[docs]</a>
@@ -229,6 +237,9 @@
 
     <span class="n">version_tag</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">SPF_VERSION_TAG_REGEX_STRING</span><span class="p">)</span>
     <span class="n">mechanism</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">SPF_MECHANISM_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+    <span class="c1"># Note: Pyleri skips whitespace by default; explicitly matching whitespace</span>
+    <span class="c1"># would break many valid records. We keep the grammar permissive here and</span>
+    <span class="c1"># perform whitespace separation checks in Python before invoking the grammar.</span>
     <span class="n">START</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">(</span><span class="n">version_tag</span><span class="p">,</span> <span class="n">Repeat</span><span class="p">(</span><span class="n">mechanism</span><span class="p">))</span>
 
 
@@ -455,6 +466,17 @@
         <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Any text after the all mechanism is ignored.&quot;</span><span class="p">)</span>
         <span class="n">record</span> <span class="o">=</span> <span class="n">AFTER_ALL_REGEX</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\1&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">)</span>
 
+    <span class="c1"># Reject records where an &#39;all&#39; mechanism is concatenated to the previous</span>
+    <span class="c1"># term without a separating space, e.g., &quot;ip4:203.0.113.7~all&quot;.</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">CONCATENATED_ALL_REGEX</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">marked_record</span> <span class="o">=</span> <span class="n">record</span><span class="p">[:</span><span class="n">pos</span><span class="p">]</span> <span class="o">+</span> <span class="n">syntax_error_marker</span> <span class="o">+</span> <span class="n">record</span><span class="p">[</span><span class="n">pos</span><span class="p">:]</span>
+        <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">: Expected whitespace before &#39;all&#39; at position </span><span class="si">{</span><span class="n">pos</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(marked with </span><span class="si">{</span><span class="n">syntax_error_marker</span><span class="si">}</span><span class="s2">) in: </span><span class="si">{</span><span class="n">marked_record</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
     <span class="n">parsed_record</span> <span class="o">=</span> <span class="n">spf_syntax_checker</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">parsed_record</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
@@ -533,8 +555,8 @@
                     <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_records</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">mechanism_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="c1"># Do not pre-increment void counters here; let the outer</span>
+                    <span class="c1"># handler for _SPFMissingRecords account for a single void lookup.</span>
                     <span class="k">raise</span> <span class="n">_SPFMissingRecords</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;An a mechanism points to </span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">, but that domain/subdomain does not have any A/AAAA records.&quot;</span>
                     <span class="p">)</span>
@@ -568,8 +590,8 @@
                 <span class="p">)</span>
 
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mx_hosts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="c1"># MX query resulted in no records; count a single void lookup</span>
+                    <span class="c1"># in the outer warning handler to avoid double counting.</span>
                     <span class="k">raise</span> <span class="n">_SPFMissingRecords</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;An mx mechanism points to </span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">, &quot;</span>
                         <span class="s2">&quot;but that domain/subdomain does not have any MX records.&quot;</span>
@@ -686,7 +708,7 @@
                     <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
                     <span class="n">mechanism_void_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
                     <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
-                    <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
+                    <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
                     <span class="k">if</span> <span class="n">total_dns_lookups</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="n">SPFTooManyDNSLookups</span><span class="p">(</span>
                             <span class="s2">&quot;Parsing the SPF record requires &quot;</span>
@@ -721,16 +743,15 @@
                     <span class="k">raise</span> <span class="n">_SPFWarning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
 
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;exp&quot;</span><span class="p">:</span>
-                <span class="c1"># exp is a modifier that does not count as a DNS lookup</span>
-                <span class="c1"># Thread resolver/timeouts and handle empty TXT gracefully.</span>
-                <span class="n">txts</span> <span class="o">=</span> <span class="n">get_txt_records</span><span class="p">(</span>
-                    <span class="n">value</span><span class="p">,</span>
-                    <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                    <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
-                    <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
-                    <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;exp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">txts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">txts</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="c1"># RFC 7208 § 6.2 (exp modifier): The explanation string is</span>
+                <span class="c1"># evaluated at runtime (after result == fail) and may contain</span>
+                <span class="c1"># macros. It MUST NOT contribute to DNS lookup counting and</span>
+                <span class="c1"># SHOULD NOT be resolved during static parsing.</span>
+                <span class="c1">#</span>
+                <span class="c1"># Therefore, do not perform any DNS lookups here. Simply</span>
+                <span class="c1"># preserve the provided value (which may include macros) so a</span>
+                <span class="c1"># caller with SMTP context can expand it at evaluation time.</span>
+                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;exp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
 
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
                 <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">action</span>
@@ -814,7 +835,7 @@
                             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_void_dns_lookups</span><span class="si">}</span><span class="s2">/2 maximum void &quot;</span>
                             <span class="s2">&quot;DNS lookups - &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">u</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                            <span class="n">dns_void_lookups</span><span class="o">=</span><span class="n">total_void_dns_lookups</span><span class="p">,</span>
+                            <span class="n">void_dns_lookups</span><span class="o">=</span><span class="n">total_void_dns_lookups</span><span class="p">,</span>
                         <span class="p">)</span>
                 <span class="k">except</span> <span class="n">SPFRecordNotFound</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -840,7 +861,7 @@
                             <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
                             <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
                             <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_dns_lookups</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;mechanism_void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">),</span>
+                            <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">),</span>
                         <span class="p">]</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
@@ -854,7 +875,7 @@
                 <span class="p">]</span>
                 <span class="k">if</span> <span class="n">mechanism_dns_lookups</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_dns_lookups</span><span class="p">))</span>
-                    <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">)</span>
+                    <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">))</span>
                 <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;action&quot;</span><span class="p">,</span> <span class="n">action</span><span class="p">))</span>
                 <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">pairs</span><span class="p">))</span>
 
