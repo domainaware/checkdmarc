@@ -427,8 +427,8 @@ def parse_spf_record(
                     timeout_retries=timeout_retries,
                 )
                 if len(a_records) == 0:
-                    mechanism_void_dns_lookups += 1
-                    total_void_dns_lookups += 1
+                    # Do not pre-increment void counters here; let the outer
+                    # handler for _SPFMissingRecords account for a single void lookup.
                     raise _SPFMissingRecords(
                         f"An a mechanism points to {value.lower()}, but that domain/subdomain does not have any A/AAAA records."
                     )
@@ -462,8 +462,8 @@ def parse_spf_record(
                 )
 
                 if len(mx_hosts) == 0:
-                    mechanism_dns_lookups += 1
-                    total_void_dns_lookups += 1
+                    # MX query resulted in no records; count a single void lookup
+                    # in the outer warning handler to avoid double counting.
                     raise _SPFMissingRecords(
                         f"An mx mechanism points to {value.lower()}, "
                         "but that domain/subdomain does not have any MX records."
@@ -580,7 +580,7 @@ def parse_spf_record(
                     mechanism_dns_lookups += redirect["dns_lookups"]
                     mechanism_void_dns_lookups += redirect["void_dns_lookups"]
                     total_dns_lookups += redirect["dns_lookups"]
-                    total_dns_lookups += redirect["void_dns_lookups"]
+                    total_void_dns_lookups += redirect["void_dns_lookups"]
                     if total_dns_lookups > 10:
                         raise SPFTooManyDNSLookups(
                             "Parsing the SPF record requires "
@@ -615,16 +615,15 @@ def parse_spf_record(
                     raise _SPFWarning(str(error))
 
             elif mechanism == "exp":
-                # exp is a modifier that does not count as a DNS lookup
-                # Thread resolver/timeouts and handle empty TXT gracefully.
-                txts = get_txt_records(
-                    value,
-                    nameservers=nameservers,
-                    resolver=resolver,
-                    timeout=timeout,
-                    timeout_retries=timeout_retries,
-                )
-                parsed["exp"] = txts[0] if txts else None
+                # RFC 7208 § 6.2 (exp modifier): The explanation string is
+                # evaluated at runtime (after result == fail) and may contain
+                # macros. It MUST NOT contribute to DNS lookup counting and
+                # SHOULD NOT be resolved during static parsing.
+                #
+                # Therefore, do not perform any DNS lookups here. Simply
+                # preserve the provided value (which may include macros) so a
+                # caller with SMTP context can expand it at evaluation time.
+                parsed["exp"] = value
 
             elif mechanism == "all":
                 parsed["all"] = action
@@ -708,7 +707,7 @@ def parse_spf_record(
                             f"{total_void_dns_lookups}/2 maximum void "
                             "DNS lookups - "
                             f"{u}",
-                            dns_void_lookups=total_void_dns_lookups,
+                            void_dns_lookups=total_void_dns_lookups,
                         )
                 except SPFRecordNotFound as e:
                     total_void_dns_lookups += 1
@@ -734,7 +733,7 @@ def parse_spf_record(
                             ("mechanism", mechanism),
                             ("value", value),
                             ("dns_lookups", mechanism_dns_lookups),
-                            ("mechanism_void_dns_lookups", mechanism_void_dns_lookups),
+                            ("void_dns_lookups", mechanism_void_dns_lookups),
                         ]
                     )
                 )
@@ -748,7 +747,7 @@ def parse_spf_record(
                 ]
                 if mechanism_dns_lookups > 0:
                     pairs.append(("dns_lookups", mechanism_dns_lookups))
-                    pairs.append("void_dns_lookups", mechanism_void_dns_lookups)
+                    pairs.append(("void_dns_lookups", mechanism_void_dns_lookups))
                 pairs.append(("action", action))
                 parsed["mechanisms"].append(OrderedDict(pairs))
 
