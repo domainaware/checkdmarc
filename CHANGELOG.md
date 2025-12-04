@@ -11,8 +11,7 @@
 ## Fixed
 
 - SPF void miscount (PR #212 closes issue #211)
-- Reject SPF records with an `all` mechanism that is not preceded by whitespace
-(PR #210)
+- Reject SPF records with an `all` mechanism that is not preceded by whitespace (PR #210)
 
 ## 5.12.25
 
