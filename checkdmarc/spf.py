@@ -17,7 +17,6 @@ from checkdmarc.utils import (
     DNSExceptionNXDOMAIN,
     get_a_records,
     get_mx_records,
-    get_txt_records,
     normalize_domain,
     query_dns,
 )
