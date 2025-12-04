@@ -949,7 +949,7 @@ def parse_dmarc_record(
             f"{marked_record}"
         )
 
-    pairs: list[tuple[str,str]] = DMARC_TAG_VALUE_REGEX.findall(record)
+    pairs: list[tuple[str, str]] = DMARC_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
 
     # Find explicit tags

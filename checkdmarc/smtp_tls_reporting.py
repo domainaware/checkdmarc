@@ -312,7 +312,7 @@ def parse_smtp_tls_reporting_record(
             raise InvalidSMTPTLSReportingTag(
                 f"{tag} is not a valid SMTP TLS Reporting record tag."
             )
-         # Check for duplicate tags
+        # Check for duplicate tags
         if tag in seen_tags:
             if tag not in duplicate_tags:
                 duplicate_tags.append(tag)
@@ -320,7 +320,9 @@ def parse_smtp_tls_reporting_record(
             seen_tags.append(tag)
         if len(duplicate_tags):
             duplicate_tags = ",".join(duplicate_tags)
-            raise InvalidSMTPTLSReportingTag(f"Duplicate {duplicate_tags} tags are not permitted")
+            raise InvalidSMTPTLSReportingTag(
+                f"Duplicate {duplicate_tags} tags are not permitted"
+            )
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["description"] = smtp_rpt_tags[tag]["description"]
