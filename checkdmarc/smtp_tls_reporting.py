@@ -300,7 +300,7 @@ def parse_smtp_tls_reporting_record(
             f"in: {marked_record}"
         )
 
-    pairs = SMTPTLSREPORTING_TAG_VALUE_REGEX.findall(record)
+    pairs: list[tuple[str, str]] = SMTPTLSREPORTING_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
 
     seen_tags: list[str] = []

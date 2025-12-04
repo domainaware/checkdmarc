@@ -301,7 +301,7 @@ def parse_mta_sts_record(
             f"in: {marked_record}"
         )
 
-    pairs = STS_TAG_VALUE_REGEX.findall(record)
+    pairs: list[tuple[str, str]] = STS_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
 
     seen_tags: list[str] = []
