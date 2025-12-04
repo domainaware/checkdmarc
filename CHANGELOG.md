@@ -2,16 +2,17 @@
 
 ## 5.12.27
 
-Fixes:
+## Fixed
 
 - Do not allow duplicate tags in DMARC, BIMI, MTA-STS, or MTA-STS DNS records ([#213](https://github.com/domainaware/checkdmarc/issues/213))
 
 ## 5.12.26
 
-Fixes:
+## Fixed
 
 - SPF void miscount (PR #212 closes issue #211)
-- Reject SPF records with an `all` mechanism that is not preceded by whitespace (PR #210)
+- Reject SPF records with an `all` mechanism that is not preceded by whitespace
+(PR #210)
 
 ## 5.12.25
 
