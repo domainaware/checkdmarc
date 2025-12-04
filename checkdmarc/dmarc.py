@@ -949,7 +949,7 @@ def parse_dmarc_record(
             f"{marked_record}"
         )
 
-    pairs = DMARC_TAG_VALUE_REGEX.findall(record)
+    pairs: list[tuple[str,str]] = DMARC_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
 
     # Find explicit tags
@@ -975,9 +975,20 @@ def parse_dmarc_record(
         raise DMARCSyntaxError("the p tag must immediately follow the v tag.")
     tags["v"]["value"] = tags["v"]["value"].upper()
     # Validate tag values
+    seen_tags: list[str] = []
+    duplicate_tags: list[str] = []
     for tag in tags:
         if tag not in dmarc_tags:
             raise InvalidDMARCTag(f"{tag} is not a valid DMARC tag.")
+        # Check for duplicate tags
+        if tag in seen_tags:
+            if tag not in duplicate_tags:
+                duplicate_tags.append(tag)
+        else:
+            seen_tags.append(tag)
+        if len(duplicate_tags):
+            duplicate_tags = ",".join(duplicate_tags)
+            raise InvalidDMARCTag(f"Duplicate {duplicate_tags} tags are not permitted")
         tag_value = tags[tag]["value"]
         allowed_values = None
         explicit = tags[tag]["explicit"]

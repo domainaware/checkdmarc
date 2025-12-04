@@ -304,11 +304,22 @@ def parse_mta_sts_record(
     pairs = STS_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
 
+    seen_tags: list[str] = []
+    duplicate_tags: list[str] = []
     for pair in pairs:
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
         if tag not in mta_sts_tags:
             raise InvalidMTASTSTag(f"{tag} is not a valid MTA-STS record tag.")
+        # Check for duplicate tags
+        if tag in seen_tags:
+            if tag not in duplicate_tags:
+                duplicate_tags.append(tag)
+        else:
+            seen_tags.append(tag)
+        if len(duplicate_tags):
+            duplicate_tags = ",".join(duplicate_tags)
+            raise InvalidMTASTSTag(f"Duplicate {duplicate_tags} tags are not permitted")
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["description"] = mta_sts_tags[tag]["description"]

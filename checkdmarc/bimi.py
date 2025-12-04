@@ -899,15 +899,26 @@ def parse_bimi_record(
             f"{marked_record}"
         )
 
-    pairs = BIMI_TAG_VALUE_REGEX.findall(record)
+    pairs: list[tuple[str,str]] = BIMI_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
     hash_match = False
 
+    seen_tags: list[str] = []
+    duplicate_tags: list[str] = []
     for pair in pairs:
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
         if tag not in BIMI_TAGS:
             raise InvalidBIMITag(f"{tag} is not a valid BIMI record tag.")
+       # Check for duplicate tags
+        if tag in seen_tags:
+            if tag not in duplicate_tags:
+                duplicate_tags.append(tag)
+        else:
+            seen_tags.append(tag)
+        if len(duplicate_tags):
+            duplicate_tags = ",".join(duplicate_tags)
+            raise InvalidBIMITag(f"Duplicate {duplicate_tags} tags are not permitted")
         tags[tag] = OrderedDict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["name"] = BIMI_TAGS[tag]["name"]
