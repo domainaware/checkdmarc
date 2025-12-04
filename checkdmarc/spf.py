@@ -565,6 +565,8 @@ def parse_spf_record(
                     ]
                 )
                 parsed["mechanisms"].append(OrderedDict(pairs))
+                if value == "":
+                    raise SPFSyntaxError(f"{mechanism} must have a value")
                 if total_dns_lookups > 10:
                     raise SPFTooManyDNSLookups(
                         "Parsing the SPF record requires "
@@ -573,6 +575,8 @@ def parse_spf_record(
                         dns_lookups=total_dns_lookups,
                     )
             elif mechanism == "redirect":
+                if parsed["redirect"]:
+                    raise SPFSyntaxError("Multiple redirect modifiers")
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
                 if value.lower() in recursion:
@@ -652,6 +656,8 @@ def parse_spf_record(
             elif mechanism == "include":
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
+                if value == "":
+                    raise SPFSyntaxError(f"{mechanism} must have a value")
                 if value.lower() in recursion:
                     pointer = " -> ".join(recursion + [value.lower()])
                     raise SPFIncludeLoop(f"Include loop: {pointer}")
