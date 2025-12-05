@@ -19,6 +19,7 @@ from checkdmarc.utils import (
     DNSExceptionNXDOMAIN,
     get_a_records,
     get_mx_records,
+    get_reverse_dns,
     get_txt_records,
     normalize_domain,
     query_dns,
@@ -152,6 +153,53 @@ spf_qualifiers: dict[str, str] = {
     "-": "fail",
     "~": "softfail",
 }
+
+
+def ptr_match(
+    ip_address: str,
+    domain: str,
+    *,
+    nameservers: list[str] = None,
+    resolver: dns.resolver.Resolver = None,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> bool:
+    """
+    Preforms a ptr mechanism check.
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        bool: The result of the check
+
+    Raises:
+        :exc:`checkdmarc.DNSException`
+    """
+    hostnames = get_reverse_dns(
+        ip_address,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        timeout_retries=timeout_retries,
+    )
+    for name in hostnames:
+        if not name.endswith(domain):
+            continue
+        ips = get_a_records(
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
+        )
+        if ip_address in ips:
+            return True
+    return False
 
 
 def query_spf_record(
@@ -416,7 +464,7 @@ def parse_spf_record(
             if len(exp) < 2 or exp[1].strip() == 0:
                 raise SPFSyntaxError("The exp modifier is missing a value")
             exp = exp[1].split(" ")
-            if len(exp) >1:
+            if len(exp) > 1:
                 warnings.append(" No text should exist after the exp modifier value.")
             else:
                 exp = exp[0]
@@ -440,7 +488,6 @@ def parse_spf_record(
             warnings.append(
                 "Any text after the all mechanism other than an exp modifier is ignored."
             )
-
 
     total_dns_lookups = 0
     total_void_dns_lookups = 0
@@ -793,6 +840,19 @@ def parse_spf_record(
             elif mechanism == "ptr":
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
+                a_records = get_a_records(
+                    value,
+                    nameservers=nameservers,
+                    resolver=resolver,
+                    timeout=timeout,
+                    timeout_retries=timeout_retries,
+                )
+                if len(a_records) == 0:
+                    # Do not pre-increment void counters here; let the outer
+                    # handler for _SPFMissingRecords account for a single void lookup.
+                    raise _SPFMissingRecords(
+                        f"A ptr mechanism points to {value.lower()}, but that domain/subdomain does not have any A/AAAA records."
+                    )
                 parsed["mechanisms"].append(
                     OrderedDict(
                         [
