@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Optional, Any
+
 import ipaddress
 import logging
 import re
@@ -84,7 +86,7 @@ class _SPFDuplicateInclude(_SPFWarning):
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
 
-    def __init__(self, error, domain):
+    def __init__(self, error: Exception, domain:str) -> str:
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
         self.error = error
@@ -141,17 +143,17 @@ class _SPFGrammar(Grammar):
     START = Sequence(version_tag, Repeat(mechanism))
 
 
-spf_qualifiers = {"": "pass", "?": "neutral", "+": "pass", "-": "fail", "~": "softfail"}
+spf_qualifiers: dict[str, str] = {"": "pass", "?": "neutral", "+": "pass", "-": "fail", "~": "softfail"}
 
 
 def query_spf_record(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    quoted_txt_segments: bool = False,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    nameservers: Optional[list[str]] = None,
+    quoted_txt_segments: Optional[bool] = False,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ) -> OrderedDict:
     """
     Queries DNS for an SPF record
@@ -294,15 +296,15 @@ def parse_spf_record(
     domain: str,
     *,
     ignore_too_many_lookups: bool = False,
-    parked: bool = False,
-    seen: bool = None,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    recursion: OrderedDict = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
-) -> OrderedDict:
+    parked: Optional[bool] = False,
+    seen: Optional[bool] = None,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    recursion: Optional[OrderedDict] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
+) -> OrderedDict[str, Any]:
     """
     Parses an SPF record, including resolving ``a``, ``mx``, and ``include`` mechanisms
 
@@ -374,7 +376,7 @@ def parse_spf_record(
 
     if not parsed_record.is_valid:
         pos = parsed_record.pos
-        expecting = list(
+        expecting: list[str] = list(
             map(lambda x: str(x).strip('"'), list(parsed_record.expecting))
         )
         expecting = " or ".join(expecting)
@@ -384,7 +386,7 @@ def parse_spf_record(
             f"(marked with {syntax_error_marker}) in: {marked_record}"
         )
 
-    matches = SPF_MECHANISM_REGEX.findall(record.lower())
+    matches: list[tuple[str, str]] = SPF_MECHANISM_REGEX.findall(record.lower())
 
     parsed = OrderedDict(
         [
@@ -832,11 +834,11 @@ def parse_spf_record(
 def get_spf_record(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Retrieves and parses an SPF record
 
@@ -881,12 +883,12 @@ def get_spf_record(
 def check_spf(
     domain: str,
     *,
-    parked: bool = False,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    parked: Optional[bool] = False,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Returns a dictionary with a parsed SPF record or an error.
 

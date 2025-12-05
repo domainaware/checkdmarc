@@ -4,7 +4,9 @@
 
 ## Fixed
 
-- Do not allow duplicate tags in DMARC, BIMI, MTA-STS, or MTA-STS DNS records ([#213](https://github.com/domainaware/checkdmarc/issues/213))
+- Do not allow duplicate tags in DMARC, BIMI, MTA-STS, or TLSRPT DNS records ([#213](https://github.com/domainaware/checkdmarc/issues/213))
+- Do not allow multiple multiple `redirect` modifiers an an SPF record ([#213](https://github.com/domainaware/checkdmarc/issues/213))
+- Require values for `include` and `exists mechanisms
 
 ## 5.12.26
 
