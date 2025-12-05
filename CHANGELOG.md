@@ -2,7 +2,7 @@
 
 ## 5.12.27
 
-## Fixed
+### Fixed
 
 - Do not allow duplicate tags in DMARC, BIMI, MTA-STS, or TLSRPT DNS records ([#213](https://github.com/domainaware/checkdmarc/issues/213))
 - Do not allow multiple multiple `redirect` modifiers an an SPF record ([#213](https://github.com/domainaware/checkdmarc/issues/213))
@@ -10,7 +10,7 @@
 
 ## 5.12.26
 
-## Fixed
+### Fixed
 
 - SPF void miscount (PR #212 closes issue #211)
 - Reject SPF records with an `all` mechanism that is not preceded by whitespace (PR #210)
