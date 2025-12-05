@@ -19,6 +19,7 @@ from checkdmarc.utils import (
     DNSExceptionNXDOMAIN,
     get_a_records,
     get_mx_records,
+    get_txt_records,
     normalize_domain,
     query_dns,
 )
@@ -44,7 +45,7 @@ SPF_MECHANISM_REGEX_STRING = (
     r"(mx:?|ip4:?|ip6:?|exists:?|include:?|all|a:?|redirect=|exp=|ptr:?)"
     r"([\w+/_.:\-{}%]*)"
 )
-AFTER_ALL_REGEX_STRING = r"((?:^|\s)[+\-~?]?all)\s+.*"
+AFTER_ALL_REGEX_STRING = r"(?:^|\s)[+\-~?]?all\s+(.+)"
 
 SPF_MECHANISM_REGEX = re.compile(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re.IGNORECASE)
@@ -86,7 +87,7 @@ class _SPFDuplicateInclude(_SPFWarning):
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
 
-    def __init__(self, error: Exception, domain:str) -> str:
+    def __init__(self, error: Exception, domain: str) -> str:
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
         self.error = error
@@ -137,13 +138,20 @@ class _SPFGrammar(Grammar):
 
     version_tag = Regex(SPF_VERSION_TAG_REGEX_STRING)
     mechanism = Regex(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
+
     # Note: Pyleri skips whitespace by default; explicitly matching whitespace
     # would break many valid records. We keep the grammar permissive here and
     # perform whitespace separation checks in Python before invoking the grammar.
     START = Sequence(version_tag, Repeat(mechanism))
 
 
-spf_qualifiers: dict[str, str] = {"": "pass", "?": "neutral", "+": "pass", "-": "fail", "~": "softfail"}
+spf_qualifiers: dict[str, str] = {
+    "": "pass",
+    "?": "neutral",
+    "+": "pass",
+    "-": "fail",
+    "~": "softfail",
+}
 
 
 def query_spf_record(
@@ -357,10 +365,6 @@ def parse_spf_record(
                 f"{correct_record} not: {record}"
             )
 
-    if len(AFTER_ALL_REGEX.findall(record)) > 0:
-        warnings.append("Any text after the all mechanism is ignored.")
-        record = AFTER_ALL_REGEX.sub(r"\1", record)
-
     # Reject records where an 'all' mechanism is concatenated to the previous
     # term without a separating space, e.g., "ip4:203.0.113.7~all".
     m = CONCATENATED_ALL_REGEX.search(record)
@@ -397,10 +401,51 @@ def parse_spf_record(
         ]
     )
 
+    items_after_all: list[str] = AFTER_ALL_REGEX.findall(record)
+    if len(items_after_all) > 0:
+        if items_after_all[0].startswith("exp="):
+            # RFC 7208 § 6.2 (exp modifier): The explanation string is
+            # evaluated at runtime (after result == fail) and may contain
+            # macros. It MUST NOT contribute to DNS lookup counting and
+            # SHOULD NOT be resolved during static parsing.
+            #
+            # Therefore, do not perform any DNS lookups here. Simply
+            # preserve the provided value (which may include macros) so a
+            # caller with SMTP context can expand it at evaluation time.
+            exp = items_after_all[0].split("=")
+            if len(exp) < 2 or exp[1].strip() == 0:
+                raise SPFSyntaxError("The exp modifier is missing a value")
+            exp = exp[1].split(" ")
+            if len(exp) >1:
+                warnings.append(" No text should exist after the exp modifier value.")
+            else:
+                exp = exp[0]
+                parsed["exp"] = exp
+                try:
+                    exp_txt_records = get_txt_records(
+                        exp,
+                        nameservers=nameservers,
+                        timeout=timeout,
+                        timeout_retries=timeout_retries,
+                    )
+                    if len(exp_txt_records == 0):
+                        warnings.append("No TXT records at exp value {exp}.")
+                    if len(exp_txt_records > 1):
+                        warnings.append("Too many TXT records at exp value {exp}.")
+                except Exception as e:
+                    warnings.append(
+                        f"Failed to get TXT records at exp value {exp}: {e}"
+                    )
+        else:
+            warnings.append(
+                "Any text after the all mechanism other than an exp modifier is ignored."
+            )
+
+
     total_dns_lookups = 0
     total_void_dns_lookups = 0
     error = None
-
+    exp_seen = False
     for match in matches:
         mechanism_dns_lookups = 0
         mechanism_void_dns_lookups = 0
@@ -641,19 +686,12 @@ def parse_spf_record(
                         total_void_dns_lookups += 1
                     raise _SPFWarning(str(error))
 
-            elif mechanism == "exp":
-                # RFC 7208 § 6.2 (exp modifier): The explanation string is
-                # evaluated at runtime (after result == fail) and may contain
-                # macros. It MUST NOT contribute to DNS lookup counting and
-                # SHOULD NOT be resolved during static parsing.
-                #
-                # Therefore, do not perform any DNS lookups here. Simply
-                # preserve the provided value (which may include macros) so a
-                # caller with SMTP context can expand it at evaluation time.
-                parsed["exp"] = value
-
             elif mechanism == "all":
                 parsed["all"] = action
+            elif mechanism == "exp":
+                if exp_seen:
+                    raise SPFSyntaxError("Multiple exp values are not permitted")
+                exp_seen = True
 
             elif mechanism == "include":
                 mechanism_dns_lookups += 1
