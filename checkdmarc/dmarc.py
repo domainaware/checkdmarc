@@ -970,9 +970,7 @@ def parse_dmarc_record(
             duplicate_tags = ",".join(duplicate_tags)
             raise InvalidDMARCTag(f"Duplicate {duplicate_tags} tags are not permitted")
         value = pair[1].lower().strip()
-        tags[tag] = OrderedDict(
-            [("value", value), ("explicit", True)]
-        )
+        tags[tag] = OrderedDict([("value", value), ("explicit", True)])
 
     # Include implicit tags and their defaults
     for tag in dmarc_tags.keys():
