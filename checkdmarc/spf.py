@@ -607,6 +607,7 @@ def parse_spf_record(
     total_dns_lookups = 0
     total_void_dns_lookups = 0
     error = None
+    all_seen = False
     exp_seen = False
     for match in matches:
         mechanism_dns_lookups = 0
@@ -862,6 +863,9 @@ def parse_spf_record(
                     raise _SPFWarning(str(error))
 
             elif mechanism == "all":
+                if all_seen:
+                    raise ValueError("The all mechanism can only be used once.")
+                all_seen = True
                 parsed["all"] = action
             elif mechanism == "exp":
                 if exp_seen:
