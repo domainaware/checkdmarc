@@ -1,8 +1,25 @@
 # Changelog
 
-## 5.12.26
+## 5.12.27
 
 ### Fixes
+
+- Tighter validation of DNS records ([#213](https://github.com/domainaware/checkdmarc/issues/213))
+  - Do not allow duplicate tags in DMARC, BIMI, MTA-STS, or TLSRPT DNS records
+  - Do not allow multiple multiple `redirect` modifiers in an SPF record
+  - Require values for `include` and `exists` SPF mechanisms
+  - Proper validation of the SPF `ptr` mechanism
+  - Proper validation of SPF macros
+  - Only permit one `all` SPF mechanism
+- Honor `timeout_retries` in `bimi.check_bimi`
+
+### Enhancements
+
+- More detailed type hints added across the library
+
+## 5.12.26
+
+### Fixed
 
 - SPF void miscount (PR #212 closes issue #211)
 - Reject SPF records with an `all` mechanism that is not preceded by whitespace (PR #210)

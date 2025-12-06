@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import logging
 
+from typing import Optional
+
 import dns.query
 import dns.resolver
 import dns.message
@@ -43,12 +45,12 @@ TLSA_CACHE = ExpiringDict(
 
 
 def get_dnskey(
-    domain: str,
+    domain: Optional[str],
     *,
-    nameservers: list[str] = None,
-    timeout: float = 2.0,
-    cache: ExpiringDict = None,
-):
+    nameservers: Optional[list[str]] = None,
+    timeout: Optional[float] = 2.0,
+    cache: Optional[ExpiringDict] = None,
+) -> dict:
     """
     Get a DNSKEY RRSet on the given domain
 
@@ -104,9 +106,9 @@ def get_dnskey(
 def test_dnssec(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    timeout: float = 2.0,
-    cache: ExpiringDict = None,
+    nameservers: Optional[list[str]] = None,
+    timeout: Optional[float] = 2.0,
+    cache: Optional[ExpiringDict] = None,
 ) -> bool:
     """
     Check for DNSSEC on the given domain
@@ -168,11 +170,11 @@ def test_dnssec(
 def get_tlsa_records(
     hostname: str,
     *,
-    nameservers: list[str] = None,
-    timeout: float = 2.0,
-    port: int = 25,
-    protocol: str = "tcp",
-    cache: ExpiringDict = None,
+    nameservers: Optional[list[str]] = None,
+    timeout: Optional[float] = 2.0,
+    port: Optional[int] = 25,
+    protocol: Optional[str] = "tcp",
+    cache: Optional[ExpiringDict] = None,
 ) -> list[str]:
     """
     Checks for TLSA records on the given hostname

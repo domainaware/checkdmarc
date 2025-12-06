@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import Any, Optional
 
 import re
 from collections import OrderedDict
@@ -68,11 +68,11 @@ def parse_soa_string(rr: str) -> OrderedDict:
 def check_soa(
     domain: str,
     *,
-    nameservers: List[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Returns a dictionary of a domain's SOA record and a parsed version of the record or a dictionary with an
     the record and an error.

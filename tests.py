@@ -117,9 +117,12 @@ class Test(unittest.TestCase):
         """Ignore any mechanisms after the all mechanism, but warn about it"""
         rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"
         domain = "avd.dk"
+        warning = (
+            "Any text after the all mechanism other than an exp modifier is ignored."
+        )
 
         parsed_record = checkdmarc.spf.parse_spf_record(rec, domain)
-        self.assertEqual(len(parsed_record["warnings"]), 1)
+        self.assertIn(warning, parsed_record["warnings"])
 
     @unittest.skip
     def testDNSSEC(self):

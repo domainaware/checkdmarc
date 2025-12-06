@@ -8,6 +8,8 @@ import re
 import unicodedata
 from collections import OrderedDict
 
+from typing import Any, Optional
+
 import dns
 import dns.resolver
 import publicsuffixlist
@@ -97,13 +99,13 @@ def query_dns(
     domain: str,
     record_type: str,
     *,
-    quoted_txt_segments: bool = False,
+    quoted_txt_segments: Optional[bool] = False,
     nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-    _attempt: int = 0,
-    cache: ExpiringDict = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+    _attempt: Optional[int] = 0,
+    cache: Optional[ExpiringDict] = None,
 ) -> list[str]:
     """
     Queries DNS
@@ -212,10 +214,10 @@ def query_dns(
 def get_a_records(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ) -> list[str]:
     """
     Queries DNS for A and AAAA records
@@ -261,10 +263,10 @@ def get_a_records(
 def get_reverse_dns(
     ip_address: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ) -> list[str]:
     """
     Queries for an IP addresses reverse DNS hostname(s)
@@ -306,11 +308,11 @@ def get_reverse_dns(
 def get_txt_records(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    quoted_txt_segments: bool = False,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    nameservers: Optional[list[str]] = None,
+    quoted_txt_segments: Optional[bool] = False,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ) -> list[str]:
     """
     Queries DNS for TXT records
@@ -354,10 +356,10 @@ def get_txt_records(
 def get_soa_record(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ) -> list[str]:
     """
     Queries DNS for an SOA record
@@ -400,11 +402,11 @@ def get_soa_record(
 def get_nameservers(
     domain: str,
     *,
-    approved_nameservers: list[str] = None,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    approved_nameservers: Optional[list[str]] = None,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ) -> dict:
     """
     Gets a list of nameservers for a given domain
@@ -461,11 +463,11 @@ def get_nameservers(
 def get_mx_records(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> list[OrderedDict]:
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> list[OrderedDict][str, Any]:
     """
     Queries DNS for a list of Mail Exchange hosts
 

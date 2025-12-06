@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import re
 from collections import OrderedDict
-from typing import Union
+from typing import Union, Optional, Any
 
 import dns
 from pyleri import (
@@ -428,11 +428,11 @@ dmarc_tags = OrderedDict(
 def _query_dmarc_record(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-    ignore_unrelated_records: bool = False,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+    ignore_unrelated_records: Optional[bool] = False,
 ) -> Union[str, None]:
     """
     Queries DNS for a DMARC record
@@ -533,12 +533,12 @@ def _query_dmarc_record(
 def query_dmarc_record(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-    ignore_unrelated_records: bool = False,
-) -> OrderedDict:
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+    ignore_unrelated_records: Optional[bool] = False,
+) -> OrderedDict[str, Any]:
     """
     Queries DNS for a DMARC record
 
@@ -625,8 +625,8 @@ def query_dmarc_record(
 
 
 def get_dmarc_tag_description(
-    tag: str, value: Union[str, list[str]] = None
-) -> OrderedDict:
+    tag: str, value: Optional[Union[str, list[str]]] = None
+) -> OrderedDict[str, Any]:
     """
     Get the name, default value, and description for a DMARC tag, amd/or a
     description for a tag value
@@ -664,7 +664,7 @@ def get_dmarc_tag_description(
     )
 
 
-def parse_dmarc_report_uri(uri: str) -> OrderedDict:
+def parse_dmarc_report_uri(uri: str) -> OrderedDict[str, Any]:
     """
     Parses a DMARC Reporting (i.e. ``rua``/``ruf``) URI
 
@@ -714,11 +714,11 @@ def parse_dmarc_report_uri(uri: str) -> OrderedDict:
 def check_wildcard_dmarc_report_authorization(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    ignore_unrelated_records: bool = False,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    nameservers: Optional[list[str]] = None,
+    ignore_unrelated_records: Optional[bool] = False,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ) -> bool:
     """
     Checks for a wildcard DMARC report authorization record, e.g.:
@@ -782,11 +782,11 @@ def verify_dmarc_report_destination(
     source_domain: str,
     destination_domain: str,
     *,
-    nameservers: list[str] = None,
-    ignore_unrelated_records: bool = False,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    nameservers: Optional[list[str]] = None,
+    ignore_unrelated_records: Optional[bool] = False,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ) -> None:
     """
     Checks if the report destination accepts reports for the source domain
@@ -868,14 +868,14 @@ def parse_dmarc_record(
     record: str,
     domain: str,
     *,
-    parked: bool = False,
-    include_tag_descriptions: bool = False,
-    nameservers: list[str] = None,
-    ignore_unrelated_records: bool = False,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
+    parked: Optional[bool] = False,
+    include_tag_descriptions: Optional[bool] = False,
+    nameservers: Optional[list[str]] = None,
+    ignore_unrelated_records: Optional[bool] = False,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
 ) -> OrderedDict:
     """
     Parses a DMARC record
@@ -949,14 +949,28 @@ def parse_dmarc_record(
             f"{marked_record}"
         )
 
-    pairs = DMARC_TAG_VALUE_REGEX.findall(record)
+    # Find explicit tags
+    pairs: list[tuple[str, str]] = DMARC_TAG_VALUE_REGEX.findall(record)
     tags = OrderedDict()
 
-    # Find explicit tags
+    seen_tags: list[str] = []
+    duplicate_tags: list[str] = []
     for pair in pairs:
-        tags[pair[0].lower()] = OrderedDict(
-            [("value", str(pair[1].strip())), ("explicit", True)]
-        )
+        tag = pair[0].lower()
+        # Check for invalid tags
+        if tag not in dmarc_tags:
+            raise InvalidDMARCTag(f"{tag} is not a valid DMARC tag.")
+        # Check for duplicate tags
+        if tag in seen_tags:
+            if tag not in duplicate_tags:
+                duplicate_tags.append(tag)
+        else:
+            seen_tags.append(tag)
+        if len(duplicate_tags):
+            duplicate_tags = ",".join(duplicate_tags)
+            raise InvalidDMARCTag(f"Duplicate {duplicate_tags} tags are not permitted")
+        value = pair[1].lower().strip()
+        tags[tag] = OrderedDict([("value", value), ("explicit", True)])
 
     # Include implicit tags and their defaults
     for tag in dmarc_tags.keys():
@@ -976,8 +990,6 @@ def parse_dmarc_record(
     tags["v"]["value"] = tags["v"]["value"].upper()
     # Validate tag values
     for tag in tags:
-        if tag not in dmarc_tags:
-            raise InvalidDMARCTag(f"{tag} is not a valid DMARC tag.")
         tag_value = tags[tag]["value"]
         allowed_values = None
         explicit = tags[tag]["explicit"]
@@ -1183,12 +1195,12 @@ def parse_dmarc_record(
 def get_dmarc_record(
     domain: str,
     *,
-    include_tag_descriptions: bool = False,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    include_tag_descriptions: Optional[bool] = False,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -1245,14 +1257,14 @@ def get_dmarc_record(
 def check_dmarc(
     domain: str,
     *,
-    parked: bool = False,
-    include_dmarc_tag_descriptions: bool = False,
-    ignore_unrelated_records: bool = False,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    parked: Optional[bool] = False,
+    include_dmarc_tag_descriptions: Optional[bool] = False,
+    ignore_unrelated_records: Optional[bool] = False,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Returns a dictionary with a parsed DMARC record or an error
 

@@ -8,7 +8,7 @@ import logging
 import dns
 import json
 from collections import OrderedDict
-from typing import Union
+from typing import Union, Optional, Any
 from time import sleep
 from io import StringIO
 from csv import DictWriter
@@ -50,18 +50,18 @@ __version__ = checkdmarc._constants.__version__
 def check_domains(
     domains: list[str],
     *,
-    parked: bool = False,
-    approved_nameservers: list[str] = None,
-    approved_mx_hostnames: bool = None,
-    skip_tls: bool = False,
-    bimi_selector: str = "default",
-    include_tag_descriptions: bool = False,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-    wait: float = 0.0,
-) -> Union[OrderedDict, list[OrderedDict]]:
+    parked: Optional[bool] = False,
+    approved_nameservers: Optional[list[str]] = None,
+    approved_mx_hostnames: Optional[bool] = None,
+    skip_tls: Optional[bool] = False,
+    bimi_selector: Optional[str] = "default",
+    include_tag_descriptions: Optional[bool] = False,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+    wait: Optional[float] = 0.0,
+) -> Union[OrderedDict, list[OrderedDict[str, Any]]]:
     """
     Check the given domains for SPF and DMARC records, parse them, and return
     them
@@ -216,12 +216,12 @@ def check_domains(
 def check_ns(
     domain: str,
     *,
-    approved_nameservers: list[str] = None,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    approved_nameservers: Optional[list[str]] = None,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Returns a dictionary of nameservers and warnings or a dictionary with an
     empty list and an error.
@@ -259,7 +259,9 @@ def check_ns(
     return ns_results
 
 
-def results_to_json(results: Union[dict, list[dict]]) -> str:
+def results_to_json(
+    results: Union[OrderedDict[str, Any], list[OrderedDict[str, Any]]],
+) -> str:
     """
     Converts a dictionary of results or list of results to a JSON string
 
@@ -272,7 +274,9 @@ def results_to_json(results: Union[dict, list[dict]]) -> str:
     return json.dumps(results, ensure_ascii=False, indent=2)
 
 
-def results_to_csv_rows(results: Union[dict, list[dict]]) -> list[dict]:
+def results_to_csv_rows(
+    results: Union[dict, list[dict]],
+) -> list[dict][str, Union[str, int, float]]:
     """
     Converts a results dictionary or list of dictionaries and returns a
     list of CSV row dictionaries
@@ -410,7 +414,7 @@ def results_to_csv_rows(results: Union[dict, list[dict]]) -> list[dict]:
     return rows
 
 
-def results_to_csv(results: dict) -> str:
+def results_to_csv(results: OrderedDict[str, Any]) -> str:
     """
     Converts a dictionary of results to CSV
 

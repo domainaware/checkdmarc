@@ -13,6 +13,14 @@
             "justMyCode": true
         },
         {
+            "name": "scratch.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "scratch.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "checkdmarc --help",
             "type": "debugpy",
             "request": "launch",

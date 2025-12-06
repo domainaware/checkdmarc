@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Optional, Any
+
 import ipaddress
 import logging
 import re
@@ -17,6 +19,8 @@ from checkdmarc.utils import (
     DNSExceptionNXDOMAIN,
     get_a_records,
     get_mx_records,
+    get_reverse_dns,
+    get_txt_records,
     normalize_domain,
     query_dns,
 )
@@ -42,7 +46,7 @@ SPF_MECHANISM_REGEX_STRING = (
     r"(mx:?|ip4:?|ip6:?|exists:?|include:?|all|a:?|redirect=|exp=|ptr:?)"
     r"([\w+/_.:\-{}%]*)"
 )
-AFTER_ALL_REGEX_STRING = r"((?:^|\s)[+\-~?]?all)\s+.*"
+AFTER_ALL_REGEX_STRING = r"(?:^|\s)[+\-~?]?all\s+(.+)"
 
 SPF_MECHANISM_REGEX = re.compile(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re.IGNORECASE)
@@ -54,6 +58,9 @@ AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re.IGNORECASE)
 # 'all' and that 'all' ends the term (followed by whitespace or end of string),
 # so we don't falsely match hostnames like 'foo-all.example'.
 CONCATENATED_ALL_REGEX = re.compile(r"\S([+\-~?])all(?=\s|$)", re.IGNORECASE)
+
+MACRO_LETTERS = set("slodiphcrtv")
+MACRO_DELIMS = set(".-+,/_=")
 
 
 class SPFError(Exception):
@@ -84,7 +91,7 @@ class _SPFDuplicateInclude(_SPFWarning):
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
 
-    def __init__(self, error, domain):
+    def __init__(self, error: Exception, domain: str) -> str:
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
         self.error = error
@@ -135,23 +142,172 @@ class _SPFGrammar(Grammar):
 
     version_tag = Regex(SPF_VERSION_TAG_REGEX_STRING)
     mechanism = Regex(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
+
     # Note: Pyleri skips whitespace by default; explicitly matching whitespace
     # would break many valid records. We keep the grammar permissive here and
     # perform whitespace separation checks in Python before invoking the grammar.
     START = Sequence(version_tag, Repeat(mechanism))
 
 
-spf_qualifiers = {"": "pass", "?": "neutral", "+": "pass", "-": "fail", "~": "softfail"}
+spf_qualifiers: dict[str, str] = {
+    "": "pass",
+    "?": "neutral",
+    "+": "pass",
+    "-": "fail",
+    "~": "softfail",
+}
+
+
+def ptr_match(
+    ip_address: str,
+    domain: str,
+    *,
+    nameservers: list[str] = None,
+    resolver: dns.resolver.Resolver = None,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> bool:
+    """
+    Preforms a ptr mechanism check.
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+
+    Returns:
+        bool: The result of the check
+
+    Raises:
+        :exc:`checkdmarc.DNSException`
+    """
+    hostnames = get_reverse_dns(
+        ip_address,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        timeout_retries=timeout_retries,
+    )
+    for name in hostnames:
+        if not name.endswith(domain):
+            continue
+        ips = get_a_records(
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
+        )
+        if ip_address in ips:
+            return True
+    return False
+
+
+def _raise_macro_syntax_error(
+    value: str,
+    pos: int,
+    domain: str,
+    syntax_error_marker: str,
+) -> None:
+    """Raise SPFSyntaxError with a caret-like marker inside the bad value."""
+    marked_value = value[:pos] + syntax_error_marker + value[pos:]
+    raise SPFSyntaxError(
+        f"{domain}: Invalid SPF macro syntax at position {pos} "
+        f"(marked with {syntax_error_marker}) in value: {marked_value}"
+    )
+
+
+def _validate_spf_macros(
+    value: str,
+    *,
+    domain: str,
+    syntax_error_marker: str,
+) -> None:
+    """
+    Validate SPF macro syntax in a domain-spec / macro-string per RFC 7208 §7.
+
+    This is purely syntactic; no macro expansion or DNS lookups.
+    """
+    i = 0
+    length = len(value)
+
+    while i < length:
+        ch = value[i]
+        if ch != "%":
+            i += 1
+            continue
+
+        # We have a '%'; ensure there is at least one more character
+        if i + 1 >= length:
+            _raise_macro_syntax_error(value, i, domain, syntax_error_marker)
+
+        next_ch = value[i + 1]
+
+        # Escapes: %%, %_, %-
+        if next_ch in ("%", "_", "-"):
+            i += 2
+            continue
+
+        # Macro-expand: %{...}
+        if next_ch != "{":
+            _raise_macro_syntax_error(value, i, domain, syntax_error_marker)
+
+        # Find closing brace
+        close = value.find("}", i + 2)
+        if close == -1:
+            _raise_macro_syntax_error(value, i, domain, syntax_error_marker)
+
+        body = value[i + 2 : close]
+        if not body:
+            _raise_macro_syntax_error(value, i, domain, syntax_error_marker)
+
+        # First char: macro-letter
+        letter = body[0]
+        if letter not in MACRO_LETTERS:
+            _raise_macro_syntax_error(value, i + 2, domain, syntax_error_marker)
+
+        rest = body[1:]
+
+        # transformers: *DIGIT [ "r" ]
+        j = 0
+        while j < len(rest) and rest[j].isdigit():
+            j += 1
+
+        if j:
+            # Non-zero if digits are present
+            try:
+                if int(rest[:j]) == 0:
+                    _raise_macro_syntax_error(
+                        value, i + 2 + 1, domain, syntax_error_marker
+                    )
+            except ValueError:
+                _raise_macro_syntax_error(value, i + 2 + 1, domain, syntax_error_marker)
+
+        if j < len(rest) and rest[j] == "r":
+            j += 1
+
+        # Remaining chars: delimiters
+        delims = rest[j:]
+        for k, d in enumerate(delims):
+            if d not in MACRO_DELIMS:
+                _raise_macro_syntax_error(
+                    value, i + 2 + 1 + j + k, domain, syntax_error_marker
+                )
+
+        # All good for this macro
+        i = close + 1
 
 
 def query_spf_record(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    quoted_txt_segments: bool = False,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    nameservers: Optional[list[str]] = None,
+    quoted_txt_segments: Optional[bool] = False,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ) -> OrderedDict:
     """
     Queries DNS for an SPF record
@@ -294,15 +450,15 @@ def parse_spf_record(
     domain: str,
     *,
     ignore_too_many_lookups: bool = False,
-    parked: bool = False,
-    seen: bool = None,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    recursion: OrderedDict = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
-) -> OrderedDict:
+    parked: Optional[bool] = False,
+    seen: Optional[bool] = None,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    recursion: Optional[OrderedDict] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
+) -> OrderedDict[str, Any]:
     """
     Parses an SPF record, including resolving ``a``, ``mx``, and ``include`` mechanisms
 
@@ -355,10 +511,6 @@ def parse_spf_record(
                 f"{correct_record} not: {record}"
             )
 
-    if len(AFTER_ALL_REGEX.findall(record)) > 0:
-        warnings.append("Any text after the all mechanism is ignored.")
-        record = AFTER_ALL_REGEX.sub(r"\1", record)
-
     # Reject records where an 'all' mechanism is concatenated to the previous
     # term without a separating space, e.g., "ip4:203.0.113.7~all".
     m = CONCATENATED_ALL_REGEX.search(record)
@@ -370,11 +522,28 @@ def parse_spf_record(
             f"(marked with {syntax_error_marker}) in: {marked_record}"
         )
 
-    parsed_record = spf_syntax_checker.parse(record)
+    # For grammar-level syntax checking, ignore everything after the first
+    # "all" mechanism. RFC 7208 only allows modifiers (not additional
+    # mechanisms) after mechanisms; we handle "exp=" explicitly below using
+    # AFTER_ALL_REGEX and emit warnings for any other junk.
+    #
+    # This lets us:
+    #   - keep strict syntax checking on everything up to "all"
+    #   - accept non-standard vendor junk after "all"
+    #   - still parse and preserve an exp modifier after "all"
+    grammar_record = record
+    after_all_match = AFTER_ALL_REGEX.search(record)
+    if after_all_match:
+        # AFTER_ALL_REGEX captures everything *after* the "all" token as group 1.
+        # Trim from the start of that group for the grammar input, so the
+        # grammar only sees "v=spf1 ... all" and not the trailing junk/exp.
+        grammar_record = record[: after_all_match.start(1)].rstrip()
+
+    parsed_record = spf_syntax_checker.parse(grammar_record)
 
     if not parsed_record.is_valid:
         pos = parsed_record.pos
-        expecting = list(
+        expecting: list[str] = list(
             map(lambda x: str(x).strip('"'), list(parsed_record.expecting))
         )
         expecting = " or ".join(expecting)
@@ -384,7 +553,7 @@ def parse_spf_record(
             f"(marked with {syntax_error_marker}) in: {marked_record}"
         )
 
-    matches = SPF_MECHANISM_REGEX.findall(record.lower())
+    matches: list[tuple[str, str]] = SPF_MECHANISM_REGEX.findall(record.lower())
 
     parsed = OrderedDict(
         [
@@ -395,16 +564,67 @@ def parse_spf_record(
         ]
     )
 
+    items_after_all: list[str] = AFTER_ALL_REGEX.findall(record)
+    if len(items_after_all) > 0:
+        if items_after_all[0].startswith("exp="):
+            # RFC 7208 § 6.2 (exp modifier): The explanation string is
+            # evaluated at runtime (after result == fail) and may contain
+            # macros. It MUST NOT contribute to DNS lookup counting and
+            # SHOULD NOT be resolved during static parsing.
+            #
+            # Therefore, do not perform any DNS lookups here. Simply
+            # preserve the provided value (which may include macros) so a
+            # caller with SMTP context can expand it at evaluation time.
+            exp = items_after_all[0].split("=")
+            if len(exp) < 2 or exp[1].strip() == 0:
+                raise SPFSyntaxError("The exp modifier is missing a value")
+            exp = exp[1].split(" ")
+            if len(exp) > 1:
+                warnings.append("No text should exist after the exp modifier value.")
+            exp = exp[0]
+            parsed["exp"] = exp
+            try:
+                exp_txt_records = get_txt_records(
+                    exp,
+                    nameservers=nameservers,
+                    timeout=timeout,
+                    timeout_retries=timeout_retries,
+                )
+                if len(exp_txt_records == 0):
+                    warnings.append("No TXT records at exp value {exp}.")
+                if len(exp_txt_records > 1):
+                    warnings.append("Too many TXT records at exp value {exp}.")
+            except Exception as e:
+                warnings.append(f"Failed to get TXT records at exp value {exp}: {e}")
+        else:
+            warnings.append(
+                "Any text after the all mechanism other than an exp modifier is ignored."
+            )
+
     total_dns_lookups = 0
     total_void_dns_lookups = 0
     error = None
-
+    all_seen = False
+    exp_seen = False
     for match in matches:
         mechanism_dns_lookups = 0
         mechanism_void_dns_lookups = 0
         action = spf_qualifiers[match[0]]
         mechanism = match[1].strip(":=")
         value = match[2]
+        # Macro syntax validation: macros are allowed only in mechanisms
+        # that take a domain-spec / macro-string, not ip4/ip6.
+        if "%" in value:
+            if mechanism in ("ip4", "ip6"):
+                raise SPFSyntaxError(
+                    f"{domain}: SPF macros are not allowed in {mechanism} "
+                    f"mechanisms: {value}"
+                )
+        _validate_spf_macros(
+            value,
+            domain=domain,
+            syntax_error_marker=syntax_error_marker,
+        )
         try:
             if mechanism == "ip4":
                 try:
@@ -493,7 +713,7 @@ def parse_spf_record(
                 # RFC 7208 § 4.6.4: no more than 10 DNS queries total per evaluation
                 if len(mx_hosts) > 10:
                     raise SPFTooManyDNSLookups(
-                        f"{value} has more than 10 MX records - " "(RFC 7208 § 4.6.4)",
+                        f"{value} has more than 10 MX records - (RFC 7208 § 4.6.4)",
                         dns_lookups=len(mx_hosts),
                     )
                 host_ips = {}
@@ -565,6 +785,8 @@ def parse_spf_record(
                     ]
                 )
                 parsed["mechanisms"].append(OrderedDict(pairs))
+                if value == "":
+                    raise SPFSyntaxError(f"{mechanism} must have a value")
                 if total_dns_lookups > 10:
                     raise SPFTooManyDNSLookups(
                         "Parsing the SPF record requires "
@@ -573,6 +795,8 @@ def parse_spf_record(
                         dns_lookups=total_dns_lookups,
                     )
             elif mechanism == "redirect":
+                if parsed["redirect"]:
+                    raise SPFSyntaxError("Multiple redirect modifiers")
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
                 if value.lower() in recursion:
@@ -635,23 +859,21 @@ def parse_spf_record(
                         total_void_dns_lookups += 1
                     raise _SPFWarning(str(error))
 
-            elif mechanism == "exp":
-                # RFC 7208 § 6.2 (exp modifier): The explanation string is
-                # evaluated at runtime (after result == fail) and may contain
-                # macros. It MUST NOT contribute to DNS lookup counting and
-                # SHOULD NOT be resolved during static parsing.
-                #
-                # Therefore, do not perform any DNS lookups here. Simply
-                # preserve the provided value (which may include macros) so a
-                # caller with SMTP context can expand it at evaluation time.
-                parsed["exp"] = value
-
             elif mechanism == "all":
+                if all_seen:
+                    raise ValueError("The all mechanism can only be used once.")
+                all_seen = True
                 parsed["all"] = action
+            elif mechanism == "exp":
+                if exp_seen:
+                    raise SPFSyntaxError("Multiple exp values are not permitted")
+                exp_seen = True
 
             elif mechanism == "include":
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
+                if value == "":
+                    raise SPFSyntaxError(f"{mechanism} must have a value")
                 if value.lower() in recursion:
                     pointer = " -> ".join(recursion + [value.lower()])
                     raise SPFIncludeLoop(f"Include loop: {pointer}")
@@ -659,18 +881,6 @@ def parse_spf_record(
                     raise _SPFDuplicateInclude(f"Duplicate include: {value.lower()}")
                 seen.append(value.lower())
 
-                if "%{" in value:
-                    include = OrderedDict(
-                        [
-                            ("action", action),
-                            ("mechanism", mechanism),
-                            ("value", value),
-                            ("dns_lookups", mechanism_dns_lookups),
-                            ("void_dns_lookups", mechanism_void_dns_lookups),
-                        ]
-                    )
-                    parsed["mechanisms"].append(include)
-                    continue
                 try:
                     include_record = query_spf_record(
                         value,
@@ -747,6 +957,19 @@ def parse_spf_record(
             elif mechanism == "ptr":
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
+                a_records = get_a_records(
+                    value,
+                    nameservers=nameservers,
+                    resolver=resolver,
+                    timeout=timeout,
+                    timeout_retries=timeout_retries,
+                )
+                if len(a_records) == 0:
+                    # Do not pre-increment void counters here; let the outer
+                    # handler for _SPFMissingRecords account for a single void lookup.
+                    raise _SPFMissingRecords(
+                        f"A ptr mechanism points to {value.lower()}, but that domain/subdomain does not have any A/AAAA records."
+                    )
                 parsed["mechanisms"].append(
                     OrderedDict(
                         [
@@ -826,11 +1049,11 @@ def parse_spf_record(
 def get_spf_record(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Retrieves and parses an SPF record
 
@@ -875,12 +1098,12 @@ def get_spf_record(
 def check_spf(
     domain: str,
     *,
-    parked: bool = False,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    parked: Optional[bool] = False,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Returns a dictionary with a parsed SPF record or an error.
 
