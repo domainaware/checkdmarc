@@ -2,11 +2,15 @@
 
 ## 5.12.27
 
-### Fixed
+### Enhancements
 
-- Do not allow duplicate tags in DMARC, BIMI, MTA-STS, or TLSRPT DNS records ([#213](https://github.com/domainaware/checkdmarc/issues/213))
-- Do not allow multiple multiple `redirect` modifiers an an SPF record ([#213](https://github.com/domainaware/checkdmarc/issues/213))
-- Require values for `include` and `exists mechanisms
+- Tighter validation of DNS records ([#213](https://github.com/domainaware/checkdmarc/issues/213))
+  - Do not allow duplicate tags in DMARC, BIMI, MTA-STS, or TLSRPT DNS records
+  - Do not allow multiple multiple `redirect` modifiers in an SPF record
+  - Require values for `include` and `exists` SPF mechanisms
+  - Proper validation of the SPF `ptr` mechanism
+  - Proper validation of SPF macros
+  - Only permit one `all` SPF mechanism
 
 ## 5.12.26
 
