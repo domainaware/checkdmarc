@@ -7,6 +7,8 @@ import logging
 import re
 from collections import OrderedDict
 
+from typing import Optional, Any
+
 import dns
 import requests
 from pyleri import (
@@ -142,11 +144,11 @@ STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 def query_mta_sts_record(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Queries DNS for an MTA-STS record
 
@@ -239,9 +241,9 @@ def query_mta_sts_record(
 def parse_mta_sts_record(
     record: str,
     *,
-    include_tag_descriptions: bool = False,
-    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
-) -> OrderedDict:
+    include_tag_descriptions: Optional[bool] = False,
+    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
+) -> OrderedDict[str, Any]:
     """
     Parses an MTA-STS record
 
@@ -328,8 +330,8 @@ def parse_mta_sts_record(
 
 
 def download_mta_sts_policy(
-    domain: str, *, http_timeout: float = DEFAULT_HTTP_TIMEOUT
-) -> OrderedDict:
+    domain: str, *, http_timeout: Optional[float] = DEFAULT_HTTP_TIMEOUT
+) -> OrderedDict[str, Any]:
     """
     Downloads a domains MTA-HTS policy
 
@@ -375,7 +377,7 @@ def download_mta_sts_policy(
     return OrderedDict(policy=response.text, warnings=warnings)
 
 
-def parse_mta_sts_policy(policy: str) -> OrderedDict:
+def parse_mta_sts_policy(policy: str) -> OrderedDict[str, Any]:
     """
     Parses an MTA-STS policy
 
@@ -450,11 +452,11 @@ def parse_mta_sts_policy(policy: str) -> OrderedDict:
 def check_mta_sts(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int]= 2,
+) -> OrderedDict[str, Any]:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.
 

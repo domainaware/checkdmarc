@@ -8,6 +8,7 @@ import platform
 import socket
 import smtplib
 from collections import OrderedDict
+from typing import Any, Optional
 import ssl
 
 import dns
@@ -90,7 +91,10 @@ class SMTPError(Exception):
     use_signals=_get_timeout_method(),
 )
 def test_tls(
-    hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
+    hostname: str,
+    *,
+    ssl_context: Optional[ssl.SSLContext] = None,
+    cache: Optional[ExpiringDict] = None
 ) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
@@ -208,7 +212,10 @@ def test_tls(
     use_signals=_get_timeout_method(),
 )
 def test_starttls(
-    hostname: str, *, ssl_context: ssl.SSLContext = None, cache: ExpiringDict = None
+    hostname: str,
+    *,
+    ssl_context: Optional[ssl.SSLContext] = None,
+    cache: Optional[ExpiringDict] = None
 ) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support
@@ -327,15 +334,15 @@ def test_starttls(
 def get_mx_hosts(
     domain: str,
     *,
-    skip_tls: bool = False,
-    approved_hostnames: list[str] = None,
-    mta_sts_mx_patterns: list[str] = None,
-    parked: bool = False,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-):
+    skip_tls: Optional[bool] = False,
+    approved_hostnames: Optional[list[str]] = None,
+    mta_sts_mx_patterns: Optional[list[str]] = None,
+    parked: Optional[bool] = False,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Gets MX hostname and their addresses
 
@@ -519,14 +526,14 @@ def get_mx_hosts(
 def check_mx(
     domain: str,
     *,
-    approved_mx_hostnames: list[str] = None,
+    approved_mx_hostnames: Optional[list[str]] = None,
     mta_sts_mx_patterns: list[str] = None,
-    skip_tls: bool = False,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    skip_tls: Optional[bool] = False,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Gets MX hostname and their addresses, or an empty list of hosts and an
     error if a DNS error occurs

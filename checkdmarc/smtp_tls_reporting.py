@@ -8,6 +8,8 @@ import logging
 import re
 from collections import OrderedDict
 
+from typing import Any, Optional
+
 import dns
 from pyleri import Grammar, List, Regex, Sequence
 
@@ -137,11 +139,11 @@ smtp_rpt_tags = OrderedDict(
 def query_smtp_tls_reporting_record(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Queries DNS for an SMTP TLS Reporting record
 
@@ -238,9 +240,9 @@ def query_smtp_tls_reporting_record(
 def parse_smtp_tls_reporting_record(
     record: str,
     *,
-    include_tag_descriptions: bool = False,
-    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
-) -> OrderedDict:
+    include_tag_descriptions: Optional[bool] = False,
+    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
+) -> OrderedDict[str, Any]:
     """
     Parses an SMTP TLS Reporting record
 
@@ -341,11 +343,11 @@ def parse_smtp_tls_reporting_record(
 def check_smtp_tls_reporting(
     domain: str,
     *,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Returns a dictionary with a parsed SMTP-TLS Reporting policy or an error.
 

@@ -11,7 +11,7 @@ import re
 from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from sys import getsizeof
-from typing import Union
+from typing import Union, Optional, Any
 
 try:
     from importlib.resources import files
@@ -449,7 +449,7 @@ def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
         return None
 
 
-def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
+def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict[str, Any]:
     """Get metadata about a Verified Mark Certificate (VMC)"""
 
     def get_cert_name_components(cert_field: x509.Name):
@@ -646,11 +646,11 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict:
 def _query_bimi_record(
     domain: str,
     *,
-    selector: str = "default",
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    selector: Optional[str] = "default",
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
 ):
     """
     Queries DNS for a BIMI record
@@ -733,12 +733,12 @@ def _query_bimi_record(
 def query_bimi_record(
     domain: str,
     *,
-    selector: str = "default",
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    selector: Optional[str] = "default",
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Queries DNS for a BIMI record
 
@@ -821,12 +821,12 @@ def query_bimi_record(
 def parse_bimi_record(
     record: str,
     *,
-    domain: str = None,
-    parsed_dmarc_record: dict = None,
-    include_tag_descriptions: bool = False,
-    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
-    http_timeout: float = DEFAULT_HTTP_TIMEOUT,
-) -> OrderedDict:
+    domain: Optional[str] = None,
+    parsed_dmarc_record: Optional[dict] = None,
+    include_tag_descriptions: Optional[bool] = False,
+    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
+    http_timeout: Optional[float] = DEFAULT_HTTP_TIMEOUT,
+) -> OrderedDict[str, Any]:
     """
     Parses a BIMI record
 
@@ -1017,14 +1017,14 @@ def parse_bimi_record(
 def check_bimi(
     domain: str,
     *,
-    selector: str = "default",
-    parsed_dmarc_record: dict = None,
-    include_tag_descriptions: bool = False,
-    nameservers: list[str] = None,
-    resolver: dns.resolver.Resolver = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
-) -> OrderedDict:
+    selector: Optional[str] = "default",
+    parsed_dmarc_record: Optional[dict] = None,
+    include_tag_descriptions: Optional[bool] = False,
+    nameservers: Optional[list[str]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: Optional[float] = 2.0,
+    timeout_retries: Optional[int] = 2,
+) -> OrderedDict[str, Any]:
     """
     Returns a dictionary with a parsed BIMI record or an error.
 
@@ -1068,6 +1068,7 @@ def check_bimi(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
+            timeout_retries=timeout_retries
         )
         bimi_results["selector"] = selector
         bimi_results["location"] = bimi_query["location"]
