@@ -580,25 +580,22 @@ def parse_spf_record(
                 raise SPFSyntaxError("The exp modifier is missing a value")
             exp = exp[1].split(" ")
             if len(exp) > 1:
-                warnings.append(" No text should exist after the exp modifier value.")
-            else:
-                exp = exp[0]
-                parsed["exp"] = exp
-                try:
-                    exp_txt_records = get_txt_records(
-                        exp,
-                        nameservers=nameservers,
-                        timeout=timeout,
-                        timeout_retries=timeout_retries,
-                    )
-                    if len(exp_txt_records == 0):
-                        warnings.append("No TXT records at exp value {exp}.")
-                    if len(exp_txt_records > 1):
-                        warnings.append("Too many TXT records at exp value {exp}.")
-                except Exception as e:
-                    warnings.append(
-                        f"Failed to get TXT records at exp value {exp}: {e}"
-                    )
+                warnings.append("No text should exist after the exp modifier value.")
+            exp = exp[0]
+            parsed["exp"] = exp
+            try:
+                exp_txt_records = get_txt_records(
+                    exp,
+                    nameservers=nameservers,
+                    timeout=timeout,
+                    timeout_retries=timeout_retries,
+                )
+                if len(exp_txt_records == 0):
+                    warnings.append("No TXT records at exp value {exp}.")
+                if len(exp_txt_records > 1):
+                    warnings.append("Too many TXT records at exp value {exp}.")
+            except Exception as e:
+                warnings.append(f"Failed to get TXT records at exp value {exp}: {e}")
         else:
             warnings.append(
                 "Any text after the all mechanism other than an exp modifier is ignored."
