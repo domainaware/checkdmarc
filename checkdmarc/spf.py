@@ -59,6 +59,9 @@ AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re.IGNORECASE)
 # so we don't falsely match hostnames like 'foo-all.example'.
 CONCATENATED_ALL_REGEX = re.compile(r"\S([+\-~?])all(?=\s|$)", re.IGNORECASE)
 
+MACRO_LETTERS = set("slodiphcrtv")
+MACRO_DELIMS = set(".-+,/_=")
+
 
 class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
@@ -200,6 +203,101 @@ def ptr_match(
         if ip_address in ips:
             return True
     return False
+
+
+def _raise_macro_syntax_error(
+    value: str,
+    pos: int,
+    domain: str,
+    syntax_error_marker: str,
+) -> None:
+    """Raise SPFSyntaxError with a caret-like marker inside the bad value."""
+    marked_value = value[:pos] + syntax_error_marker + value[pos:]
+    raise SPFSyntaxError(
+        f"{domain}: Invalid SPF macro syntax at position {pos} "
+        f"(marked with {syntax_error_marker}) in value: {marked_value}"
+    )
+
+
+def _validate_spf_macros(
+    value: str,
+    *,
+    domain: str,
+    syntax_error_marker: str,
+) -> None:
+    """
+    Validate SPF macro syntax in a domain-spec / macro-string per RFC 7208 §7.
+
+    This is purely syntactic; no macro expansion or DNS lookups.
+    """
+    i = 0
+    length = len(value)
+
+    while i < length:
+        ch = value[i]
+        if ch != "%":
+            i += 1
+            continue
+
+        # We have a '%'; ensure there is at least one more character
+        if i + 1 >= length:
+            _raise_macro_syntax_error(value, i, domain, syntax_error_marker)
+
+        next_ch = value[i + 1]
+
+        # Escapes: %%, %_, %-
+        if next_ch in ("%", "_", "-"):
+            i += 2
+            continue
+
+        # Macro-expand: %{...}
+        if next_ch != "{":
+            _raise_macro_syntax_error(value, i, domain, syntax_error_marker)
+
+        # Find closing brace
+        close = value.find("}", i + 2)
+        if close == -1:
+            _raise_macro_syntax_error(value, i, domain, syntax_error_marker)
+
+        body = value[i + 2 : close]
+        if not body:
+            _raise_macro_syntax_error(value, i, domain, syntax_error_marker)
+
+        # First char: macro-letter
+        letter = body[0]
+        if letter not in MACRO_LETTERS:
+            _raise_macro_syntax_error(value, i + 2, domain, syntax_error_marker)
+
+        rest = body[1:]
+
+        # transformers: *DIGIT [ "r" ]
+        j = 0
+        while j < len(rest) and rest[j].isdigit():
+            j += 1
+
+        if j:
+            # Non-zero if digits are present
+            try:
+                if int(rest[:j]) == 0:
+                    _raise_macro_syntax_error(
+                        value, i + 2 + 1, domain, syntax_error_marker
+                    )
+            except ValueError:
+                _raise_macro_syntax_error(value, i + 2 + 1, domain, syntax_error_marker)
+
+        if j < len(rest) and rest[j] == "r":
+            j += 1
+
+        # Remaining chars: delimiters
+        delims = rest[j:]
+        for k, d in enumerate(delims):
+            if d not in MACRO_DELIMS:
+                _raise_macro_syntax_error(
+                    value, i + 2 + 1 + j + k, domain, syntax_error_marker
+                )
+
+        # All good for this macro
+        i = close + 1
 
 
 def query_spf_record(
@@ -424,7 +522,24 @@ def parse_spf_record(
             f"(marked with {syntax_error_marker}) in: {marked_record}"
         )
 
-    parsed_record = spf_syntax_checker.parse(record)
+    # For grammar-level syntax checking, ignore everything after the first
+    # "all" mechanism. RFC 7208 only allows modifiers (not additional
+    # mechanisms) after mechanisms; we handle "exp=" explicitly below using
+    # AFTER_ALL_REGEX and emit warnings for any other junk.
+    #
+    # This lets us:
+    #   - keep strict syntax checking on everything up to "all"
+    #   - accept non-standard vendor junk after "all"
+    #   - still parse and preserve an exp modifier after "all"
+    grammar_record = record
+    after_all_match = AFTER_ALL_REGEX.search(record)
+    if after_all_match:
+        # AFTER_ALL_REGEX captures everything *after* the "all" token as group 1.
+        # Trim from the start of that group for the grammar input, so the
+        # grammar only sees "v=spf1 ... all" and not the trailing junk/exp.
+        grammar_record = record[: after_all_match.start(1)].rstrip()
+
+    parsed_record = spf_syntax_checker.parse(grammar_record)
 
     if not parsed_record.is_valid:
         pos = parsed_record.pos
@@ -499,6 +614,19 @@ def parse_spf_record(
         action = spf_qualifiers[match[0]]
         mechanism = match[1].strip(":=")
         value = match[2]
+        # Macro syntax validation: macros are allowed only in mechanisms
+        # that take a domain-spec / macro-string, not ip4/ip6.
+        if "%" in value:
+            if mechanism in ("ip4", "ip6"):
+                raise SPFSyntaxError(
+                    f"{domain}: SPF macros are not allowed in {mechanism} "
+                    f"mechanisms: {value}"
+                )
+        _validate_spf_macros(
+            value,
+            domain=domain,
+            syntax_error_marker=syntax_error_marker,
+        )
         try:
             if mechanism == "ip4":
                 try:
@@ -752,18 +880,6 @@ def parse_spf_record(
                     raise _SPFDuplicateInclude(f"Duplicate include: {value.lower()}")
                 seen.append(value.lower())
 
-                if "%{" in value:
-                    include = OrderedDict(
-                        [
-                            ("action", action),
-                            ("mechanism", mechanism),
-                            ("value", value),
-                            ("dns_lookups", mechanism_dns_lookups),
-                            ("void_dns_lookups", mechanism_void_dns_lookups),
-                        ]
-                    )
-                    parsed["mechanisms"].append(include)
-                    continue
                 try:
                     include_record = query_spf_record(
                         value,
