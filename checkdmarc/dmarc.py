@@ -1196,11 +1196,11 @@ def get_dmarc_record(
     domain: str,
     *,
     include_tag_descriptions: Optional[bool] = False,
-    nameservers: Optional[list[str] ]= None,
+    nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: Optional[float] = 2.0,
     timeout_retries: Optional[int] = 2,
-) -> OrderedDict[str,Any]:
+) -> OrderedDict[str, Any]:
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -1260,7 +1260,7 @@ def check_dmarc(
     parked: Optional[bool] = False,
     include_dmarc_tag_descriptions: Optional[bool] = False,
     ignore_unrelated_records: Optional[bool] = False,
-    nameservers: Optional[list[str] ]= None,
+    nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: Optional[float] = 2.0,
     timeout_retries: Optional[int] = 2,

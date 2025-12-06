@@ -94,7 +94,7 @@ def test_tls(
     hostname: str,
     *,
     ssl_context: Optional[ssl.SSLContext] = None,
-    cache: Optional[ExpiringDict] = None
+    cache: Optional[ExpiringDict] = None,
 ) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
@@ -215,7 +215,7 @@ def test_starttls(
     hostname: str,
     *,
     ssl_context: Optional[ssl.SSLContext] = None,
-    cache: Optional[ExpiringDict] = None
+    cache: Optional[ExpiringDict] = None,
 ) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support

@@ -1068,7 +1068,7 @@ def check_bimi(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries
+            timeout_retries=timeout_retries,
         )
         bimi_results["selector"] = selector
         bimi_results["location"] = bimi_query["location"]

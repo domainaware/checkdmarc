@@ -455,7 +455,7 @@ def check_mta_sts(
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int]= 2,
+    timeout_retries: Optional[int] = 2,
 ) -> OrderedDict[str, Any]:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.

@@ -259,8 +259,9 @@ def check_ns(
     return ns_results
 
 
-def results_to_json(results: Union[OrderedDict[str,Any],
-                                   list[OrderedDict[str, Any]]]) -> str:
+def results_to_json(
+    results: Union[OrderedDict[str, Any], list[OrderedDict[str, Any]]],
+) -> str:
     """
     Converts a dictionary of results or list of results to a JSON string
 
@@ -273,8 +274,9 @@ def results_to_json(results: Union[OrderedDict[str,Any],
     return json.dumps(results, ensure_ascii=False, indent=2)
 
 
-def results_to_csv_rows(results: Union[dict,
-                                       list[dict]]) -> list[dict][str, Union[str, int, float]]:
+def results_to_csv_rows(
+    results: Union[dict, list[dict]],
+) -> list[dict][str, Union[str, int, float]]:
     """
     Converts a results dictionary or list of dictionaries and returns a
     list of CSV row dictionaries
