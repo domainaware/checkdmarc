@@ -861,7 +861,7 @@ def parse_spf_record(
 
             elif mechanism == "all":
                 if all_seen:
-                    raise ValueError("The all mechanism can only be used once.")
+                    raise SPFSyntaxError("The all mechanism can only be used once.")
                 all_seen = True
                 parsed["all"] = action
             elif mechanism == "exp":
