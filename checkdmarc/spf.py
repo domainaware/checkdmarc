@@ -957,19 +957,6 @@ def parse_spf_record(
             elif mechanism == "ptr":
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
-                a_records = get_a_records(
-                    value,
-                    nameservers=nameservers,
-                    resolver=resolver,
-                    timeout=timeout,
-                    timeout_retries=timeout_retries,
-                )
-                if len(a_records) == 0:
-                    # Do not pre-increment void counters here; let the outer
-                    # handler for _SPFMissingRecords account for a single void lookup.
-                    raise _SPFMissingRecords(
-                        f"A ptr mechanism points to {value.lower()}, but that domain/subdomain does not have any A/AAAA records."
-                    )
                 parsed["mechanisms"].append(
                     OrderedDict(
                         [
