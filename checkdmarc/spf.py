@@ -583,19 +583,26 @@ def parse_spf_record(
                 warnings.append("No text should exist after the exp modifier value.")
             exp = exp[0]
             parsed["exp"] = exp
-            try:
-                exp_txt_records = get_txt_records(
+            if "%" in exp:
+                _validate_spf_macros(
                     exp,
-                    nameservers=nameservers,
-                    timeout=timeout,
-                    timeout_retries=timeout_retries,
+                    domain=domain,
+                    syntax_error_marker=syntax_error_marker,
                 )
-                if len(exp_txt_records == 0):
-                    warnings.append("No TXT records at exp value {exp}.")
-                if len(exp_txt_records > 1):
-                    warnings.append("Too many TXT records at exp value {exp}.")
-            except Exception as e:
-                warnings.append(f"Failed to get TXT records at exp value {exp}: {e}")
+            else:
+                try:
+                    exp_txt_records = get_txt_records(
+                        exp,
+                        nameservers=nameservers,
+                        timeout=timeout,
+                        timeout_retries=timeout_retries,
+                    )
+                    if len(exp_txt_records) == 0:
+                        warnings.append(f"No TXT records at exp value {exp}.")
+                    if len(exp_txt_records) > 1:
+                        warnings.append(f"Too many TXT records at exp value {exp}.")
+                except Exception as e:
+                    warnings.append(f"Failed to get TXT records at exp value {exp}: {e}")
         else:
             warnings.append(
                 "Any text after the all mechanism other than an exp modifier is ignored."
@@ -651,126 +658,150 @@ def parse_spf_record(
                     raise SPFSyntaxError(f"{value} is not a valid ipv6 value.")
 
             if mechanism == "a":
-                mechanism_dns_lookups += 1
-                total_dns_lookups += 1
-                if value == "":
-                    value = domain
-                cidr = None
-                value = value.split("/")
-                value = value[0]
-                if len(value) == 2:
-                    cidr = value[1]
-                a_records = get_a_records(
-                    value,
-                    nameservers=nameservers,
-                    resolver=resolver,
-                    timeout=timeout,
-                    timeout_retries=timeout_retries,
-                )
-                if len(a_records) == 0:
-                    # Do not pre-increment void counters here; let the outer
-                    # handler for _SPFMissingRecords account for a single void lookup.
-                    raise _SPFMissingRecords(
-                        f"An a mechanism points to {value.lower()}, but that domain/subdomain does not have any A/AAAA records."
+                if "%" in value:
+                    pairs = [
+                        ("action", action),
+                        ("mechanism", mechanism),
+                        ("value", value),
+                        ("dns_lookups", mechanism_dns_lookups),
+                        ("void_dns_lookups", mechanism_void_dns_lookups),
+                        ("addresses", []),
+                    ]
+                    parsed["mechanisms"].append(OrderedDict(pairs))
+
+                else:
+                    mechanism_dns_lookups += 1
+                    total_dns_lookups += 1
+                    if value == "":
+                        value = domain
+                    cidr = None
+                    value = value.split("/")
+                    value = value[0]
+                    if len(value) == 2:
+                        cidr = value[1]
+                    a_records = get_a_records(
+                        value,
+                        nameservers=nameservers,
+                        resolver=resolver,
+                        timeout=timeout,
+                        timeout_retries=timeout_retries,
                     )
-                for i in range(len(a_records)):
-                    if cidr:
-                        a_records[i] = f"{a_records[i]}/{cidr}"
-                pairs = [
-                    ("action", action),
-                    ("mechanism", mechanism),
-                    ("value", value),
-                    ("dns_lookups", mechanism_dns_lookups),
-                    ("void_dns_lookups", mechanism_void_dns_lookups),
-                    ("addresses", a_records),
-                ]
-                parsed["mechanisms"].append(OrderedDict(pairs))
+                    if len(a_records) == 0:
+                        # Do not pre-increment void counters here; let the outer
+                        # handler for _SPFMissingRecords account for a single void lookup.
+                        raise _SPFMissingRecords(
+                            f"An a mechanism points to {value.lower()}, but that domain/subdomain does not have any A/AAAA records."
+                        )
+                    for i in range(len(a_records)):
+                        if cidr:
+                            a_records[i] = f"{a_records[i]}/{cidr}"
+                    pairs = [
+                        ("action", action),
+                        ("mechanism", mechanism),
+                        ("value", value),
+                        ("dns_lookups", mechanism_dns_lookups),
+                        ("void_dns_lookups", mechanism_void_dns_lookups),
+                        ("addresses", a_records),
+                    ]
+                    parsed["mechanisms"].append(OrderedDict(pairs))
 
             elif mechanism == "mx":
-                mechanism_dns_lookups += 1
-                total_dns_lookups += 1
-                # Use the current domain if no value was provided
-                if value == "":
-                    value = domain
+                if "%" in value:
+                    pairs = [
+                        ("action", action),
+                        ("mechanism", mechanism),
+                        ("value", value),
+                        ("dns_lookups", mechanism_dns_lookups),
+                        ("void_dns_lookups", mechanism_void_dns_lookups),
+                        ("hosts", {}),
+                    ]
+                    parsed["mechanisms"].append(OrderedDict(pairs))
 
-                # Query the MX records
-                mx_hosts = get_mx_records(
-                    value,
-                    nameservers=nameservers,
-                    resolver=resolver,
-                    timeout=timeout,
-                    timeout_retries=timeout_retries,
-                )
+                else:
+                    mechanism_dns_lookups += 1
+                    total_dns_lookups += 1
+                    # Use the current domain if no value was provided
+                    if value == "":
+                        value = domain
 
-                if len(mx_hosts) == 0:
-                    # MX query resulted in no records; count a single void lookup
-                    # in the outer warning handler to avoid double counting.
-                    raise _SPFMissingRecords(
-                        f"An mx mechanism points to {value.lower()}, "
-                        "but that domain/subdomain does not have any MX records."
+                    # Query the MX records
+                    mx_hosts = get_mx_records(
+                        value,
+                        nameservers=nameservers,
+                        resolver=resolver,
+                        timeout=timeout,
+                        timeout_retries=timeout_retries,
                     )
 
-                # RFC 7208 § 4.6.4: no more than 10 DNS queries total per evaluation
-                if len(mx_hosts) > 10:
-                    raise SPFTooManyDNSLookups(
-                        f"{value} has more than 10 MX records - (RFC 7208 § 4.6.4)",
-                        dns_lookups=len(mx_hosts),
-                    )
-                host_ips = {}
-                for host in mx_hosts:
-                    hostname = host["hostname"]
-                    # --- perform A/AAAA resolution for each MX host ---
-                    try:
-                        _addresses = get_a_records(
-                            hostname,
-                            nameservers=nameservers,
-                            resolver=resolver,
-                            timeout=timeout,
-                            timeout_retries=timeout_retries,
+                    if len(mx_hosts) == 0:
+                        # MX query resulted in no records; count a single void lookup
+                        # in the outer warning handler to avoid double counting.
+                        raise _SPFMissingRecords(
+                            f"An mx mechanism points to {value.lower()}, "
+                            "but that domain/subdomain does not have any MX records."
                         )
-                        host_ips[hostname] = _addresses
 
-                        if len(_addresses) == 0:
-                            # void lookup: increment void counter
-                            mechanism_void_dns_lookups += 1
-                            total_void_dns_lookups += 1
-                            if total_void_dns_lookups > 2:
-                                raise SPFTooManyVoidDNSLookups(
-                                    "Parsing the SPF record has "
-                                    f"{total_void_dns_lookups}/2 maximum void DNS lookups - "
-                                    "(RFC 7208 § 4.6.4)",
-                                    void_dns_lookups=total_void_dns_lookups,
-                                )
-
-                        if total_dns_lookups > 10:
-                            raise SPFTooManyDNSLookups(
-                                "Parsing the SPF record requires "
-                                f"{total_dns_lookups}/10 maximum DNS lookups - "
-                                "(RFC 7208 § 4.6.4)",
-                                dns_lookups=total_dns_lookups,
+                    # RFC 7208 § 4.6.4: no more than 10 DNS queries total per evaluation
+                    if len(mx_hosts) > 10:
+                        raise SPFTooManyDNSLookups(
+                            f"{value} has more than 10 MX records - (RFC 7208 § 4.6.4)",
+                            dns_lookups=len(mx_hosts),
+                        )
+                    host_ips = {}
+                    for host in mx_hosts:
+                        hostname = host["hostname"]
+                        # --- perform A/AAAA resolution for each MX host ---
+                        try:
+                            _addresses = get_a_records(
+                                hostname,
+                                nameservers=nameservers,
+                                resolver=resolver,
+                                timeout=timeout,
+                                timeout_retries=timeout_retries,
                             )
+                            host_ips[hostname] = _addresses
 
-                    except DNSException as dnserror:
-                        if isinstance(dnserror, DNSExceptionNXDOMAIN):
-                            mechanism_void_dns_lookups += 1
-                            total_void_dns_lookups += 1
-                            if total_void_dns_lookups > 2:
-                                raise SPFTooManyVoidDNSLookups(
-                                    "Parsing the SPF record has "
-                                    f"{total_void_dns_lookups}/2 maximum void DNS lookups "
+                            if len(_addresses) == 0:
+                                # void lookup: increment void counter
+                                mechanism_void_dns_lookups += 1
+                                total_void_dns_lookups += 1
+                                if total_void_dns_lookups > 2:
+                                    raise SPFTooManyVoidDNSLookups(
+                                        "Parsing the SPF record has "
+                                        f"{total_void_dns_lookups}/2 maximum void DNS lookups - "
+                                        "(RFC 7208 § 4.6.4)",
+                                        void_dns_lookups=total_void_dns_lookups,
+                                    )
+
+                            if total_dns_lookups > 10:
+                                raise SPFTooManyDNSLookups(
+                                    "Parsing the SPF record requires "
+                                    f"{total_dns_lookups}/10 maximum DNS lookups - "
                                     "(RFC 7208 § 4.6.4)",
-                                    void_dns_lookups=total_void_dns_lookups,
+                                    dns_lookups=total_dns_lookups,
                                 )
-                        raise _SPFWarning(str(dnserror))
-                pairs = [
-                    ("action", action),
-                    ("mechanism", mechanism),
-                    ("value", value),
-                    ("dns_lookups", mechanism_dns_lookups),
-                    ("void_dns_lookups", mechanism_void_dns_lookups),
-                ]
-                pairs.append(("hosts", host_ips))
-                parsed["mechanisms"].append(OrderedDict(pairs))
+
+                        except DNSException as dnserror:
+                            if isinstance(dnserror, DNSExceptionNXDOMAIN):
+                                mechanism_void_dns_lookups += 1
+                                total_void_dns_lookups += 1
+                                if total_void_dns_lookups > 2:
+                                    raise SPFTooManyVoidDNSLookups(
+                                        "Parsing the SPF record has "
+                                        f"{total_void_dns_lookups}/2 maximum void DNS lookups "
+                                        "(RFC 7208 § 4.6.4)",
+                                        void_dns_lookups=total_void_dns_lookups,
+                                    )
+                            raise _SPFWarning(str(dnserror))
+                    pairs = [
+                        ("action", action),
+                        ("mechanism", mechanism),
+                        ("value", value),
+                        ("dns_lookups", mechanism_dns_lookups),
+                        ("void_dns_lookups", mechanism_void_dns_lookups),
+                    ]
+                    pairs.append(("hosts", host_ips))
+                    parsed["mechanisms"].append(OrderedDict(pairs))
 
             elif mechanism == "exists":
                 mechanism_dns_lookups += 1
@@ -797,67 +828,80 @@ def parse_spf_record(
             elif mechanism == "redirect":
                 if parsed["redirect"]:
                     raise SPFSyntaxError("Multiple redirect modifiers")
-                mechanism_dns_lookups += 1
-                total_dns_lookups += 1
-                if value.lower() in recursion:
-                    raise SPFRedirectLoop(f"Redirect loop: {value.lower()}")
-                seen.append(value.lower())
-                try:
-                    redirect_record = query_spf_record(
-                        value,
-                        nameservers=nameservers,
-                        resolver=resolver,
-                        timeout=timeout,
-                        timeout_retries=timeout_retries,
-                    )
-                    redirect_record = redirect_record["record"]
-                    redirect = parse_spf_record(
-                        redirect_record,
-                        value,
-                        seen=seen,
-                        recursion=recursion + [value.lower()],
-                        nameservers=nameservers,
-                        resolver=resolver,
-                        timeout=timeout,
-                        timeout_retries=timeout_retries,
-                    )
-                    parsed["all"] = redirect["parsed"]["all"]
-                    mechanism_dns_lookups += redirect["dns_lookups"]
-                    mechanism_void_dns_lookups += redirect["void_dns_lookups"]
-                    total_dns_lookups += redirect["dns_lookups"]
-                    total_void_dns_lookups += redirect["void_dns_lookups"]
-                    if total_dns_lookups > 10:
-                        raise SPFTooManyDNSLookups(
-                            "Parsing the SPF record requires "
-                            f"{total_dns_lookups}/10 maximum "
-                            "DNS lookups "
-                            "(RFC 7208 § 4.6.4)",
-                            dns_lookups=total_dns_lookups,
-                        )
-                    if total_void_dns_lookups > 2:
-                        u = "(RFC 7208 § 4.6.4)"
-                        raise SPFTooManyVoidDNSLookups(
-                            "Parsing the SPF record has "
-                            f"{total_void_dns_lookups}/2 maximum void "
-                            "DNS lookups "
-                            f"{u}",
-                            void_dns_lookups=total_void_dns_lookups,
-                        )
+                if "%" in value:
                     parsed["redirect"] = OrderedDict(
                         [
                             ("domain", value),
-                            ("record", redirect_record),
+                            ("record", None),
                             ("dns_lookups", mechanism_dns_lookups),
                             ("void_dns_lookups", mechanism_void_dns_lookups),
-                            ("parsed", redirect["parsed"]),
-                            ("warnings", redirect["warnings"]),
+                            ("parsed", None),
+                            ("warnings", []),
                         ]
                     )
-                    warnings += redirect["warnings"]
-                except DNSException as error:
-                    if isinstance(error, DNSExceptionNXDOMAIN):
-                        total_void_dns_lookups += 1
-                    raise _SPFWarning(str(error))
+
+                else:
+                    mechanism_dns_lookups += 1
+                    total_dns_lookups += 1
+                    if value.lower() in recursion:
+                        raise SPFRedirectLoop(f"Redirect loop: {value.lower()}")
+                    seen.append(value.lower())
+                    try:
+                        redirect_record = query_spf_record(
+                            value,
+                            nameservers=nameservers,
+                            resolver=resolver,
+                            timeout=timeout,
+                            timeout_retries=timeout_retries,
+                        )
+                        redirect_record = redirect_record["record"]
+                        redirect = parse_spf_record(
+                            redirect_record,
+                            value,
+                            seen=seen,
+                            recursion=recursion + [value.lower()],
+                            nameservers=nameservers,
+                            resolver=resolver,
+                            timeout=timeout,
+                            timeout_retries=timeout_retries,
+                        )
+                        parsed["all"] = redirect["parsed"]["all"]
+                        mechanism_dns_lookups += redirect["dns_lookups"]
+                        mechanism_void_dns_lookups += redirect["void_dns_lookups"]
+                        total_dns_lookups += redirect["dns_lookups"]
+                        total_void_dns_lookups += redirect["void_dns_lookups"]
+                        if total_dns_lookups > 10:
+                            raise SPFTooManyDNSLookups(
+                                "Parsing the SPF record requires "
+                                f"{total_dns_lookups}/10 maximum "
+                                "DNS lookups "
+                                "(RFC 7208 § 4.6.4)",
+                                dns_lookups=total_dns_lookups,
+                            )
+                        if total_void_dns_lookups > 2:
+                            u = "(RFC 7208 § 4.6.4)"
+                            raise SPFTooManyVoidDNSLookups(
+                                "Parsing the SPF record has "
+                                f"{total_void_dns_lookups}/2 maximum void "
+                                "DNS lookups "
+                                f"{u}",
+                                void_dns_lookups=total_void_dns_lookups,
+                            )
+                        parsed["redirect"] = OrderedDict(
+                            [
+                                ("domain", value),
+                                ("record", redirect_record),
+                                ("dns_lookups", mechanism_dns_lookups),
+                                ("void_dns_lookups", mechanism_void_dns_lookups),
+                                ("parsed", redirect["parsed"]),
+                                ("warnings", redirect["warnings"]),
+                            ]
+                        )
+                        warnings += redirect["warnings"]
+                    except DNSException as error:
+                        if isinstance(error, DNSExceptionNXDOMAIN):
+                            total_void_dns_lookups += 1
+                        raise _SPFWarning(str(error))
 
             elif mechanism == "all":
                 if all_seen:
@@ -870,89 +914,104 @@ def parse_spf_record(
                 exp_seen = True
 
             elif mechanism == "include":
-                mechanism_dns_lookups += 1
-                total_dns_lookups += 1
-                if value == "":
-                    raise SPFSyntaxError(f"{mechanism} must have a value")
-                if value.lower() in recursion:
-                    pointer = " -> ".join(recursion + [value.lower()])
-                    raise SPFIncludeLoop(f"Include loop: {pointer}")
-                if value.lower() in seen:
-                    raise _SPFDuplicateInclude(f"Duplicate include: {value.lower()}")
-                seen.append(value.lower())
-
-                try:
-                    include_record = query_spf_record(
-                        value,
-                        nameservers=nameservers,
-                        resolver=resolver,
-                        timeout=timeout,
-                        timeout_retries=timeout_retries,
-                    )
-                    include_record = include_record["record"]
-                    include = parse_spf_record(
-                        include_record,
-                        value,
-                        seen=seen,
-                        recursion=recursion + [value.lower()],
-                        nameservers=nameservers,
-                        resolver=resolver,
-                        timeout=timeout,
-                        timeout_retries=timeout_retries,
-                    )
-                    total_dns_lookups += include["dns_lookups"]
-                    total_void_dns_lookups += include["void_dns_lookups"]
-                    combined_mechanism_lookups = (
-                        mechanism_dns_lookups + include["dns_lookups"]
-                    )
-                    combined_mechanism_void_dns_lookups = (
-                        mechanism_void_dns_lookups + include["void_dns_lookups"]
-                    )
-                    include = OrderedDict(
-                        [
-                            ("mechanism", mechanism),
-                            ("value", value),
-                            ("record", include_record),
-                            ("dns_lookups", combined_mechanism_lookups),
-                            ("void_dns_lookups", combined_mechanism_void_dns_lookups),
-                            ("parsed", include["parsed"]),
-                            ("warnings", include["warnings"]),
-                        ]
-                    )
-                    parsed["mechanisms"].append(include)
-                    warnings += include["warnings"]
-                    mechanism_dns_lookups += include["dns_lookups"]
-                    mechanism_void_dns_lookups += include["void_dns_lookups"]
-                    if total_dns_lookups > 10:
-                        raise SPFTooManyDNSLookups(
-                            "Parsing the SPF record requires "
-                            f"{total_dns_lookups}/10 maximum "
-                            "DNS lookups - "
-                            "(RFC 7208 § 4.6.4)",
-                            dns_lookups=total_dns_lookups,
-                        )
-                    if total_void_dns_lookups > 2:
-                        u = "(RFC 7208 § 4.6.4)"
-                        raise SPFTooManyVoidDNSLookups(
-                            "Parsing the SPF record has "
-                            f"{total_void_dns_lookups}/2 maximum void "
-                            "DNS lookups - "
-                            f"{u}",
-                            void_dns_lookups=total_void_dns_lookups,
-                        )
-                except SPFRecordNotFound as e:
-                    total_void_dns_lookups += 1
+                if "%" in value:
                     include = OrderedDict(
                         [
                             ("mechanism", mechanism),
                             ("value", value),
                             ("record", None),
-                            ("dns_lookups", 1),
-                            ("void_dns_lookups", 1),
+                            ("dns_lookups", mechanism_dns_lookups),
+                            ("void_dns_lookups", mechanism_void_dns_lookups),
+                            ("parsed", None),
+                            ("warnings", []),
                         ]
                     )
                     parsed["mechanisms"].append(include)
-                    raise _SPFWarning(str(e))
+
+                else:
+                    mechanism_dns_lookups += 1
+                    total_dns_lookups += 1
+                    if value == "":
+                        raise SPFSyntaxError(f"{mechanism} must have a value")
+                    if value.lower() in recursion:
+                        pointer = " -> ".join(recursion + [value.lower()])
+                        raise SPFIncludeLoop(f"Include loop: {pointer}")
+                    if value.lower() in seen:
+                        raise _SPFDuplicateInclude(f"Duplicate include: {value.lower()}")
+                    seen.append(value.lower())
+
+                    try:
+                        include_record = query_spf_record(
+                            value,
+                            nameservers=nameservers,
+                            resolver=resolver,
+                            timeout=timeout,
+                            timeout_retries=timeout_retries,
+                        )
+                        include_record = include_record["record"]
+                        include = parse_spf_record(
+                            include_record,
+                            value,
+                            seen=seen,
+                            recursion=recursion + [value.lower()],
+                            nameservers=nameservers,
+                            resolver=resolver,
+                            timeout=timeout,
+                            timeout_retries=timeout_retries,
+                        )
+                        total_dns_lookups += include["dns_lookups"]
+                        total_void_dns_lookups += include["void_dns_lookups"]
+                        combined_mechanism_lookups = (
+                            mechanism_dns_lookups + include["dns_lookups"]
+                        )
+                        combined_mechanism_void_dns_lookups = (
+                            mechanism_void_dns_lookups + include["void_dns_lookups"]
+                        )
+                        include = OrderedDict(
+                            [
+                                ("mechanism", mechanism),
+                                ("value", value),
+                                ("record", include_record),
+                                ("dns_lookups", combined_mechanism_lookups),
+                                ("void_dns_lookups", combined_mechanism_void_dns_lookups),
+                                ("parsed", include["parsed"]),
+                                ("warnings", include["warnings"]),
+                            ]
+                        )
+                        parsed["mechanisms"].append(include)
+                        warnings += include["warnings"]
+                        mechanism_dns_lookups += include["dns_lookups"]
+                        mechanism_void_dns_lookups += include["void_dns_lookups"]
+                        if total_dns_lookups > 10:
+                            raise SPFTooManyDNSLookups(
+                                "Parsing the SPF record requires "
+                                f"{total_dns_lookups}/10 maximum "
+                                "DNS lookups - "
+                                "(RFC 7208 § 4.6.4)",
+                                dns_lookups=total_dns_lookups,
+                            )
+                        if total_void_dns_lookups > 2:
+                            u = "(RFC 7208 § 4.6.4)"
+                            raise SPFTooManyVoidDNSLookups(
+                                "Parsing the SPF record has "
+                                f"{total_void_dns_lookups}/2 maximum void "
+                                "DNS lookups - "
+                                f"{u}",
+                                void_dns_lookups=total_void_dns_lookups,
+                            )
+                    except SPFRecordNotFound as e:
+                        total_void_dns_lookups += 1
+                        include = OrderedDict(
+                            [
+                                ("mechanism", mechanism),
+                                ("value", value),
+                                ("record", None),
+                                ("dns_lookups", 1),
+                                ("void_dns_lookups", 1),
+                            ]
+                        )
+                        parsed["mechanisms"].append(include)
+                        raise _SPFWarning(str(e))
 
             elif mechanism == "ptr":
                 mechanism_dns_lookups += 1
