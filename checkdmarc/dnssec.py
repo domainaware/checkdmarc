@@ -51,7 +51,7 @@ def get_dnskey(
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     timeout: float = 2.0,
     cache: Optional[ExpiringDict] = None,
-) -> dict:
+) -> Optional[dict]:
     """
     Get a DNSKEY RRSet on the given domain
 
@@ -62,7 +62,7 @@ def get_dnskey(
         cache (ExpiringDict): A cache
 
     Returns:
-        A DNSKEY dictionary
+        A DNSKEY dictionary if a DNSKEY is found
     """
     if nameservers is None:
         nameservers = dns.resolver.Resolver().nameservers
@@ -72,13 +72,15 @@ def get_dnskey(
     domain = normalize_domain(domain)
 
     if domain in cache:
-        return cache[domain]
+        cached_result = cache[domain]
+        if isinstance(cached_result, dict):
+            return cached_result
 
     logging.debug(f"Checking for DNSKEY records at {domain}")
     request = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec=True)
     for nameserver in nameservers:
         try:
-            response = dns.query.tcp(request, nameserver, timeout=timeout)
+            response = dns.query.tcp(request, str(nameserver), timeout=timeout)
             if response is not None:
                 answer = response.answer
                 if len(answer) == 0:
@@ -129,7 +131,9 @@ def test_dnssec(
         cache = DNSSEC_CACHE
 
     if domain in cache:
-        return cache[domain]
+        cached_result = cache[domain]
+        if isinstance(cached_result, bool):
+            return cached_result
 
     key = get_dnskey(domain, nameservers=nameservers, timeout=timeout)
     if key is None:
@@ -145,7 +149,7 @@ def test_dnssec(
         request = dns.message.make_query(domain, rdatatype, want_dnssec=True)
         for nameserver in nameservers:
             try:
-                response = dns.query.tcp(request, nameserver, timeout=timeout)
+                response = dns.query.tcp(request, str(nameserver), timeout=timeout)
                 if response is not None:
                     answer = response.answer
                     if len(answer) != 2:
@@ -171,10 +175,10 @@ def test_dnssec(
 def get_tlsa_records(
     hostname: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Sequence[str | Nameserver],
     timeout: float = 2.0,
     port: int = 25,
-    protocol: Optional[str] = "tcp",
+    protocol: str = "tcp",
     cache: Optional[ExpiringDict] = None,
 ) -> list[str]:
     """
@@ -198,16 +202,21 @@ def get_tlsa_records(
         cache = TLSA_CACHE
 
     query_hostname = f"_{port}._{protocol}.{hostname}"
-    if query_hostname in TLSA_CACHE:
-        return TLSA_CACHE[query_hostname]
-    tlsa_records = []
+    if isinstance(cache, ExpiringDict):
+        if query_hostname in TLSA_CACHE:
+            cached_results = TLSA_CACHE[query_hostname] 
+            if isinstance(cached_results, list):
+                return cached_results 
+    tlsa_records: list[str] = []
     logging.debug(f"Checking for TLSA records at {query_hostname}")
     request = dns.message.make_query(
         query_hostname, dns.rdatatype.TLSA, want_dnssec=True
     )
+    if len(nameservers) == 0:
+        raise ValueError("At lease one nameserver is required")
     for nameserver in nameservers:
         try:
-            response = dns.query.tcp(request, nameserver, timeout=timeout)
+            response = dns.query.tcp(request, str(nameserver), timeout=timeout)
             if response is not None:
                 answer = response.answer
                 if len(answer) != 2:
@@ -228,10 +237,12 @@ def get_tlsa_records(
                         rrsig = rset
                     else:
                         rrset = rset
-                dns.dnssec.validate(rrset, rrsig, dnskey)
-                tlsa_records = list(map(lambda x: str(x), list(rrset.items.keys())))
-                cache[query_hostname] = tlsa_records
+                if rrset is not None:
+                    dns.dnssec.validate(rrset, rrsig, dnskey)
+                    tlsa_records = list(map(lambda x: str(x), list(rrset.items.keys())))
+                    cache[query_hostname] = tlsa_records
                 return tlsa_records
         except Exception as e:
             logging.debug(f"TLSA query error: {e}")
             return tlsa_records
+    return tlsa_records
