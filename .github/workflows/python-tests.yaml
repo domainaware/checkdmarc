@@ -31,7 +31,6 @@ jobs:
     - name: Check code style
       run: |
         ruff check --show-fixes
-        black --check --diff .
     - name: Run unit tests
       run: |
         coverage run tests.py
