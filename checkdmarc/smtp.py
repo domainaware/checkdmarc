@@ -8,9 +8,11 @@ import platform
 import smtplib
 import socket
 import ssl
-from typing import Any, Optional
+from typing import TypedDict, Optional, Union, cast
+from collections.abc import Sequence
 
 import dns.resolver
+from dns.nameserver import Nameserver
 import timeout_decorator
 from expiringdict import ExpiringDict
 
@@ -19,6 +21,7 @@ from checkdmarc.dnssec import get_tlsa_records, test_dnssec
 from checkdmarc.mta_sts import mx_in_mta_sts_patterns
 from checkdmarc.utils import (
     DNSException,
+    MXHost,
     get_a_records,
     get_mx_records,
     get_reverse_dns,
@@ -47,6 +50,17 @@ STARTTLS_CACHE = ExpiringDict(
     max_len=SMTP_CACHE_MAX_LEN, max_age_seconds=SMTP_CACHE_MAX_AGE_SECONDS
 )
 
+class MXResultsSuccess(TypedDict):
+    hosts: list[MXHost]
+    warnings: list[str]
+
+
+class MXResultsFailure(TypedDict):
+    hosts: list[MXHost]
+    error: str
+
+
+MXResults = Union[MXResultsSuccess, MXResultsFailure]
 
 def _get_timeout_method():
     """
@@ -113,6 +127,7 @@ def test_tls(
     if cache:
         cached_result = cache.get(hostname)
         if cached_result is not None:
+            cached_result = cast(dict, cached_result)
             if cached_result["error"] is not None:
                 raise SMTPError(cached_result["error"])
             return cached_result["tls"]
@@ -123,7 +138,8 @@ def test_tls(
         server = smtplib.SMTP_SSL(hostname, context=ssl_context)
         server.ehlo_or_helo_if_needed()
         tls = True
-        cache[hostname] = dict(tls=tls, error=None)
+        if cache is not None:
+            cache[hostname] = dict(tls=tls, error=None)
         try:
             server.quit()
             server.close()
@@ -206,7 +222,7 @@ def test_tls(
 
 @timeout_decorator.timeout(
     5,
-    timeout_exception=SMTPError,
+    timeout_exception=SMTPError, # pyright: ignore[reportArgumentType]
     exception_message="Connection timed out",
     use_signals=_get_timeout_method(),
 )
@@ -234,6 +250,7 @@ def test_starttls(
     if cache:
         cached_result = cache.get(hostname)
         if cached_result is not None:
+            cached_result = cast(dict, cached_result)
             if cached_result["error"] is not None:
                 raise SMTPError(cached_result["error"])
             return cached_result["starttls"]
@@ -341,7 +358,7 @@ def get_mx_hosts(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> MXResultsSuccess:
     """
     Gets MX hostname and their addresses
 
@@ -518,8 +535,11 @@ def get_mx_hosts(
 
                 host["tls"] = tls
                 host["starttls"] = starttls
-
-    return dict([("hosts", hosts), ("warnings", warnings)])
+    results: MXResultsSuccess = {
+        "hosts": hosts,
+        "warnings": warnings
+    }
+    return results
 
 
 def check_mx(
@@ -532,7 +552,7 @@ def check_mx(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> MXResults:
     """
     Gets MX hostname and their addresses, or an empty list of hosts and an
     error if a DNS error occurs
@@ -575,6 +595,10 @@ def check_mx(
             timeout=timeout,
             timeout_retries=timeout_retries,
         )
+        return mx_results
     except DNSException as error:
-        mx_results = dict([("hosts", []), ("error", str(error))])
-    return mx_results
+        failure: MXResultsFailure = {
+            "hosts": [],
+            "error": str(error)
+        }
+    return failure

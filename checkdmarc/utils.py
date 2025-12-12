@@ -65,7 +65,7 @@ NameserverResult = Union[
 
 class MXHost(TypedDict):
     hostname: str
-    priority: int
+    preference: int
     ip_addresses: list[str]
 
 

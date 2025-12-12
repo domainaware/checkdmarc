@@ -74,6 +74,8 @@
       "publicsuffixlist",
       "pyca",
       "Pyleri",
+      "pyopenssl",
+      "pytest",
       "qtypes",
       "RCODE",
       "RDATA",
