@@ -50,6 +50,7 @@ STARTTLS_CACHE = ExpiringDict(
     max_len=SMTP_CACHE_MAX_LEN, max_age_seconds=SMTP_CACHE_MAX_AGE_SECONDS
 )
 
+
 class MXResultsSuccess(TypedDict):
     hosts: list[MXHost]
     warnings: list[str]
@@ -61,6 +62,7 @@ class MXResultsFailure(TypedDict):
 
 
 MXResults = Union[MXResultsSuccess, MXResultsFailure]
+
 
 def _get_timeout_method():
     """
@@ -222,7 +224,7 @@ def test_tls(
 
 @timeout_decorator.timeout(
     5,
-    timeout_exception=SMTPError, # pyright: ignore[reportArgumentType]
+    timeout_exception=SMTPError,  # pyright: ignore[reportArgumentType]
     exception_message="Connection timed out",
     use_signals=_get_timeout_method(),
 )
@@ -535,10 +537,7 @@ def get_mx_hosts(
 
                 host["tls"] = tls
                 host["starttls"] = starttls
-    results: MXResultsSuccess = {
-        "hosts": hosts,
-        "warnings": warnings
-    }
+    results: MXResultsSuccess = {"hosts": hosts, "warnings": warnings}
     return results
 
 
@@ -597,8 +596,5 @@ def check_mx(
         )
         return mx_results
     except DNSException as error:
-        failure: MXResultsFailure = {
-            "hosts": [],
-            "error": str(error)
-        }
+        failure: MXResultsFailure = {"hosts": [], "error": str(error)}
     return failure

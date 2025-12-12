@@ -53,11 +53,6 @@ SMTPTLSREPORTING_URI_REGEX = re.compile(
     SMTPTLSREPORTING_URI_REGEX_STRING, re.IGNORECASE
 )
 
-
-class _SMTPTLSReportingWarning(Exception):
-    """Raised when a non-fatal SMTP TLS Reporting error occurs"""
-
-
 class SMTPTLSReportingError(Exception):
     """Raised when a fatal SMTP TLS Reporting error occurs"""
 
