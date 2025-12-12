@@ -129,6 +129,7 @@ class SMTPTLSReportingQueryResults(TypedDict):
 class SMTPTLSReportingTags(TypedDict):
     value: str
 
+
 class SMTPTLSReportingTagsWithDescription(TypedDict):
     value: str
     description: str
@@ -264,10 +265,7 @@ def query_smtp_tls_reporting_record(
             "An SMTP TLS Reporting record does not exist."
         )
 
-    results: SMTPTLSReportingQueryResults = {
-        "record": sts_record,
-        "warnings": warnings
-    }
+    results: SMTPTLSReportingQueryResults = {"record": sts_record, "warnings": warnings}
 
     return results
 
@@ -374,11 +372,8 @@ def parse_smtp_tls_reporting_record(
     if include_tag_descriptions:
         tags = cast(SMTPTLSReportingTagsWithDescription, tags)
     else:
-        tags = cast (SMTPTLSReportingTags, tags)
-    results:  ParsedSMTPTLSReportingRecord = {
-        "tags": tags,
-        "warnings": warnings
-    }
+        tags = cast(SMTPTLSReportingTags, tags)
+    results: ParsedSMTPTLSReportingRecord = {"tags": tags, "warnings": warnings}
 
     return results
 
@@ -433,15 +428,12 @@ def check_smtp_tls_reporting(
         smtp_tls_reporting_results: SMTPTLSReportingResults = {
             "valid": True,
             "tags": tags,
-            "warnings": warnings
+            "warnings": warnings,
         }
         smtp_tls_reporting_results["tags"] = tags
         smtp_tls_reporting_results["warnings"] = warnings
     except SMTPTLSReportingError as error:
-        failure: SMTPTLSReportingFailure = {
-            "valid": False,
-            "error": str(error)
-        }
+        failure: SMTPTLSReportingFailure = {"valid": False, "error": str(error)}
         return failure
 
     return smtp_tls_reporting_results
