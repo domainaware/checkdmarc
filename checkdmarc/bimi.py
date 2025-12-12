@@ -8,10 +8,9 @@ import gzip
 import hashlib
 import logging
 import re
-from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from sys import getsizeof
-from typing import Union, Optional, Any
+from typing import Any, Optional, Union
 
 try:
     from importlib.resources import files
@@ -219,8 +218,8 @@ for ksf_dict in _ksf_dicts:
 KNOWN_SUBJECT_FIELDS = set(KNOWN_SUBJECT_FIELDS)
 
 
-BIMI_TAGS = OrderedDict(
-    v=OrderedDict(
+BIMI_TAGS = dict(
+    v=dict(
         name="Version",
         required=True,
         description="Identifies the record "
@@ -235,7 +234,7 @@ BIMI_TAGS = OrderedDict(
         "It MUST be the first "
         "tag in the list.",
     ),
-    a=OrderedDict(
+    a=dict(
         name="Authority Evidence Location",
         required=False,
         default="",
@@ -250,7 +249,7 @@ BIMI_TAGS = OrderedDict(
         "SHOULD specify the location of a publicly "
         "retrievable BIMI Evidence Document.",
     ),
-    l=OrderedDict(
+    l=dict(
         name="Location",
         required=False,
         default="",
@@ -260,12 +259,12 @@ BIMI_TAGS = OrderedDict(
         "Indicator file. The only supported transport "
         "is HTTPS.",
     ),
-    lps=OrderedDict(
+    lps=dict(
         name="Local-Part Selectors",
         default="",
         description="A comma separated list of allowed Local-Part Selectors",
     ),
-    avp=OrderedDict(
+    avp=dict(
         name="Avatar Preference",
         required=False,
         default="brand",
@@ -372,8 +371,8 @@ class _BIMIGrammar(Grammar):
     )
 
 
-def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
-    metadata = OrderedDict()
+def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict:
+    metadata = dict()
     if isinstance(raw_xml, bytes):
         raw_xml = raw_xml.decode(errors="ignore")
     try:
@@ -408,7 +407,7 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> OrderedDict:
         raise ValueError(f"Not a SVG file: {str(e)}")
 
 
-def check_svg_requirements(svg_metadata: OrderedDict) -> list[str]:
+def check_svg_requirements(svg_metadata: dict) -> list[str]:
     _errors = []
     if svg_metadata["svg_version"] != "1.2":
         _errors.append(
@@ -449,7 +448,7 @@ def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
         return None
 
 
-def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict[str, Any]:
+def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
     """Get metadata about a Verified Mark Certificate (VMC)"""
 
     def get_cert_name_components(cert_field: x509.Name):
@@ -458,7 +457,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict[str,
             for attr in rdn:
                 label = OID_LABELS.get(attr.oid) or attr.oid.dotted_string
                 mapping.append((label, attr.value))
-        return OrderedDict(mapping)
+        return dict(mapping)
 
     def get_certificate_domains(cert: x509.Certificate):
         try:
@@ -469,7 +468,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> OrderedDict[str,
             return None
         return ext.value.get_values_for_type(x509.DNSName)
 
-    metadata = OrderedDict()
+    metadata = dict()
     valid = True
     validation_errors = []
     warnings = []
@@ -649,8 +648,8 @@ def _query_bimi_record(
     selector: Optional[str] = "default",
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
 ):
     """
     Queries DNS for a BIMI record
@@ -736,9 +735,9 @@ def query_bimi_record(
     selector: Optional[str] = "default",
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> OrderedDict[str, Any]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> dict[str, Any]:
     """
     Queries DNS for a BIMI record
 
@@ -752,7 +751,7 @@ def query_bimi_record(
         timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
+        dict: a ``dict`` with the following keys:
                      - ``record`` - the unparsed BIMI record string
                      - ``location`` - the domain where the record was found
                      - ``warnings`` - warning conditions found
@@ -813,9 +812,7 @@ def query_bimi_record(
                 "this subdomain or its base domain."
             )
 
-    return OrderedDict(
-        [("record", record), ("location", location), ("warnings", warnings)]
-    )
+    return dict([("record", record), ("location", location), ("warnings", warnings)])
 
 
 def parse_bimi_record(
@@ -823,10 +820,10 @@ def parse_bimi_record(
     *,
     domain: Optional[str] = None,
     parsed_dmarc_record: Optional[dict] = None,
-    include_tag_descriptions: Optional[bool] = False,
+    include_tag_descriptions: bool = False,
     syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
-    http_timeout: Optional[float] = DEFAULT_HTTP_TIMEOUT,
-) -> OrderedDict[str, Any]:
+    http_timeout: float = DEFAULT_HTTP_TIMEOUT,
+) -> dict[str, Any]:
     """
     Parses a BIMI record
 
@@ -839,8 +836,8 @@ def parse_bimi_record(
         http_timeout (float): HTTP timeout in seconds
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
-         - ``tags`` - An ``OrderedDict`` of BIMI tags
+        dict: a ``dict`` with the following keys:
+         - ``tags`` - a ``dict`` of BIMI tags
 
            - ``value`` - The BIMI tag value
            - ``description`` - A description of the tag/value
@@ -863,7 +860,7 @@ def parse_bimi_record(
         :exc:`checkdmarc.bimi.InvalidBIMITagValue`
         :exc:`checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe`
     """
-    results = OrderedDict()
+    results = dict()
     svg_metadata = None
     cert_metadata = None
     logging.debug("Parsing the BIMI record")
@@ -900,7 +897,7 @@ def parse_bimi_record(
         )
 
     pairs: list[tuple[str, str]] = BIMI_TAG_VALUE_REGEX.findall(record)
-    tags = OrderedDict()
+    tags = dict()
     hash_match = False
 
     seen_tags: list[str] = []
@@ -919,7 +916,7 @@ def parse_bimi_record(
         if len(duplicate_tags):
             duplicate_tags = ",".join(duplicate_tags)
             raise InvalidBIMITag(f"Duplicate {duplicate_tags} tags are not permitted")
-        tags[tag] = OrderedDict(value=tag_value)
+        tags[tag] = dict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["name"] = BIMI_TAGS[tag]["name"]
             tags[tag]["description"] = BIMI_TAGS[tag]["description"]
@@ -1019,12 +1016,12 @@ def check_bimi(
     *,
     selector: Optional[str] = "default",
     parsed_dmarc_record: Optional[dict] = None,
-    include_tag_descriptions: Optional[bool] = False,
+    include_tag_descriptions: bool = False,
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> OrderedDict[str, Any]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> dict[str, Any]:
     """
     Returns a dictionary with a parsed BIMI record or an error.
 
@@ -1046,7 +1043,7 @@ def check_bimi(
         timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
+        dict: a ``dict`` with the following keys:
 
                        - ``record`` - The BIMI record string
                        - ``parsed`` - The parsed BIMI record
@@ -1059,7 +1056,7 @@ def check_bimi(
                       - ``error`` - Tne error message
                       - ``valid`` - False
     """
-    bimi_results = OrderedDict([("record", None), ("valid", True)])
+    bimi_results = dict([("record", None), ("valid", True)])
     selector = selector.lower()
     try:
         bimi_query = query_bimi_record(

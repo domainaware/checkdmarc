@@ -4,20 +4,17 @@
 from __future__ import annotations
 
 import logging
-
 from typing import Optional
 
+import dns.dnssec
+import dns.message
 import dns.query
 import dns.resolver
-import dns.message
-import dns.dnssec
 from dns.rdatatype import RdataType
-
 from expiringdict import ExpiringDict
 
-from checkdmarc.utils import normalize_domain, get_base_domain
-from checkdmarc._constants import DNSSEC_CACHE_MAX_LEN, DNSSEC_CACHE_MAX_AGE_SECONDS
-
+from checkdmarc._constants import DNSSEC_CACHE_MAX_AGE_SECONDS, DNSSEC_CACHE_MAX_LEN
+from checkdmarc.utils import get_base_domain, normalize_domain
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -48,7 +45,7 @@ def get_dnskey(
     domain: Optional[str],
     *,
     nameservers: Optional[list[str]] = None,
-    timeout: Optional[float] = 2.0,
+    timeout: float = 2.0,
     cache: Optional[ExpiringDict] = None,
 ) -> dict:
     """
@@ -107,7 +104,7 @@ def test_dnssec(
     domain: str,
     *,
     nameservers: Optional[list[str]] = None,
-    timeout: Optional[float] = 2.0,
+    timeout: float = 2.0,
     cache: Optional[ExpiringDict] = None,
 ) -> bool:
     """
@@ -171,8 +168,8 @@ def get_tlsa_records(
     hostname: str,
     *,
     nameservers: Optional[list[str]] = None,
-    timeout: Optional[float] = 2.0,
-    port: Optional[int] = 25,
+    timeout: float = 2.0,
+    port: int = 25,
     protocol: Optional[str] = "tcp",
     cache: Optional[ExpiringDict] = None,
 ) -> list[str]:

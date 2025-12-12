@@ -5,14 +5,13 @@
 
 import os
 import unittest
-from collections import OrderedDict
 
 import checkdmarc
-import checkdmarc.utils
-import checkdmarc.spf
+import checkdmarc.bimi
 import checkdmarc.dmarc
 import checkdmarc.dnssec
-import checkdmarc.bimi
+import checkdmarc.spf
+import checkdmarc.utils
 
 known_good_domains = ["fbi.gov", "pm.me", "ssa.gov"]
 
@@ -64,7 +63,7 @@ class Test(unittest.TestCase):
 
         for example in examples:
             parsed_record = checkdmarc.dmarc.parse_dmarc_record(example, "")
-            self.assertIsInstance(parsed_record, OrderedDict)
+            self.assertIsInstance(parsed_record, dict)
 
     def testGetBaseDomain(self):
         subdomain = "foo.example.com"

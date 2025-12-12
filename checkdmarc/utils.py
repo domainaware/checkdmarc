@@ -6,12 +6,11 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
-from collections import OrderedDict
+from typing import Optional, TypedDict, Union
 
-from typing import Any, Optional
-
-import dns
+import dns.exception
 import dns.resolver
+import dns.reversename
 import publicsuffixlist
 from expiringdict import ExpiringDict
 
@@ -44,6 +43,28 @@ MAILTO_REGEX_STRING = (
 ZERO_WIDTH_RE = re.compile(r"[\u200B-\u200D\uFEFF]")  # includes ZWSP, ZWNJ, ZWJ, BOM
 MAILTO_REGEX = re.compile(MAILTO_REGEX_STRING, re.IGNORECASE)
 PSL = publicsuffixlist.PublicSuffixList()
+
+
+class NameserverResultOk(TypedDict):
+    hostnames: list[str]
+    warnings: list[str]
+
+
+class NameserverResultError(TypedDict):
+    hostnames: list[str]
+    error: str
+
+
+NameserverResult = Union[
+    NameserverResultOk,
+    NameserverResultError,
+]
+
+
+class MXHost(TypedDict):
+    hostname: str
+    priority: int
+    ip_addresses: list[str]
 
 
 class DNSException(Exception):
@@ -99,12 +120,12 @@ def query_dns(
     domain: str,
     record_type: str,
     *,
-    quoted_txt_segments: Optional[bool] = False,
-    nameservers: list[str] = None,
+    quoted_txt_segments: bool = False,
+    nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-    _attempt: Optional[int] = 0,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+    _attempt: int = 0,
     cache: Optional[ExpiringDict] = None,
 ) -> list[str]:
     """
@@ -129,9 +150,9 @@ def query_dns(
     cache_key = f"{domain}_{record_type}_{quoted_txt_segments}"
     if cache is None:
         cache = DNS_CACHE
-    if type(cache) is ExpiringDict:
+    if isinstance(cache, ExpiringDict):
         records = cache.get(cache_key)
-        if records:
+        if isinstance(records, list):
             return records
     if not resolver:
         resolver = dns.resolver.Resolver()
@@ -216,8 +237,8 @@ def get_a_records(
     *,
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> list[str]:
     """
     Queries DNS for A and AAAA records
@@ -265,8 +286,8 @@ def get_reverse_dns(
     *,
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> list[str]:
     """
     Queries for an IP addresses reverse DNS hostname(s)
@@ -309,10 +330,10 @@ def get_txt_records(
     domain: str,
     *,
     nameservers: Optional[list[str]] = None,
-    quoted_txt_segments: Optional[bool] = False,
+    quoted_txt_segments: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> list[str]:
     """
     Queries DNS for TXT records
@@ -358,9 +379,9 @@ def get_soa_record(
     *,
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> list[str]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> str:
     """
     Queries DNS for an SOA record
 
@@ -405,8 +426,8 @@ def get_nameservers(
     approved_nameservers: Optional[list[str]] = None,
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
 ) -> dict:
     """
     Gets a list of nameservers for a given domain
@@ -421,7 +442,7 @@ def get_nameservers(
         timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
-        OrderedDict: A dictionary with the following keys:
+        dict: A dictionary with the following keys:
                      - ``hostnames`` - A list of nameserver hostnames
                      - ``warnings``  - A list of warnings
     """
@@ -457,7 +478,7 @@ def get_nameservers(
             if not approved:
                 warnings.append(f"Unapproved nameserver: {nameserver}")
 
-    return OrderedDict([("hostnames", ns_records), ("warnings", warnings)])
+    return dict([("hostnames", ns_records), ("warnings", warnings)])
 
 
 def get_mx_records(
@@ -465,9 +486,9 @@ def get_mx_records(
     *,
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> list[OrderedDict][str, Any]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> list[MXHost]:
     """
     Queries DNS for a list of Mail Exchange hosts
 
@@ -480,7 +501,7 @@ def get_mx_records(
         timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
-        list: A list of ``OrderedDicts``; each containing a ``preference``
+        list: A list of ``dicts``; each containing a ``preference``
                         integer and a ``hostname``
 
     Raises:
@@ -505,9 +526,7 @@ def get_mx_records(
             record = record.split(" ")
             preference = int(record[0])
             hostname = record[1].rstrip(".").strip().lower()
-            hosts.append(
-                OrderedDict([("preference", preference), ("hostname", hostname)])
-            )
+            hosts.append(dict([("preference", preference), ("hostname", hostname)]))
         hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:
         raise DNSExceptionNXDOMAIN("The domain does not exist.")

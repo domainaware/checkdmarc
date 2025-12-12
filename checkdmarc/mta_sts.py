@@ -5,9 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from collections import OrderedDict
-
-from typing import Optional, Any
+from typing import Any, Optional
 
 import dns
 import requests
@@ -119,13 +117,13 @@ class _STSGrammar(Grammar):
     )
 
 
-mta_sts_tags = OrderedDict(
-    v=OrderedDict(
+mta_sts_tags = dict(
+    v=dict(
         name="Version",
         required=True,
         description='Currently, only "STSv1" is supported.',
     ),
-    id=OrderedDict(
+    id=dict(
         name="id",
         required=True,
         description="A short string used to track policy "
@@ -146,9 +144,9 @@ def query_mta_sts_record(
     *,
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> OrderedDict[str, Any]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> dict[str, Any]:
     """
     Queries DNS for an MTA-STS record
 
@@ -162,7 +160,7 @@ def query_mta_sts_record(
 
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
+        dict: a ``dict`` with the following keys:
                      - ``record`` - the unparsed MTA-STS record string
                      - ``warnings`` - warning conditions found
 
@@ -235,15 +233,15 @@ def query_mta_sts_record(
     if sts_record is None:
         raise MTASTSRecordNotFound("An MTA-STS DNS record does not exist.")
 
-    return OrderedDict([("record", sts_record), ("warnings", warnings)])
+    return dict([("record", sts_record), ("warnings", warnings)])
 
 
 def parse_mta_sts_record(
     record: str,
     *,
-    include_tag_descriptions: Optional[bool] = False,
+    include_tag_descriptions: bool = False,
     syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
-) -> OrderedDict[str, Any]:
+) -> dict[str, Any]:
     """
     Parses an MTA-STS record
 
@@ -253,8 +251,8 @@ def parse_mta_sts_record(
         syntax_error_marker (str): The maker for pointing out syntax errors
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
-         - ``tags`` - An ``OrderedDict`` of MTA-STS tags
+        dict: a ``dict`` with the following keys:
+         - ``tags`` - a ``dict`` of MTA-STS tags
 
            - ``value`` - The MTA-STS tag value
            - ``description`` - A description of the tag/value
@@ -304,7 +302,7 @@ def parse_mta_sts_record(
         )
 
     pairs: list[tuple[str, str]] = STS_TAG_VALUE_REGEX.findall(record)
-    tags = OrderedDict()
+    tags = dict()
 
     seen_tags: list[str] = []
     duplicate_tags: list[str] = []
@@ -322,16 +320,16 @@ def parse_mta_sts_record(
         if len(duplicate_tags):
             duplicate_tags = ",".join(duplicate_tags)
             raise InvalidMTASTSTag(f"Duplicate {duplicate_tags} tags are not permitted")
-        tags[tag] = OrderedDict(value=tag_value)
+        tags[tag] = dict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["description"] = mta_sts_tags[tag]["description"]
 
-    return OrderedDict(tags=tags, warnings=warnings)
+    return dict(tags=tags, warnings=warnings)
 
 
 def download_mta_sts_policy(
-    domain: str, *, http_timeout: Optional[float] = DEFAULT_HTTP_TIMEOUT
-) -> OrderedDict[str, Any]:
+    domain: str, *, http_timeout: float = DEFAULT_HTTP_TIMEOUT
+) -> dict[str, Any]:
     """
     Downloads a domains MTA-HTS policy
 
@@ -340,7 +338,7 @@ def download_mta_sts_policy(
         http_timeout (float): HTTP timeout in seconds
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
+        dict: a ``dict`` with the following keys:
                      - ``policy`` - The unparsed policy string
                      - ``warnings`` - A list of any warning conditions found
 
@@ -374,10 +372,10 @@ def download_mta_sts_policy(
     except Exception as e:
         raise MTASTSPolicyDownloadError(str(e))
 
-    return OrderedDict(policy=response.text, warnings=warnings)
+    return dict(policy=response.text, warnings=warnings)
 
 
-def parse_mta_sts_policy(policy: str) -> OrderedDict[str, Any]:
+def parse_mta_sts_policy(policy: str) -> dict[str, Any]:
     """
     Parses an MTA-STS policy
 
@@ -385,14 +383,14 @@ def parse_mta_sts_policy(policy: str) -> OrderedDict[str, Any]:
         policy (str): The policy
 
      Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
+        dict: a ``dict`` with the following keys:
                      - ``policy`` - The parsed policy
                      - ``warnings`` - A list of any warning conditions found
 
     Raises:
         :exc:`checkdmarc.mta_sts.MTASTSPolicySyntaxError`
     """
-    parsed_policy = OrderedDict()
+    parsed_policy = dict()
     warnings = []
     mx = []
     versions = ["STSv1"]
@@ -446,7 +444,7 @@ def parse_mta_sts_policy(policy: str) -> OrderedDict[str, Any]:
         )
     parsed_policy["mx"] = mx
 
-    return OrderedDict(policy=parsed_policy, warnings=warnings)
+    return dict(policy=parsed_policy, warnings=warnings)
 
 
 def check_mta_sts(
@@ -454,9 +452,9 @@ def check_mta_sts(
     *,
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> OrderedDict[str, Any]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> dict[str, Any]:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.
 
@@ -470,7 +468,7 @@ def check_mta_sts(
 
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
+        dict: a ``dict`` with the following keys:
 
                        - ``id`` - The SIS-MTA DNS record ID
                        - ``policy`` - The parsed MTA-STS policy
@@ -484,7 +482,7 @@ def check_mta_sts(
                       - ``valid`` - False
     """
     domain = normalize_domain(domain)
-    mta_sts_results = OrderedDict([("valid", True)])
+    mta_sts_results = dict([("valid", True)])
     try:
         mta_sts_record = query_mta_sts_record(
             domain,
