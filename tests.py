@@ -101,6 +101,7 @@ class Test(unittest.TestCase):
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
 
         self.assertEqual(len(results["warnings"]), 0)
+        self.assertEqual(results["dns_lookups"], 0)
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testSplitSPFRecord(self):
@@ -139,6 +140,7 @@ class Test(unittest.TestCase):
         self.assertTrue(
             "example.doesnotexist: The domain does not exist." in results["warnings"]
         )
+        self.assertEqual(results["dns_lookups"], 1)
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testTooManySPFDNSLookups(self):
@@ -302,6 +304,7 @@ class Test(unittest.TestCase):
             ),
             results["warnings"],
         )
+        self.assertEqual(results["dns_lookups"], 1)
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testSPFMissingARecord(self):
@@ -313,6 +316,7 @@ class Test(unittest.TestCase):
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         snipit = "that domain/subdomain does not have any A/AAAA records."
         self.assertTrue(any(snipit in s for s in results["warnings"]))
+        self.assertEqual(results["dns_lookups"], 1)
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testSPFMXMechanism(self):
@@ -325,6 +329,7 @@ class Test(unittest.TestCase):
                 self.assertTrue(len(mechanism["hosts"]) > 0)
             for host in mechanism["hosts"]:
                 self.assertTrue(len(host) > 0)
+        self.assertEqual(results["dns_lookups"], 1)
 
     def testSPFMacrosExists(self):
         """SPF macros can be used with the exists mechanism"""
@@ -332,6 +337,7 @@ class Test(unittest.TestCase):
         domain = "example.com"
         results = checkdmarc.spf.parse_spf_record(record, domain)
         self.assertTrue(len(results["parsed"]["mechanisms"]) > 0)
+        self.assertEqual(results["dns_lookups"], 1)
 
     def testSPFMacrosInclude(self):
         """SPF macros can be used with the exists mechanism"""
@@ -339,6 +345,7 @@ class Test(unittest.TestCase):
         domain = "example.com"
         results = checkdmarc.spf.parse_spf_record(record, domain)
         self.assertTrue(len(results["parsed"]["mechanisms"]) > 0)
+        self.assertEqual(results["dns_lookups"], 1)
 
     def testSPFAMechanism(self):
         """Addresses are included in the output for SPF records with an a lookup"""
@@ -348,6 +355,7 @@ class Test(unittest.TestCase):
         for mechanism in results["parsed"]["mechanisms"]:
             if mechanism["mechanism"] == "a":
                 self.assertTrue(len(mechanism["addresses"]) > 0)
+        self.assertEqual(results["dns_lookups"], 1)
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testDMARCPctLessThan100Warning(self):
@@ -410,6 +418,149 @@ class Test(unittest.TestCase):
         results = checkdmarc.bimi.check_bimi(domain)
 
         self.assertEqual(len(results["warnings"]), 0)
+
+    def testSPFValidAMechanismMacro(self):
+        """SPF records with valid macros are accepted"""
+        spf_record = "v=spf1 a:%{l}.example.com -all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertIn("mechanisms", results["parsed"])
+        self.assertEqual(len(results["warnings"]), 0)
+        self.assertEqual(results["dns_lookups"], 1)
+
+    def testSPFBrokenAMechanismMacro(self):
+        """SPF records with invalid macros raise SPFSyntaxError"""
+        spf_record = "v=spf1 a:%{?} -all"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            spf_record,
+            domain,
+        )
+
+    def testSPFValidMXMechanismMacro(self):
+        """SPF records with valid macros in mx mechanism are accepted"""
+        spf_record = "v=spf1 mx:%{d} -all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertIn("mechanisms", results["parsed"])
+        self.assertEqual(len(results["warnings"]), 0)
+        self.assertEqual(results["dns_lookups"], 1)
+
+    def testSPFBrokenMXMechanismMacro(self):
+        """SPF records with invalid macros in mx mechanism raise SPFSyntaxError"""
+        spf_record = "v=spf1 mx:%{?} -all"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            spf_record,
+            domain,
+        )
+
+    def testSPFValidPTRMechanismMacro(self):
+        """SPF records with valid macros in ptr mechanism are accepted (but warn about ptr usage)"""
+        spf_record = "v=spf1 ptr:%{d} -all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertIn("mechanisms", results["parsed"])
+        # PTR mechanism always raises a warning in checkdmarc
+        self.assertTrue(
+            any("ptr mechanism should not be used" in w for w in results["warnings"])
+        )
+        self.assertEqual(results["dns_lookups"], 1)
+
+    def testSPFBrokenPTRMechanismMacro(self):
+        """SPF records with invalid macros in ptr mechanism raise SPFSyntaxError"""
+        spf_record = "v=spf1 ptr:%{?} -all"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            spf_record,
+            domain,
+        )
+
+    def testSPFValidIncludeMechanismMacro(self):
+        """SPF records with valid macros in include mechanism are accepted"""
+        spf_record = "v=spf1 include:%{d}._spf.example.com -all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertIn("mechanisms", results["parsed"])
+        self.assertEqual(len(results["warnings"]), 0)
+        self.assertEqual(results["dns_lookups"], 1)
+
+    def testSPFBrokenIncludeMechanismMacro(self):
+        """SPF records with invalid macros in include mechanism raise SPFSyntaxError"""
+        spf_record = "v=spf1 include:%{?}._spf.example.com -all"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            spf_record,
+            domain,
+        )
+
+    def testSPFValidExistsMechanismMacro(self):
+        """SPF records with valid macros in exists mechanism are accepted"""
+        spf_record = "v=spf1 exists:%{i}._spf.example.com -all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertIn("mechanisms", results["parsed"])
+        self.assertEqual(len(results["warnings"]), 0)
+        self.assertEqual(results["dns_lookups"], 1)
+
+    def testSPFBrokenExistsMechanismMacro(self):
+        """SPF records with invalid macros in exists mechanism raise SPFSyntaxError"""
+        spf_record = "v=spf1 exists:%{?}._spf.example.com -all"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            spf_record,
+            domain,
+        )
+
+    def testSPFValidRedirectModifierMacro(self):
+        """SPF records with valid macros in redirect modifier are accepted"""
+        spf_record = "v=spf1 redirect=%{d}._spf.example.com"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertIn("redirect", results["parsed"])
+        self.assertEqual(len(results["warnings"]), 0)
+        self.assertEqual(results["dns_lookups"], 1)
+
+    def testSPFBrokenRedirectModifierMacro(self):
+        """SPF records with invalid macros in redirect modifier raise SPFSyntaxError"""
+        spf_record = "v=spf1 redirect=%{?}._spf.example.com"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            spf_record,
+            domain,
+        )
+
+    def testSPFValidExpModifierMacro(self):
+        """SPF records with valid macros in exp modifier are accepted"""
+        spf_record = "v=spf1 -all exp=%{d}"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertIn("exp", results["parsed"])
+        self.assertEqual(len(results["warnings"]), 0)
+        self.assertEqual(results["dns_lookups"], 0)
+
+    def testSPFBrokenExpModifierMacro(self):
+        """SPF records with invalid macros in exp modifier raise SPFSyntaxError"""
+        spf_record = "v=spf1 -all exp=%{?}"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            spf_record,
+            domain,
+        )
 
 
 if __name__ == "__main__":
