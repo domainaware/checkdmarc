@@ -5,12 +5,11 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Optional
+from typing import Optional, Union, TypedDict, Literal, cast
 from collections.abc import Sequence
 
 import dns.resolver
 import dns.exception
-import dns.rdatatype
 from dns.nameserver import Nameserver
 import requests
 import pyleri
@@ -105,6 +104,56 @@ class MTASTSPolicySyntaxError(MTASTSPolicyError):
     """Raised when a syntax error is found in an MTA-STS policy"""
 
 
+class MTASTSQueryResults(TypedDict):
+    record: str
+    warnings: list[str]
+
+
+class MTASTSTags(TypedDict):
+    value: str
+
+
+class MTASTSTagsWithDescription(TypedDict):
+    value: str
+    description: str
+
+
+class ParsedMTASTSRecord(TypedDict):
+    tags: Union[MTASTSTags, MTASTSTagsWithDescription]
+    warnings: list[str]
+
+
+class MTASTSFailure(TypedDict):
+    valid: bool
+    error: str
+
+
+class MTASTSSuccess(TypedDict):
+    valid: bool
+    tags: Union[MTASTSTags, MTASTSTagsWithDescription]
+    warnings: list[str]
+
+
+MTASTSResults = Union[MTASTSSuccess, MTASTSFailure]
+
+
+class DownloadedMTASTSPolicy(TypedDict):
+    policy: str
+    warnings: list[str]
+
+
+class ParsedMTASTSPolicy(TypedDict):
+    v: Literal["STSv1"]
+    mode: Union[Literal["enforce"], Literal["testing"], Literal["none"]]
+    max_age: int
+    mx: list[str]
+
+
+class MTASTSPolicyParsingResults(TypedDict):
+    policy: ParsedMTASTSPolicy
+    warnings: list[str]
+
+
 class _STSGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for MTA-STS records"""
 
@@ -147,7 +196,7 @@ def query_mta_sts_record(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> MTASTSQueryResults:
     """
     Queries DNS for an MTA-STS record
 
@@ -234,7 +283,9 @@ def query_mta_sts_record(
     if sts_record is None:
         raise MTASTSRecordNotFound("An MTA-STS DNS record does not exist.")
 
-    return dict([("record", sts_record), ("warnings", warnings)])
+    results: MTASTSQueryResults = {"record": sts_record, "warnings": warnings}
+
+    return results
 
 
 def parse_mta_sts_record(
@@ -242,7 +293,7 @@ def parse_mta_sts_record(
     *,
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
-) -> dict[str, Any]:
+) -> ParsedMTASTSRecord:
     """
     Parses an MTA-STS record
 
@@ -318,21 +369,25 @@ def parse_mta_sts_record(
                 duplicate_tags.append(tag)
         else:
             seen_tags.append(tag)
+            tags[tag] = tag_value
         if len(duplicate_tags):
             duplicate_tags_str = ",".join(duplicate_tags)
             raise InvalidMTASTSTag(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
-        tags[tag] = dict(value=tag_value)
-        if include_tag_descriptions:
-            tags[tag]["description"] = mta_sts_tags[tag]["description"]
+    if include_tag_descriptions:
+        tags = cast(MTASTSTagsWithDescription, tags)
+    else:
+        tags = cast(MTASTSTags, tags)
 
-    return dict(tags=tags, warnings=warnings)
+    results: ParsedMTASTSRecord = {"tags": tags, "warnings": warnings}
+
+    return results
 
 
 def download_mta_sts_policy(
     domain: str, *, http_timeout: float = DEFAULT_HTTP_TIMEOUT
-) -> dict[str, Any]:
+) -> DownloadedMTASTSPolicy:
     """
     Downloads a domains MTA-HTS policy
 
@@ -351,7 +406,7 @@ def download_mta_sts_policy(
     warnings = []
     headers = {"User-Agent": USER_AGENT}
     session = requests.Session()
-    session.headers = headers
+    session.headers = headers  # pyright: ignore[reportAttributeAccessIssue]
     expected_content_type = "text/plain"
     url = f"https://mta-sts.{domain}/.well-known/mta-sts.txt"
     logging.debug(f"Attempting to download HTA-MTS policy from {url}")
@@ -375,10 +430,12 @@ def download_mta_sts_policy(
     except Exception as e:
         raise MTASTSPolicyDownloadError(str(e))
 
-    return dict(policy=response.text, warnings=warnings)
+    results: DownloadedMTASTSPolicy = {"policy": response.text, "warnings": warnings}
+
+    return results
 
 
-def parse_mta_sts_policy(policy: str) -> dict[str, Any]:
+def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     """
     Parses an MTA-STS policy
 
@@ -427,13 +484,14 @@ def parse_mta_sts_policy(policy: str) -> dict[str, Any]:
                 raise MTASTSPolicySyntaxError(error_msg)
             try:
                 value = int(value)
+                if value < 0 or value > 31557600:
+                    raise MTASTSPolicySyntaxError(error_msg)
             except ValueError:
                 MTASTSPolicySyntaxError(error_msg)
-            if value < 0 or value > 31557600:
-                raise MTASTSPolicySyntaxError(error_msg)
         if key != "mx":
             parsed_policy[key] = value
         else:
+            value = str(value)
             if len(MTA_STS_MX_REGEX.findall(value)) == 0:
                 raise MTASTSPolicySyntaxError(f"Line {line}: Invalid mx value: {value}")
             mx.append(value)
@@ -447,7 +505,11 @@ def parse_mta_sts_policy(policy: str) -> dict[str, Any]:
         )
     parsed_policy["mx"] = mx
 
-    return dict(policy=parsed_policy, warnings=warnings)
+    results: MTASTSPolicyParsingResults = {
+        "policy": cast(ParsedMTASTSPolicy, parsed_policy),
+        "warnings": warnings,
+    }
+    return results
 
 
 def check_mta_sts(

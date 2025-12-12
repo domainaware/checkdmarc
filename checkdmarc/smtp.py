@@ -8,7 +8,7 @@ import platform
 import smtplib
 import socket
 import ssl
-from typing import TypedDict, Optional, Union, cast
+from typing import TypedDict, Optional, Union
 from collections.abc import Sequence
 
 import dns.resolver
@@ -126,10 +126,9 @@ def test_tls(
     """
     tls = False
     hostname = normalize_domain(hostname)
-    if cache:
+    if isinstance(cache, ExpiringDict):
         cached_result = cache.get(hostname)
-        if cached_result is not None:
-            cached_result = cast(dict, cached_result)
+        if isinstance(cached_result, dict):
             if cached_result["error"] is not None:
                 raise SMTPError(cached_result["error"])
             return cached_result["tls"]
@@ -249,10 +248,9 @@ def test_starttls(
     """
     hostname = normalize_domain(hostname)
     starttls = False
-    if cache:
+    if isinstance(cache, ExpiringDict):
         cached_result = cache.get(hostname)
-        if cached_result is not None:
-            cached_result = cast(dict, cached_result)
+        if isinstance(cached_result, dict):
             if cached_result["error"] is not None:
                 raise SMTPError(cached_result["error"])
             return cached_result["starttls"]
