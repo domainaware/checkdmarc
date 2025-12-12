@@ -7,11 +7,13 @@ import ipaddress
 import logging
 import re
 from typing import Optional, TypedDict, Union
+from collections.abc import Sequence
 
 import dns
 import dns.exception
 import dns.resolver
-from pyleri import Grammar, Regex, Repeat, Sequence
+from dns.nameserver import Nameserver
+import pyleri
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
 from checkdmarc.utils import (
@@ -138,16 +140,16 @@ class SPFIncludeLoop(SPFError):
     """Raised when an SPF include loop is detected"""
 
 
-class _SPFGrammar(Grammar):
+class _SPFGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for SPF records"""
 
-    version_tag = Regex(SPF_VERSION_TAG_REGEX_STRING)
-    mechanism = Regex(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
+    version_tag = pyleri.Regex(SPF_VERSION_TAG_REGEX_STRING)
+    mechanism = pyleri.Regex(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 
     # Note: Pyleri skips whitespace by default; explicitly matching whitespace
     # would break many valid records. We keep the grammar permissive here and
     # perform whitespace separation checks in Python before invoking the grammar.
-    START = Sequence(version_tag, Repeat(mechanism))
+    START = pyleri.Sequence(version_tag, pyleri.Repeat(mechanism))
 
 
 class SPFQueryResults(TypedDict):
@@ -231,7 +233,7 @@ def ptr_match(
     ip_address: str,
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -372,7 +374,7 @@ def _validate_spf_macros(
 def query_spf_record(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     quoted_txt_segments: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
@@ -522,7 +524,7 @@ def parse_spf_record(
     ignore_too_many_lookups: bool = False,
     parked: bool = False,
     seen: Optional[list] = None,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     recursion: Optional[list[str]] = None,
     timeout: float = 2.0,
@@ -1139,7 +1141,7 @@ def parse_spf_record(
 def get_spf_record(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -1189,7 +1191,7 @@ def check_spf(
     domain: str,
     *,
     parked: bool = False,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,

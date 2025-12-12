@@ -7,10 +7,12 @@ import logging
 import re
 import unicodedata
 from typing import Optional, TypedDict, Union
+from collections.abc import Sequence
 
 import dns.exception
 import dns.resolver
 import dns.reversename
+from dns.nameserver import Nameserver
 import publicsuffixlist
 from expiringdict import ExpiringDict
 
@@ -121,7 +123,7 @@ def query_dns(
     record_type: str,
     *,
     quoted_txt_segments: bool = False,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -235,7 +237,7 @@ def query_dns(
 def get_a_records(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -284,7 +286,7 @@ def get_a_records(
 def get_reverse_dns(
     ip_address: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -329,7 +331,7 @@ def get_reverse_dns(
 def get_txt_records(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     quoted_txt_segments: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
@@ -377,7 +379,7 @@ def get_txt_records(
 def get_soa_record(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -423,8 +425,8 @@ def get_soa_record(
 def get_nameservers(
     domain: str,
     *,
-    approved_nameservers: Optional[list[str]] = None,
-    nameservers: Optional[list[str]] = None,
+    approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -467,12 +469,12 @@ def get_nameservers(
         raise DNSException(error)
 
     if approved_nameservers:
-        approved_nameservers = list(map(lambda h: h.lower(), approved_nameservers))
+        approved_nameservers = list(map(lambda h: str(h).lower(), approved_nameservers))
     for nameserver in ns_records:
         if approved_nameservers:
             approved = False
             for approved_nameserver in approved_nameservers:
-                if approved_nameserver in nameserver.lower():
+                if str(approved_nameserver).lower() in nameserver.lower():
                     approved = True
                     break
             if not approved:
@@ -484,7 +486,7 @@ def get_nameservers(
 def get_mx_records(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,

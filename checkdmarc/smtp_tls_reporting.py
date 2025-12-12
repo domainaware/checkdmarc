@@ -7,10 +7,12 @@ from __future__ import annotations
 import logging
 import re
 from typing import Optional, TypedDict, Union, cast
+from collections.abc import Sequence
 
-import dns.resolver
 import dns.exception
-from pyleri import Grammar, List, Regex, Sequence
+import dns.resolver
+from dns.nameserver import Nameserver
+import pyleri
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
 from checkdmarc.utils import (
@@ -110,14 +112,16 @@ class MultipleSMTPTLSReportingRecords(SMTPTLSReportingError):
     """Raised when multiple SMTP TLS Reporting records are found"""
 
 
-class _SMTPTLSReportingGrammar(Grammar):
+class _SMTPTLSReportingGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for SMTP TLS Reporting records"""
 
-    version_tag = Regex(SMTPTLSREPORTING_VERSION_REGEX_STRING)
-    tag_value = Regex(SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
-    START = Sequence(
+    version_tag = pyleri.Regex(SMTPTLSREPORTING_VERSION_REGEX_STRING)
+    tag_value = pyleri.Regex(SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    START = pyleri.Sequence(
         version_tag,
-        List(tag_value, delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True),
+        pyleri.List(
+            tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
+        ),
     )
 
 
@@ -170,7 +174,7 @@ smtp_rpt_tags = dict(
 def query_smtp_tls_reporting_record(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -381,7 +385,7 @@ def parse_smtp_tls_reporting_record(
 def check_smtp_tls_reporting(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,

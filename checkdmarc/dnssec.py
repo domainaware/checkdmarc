@@ -5,11 +5,15 @@ from __future__ import annotations
 
 import logging
 from typing import Optional
+from collections.abc import Sequence
 
 import dns.dnssec
 import dns.message
 import dns.query
 import dns.resolver
+import dns.rdatatype
+import dns.name
+from dns.nameserver import Nameserver
 from dns.rdatatype import RdataType
 from expiringdict import ExpiringDict
 
@@ -42,9 +46,9 @@ TLSA_CACHE = ExpiringDict(
 
 
 def get_dnskey(
-    domain: Optional[str],
+    domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     timeout: float = 2.0,
     cache: Optional[ExpiringDict] = None,
 ) -> dict:
@@ -103,7 +107,7 @@ def get_dnskey(
 def test_dnssec(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     timeout: float = 2.0,
     cache: Optional[ExpiringDict] = None,
 ) -> bool:
@@ -167,7 +171,7 @@ def test_dnssec(
 def get_tlsa_records(
     hostname: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     timeout: float = 2.0,
     port: int = 25,
     protocol: Optional[str] = "tcp",

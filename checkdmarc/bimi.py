@@ -8,6 +8,7 @@ import gzip
 import hashlib
 import logging
 import re
+from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from sys import getsizeof
 from typing import Any, Optional, Union
@@ -19,13 +20,15 @@ except ImportError:
     from importlib_resources import files
 
 
-import dns
+import dns.exception
+import dns.resolver
+from dns.nameserver import Nameserver
 import requests
 import xmltodict
 from cryptography import x509
 from cryptography.x509 import (
     ExtensionNotFound,
-    ExtensionOID,
+    ExtensionOID,  # pyright: ignore[reportPrivateImportUsage]
     NameOID,
     ObjectIdentifier,
     load_pem_x509_certificates,
@@ -37,7 +40,7 @@ from cryptography.x509.verification import (
     Store,
     VerificationError,
 )
-from pyleri import Grammar, List, Regex, Sequence
+import pyleri
 
 import checkdmarc.resources
 from checkdmarc._constants import DEFAULT_HTTP_TIMEOUT, SYNTAX_ERROR_MARKER, USER_AGENT
@@ -307,7 +310,7 @@ _verifier = _builder.build_client_verifier()
 class BIMIError(Exception):
     """Raised when a fatal BIMI error occurs"""
 
-    def __init__(self, msg: str, data: dict = None):
+    def __init__(self, msg: str, data: Optional[dict] = None):
         """
         Args:
             msg (str): The error message
@@ -360,14 +363,16 @@ class MultipleBIMIRecords(BIMIError):
     """Raised when multiple BIMI records are found"""
 
 
-class _BIMIGrammar(Grammar):
+class _BIMIGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for BIMI records"""
 
-    version_tag = Regex(BIMI_VERSION_REGEX_STRING)
-    tag_value = Regex(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
-    START = Sequence(
+    version_tag = pyleri.Regex(BIMI_VERSION_REGEX_STRING)
+    tag_value = pyleri.Regex(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    START = pyleri.Sequence(
         version_tag,
-        List(tag_value, delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True),
+        pyleri.List(
+            tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
+        ),
     )
 
 
@@ -401,7 +406,9 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict:
         metadata["width"] = width
         metadata["height"] = height
         metadata["filesize"] = f"{getsizeof(raw_xml) / 1000} KB"
-        metadata["sha256"] = hashlib.sha256(raw_xml.encode("utf-8")).hexdigest()
+        metadata["sha256"] = hashlib.sha256(
+            raw_xml.encode("utf-8")  # pyright: ignore[reportAttributeAccessIssue]
+        ).hexdigest()  # pyright: ignore[reportAttributeAccessIssue]
         return metadata
     except Exception as e:
         raise ValueError(f"Not a SVG file: {str(e)}")
@@ -439,7 +446,7 @@ def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
         if not isinstance(cert, x509.Certificate):
             cert = load_pem_x509_certificates(cert)[1]
         ext = cert.extensions.get_extension_for_oid(OID_LOGOTYPE)
-        ext_bytes = ext.value.value
+        ext_bytes = ext.value.value  # pyright: ignore[reportAttributeAccessIssue]
         ext_str = ext_bytes.decode("utf-8", errors="ignore")
         logo_base64 = base64.b64decode(ext_str.split(",")[1])
         logo = gzip.decompress(logo_base64)
@@ -466,7 +473,9 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
             )
         except ExtensionNotFound:
             return None
-        return ext.value.get_values_for_type(x509.DNSName)
+        return ext.value.get_values_for_type(  # pyright: ignore[reportAttributeAccessIssue]
+            x509.DNSName
+        )  # pyright: ignore[reportAttributeAccessIssue]
 
     metadata = dict()
     valid = True
@@ -646,7 +655,7 @@ def _query_bimi_record(
     domain: str,
     *,
     selector: Optional[str] = "default",
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -733,7 +742,7 @@ def query_bimi_record(
     domain: str,
     *,
     selector: Optional[str] = "default",
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -821,7 +830,7 @@ def parse_bimi_record(
     domain: Optional[str] = None,
     parsed_dmarc_record: Optional[dict] = None,
     include_tag_descriptions: bool = False,
-    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
+    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
     http_timeout: float = DEFAULT_HTTP_TIMEOUT,
 ) -> dict[str, Any]:
     """
@@ -914,8 +923,10 @@ def parse_bimi_record(
         else:
             seen_tags.append(tag)
         if len(duplicate_tags):
-            duplicate_tags = ",".join(duplicate_tags)
-            raise InvalidBIMITag(f"Duplicate {duplicate_tags} tags are not permitted")
+            duplicate_tags_str = ",".join(duplicate_tags)
+            raise InvalidBIMITag(
+                f"Duplicate {duplicate_tags_str} tags are not permitted"
+            )
         tags[tag] = dict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["name"] = BIMI_TAGS[tag]["name"]
@@ -996,11 +1007,14 @@ def parse_bimi_record(
                 warnings.append(
                     "The DMARC pct tag must be set to 100 (the implicit default) if it is used."
                 )
-    matching_certificate_provided = hash_match and cert_metadata["valid"]
-    if ("l" in tags and tags["l"]["value"] != "") and not matching_certificate_provided:
-        warnings.append(
-            "Most email providers will not display a BIMI image without a valid mark certificate."
-        )
+    if cert_metadata:
+        matching_certificate_provided = hash_match and cert_metadata["valid"]
+        if (
+            "l" in tags and tags["l"]["value"] != ""
+        ) and not matching_certificate_provided:
+            warnings.append(
+                "Most email providers will not display a BIMI image without a valid mark certificate."
+            )
     results["tags"] = tags
     if svg_metadata is not None:
         results["image"] = svg_metadata
@@ -1014,10 +1028,10 @@ def parse_bimi_record(
 def check_bimi(
     domain: str,
     *,
-    selector: Optional[str] = "default",
+    selector: str = "default",
     parsed_dmarc_record: Optional[dict] = None,
     include_tag_descriptions: bool = False,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,

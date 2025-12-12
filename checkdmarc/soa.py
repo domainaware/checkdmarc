@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import re
-from typing import TypedDict, Optional, Union
+from typing import Optional, TypedDict, Union
+from collections.abc import Sequence
 
 import dns.resolver
+from dns.nameserver import Nameserver
 
 from checkdmarc.utils import get_soa_record
 
@@ -90,7 +92,7 @@ def parse_soa_string(rr: str) -> ParsedSOARecord:
 def check_soa(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,

@@ -10,9 +10,10 @@ from csv import DictWriter
 from io import StringIO
 from time import sleep
 from typing import Optional, Union
+from collections.abc import Sequence
 
-import dns
 import dns.resolver
+from dns.nameserver import Nameserver
 
 import checkdmarc._constants
 from checkdmarc.bimi import check_bimi
@@ -54,12 +55,12 @@ def check_domains(
     domains: list[str],
     *,
     parked: bool = False,
-    approved_nameservers: Optional[list[str]] = None,
+    approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
     approved_mx_hostnames: Optional[bool] = None,
     skip_tls: bool = False,
     bimi_selector: str = "default",
     include_tag_descriptions: bool = False,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -219,8 +220,8 @@ def check_domains(
 def check_ns(
     domain: str,
     *,
-    approved_nameservers: Optional[list[str]] = None,
-    nameservers: Optional[list[str]] = None,
+    approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,

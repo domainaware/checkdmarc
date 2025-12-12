@@ -6,14 +6,12 @@ from __future__ import annotations
 import logging
 import re
 from typing import Any, Optional, Union
+from collections.abc import Sequence
 
-import dns
-from pyleri import (
-    Grammar,
-    List,
-    Regex,
-    Sequence,
-)
+import dns.resolver
+import dns.exception
+from dns.nameserver import Nameserver
+import pyleri
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
 from checkdmarc.utils import (
@@ -59,7 +57,7 @@ class _DMARCBestPracticeWarning(_DMARCWarning):
 class DMARCError(Exception):
     """Raised when a fatal DMARC error occurs"""
 
-    def __init__(self, msg: str, data: dict = None):
+    def __init__(self, msg: str, data: Optional[dict] = None):
         """
         Args:
             msg (str): The error message
@@ -128,14 +126,16 @@ class MultipleDMARCRecords(DMARCError):
     RFC 7486, § 6.6.3"""
 
 
-class _DMARCGrammar(Grammar):
+class _DMARCGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for DMARC records"""
 
-    version_tag = Regex(DMARC_VERSION_REGEX_STRING, re.IGNORECASE)
-    tag_value = Regex(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
-    START = Sequence(
+    version_tag = pyleri.Regex(DMARC_VERSION_REGEX_STRING, re.IGNORECASE)
+    tag_value = pyleri.Regex(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    START = pyleri.Sequence(
         version_tag,
-        List(tag_value, delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True),
+        pyleri.List(
+            tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
+        ),
     )
 
 
@@ -427,7 +427,7 @@ dmarc_tags = dict(
 def _query_dmarc_record(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -524,7 +524,7 @@ def _query_dmarc_record(
     except MultipleDMARCRecords as error:
         raise error
     except Exception as error:
-        raise DMARCError(error)
+        raise DMARCError(str(error))
 
     return dmarc_record
 
@@ -532,7 +532,7 @@ def _query_dmarc_record(
 def query_dmarc_record(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -709,7 +709,7 @@ def parse_dmarc_report_uri(uri: str) -> dict[str, Any]:
 def check_wildcard_dmarc_report_authorization(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
@@ -777,7 +777,7 @@ def verify_dmarc_report_destination(
     source_domain: str,
     destination_domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
@@ -865,12 +865,12 @@ def parse_dmarc_record(
     *,
     parked: bool = False,
     include_tag_descriptions: bool = False,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
+    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> dict:
     """
     Parses a DMARC record
@@ -962,8 +962,10 @@ def parse_dmarc_record(
         else:
             seen_tags.append(tag)
         if len(duplicate_tags):
-            duplicate_tags = ",".join(duplicate_tags)
-            raise InvalidDMARCTag(f"Duplicate {duplicate_tags} tags are not permitted")
+            duplicate_tags_str = ",".join(duplicate_tags)
+            raise InvalidDMARCTag(
+                f"Duplicate {duplicate_tags_str} tags are not permitted"
+            )
         value = pair[1].lower().strip()
         tags[tag] = dict([("value", value), ("explicit", True)])
 
@@ -1191,7 +1193,7 @@ def get_dmarc_record(
     domain: str,
     *,
     include_tag_descriptions: bool = False,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -1255,7 +1257,7 @@ def check_dmarc(
     parked: bool = False,
     include_dmarc_tag_descriptions: bool = False,
     ignore_unrelated_records: bool = False,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,

@@ -6,15 +6,14 @@ from __future__ import annotations
 import logging
 import re
 from typing import Any, Optional
+from collections.abc import Sequence
 
-import dns
+import dns.resolver
+import dns.exception
+import dns.rdatatype
+from dns.nameserver import Nameserver
 import requests
-from pyleri import (
-    Grammar,
-    List,
-    Regex,
-    Sequence,
-)
+import pyleri
 
 from checkdmarc._constants import DEFAULT_HTTP_TIMEOUT, SYNTAX_ERROR_MARKER, USER_AGENT
 from checkdmarc.utils import WSP_REGEX, normalize_domain, query_dns
@@ -45,7 +44,7 @@ MTA_STS_MX_REGEX = re.compile(MTA_STS_MX_REGEX_STRING, re.IGNORECASE)
 class MTASTSError(Exception):
     """Raised when a fatal MTA-STS error occurs"""
 
-    def __init__(self, msg: str, data: dict = None):
+    def __init__(self, msg: str, data: Optional[dict] = None):
         """
         Args:
             msg (str): The error message
@@ -106,14 +105,16 @@ class MTASTSPolicySyntaxError(MTASTSPolicyError):
     """Raised when a syntax error is found in an MTA-STS policy"""
 
 
-class _STSGrammar(Grammar):
+class _STSGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for MTA-STS records"""
 
-    version_tag = Regex(MTA_STS_VERSION_REGEX_STRING, re.IGNORECASE)
-    tag_value = Regex(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
-    START = Sequence(
+    version_tag = pyleri.Regex(MTA_STS_VERSION_REGEX_STRING, re.IGNORECASE)
+    tag_value = pyleri.Regex(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    START = pyleri.Sequence(
         version_tag,
-        List(tag_value, delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True),
+        pyleri.List(
+            tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
+        ),
     )
 
 
@@ -142,7 +143,7 @@ STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 def query_mta_sts_record(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -240,7 +241,7 @@ def parse_mta_sts_record(
     record: str,
     *,
     include_tag_descriptions: bool = False,
-    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
+    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> dict[str, Any]:
     """
     Parses an MTA-STS record
@@ -318,8 +319,10 @@ def parse_mta_sts_record(
         else:
             seen_tags.append(tag)
         if len(duplicate_tags):
-            duplicate_tags = ",".join(duplicate_tags)
-            raise InvalidMTASTSTag(f"Duplicate {duplicate_tags} tags are not permitted")
+            duplicate_tags_str = ",".join(duplicate_tags)
+            raise InvalidMTASTSTag(
+                f"Duplicate {duplicate_tags_str} tags are not permitted"
+            )
         tags[tag] = dict(value=tag_value)
         if include_tag_descriptions:
             tags[tag]["description"] = mta_sts_tags[tag]["description"]
@@ -450,7 +453,7 @@ def parse_mta_sts_policy(policy: str) -> dict[str, Any]:
 def check_mta_sts(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
