@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, TypedDict, Union, cast
+from typing import Optional, TypedDict, Union, Literal, cast
 from collections.abc import Sequence
 
 import dns.exception
@@ -141,12 +141,12 @@ class ParsedSMTPTLSReportingRecord(TypedDict):
 
 
 class SMTPTLSReportingFailure(TypedDict):
-    valid: bool
+    valid: Literal[False]
     error: str
 
 
 class SMTPTLSReportingSuccess(TypedDict):
-    valid: bool
+    valid: Literal[True]
     tags: Union[SMTPTLSReportingTags, SMTPTLSReportingTagsWithDescription]
     warnings: list[str]
 
