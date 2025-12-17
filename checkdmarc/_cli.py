@@ -32,7 +32,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 
 
-def _main():
+def _main() -> None:
     """Called when the module in executed"""
     arg_parser = ArgumentParser(description=__doc__)
     arg_parser.add_argument(
