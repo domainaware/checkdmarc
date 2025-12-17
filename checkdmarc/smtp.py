@@ -101,7 +101,7 @@ class SMTPError(Exception):
 
 @timeout_decorator.timeout(
     5,
-    timeout_exception=SMTPError,  # type: ignore
+    timeout_exception=SMTPError,
     exception_message="Connection timed out",
     use_signals=_get_timeout_method(),
 )

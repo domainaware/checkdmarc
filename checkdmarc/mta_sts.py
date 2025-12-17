@@ -519,9 +519,9 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
 
     # Explicitly construct the typed dict
     result_policy: ParsedMTASTSPolicy = {
-        "version": parsed_policy["version"],  # type: ignore[typeddict-item]
-        "mode": parsed_policy["mode"],  # type: ignore[typeddict-item]
-        "max_age": parsed_policy["max_age"],  # type: ignore[typeddict-item]
+        "version": parsed_policy["version"],
+        "mode": parsed_policy["mode"],
+        "max_age": parsed_policy["max_age"],
         "mx": mx,
     }
 
