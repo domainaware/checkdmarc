@@ -53,13 +53,26 @@ class DMARCQueryResult(TypedDict):
     warnings: list[str]
 
 
+class DMARCTag(TypedDict):
+    """Basic DMARC tag structure"""
+    value: Union[str, list[DMARCReportURI]]  # Most are str, rua/ruf are lists
+    explicit: bool
+
+
+class DMARCTagWithDescription(DMARCTag, total=False):
+    """DMARC tag with optional description fields"""
+    name: str
+    default: Union[str, int, list[str]]
+    description: str
+
+
 class DMARCCheckSuccess(TypedDict):
     """Successful DMARC check result"""
     record: str
     valid: bool
     location: str
     warnings: list[str]
-    tags: dict  # Complex nested structure, keeping as dict for now
+    tags: dict[str, Union[DMARCTag, DMARCTagWithDescription]]
 
 
 class DMARCCheckFailure(TypedDict):
