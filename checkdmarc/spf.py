@@ -1221,7 +1221,7 @@ def check_spf(
             - ``valid`` - False
     """
     domain = normalize_domain(domain)
-    spf_results = dict(
+    spf_results: dict[str, object] = dict(
         [
             ("record", None),
             ("valid", True),

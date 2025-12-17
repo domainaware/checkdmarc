@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Optional, Union
 from collections.abc import Sequence
 
 import dns.dnssec
@@ -50,7 +50,7 @@ def get_dnskey(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     timeout: float = 2.0,
-    cache: Optional[ExpiringDict] = None,
+    cache: Union[ExpiringDict, dict, None] = None,
 ) -> Optional[dict]:
     """
     Get a DNSKEY RRSet on the given domain
@@ -111,7 +111,7 @@ def test_dnssec(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     timeout: float = 2.0,
-    cache: Optional[ExpiringDict] = None,
+    cache: Union[ExpiringDict, dict, None] = None,
 ) -> bool:
     """
     Check for DNSSEC on the given domain
@@ -175,11 +175,11 @@ def test_dnssec(
 def get_tlsa_records(
     hostname: str,
     *,
-    nameservers: Sequence[str | Nameserver],
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     timeout: float = 2.0,
     port: int = 25,
     protocol: str = "tcp",
-    cache: Optional[ExpiringDict] = None,
+    cache: Union[ExpiringDict, dict, None] = None,
 ) -> list[str]:
     """
     Checks for TLSA records on the given hostname

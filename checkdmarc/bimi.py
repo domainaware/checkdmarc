@@ -1086,7 +1086,7 @@ def check_bimi(
                       - ``error`` - Tne error message
                       - ``valid`` - False
     """
-    bimi_results = dict([("record", None), ("valid", True)])
+    bimi_results: dict[str, object] = dict([("record", None), ("valid", True)])
     selector = selector.lower()
     try:
         bimi_query = query_bimi_record(

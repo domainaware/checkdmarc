@@ -56,7 +56,7 @@ def check_domains(
     *,
     parked: bool = False,
     approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
-    approved_mx_hostnames: Optional[bool] = None,
+    approved_mx_hostnames: Optional[list[str]] = None,
     skip_tls: bool = False,
     bimi_selector: str = "default",
     include_tag_descriptions: bool = False,
@@ -121,7 +121,7 @@ def check_domains(
         domain = normalize_domain(domain)
         logging.debug(f"Checking: {domain}")
 
-        domain_results = dict(
+        domain_results: dict[str, object] = dict(
             [
                 ("domain", domain),
                 ("base_domain", get_base_domain(domain)),
@@ -297,7 +297,7 @@ def results_to_csv_rows(
         results = [results]
 
     for result in results:
-        row = dict()
+        row: dict[str, object] = dict()
         ns = result["ns"]
         mx = result["mx"]
         _mta_sts = result["mta_sts"]

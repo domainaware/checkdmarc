@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, Union, TypedDict, Literal
+from typing import Optional, Union, TypedDict, Literal, cast
 from collections.abc import Sequence
 
 import dns.resolver
@@ -567,7 +567,7 @@ def check_mta_sts(
                       - ``valid`` - False
     """
     domain = normalize_domain(domain)
-    mta_sts_results = dict([("valid", True)])
+    mta_sts_results: dict[str, object] = dict([("valid", True)])
     try:
         mta_sts_record = query_mta_sts_record(
             domain,
@@ -589,7 +589,7 @@ def check_mta_sts(
         mta_sts_results["valid"] = False
         mta_sts_results["error"] = str(error)
 
-    return mta_sts_results
+    return cast(MTASTSCheckResults, mta_sts_results)
 
 
 def mx_in_mta_sts_patterns(mx_hostname: str, mta_sts_mx_patterns: list[str]) -> bool:

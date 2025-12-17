@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Optional, Union, TypedDict
+from typing import Any, Optional, Union, TypedDict, cast
 from collections.abc import Sequence
 
 import dns.resolver
@@ -666,7 +666,7 @@ def query_dmarc_record(
             error_str += " for this subdomain or its base domain."
         raise DMARCRecordNotFound(error_str)
 
-    return dict([("record", record), ("location", location), ("warnings", warnings)])
+    return cast(DMARCQueryResult, dict([("record", record), ("location", location), ("warnings", warnings)]))
 
 
 def get_dmarc_tag_description(
@@ -749,8 +749,11 @@ def parse_dmarc_report_uri(uri: str) -> DMARCReportURI:
     if size_limit == "":
         size_limit = None
 
-    return dict(
-        [("scheme", scheme), ("address", email_address), ("size_limit", size_limit)]
+    return cast(
+        DMARCReportURI,
+        dict(
+            [("scheme", scheme), ("address", email_address), ("size_limit", size_limit)]
+        ),
     )
 
 
@@ -1339,7 +1342,7 @@ def check_dmarc(
                   - ``valid`` - False
 
     """
-    dmarc_results = dict([("record", None), ("valid", True), ("location", None)])
+    dmarc_results: dict[str, object] = dict([("record", None), ("valid", True), ("location", None)])
     try:
         dmarc_query = query_dmarc_record(
             domain,
@@ -1373,4 +1376,4 @@ def check_dmarc(
             for key in error.data:
                 dmarc_results[key] = error.data[key]
 
-    return dmarc_results
+    return cast(DMARCCheckResult, dmarc_results)
