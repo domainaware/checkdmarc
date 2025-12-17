@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Optional, Union, TypedDict
+from typing import Any, Optional, Union
 from collections.abc import Sequence
 
 import dns.resolver
@@ -37,54 +37,6 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
-
-
-class DMARCReportURI(TypedDict):
-    """DMARC report URI components"""
-    scheme: str
-    address: str
-    size_limit: Optional[str]
-
-
-class DMARCQueryResult(TypedDict):
-    """Result of querying for a DMARC record"""
-    record: str
-    location: str
-    warnings: list[str]
-
-
-class DMARCTag(TypedDict):
-    """Basic DMARC tag structure"""
-    value: Union[str, list[DMARCReportURI]]  # Most are str, rua/ruf are lists
-    explicit: bool
-
-
-class DMARCTagWithDescription(DMARCTag, total=False):
-    """DMARC tag with optional description fields"""
-    name: str
-    default: Union[str, int, list[str]]
-    description: str
-
-
-class DMARCCheckSuccess(TypedDict):
-    """Successful DMARC check result"""
-    record: str
-    valid: bool
-    location: str
-    warnings: list[str]
-    tags: dict[str, Union[DMARCTag, DMARCTagWithDescription]]
-
-
-class DMARCCheckFailure(TypedDict):
-    """Failed DMARC check result"""
-    record: Optional[str]
-    valid: bool
-    location: Optional[str]
-    error: str
-
-
-DMARCCheckResult = Union[DMARCCheckSuccess, DMARCCheckFailure]
-
 
 DMARC_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*DMARC1{WSP_REGEX}*;"
 DMARC_TAG_VALUE_REGEX_STRING = (
@@ -585,7 +537,7 @@ def query_dmarc_record(
     timeout: float = 2.0,
     timeout_retries: int = 2,
     ignore_unrelated_records: bool = False,
-) -> DMARCQueryResult:
+) -> dict[str, Any]:
     """
     Queries DNS for a DMARC record
 
@@ -707,7 +659,7 @@ def get_dmarc_tag_description(
     return dict([("name", name), ("default", default), ("description", description)])
 
 
-def parse_dmarc_report_uri(uri: str) -> DMARCReportURI:
+def parse_dmarc_report_uri(uri: str) -> dict[str, Any]:
     """
     Parses a DMARC Reporting (i.e. ``rua``/``ruf``) URI
 
@@ -1309,7 +1261,7 @@ def check_dmarc(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> DMARCCheckResult:
+) -> dict[str, Any]:
     """
     Returns a dictionary with a parsed DMARC record or an error
 
