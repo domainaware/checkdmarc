@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, Union, TypedDict, Literal, cast
+from typing import Optional, Union, TypedDict, Literal
 from collections.abc import Sequence
 
 import dns.resolver
@@ -109,17 +109,16 @@ class MTASTSQueryResults(TypedDict):
     warnings: list[str]
 
 
-class MTASTSTags(TypedDict):
+class MTASTSTag(TypedDict):
     value: str
 
 
-class MTASTSTagsWithDescription(TypedDict):
-    value: str
+class MTASTSTagWithDescription(MTASTSTag):
     description: str
 
 
 class ParsedMTASTSRecord(TypedDict):
-    tags: Union[MTASTSTags, MTASTSTagsWithDescription]
+    tags: dict[str, Union[MTASTSTag, MTASTSTagWithDescription]]
     warnings: list[str]
 
 
@@ -130,11 +129,26 @@ class MTASTSFailure(TypedDict):
 
 class MTASTSSuccess(TypedDict):
     valid: bool
-    tags: Union[MTASTSTags, MTASTSTagsWithDescription]
+    tags: dict[str, Union[MTASTSTag, MTASTSTagWithDescription]]
     warnings: list[str]
 
 
 MTASTSResults = Union[MTASTSSuccess, MTASTSFailure]
+
+
+class MTASTSCheckSuccess(TypedDict):
+    valid: bool
+    id: str
+    policy: ParsedMTASTSPolicy
+    warnings: list[str]
+
+
+class MTASTSCheckFailure(TypedDict):
+    valid: bool
+    error: str
+
+
+MTASTSCheckResults = Union[MTASTSCheckSuccess, MTASTSCheckFailure]
 
 
 class DownloadedMTASTSPolicy(TypedDict):
@@ -143,7 +157,7 @@ class DownloadedMTASTSPolicy(TypedDict):
 
 
 class ParsedMTASTSPolicy(TypedDict):
-    v: Literal["STSv1"]
+    version: Literal["STSv1"]
     mode: Union[Literal["enforce"], Literal["testing"], Literal["none"]]
     max_age: int
     mx: list[str]
@@ -369,16 +383,14 @@ def parse_mta_sts_record(
                 duplicate_tags.append(tag)
         else:
             seen_tags.append(tag)
-            tags[tag] = tag_value
         if len(duplicate_tags):
             duplicate_tags_str = ",".join(duplicate_tags)
             raise InvalidMTASTSTag(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
-    if include_tag_descriptions:
-        tags = cast(MTASTSTagsWithDescription, tags)
-    else:
-        tags = cast(MTASTSTags, tags)
+        tags[tag] = dict(value=tag_value)
+        if include_tag_descriptions:
+            tags[tag]["description"] = mta_sts_tags[tag]["description"]
 
     results: ParsedMTASTSRecord = {"tags": tags, "warnings": warnings}
 
@@ -505,8 +517,16 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
         )
     parsed_policy["mx"] = mx
 
+    # Explicitly construct the typed dict
+    result_policy: ParsedMTASTSPolicy = {
+        "version": parsed_policy["version"],  # type: ignore[typeddict-item]
+        "mode": parsed_policy["mode"],  # type: ignore[typeddict-item]
+        "max_age": parsed_policy["max_age"],  # type: ignore[typeddict-item]
+        "mx": mx,
+    }
+
     results: MTASTSPolicyParsingResults = {
-        "policy": cast(ParsedMTASTSPolicy, parsed_policy),
+        "policy": result_policy,
         "warnings": warnings,
     }
     return results
@@ -519,7 +539,7 @@ def check_mta_sts(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> MTASTSCheckResults:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.
 
