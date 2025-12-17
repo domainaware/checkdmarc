@@ -483,7 +483,7 @@ def results_to_csv(results: dict[str, object]) -> str:
     return output.getvalue()
 
 
-def output_to_file(path: str, content: str) -> None:
+def output_to_file(path: str, content: str):
     """
     Write given content to the given path
 
