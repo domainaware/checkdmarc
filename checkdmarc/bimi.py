@@ -11,7 +11,7 @@ import re
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from sys import getsizeof
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, TypedDict
 
 try:
     from importlib.resources import files
@@ -65,6 +65,22 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+
+class SVGMetadata(TypedDict, total=False):
+    """SVG metadata structure (some fields are optional)"""
+    svg_version: str
+    base_profile: str
+    x: str
+    y: str
+    title: str
+    description: str
+    overflow: str
+    width: float
+    height: float
+    filesize: str
+    sha256: str
+
 
 BIMI_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*BIMI1{WSP_REGEX}*;"
 BIMI_TAG_VALUE_REGEX_STRING = (
@@ -376,7 +392,7 @@ class _BIMIGrammar(pyleri.Grammar):
     )
 
 
-def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict:
+def get_svg_metadata(raw_xml: Union[str, bytes]) -> SVGMetadata:
     metadata = dict()
     if isinstance(raw_xml, bytes):
         raw_xml = raw_xml.decode(errors="ignore")
@@ -414,7 +430,7 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict:
         raise ValueError(f"Not a SVG file: {str(e)}")
 
 
-def check_svg_requirements(svg_metadata: dict) -> list[str]:
+def check_svg_requirements(svg_metadata: SVGMetadata) -> list[str]:
     _errors = []
     if svg_metadata["svg_version"] != "1.2":
         _errors.append(
@@ -441,7 +457,7 @@ def check_svg_requirements(svg_metadata: dict) -> list[str]:
     return _errors
 
 
-def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
+def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]) -> Optional[bytes]:
     try:
         if not isinstance(cert, x509.Certificate):
             cert = load_pem_x509_certificates(cert)[1]
@@ -458,7 +474,7 @@ def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
 def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
     """Get metadata about a Verified Mark Certificate (VMC)"""
 
-    def get_cert_name_components(cert_field: x509.Name):
+    def get_cert_name_components(cert_field: x509.Name) -> dict[str, str]:
         mapping = []
         for rdn in cert_field.rdns:
             for attr in rdn:
@@ -466,7 +482,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
                 mapping.append((label, attr.value))
         return dict(mapping)
 
-    def get_certificate_domains(cert: x509.Certificate):
+    def get_certificate_domains(cert: x509.Certificate) -> Optional[list[str]]:
         try:
             ext = cert.extensions.get_extension_for_oid(
                 ExtensionOID.SUBJECT_ALTERNATIVE_NAME
