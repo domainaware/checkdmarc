@@ -1028,14 +1028,20 @@ def parse_dmarc_record(
             )
     if "p" not in tags:
         raise DMARCSyntaxError('The record is missing the required policy ("p") tag.')
-    tags["p"]["value"] = tags["p"]["value"].lower()
+    p_value = tags["p"]["value"]
+    if isinstance(p_value, str):
+        tags["p"]["value"] = p_value.lower()
     if "sp" not in tags:
         tags["sp"] = dict([("value", tags["p"]["value"]), ("explicit", False)])
     # Normalize sp value for validation consistency (mirrors p behavior)
-    tags["sp"]["value"] = tags["sp"]["value"].lower()
+    sp_value = tags["sp"]["value"]
+    if isinstance(sp_value, str):
+        tags["sp"]["value"] = sp_value.lower()
     if list(tags.keys())[1] != "p":
         raise DMARCSyntaxError("the p tag must immediately follow the v tag.")
-    tags["v"]["value"] = tags["v"]["value"].upper()
+    v_value = tags["v"]["value"]
+    if isinstance(v_value, str):
+        tags["v"]["value"] = v_value.upper()
     # Validate tag values
     for tag in tags:
         tag_value = tags[tag]["value"]
@@ -1052,25 +1058,29 @@ def parse_dmarc_record(
                 f"An sp tag value of none makes DMARC unenforced on email sent as a subdomain of {domain}."
             )
         if tag == "fo":
-            tag_value = tag_value.split(":")
-            if "0" in tag_value and "1" in tag_value:
+            if isinstance(tag_value, str):
+                tag_value = tag_value.split(":")
+            if isinstance(tag_value, list) and "0" in tag_value and "1" in tag_value:
                 warnings.append(
                     "When 1 is present in the fo tag, including in the fo tag 0 is redundant."
                 )
-            for value in tag_value:
-                if value not in allowed_values:
-                    raise InvalidDMARCTagValue(
-                        f"{value} is not a valid option for the DMARC fo tag."
-                    )
+            if isinstance(tag_value, list) and allowed_values:
+                for value in tag_value:
+                    if value not in allowed_values:
+                        raise InvalidDMARCTagValue(
+                            f"{value} is not a valid option for the DMARC fo tag."
+                        )
         elif tag == "rf":
-            tag_value = tag_value.lower().split(":")
-            for value in tag_value:
-                if value not in allowed_values:
-                    raise InvalidDMARCTagValue(
-                        f"{value} is not a valid option for the DMARC rf tag."
-                    )
+            if isinstance(tag_value, str):
+                tag_value = tag_value.lower().split(":")
+            if isinstance(tag_value, list) and allowed_values:
+                for value in tag_value:
+                    if value not in allowed_values:
+                        raise InvalidDMARCTagValue(
+                            f"{value} is not a valid option for the DMARC rf tag."
+                        )
 
-        elif allowed_values and tag_value not in allowed_values:
+        elif allowed_values and isinstance(tag_value, str) and tag_value not in allowed_values:
             allowed_values_str = ",".join(allowed_values)
             raise InvalidDMARCTagValue(
                 f"Tag {tag} must have one of the following values: "
