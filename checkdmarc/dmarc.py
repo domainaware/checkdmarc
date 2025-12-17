@@ -1064,7 +1064,7 @@ def parse_dmarc_record(
                 warnings.append(
                     "When 1 is present in the fo tag, including in the fo tag 0 is redundant."
                 )
-            if isinstance(tag_value, list) and allowed_values:
+            if isinstance(tag_value, list) and allowed_values is not None:
                 for value in tag_value:
                     if value not in allowed_values:
                         raise InvalidDMARCTagValue(
@@ -1073,7 +1073,7 @@ def parse_dmarc_record(
         elif tag == "rf":
             if isinstance(tag_value, str):
                 tag_value = tag_value.lower().split(":")
-            if isinstance(tag_value, list) and allowed_values:
+            if isinstance(tag_value, list) and allowed_values is not None:
                 for value in tag_value:
                     if value not in allowed_values:
                         raise InvalidDMARCTagValue(
