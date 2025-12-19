@@ -527,7 +527,7 @@ def parse_spf_record(
     *,
     ignore_too_many_lookups: bool = False,
     parked: Optional[bool] = False,
-    seen: Optional[bool] = None,
+    seen: Optional[list[str]] = None,
     nameservers: Optional[list[str]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     recursion: Optional[list[str]] = None,
