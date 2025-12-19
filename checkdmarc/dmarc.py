@@ -138,6 +138,7 @@ class _DMARCGrammar(pyleri.Grammar):
         ),
     )
 
+
 class DMARCTagMapItem(TypedDict):
     name: str
     required: bool

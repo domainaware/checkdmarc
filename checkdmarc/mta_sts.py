@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, Union, TypedDict, Literal, cast
+from typing import Optional, Union, TypedDict, Literal, cast, Any
 from collections.abc import Sequence
 
 import dns.resolver
