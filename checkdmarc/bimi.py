@@ -11,7 +11,7 @@ import re
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from sys import getsizeof
-from typing import Any, Optional, Union
+from typing import Optional, Union, TypedDict
 
 try:
     from importlib.resources import files
@@ -65,6 +65,73 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+
+# TypedDict definitions for BIMI record structures
+class SVGMetadata(TypedDict, total=False):
+    """Metadata extracted from SVG image"""
+    svg_version: str
+    base_profile: str
+    x: str
+    y: str
+    title: str
+    description: str
+    overflow: str
+    width: float
+    height: float
+    filesize: str
+    sha256: str
+
+
+class CertificateMetadata(TypedDict):
+    """Metadata about a Verified Mark Certificate (VMC)"""
+    issuer: dict[str, str]
+    subject: dict[str, str]
+    serial_number: int
+    not_valid_before: str
+    not_valid_after: str
+    expired: bool
+    valid: bool
+    domains: Optional[list[str]]
+    logotype_sha256: Optional[str]
+    warnings: list[str]
+    validation_errors: list[str]
+
+
+class BIMIQueryResult(TypedDict):
+    """Result from querying a BIMI record"""
+    record: str
+    location: str
+    warnings: list[str]
+
+
+class BIMITagValue(TypedDict, total=False):
+    """BIMI tag value structure"""
+    value: str
+    name: str
+    description: str
+
+
+class BIMIParseResult(TypedDict, total=False):
+    """Result from parsing a BIMI record"""
+    tags: dict[str, BIMITagValue]
+    image: Union[SVGMetadata, dict[str, str]]
+    certificate: Union[CertificateMetadata, dict[str, str]]
+    warnings: list[str]
+
+
+class BIMICheckResult(TypedDict, total=False):
+    """Result from checking BIMI for a domain"""
+    record: Optional[str]
+    valid: bool
+    selector: str
+    location: str
+    tags: dict[str, BIMITagValue]
+    image: Union[SVGMetadata, dict[str, str]]
+    certificate: Union[CertificateMetadata, dict[str, str]]
+    warnings: list[str]
+    error: str
+
 
 BIMI_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*BIMI1{WSP_REGEX}*;"
 BIMI_TAG_VALUE_REGEX_STRING = (
@@ -376,8 +443,8 @@ class _BIMIGrammar(pyleri.Grammar):
     )
 
 
-def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict:
-    metadata = {}
+def get_svg_metadata(raw_xml: Union[str, bytes]) -> SVGMetadata:
+    metadata: SVGMetadata = {}
     if isinstance(raw_xml, bytes):
         raw_xml = raw_xml.decode(errors="ignore")
     try:
@@ -455,7 +522,7 @@ def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
         return None
 
 
-def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
+def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> CertificateMetadata:
     """Get metadata about a Verified Mark Certificate (VMC)"""
 
     def get_cert_name_components(cert_field: x509.Name):
@@ -477,10 +544,10 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
             x509.DNSName
         )  # pyright: ignore[reportAttributeAccessIssue]
 
-    metadata = {}
+    metadata: CertificateMetadata = {}
     valid = True
-    validation_errors = []
-    warnings = []
+    validation_errors: list[str] = []
+    warnings: list[str] = []
     certs = load_pem_x509_certificates(pem_crt)
     vmc = certs[0]
     for ext in REQUIRED_EXTENSIONS:
@@ -746,7 +813,7 @@ def query_bimi_record(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> BIMIQueryResult:
     """
     Queries DNS for a BIMI record
 
@@ -832,7 +899,7 @@ def parse_bimi_record(
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
     http_timeout: float = DEFAULT_HTTP_TIMEOUT,
-) -> dict[str, Any]:
+) -> BIMIParseResult:
     """
     Parses a BIMI record
 
@@ -869,7 +936,7 @@ def parse_bimi_record(
         :exc:`checkdmarc.bimi.InvalidBIMITagValue`
         :exc:`checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe`
     """
-    results = {}
+    results: BIMIParseResult = {}
     svg_metadata = None
     cert_metadata = None
     logging.debug("Parsing the BIMI record")
@@ -1034,7 +1101,7 @@ def check_bimi(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> BIMICheckResult:
     """
     Returns a dictionary with a parsed BIMI record or an error.
 
@@ -1069,7 +1136,7 @@ def check_bimi(
                       - ``error`` - Tne error message
                       - ``valid`` - False
     """
-    bimi_results = {"record": None, "valid": True}
+    bimi_results: BIMICheckResult = {"record": None, "valid": True}
     selector = selector.lower()
     try:
         bimi_query = query_bimi_record(
