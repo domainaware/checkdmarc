@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TypedDict, Optional, Union, NotRequired, overload, Literal
+from typing import TypedDict, Optional, Union, overload, Literal
 from collections.abc import Sequence
 
 import dns.resolver
@@ -198,11 +198,15 @@ class DMARCTagValue(TypedDict):
     explicit: bool
 
 
-class DMARCTagValueWithDescription(DMARCTagValue):
+class _DMARCTagValueOptionalFields(TypedDict, total=False):
+    """Optional fields for DMARC tag values with descriptions"""
+    default: Union[str, int]
+
+
+class DMARCTagValueWithDescription(DMARCTagValue, _DMARCTagValueOptionalFields):
     """Structure for a DMARC tag value with descriptions"""
     name: str
     description: str
-    default: NotRequired[Union[str, int]]
 
 
 # Type aliases for parsed tags dictionaries
