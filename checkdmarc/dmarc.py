@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Optional, Union
+from typing import Any, TypedDict, Optional, Union
 from collections.abc import Sequence
 
 import dns.resolver
@@ -129,299 +129,387 @@ class MultipleDMARCRecords(DMARCError):
 class _DMARCGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for DMARC records"""
 
-    version_tag = pyleri.Regex(DMARC_VERSION_REGEX_STRING, re.IGNORECASE)
-    tag_value = pyleri.Regex(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
-    START = pyleri.Sequence(
-        version_tag,
-        pyleri.List(
-            tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
-        ),
-    )
+
+class DMARCTagMapItem(TypedDict):
+    name: str
+    required: bool
+    description: str
 
 
-dmarc_tags = dict(
-    adkim=dict(
-        name="DKIM Alignment Mode",
-        required=False,
-        default="r",
-        description="In relaxed mode, "
-        "the Organizational "
-        "Domains of both the "
-        "DKIM-authenticated "
-        "signing domain (taken "
-        "from the value of the "
-        '"d=" tag in the '
-        "signature) and that "
-        "of the RFC 5322 "
-        "From domain "
-        "must be equal if the "
-        "identifiers are to be "
-        "considered aligned.",
-    ),
-    aspf=dict(
-        name="SPF alignment mode",
-        required=False,
-        default="r",
-        description="In relaxed mode, "
-        "the SPF-authenticated "
-        "domain and RFC 5322 "
-        "From domain must have "
-        "the same "
-        "Organizational Domain. "
-        "In strict mode, only "
-        "an exact DNS domain "
-        "match is considered to "
-        "produce Identifier "
-        "Alignment.",
-    ),
-    fo=dict(
-        name="Failure Reporting Options",
-        required=False,
-        default="0",
-        description="Provides requested "
-        "options for generation "
-        "of failure reports. "
-        "Report generators MAY "
-        "choose to adhere to the "
-        "requested options. "
-        "This tag's content "
-        "MUST be ignored if "
-        'a "ruf" tag (below) is '
-        "not also specified. "
-        "The value of this tag is "
-        "a colon-separated list "
-        "of characters that "
-        "indicate failure "
-        "reporting options.",
-        values={
-            "0": "Generate a DMARC failure "
-            "report if all underlying "
-            "authentication mechanisms "
-            "fail to produce an aligned "
-            '"pass" result.',
-            "1": "Generate a DMARC failure "
-            "report if any underlying "
-            "authentication mechanism "
-            "produced something other "
-            "than an aligned "
-            '"pass" result.',
-            "d": "Generate a DKIM failure "
-            "report if the message had "
-            "a signature that failed "
-            "evaluation, regardless of "
-            "its alignment. DKIM-"
-            "specific reporting is "
-            "described in AFRF-DKIM.",
-            "s": "Generate an SPF failure "
-            "report if the message "
-            "failed SPF evaluation, "
-            "regardless of its alignment."
-            " SPF-specific reporting is "
-            "described in AFRF-SPF",
-        },
-    ),
-    p=dict(
-        name="Requested Mail Receiver Policy",
-        required=True,
-        description="Specifies the policy to "
-        "be enacted by the "
-        "Receiver at the "
-        "request of the "
-        "Domain Owner. The "
-        "policy applies to "
-        "the domain and to its "
-        "subdomains, unless "
-        "subdomain policy "
-        "is explicitly described "
-        'using the "sp" tag.',
-        values={
-            "none": "The Domain Owner requests "
-            "no specific action be "
-            "taken regarding delivery "
-            "of messages.",
-            "quarantine": "The Domain Owner "
-            "wishes to have "
-            "email that fails "
-            "the DMARC mechanism "
-            "check be treated by "
-            "Mail Receivers as "
-            "suspicious. "
-            "Depending on the "
-            "capabilities of the "
-            "MailReceiver, "
-            "this can mean "
-            '"place into spam '
-            'folder", '
-            '"scrutinize '
-            "with additional "
-            'intensity", and/or '
-            '"flag as '
-            'suspicious".',
-            "reject": "The Domain Owner wishes "
-            "for Mail Receivers to "
-            "reject "
-            "email that fails the "
-            "DMARC mechanism check. "
-            "Rejection SHOULD "
-            "occur during the SMTP "
-            "transaction.",
-        },
-    ),
-    pct=dict(
-        name="Percentage",
-        required=False,
-        default=100,
-        description="Integer percentage of "
-        "messages from the "
-        "Domain Owner's "
-        "mail stream to which "
-        "the DMARC policy is to "
-        "be applied. "
-        "However, this "
-        "MUST NOT be applied to "
-        "the DMARC-generated "
-        "reports, all of which "
-        "must be sent and "
-        "received unhindered. "
-        "The purpose of the "
-        '"pct" tag is to allow '
-        "Domain Owners to enact "
-        "a slow rollout of "
-        "enforcement of the "
-        "DMARC mechanism.",
-    ),
-    rf=dict(
-        name="Report Format",
-        required=False,
-        default="afrf",
-        description="A list separated by "
-        "colons of one or more "
-        "report formats as "
-        "requested by the "
-        "Domain Owner to be "
-        "used when a message "
-        "fails both SPF and DKIM "
-        "tests to report details "
-        "of the individual "
-        'failure. Only "afrf" '
-        "(the auth-failure report "
-        "type) is currently "
-        "supported in the "
-        "DMARC standard.",
-        values={
-            "afrf": ' "Authentication Failure '
-            "Reporting Using the "
-            'Abuse Reporting Format", '
-            "RFC 6591, April 2012,"
-            "<https://www.rfc-"
-            "editor.org/info/rfc6591>"
-        },
-    ),
-    ri=dict(
-        name="Report Interval",
-        required=False,
-        default=86400,
-        description="Indicates a request to "
-        "Receivers to generate "
-        "aggregate reports "
-        "separated by no more "
-        "than the requested "
-        "number of seconds. "
-        "DMARC implementations "
-        "MUST be able to provide "
-        "daily reports and "
-        "SHOULD be able to "
-        "provide hourly reports "
-        "when requested. "
-        "However, anything other "
-        "than a daily report is "
-        "understood to "
-        "be accommodated on a "
-        "best-effort basis.",
-    ),
-    rua=dict(
-        name="Aggregate Feedback Addresses",
-        required=False,
-        description=" A comma-separated list "
-        "of DMARC URIs to which "
-        "aggregate feedback "
-        "is to be sent.",
-    ),
-    ruf=dict(
-        name="Forensic Feedback Addresses",
-        required=False,
-        description=" A comma-separated list "
-        "of DMARC URIs to which "
-        "forensic feedback "
-        "is to be sent.",
-    ),
-    sp=dict(
-        name="Subdomain Policy",
-        required=False,
-        description="Indicates the policy to "
-        "be enacted by the "
-        "Receiver at the request "
-        "of the Domain Owner. "
-        "It applies only to "
-        "subdomains of the "
-        "domain queried, and not "
-        "to the domain itself. "
-        "Its syntax is identical "
-        'to that of the "p" tag '
-        "defined above. If "
-        "absent, the policy "
-        'specified by the "p" '
-        "tag MUST be applied "
-        "for subdomains.",
-        values={
-            "none": "The Domain Owner requests "
-            "no specific action be "
-            "taken regarding delivery "
-            "of messages.",
-            "quarantine": "The Domain Owner "
-            "wishes to have "
-            "email that fails "
-            "the DMARC mechanism "
-            "check be treated by "
-            "Mail Receivers as "
-            "suspicious. "
-            "Depending on the "
-            "capabilities of the "
-            "MailReceiver, "
-            "this can mean "
-            '"place into spam '
-            'folder", '
-            '"scrutinize '
-            "with additional "
-            'intensity", and/or '
-            '"flag as '
-            'suspicious".',
-            "reject": "The Domain Owner wishes "
-            "for Mail Receivers to "
-            "reject "
-            "email that fails the "
-            "DMARC mechanism check. "
-            "Rejection SHOULD "
-            "occur during the SMTP "
-            "transaction.",
-        },
-    ),
-    v=dict(
-        name="Version",
-        required=True,
-        description="Identifies the record "
-        "retrieved as a DMARC "
-        "record. It MUST have the "
-        'value of "DMARC1". The '
-        "value of this tag MUST "
-        "match precisely; if it "
-        "does not or it is absent, "
-        "the entire retrieved "
-        "record MUST be ignored. "
-        "It MUST be the first "
-        "tag in the list.",
+class DMARCTagMapItemWithDefault(DMARCTagMapItem):
+    default: Union[str, int]
+
+
+class DMARCTagMapItemWithValues(DMARCTagMapItem):
+    values: dict[str, Union[str, int]]
+
+
+class DMARCTagMapItemWithDefaultAndValues(DMARCTagMapItem):
+    default: Union[str, int]
+    values: dict[str, Union[str, int]]
+
+
+class DMARCTagMap(TypedDict):
+    adkim: DMARCTagMapItemWithDefault
+    aspf: DMARCTagMapItemWithDefault
+    fo: DMARCTagMapItemWithDefaultAndValues
+    p: DMARCTagMapItemWithValues
+    pct: DMARCTagMapItemWithDefault
+    rf: DMARCTagMapItemWithDefaultAndValues
+    ri: DMARCTagMapItemWithDefault
+    rua: DMARCTagMapItem
+    ruf: DMARCTagMapItem
+    sp: DMARCTagMapItemWithValues
+    v: DMARCTagMapItem
+
+
+class DMARCTagDetails(TypedDict):
+    name: str
+    default: Union[str, int, None]
+    description: str
+
+
+class ParsedDmarcRecord(TypedDict):
+    tags: list
+    warnings: list[str]
+
+
+class DMARCRecordQueryResults(TypedDict):
+    record: str
+    location: str
+    warnings: list[str]
+
+
+class ParsedDMARCReportURI(TypedDict):
+    scheme: str
+    address: str
+    size_limit: Union[str, None]
+
+
+version_tag = pyleri.Regex(DMARC_VERSION_REGEX_STRING, re.IGNORECASE)
+tag_value = pyleri.Regex(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+START = pyleri.Sequence(
+    version_tag,
+    pyleri.List(
+        tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
     ),
 )
+
+
+dmarc_tags: DMARCTagMap = {
+    "adkim": {
+        "name": "DKIM Alignment Mode",
+        "required": False,
+        "default": "r",
+        "description": (
+            "In relaxed mode, "
+            "the Organizational "
+            "Domains of both the "
+            "DKIM-authenticated "
+            "signing domain (taken "
+            "from the value of the "
+            '"d=" tag in the '
+            "signature) and that "
+            "of the RFC 5322 "
+            "From domain "
+            "must be equal if the "
+            "identifiers are to be "
+            "considered aligned."
+        ),
+    },
+    "aspf": {
+        "name": "SPF alignment mode",
+        "required": False,
+        "default": "r",
+        "description": (
+            "In relaxed mode, "
+            "the SPF-authenticated "
+            "domain and RFC 5322 "
+            "From domain must have "
+            "the same "
+            "Organizational Domain. "
+            "In strict mode, only "
+            "an exact DNS domain "
+            "match is considered to "
+            "produce Identifier "
+            "Alignment."
+        ),
+    },
+    "fo": {
+        "name": "Failure Reporting Options",
+        "required": False,
+        "default": "0",
+        "description": (
+            "Provides requested "
+            "options for generation "
+            "of failure reports. "
+            "Report generators MAY "
+            "choose to adhere to the "
+            "requested options. "
+            "This tag's content "
+            "MUST be ignored if "
+            'a "ruf" tag (below) is '
+            "not also specified. "
+            "The value of this tag is "
+            "a colon-separated list "
+            "of characters that "
+            "indicate failure "
+            "reporting options."
+        ),
+        "values": {
+            "0": (
+                "Generate a DMARC failure "
+                "report if all underlying "
+                "authentication mechanisms "
+                "fail to produce an aligned "
+                '"pass" result.'
+            ),
+            "1": (
+                "Generate a DMARC failure "
+                "report if any underlying "
+                "authentication mechanism "
+                "produced something other "
+                "than an aligned "
+                '"pass" result.'
+            ),
+            "d": (
+                "Generate a DKIM failure "
+                "report if the message had "
+                "a signature that failed "
+                "evaluation, regardless of "
+                "its alignment. DKIM-"
+                "specific reporting is "
+                "described in AFRF-DKIM."
+            ),
+            "s": (
+                "Generate an SPF failure "
+                "report if the message "
+                "failed SPF evaluation, "
+                "regardless of its alignment. "
+                "SPF-specific reporting is "
+                "described in AFRF-SPF"
+            ),
+        },
+    },
+    "p": {
+        "name": "Requested Mail Receiver Policy",
+        "required": True,
+        "description": (
+            "Specifies the policy to "
+            "be enacted by the "
+            "Receiver at the "
+            "request of the "
+            "Domain Owner. The "
+            "policy applies to "
+            "the domain and to its "
+            "subdomains, unless "
+            "subdomain policy "
+            "is explicitly described "
+            'using the "sp" tag.'
+        ),
+        "values": {
+            "none": (
+                "The Domain Owner requests "
+                "no specific action be "
+                "taken regarding delivery "
+                "of messages."
+            ),
+            "quarantine": (
+                "The Domain Owner "
+                "wishes to have "
+                "email that fails "
+                "the DMARC mechanism "
+                "check be treated by "
+                "Mail Receivers as "
+                "suspicious. "
+                "Depending on the "
+                "capabilities of the "
+                "MailReceiver, "
+                'this can mean "place into spam folder", '
+                '"scrutinize with additional intensity", '
+                'and/or "flag as suspicious".'
+            ),
+            "reject": (
+                "The Domain Owner wishes "
+                "for Mail Receivers to "
+                "reject email that fails "
+                "the DMARC mechanism check. "
+                "Rejection SHOULD occur "
+                "during the SMTP "
+                "transaction."
+            ),
+        },
+    },
+    "pct": {
+        "name": "Percentage",
+        "required": False,
+        "default": 100,
+        "description": (
+            "Integer percentage of "
+            "messages from the "
+            "Domain Owner's "
+            "mail stream to which "
+            "the DMARC policy is to "
+            "be applied. "
+            "However, this "
+            "MUST NOT be applied to "
+            "the DMARC-generated "
+            "reports, all of which "
+            "must be sent and "
+            "received unhindered. "
+            "The purpose of the "
+            '"pct" tag is to allow '
+            "Domain Owners to enact "
+            "a slow rollout of "
+            "enforcement of the "
+            "DMARC mechanism."
+        ),
+    },
+    "rf": {
+        "name": "Report Format",
+        "required": False,
+        "default": "afrf",
+        "description": (
+            "A list separated by "
+            "colons of one or more "
+            "report formats as "
+            "requested by the "
+            "Domain Owner to be "
+            "used when a message "
+            "fails both SPF and DKIM "
+            "tests to report details "
+            "of the individual "
+            'failure. Only "afrf" '
+            "(the auth-failure report "
+            "type) is currently "
+            "supported in the "
+            "DMARC standard."
+        ),
+        "values": {
+            "afrf": (
+                '"Authentication Failure '
+                "Reporting Using the "
+                'Abuse Reporting Format", '
+                "RFC 6591, April 2012, "
+                "<https://www.rfc-editor.org/info/rfc6591>"
+            ),
+        },
+    },
+    "ri": {
+        "name": "Report Interval",
+        "required": False,
+        "default": 86400,
+        "description": (
+            "Indicates a request to "
+            "Receivers to generate "
+            "aggregate reports "
+            "separated by no more "
+            "than the requested "
+            "number of seconds. "
+            "DMARC implementations "
+            "MUST be able to provide "
+            "daily reports and "
+            "SHOULD be able to "
+            "provide hourly reports "
+            "when requested. "
+            "However, anything other "
+            "than a daily report is "
+            "understood to be "
+            "accommodated on a "
+            "best-effort basis."
+        ),
+    },
+    "rua": {
+        "name": "Aggregate Feedback Addresses",
+        "required": False,
+        "description": (
+            "A comma-separated list "
+            "of DMARC URIs to which "
+            "aggregate feedback "
+            "is to be sent."
+        ),
+    },
+    "ruf": {
+        "name": "Forensic Feedback Addresses",
+        "required": False,
+        "description": (
+            "A comma-separated list "
+            "of DMARC URIs to which "
+            "forensic feedback "
+            "is to be sent."
+        ),
+    },
+    "sp": {
+        "name": "Subdomain Policy",
+        "required": False,
+        "description": (
+            "Indicates the policy to "
+            "be enacted by the "
+            "Receiver at the request "
+            "of the Domain Owner. "
+            "It applies only to "
+            "subdomains of the "
+            "domain queried, and not "
+            "to the domain itself. "
+            "Its syntax is identical "
+            'to that of the "p" tag '
+            "defined above. If "
+            "absent, the policy "
+            'specified by the "p" '
+            "tag MUST be applied "
+            "for subdomains."
+        ),
+        "values": {
+            "none": (
+                "The Domain Owner requests "
+                "no specific action be "
+                "taken regarding delivery "
+                "of messages."
+            ),
+            "quarantine": (
+                "The Domain Owner "
+                "wishes to have "
+                "email that fails "
+                "the DMARC mechanism "
+                "check be treated by "
+                "Mail Receivers as "
+                "suspicious. "
+                "Depending on the "
+                "capabilities of the "
+                "MailReceiver, "
+                'this can mean "place into spam folder", '
+                '"scrutinize with additional intensity", '
+                'and/or "flag as suspicious".'
+            ),
+            "reject": (
+                "The Domain Owner wishes "
+                "for Mail Receivers to "
+                "reject email that fails "
+                "the DMARC mechanism check. "
+                "Rejection SHOULD occur "
+                "during the SMTP "
+                "transaction."
+            ),
+        },
+    },
+    "v": {
+        "name": "Version",
+        "required": True,
+        "description": (
+            "Identifies the record "
+            "retrieved as a DMARC "
+            "record. It MUST have the "
+            'value of "DMARC1". The '
+            "value of this tag MUST "
+            "match precisely; if it "
+            "does not or it is absent, "
+            "the entire retrieved "
+            "record MUST be ignored. "
+            "It MUST be the first "
+            "tag in the list."
+        ),
+    },
+}
 
 
 def _query_dmarc_record(
@@ -537,7 +625,7 @@ def query_dmarc_record(
     timeout: float = 2.0,
     timeout_retries: int = 2,
     ignore_unrelated_records: bool = False,
-) -> dict[str, Any]:
+) -> DMARCRecordQueryResults:
     """
     Queries DNS for a DMARC record
 
@@ -618,12 +706,12 @@ def query_dmarc_record(
             error_str += " for this subdomain or its base domain."
         raise DMARCRecordNotFound(error_str)
 
-    return dict([("record", record), ("location", location), ("warnings", warnings)])
+    return {"record": record, "location": location, "warnings": warnings}
 
 
 def get_dmarc_tag_description(
     tag: str, value: Optional[Union[str, list[str]]] = None
-) -> dict[str, Any]:
+) -> DMARCTagDetails:
     """
     Get the name, default value, and description for a DMARC tag, amd/or a
     description for a tag value
@@ -656,10 +744,10 @@ def get_dmarc_tag_description(
         if new_description != "":
             description = new_description
 
-    return dict([("name", name), ("default", default), ("description", description)])
+    return {"name": name, "default": default, "description": description}
 
 
-def parse_dmarc_report_uri(uri: str) -> dict[str, Any]:
+def parse_dmarc_report_uri(uri: str) -> ParsedDMARCReportURI:
     """
     Parses a DMARC Reporting (i.e. ``rua``/``ruf``) URI
 
@@ -701,9 +789,7 @@ def parse_dmarc_report_uri(uri: str) -> dict[str, Any]:
     if size_limit == "":
         size_limit = None
 
-    return dict(
-        [("scheme", scheme), ("address", email_address), ("size_limit", size_limit)]
-    )
+    return {"scheme": scheme, "address": email_address, "size_limit": size_limit}
 
 
 def check_wildcard_dmarc_report_authorization(
@@ -946,7 +1032,7 @@ def parse_dmarc_record(
 
     # Find explicit tags
     pairs: list[tuple[str, str]] = DMARC_TAG_VALUE_REGEX.findall(record)
-    tags = dict()
+    tags = {}
 
     seen_tags: list[str] = []
     duplicate_tags: list[str] = []
@@ -967,19 +1053,17 @@ def parse_dmarc_record(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
         value = pair[1].lower().strip()
-        tags[tag] = dict([("value", value), ("explicit", True)])
+        tags[tag] = {"value": value, "explicit": True}
 
     # Include implicit tags and their defaults
     for tag in dmarc_tags.keys():
         if tag not in tags and "default" in dmarc_tags[tag]:
-            tags[tag] = dict(
-                [("value", dmarc_tags[tag]["default"]), ("explicit", False)]
-            )
+            tags[tag] = {"value": dmarc_tags[tag]["default"], "explicit": False}
     if "p" not in tags:
         raise DMARCSyntaxError('The record is missing the required policy ("p") tag.')
     tags["p"]["value"] = tags["p"]["value"].lower()
     if "sp" not in tags:
-        tags["sp"] = dict([("value", tags["p"]["value"]), ("explicit", False)])
+        tags["sp"] = {"value": tags["p"]["value"], "explicit": False}
     # Normalize sp value for validation consistency (mirrors p behavior)
     tags["sp"]["value"] = tags["sp"]["value"].lower()
     if list(tags.keys())[1] != "p":
@@ -988,7 +1072,7 @@ def parse_dmarc_record(
     # Validate tag values
     for tag in tags:
         tag_value = tags[tag]["value"]
-        allowed_values = None
+        allowed_values = []
         explicit = tags[tag]["explicit"]
         if "values" in dmarc_tags[tag]:
             allowed_values = dmarc_tags[tag]["values"]
@@ -1186,7 +1270,7 @@ def parse_dmarc_record(
                 tags[tag]["default"] = details["default"]
             tags[tag]["description"] = details["description"]
 
-    return dict([("tags", tags), ("warnings", warnings)])
+    return {"tags": tags, "warnings": warnings}
 
 
 def get_dmarc_record(
@@ -1246,9 +1330,7 @@ def get_dmarc_record(
         timeout_retries=timeout_retries,
     )
 
-    return dict(
-        [("record", query["record"]), ("location", query["location"]), ("parsed", tags)]
-    )
+    return {"record": query["record"], "location": query["location"], "parsed": tags}
 
 
 def check_dmarc(
@@ -1291,7 +1373,7 @@ def check_dmarc(
                   - ``valid`` - False
 
     """
-    dmarc_results = dict([("record", None), ("valid", True), ("location", None)])
+    dmarc_results = {"record": None, "valid": True, "location": None}
     try:
         dmarc_query = query_dmarc_record(
             domain,

@@ -204,9 +204,9 @@ def get_tlsa_records(
     query_hostname = f"_{port}._{protocol}.{hostname}"
     if isinstance(cache, ExpiringDict):
         if query_hostname in TLSA_CACHE:
-            cached_results = TLSA_CACHE[query_hostname] 
+            cached_results = TLSA_CACHE[query_hostname]
             if isinstance(cached_results, list):
-                return cached_results 
+                return cached_results
     tlsa_records: list[str] = []
     logging.debug(f"Checking for TLSA records at {query_hostname}")
     request = dns.message.make_query(
