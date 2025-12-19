@@ -153,18 +153,18 @@ class SMTPTLSReportingSuccess(TypedDict):
 
 SMTPTLSReportingResults = Union[SMTPTLSReportingSuccess, SMTPTLSReportingFailure]
 
-smtp_rpt_tags = dict(
-    v=dict(name="Version", description="Must be TLSRPTv1", required=True),
-    rua=dict(
-        name="Aggregate Reporting URIs",
-        description="A URI specifying the endpoint to which aggregate "
+smtp_rpt_tags = {
+    "v": {"name": "Version", "description": "Must be TLSRPTv1", "required": True},
+    "rua": {
+        "name": "Aggregate Reporting URIs",
+        "description": "A URI specifying the endpoint to which aggregate "
         "information about policy validation results should be "
         'sent. Two URI schemes are supported: "mailto" and '
         '"https".  As with DMARC the Policy Domain can specify a '
         "comma-separated list of URIs.",
-        required=False,
-    ),
-)
+        "required": False,
+    },
+}
 
 
 def query_smtp_tls_reporting_record(
@@ -358,7 +358,7 @@ def parse_smtp_tls_reporting_record(
             raise InvalidSMTPTLSReportingTag(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
-        tags[tag] = dict(value=tag_value)
+        tags[tag] = {"value": tag_value}
         if include_tag_descriptions:
             tags[tag]["description"] = smtp_rpt_tags[tag]["description"]
     if "rua" not in tags:

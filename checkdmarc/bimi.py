@@ -221,11 +221,11 @@ for ksf_dict in _ksf_dicts:
 KNOWN_SUBJECT_FIELDS = set(KNOWN_SUBJECT_FIELDS)
 
 
-BIMI_TAGS = dict(
-    v=dict(
-        name="Version",
-        required=True,
-        description="Identifies the record "
+BIMI_TAGS = {
+    "v": {
+        "name": "Version",
+        "required": True,
+        "description": "Identifies the record "
         "retrieved as a BIMI "
         "record. It MUST have the "
         'value of "BIMI1". The '
@@ -236,12 +236,12 @@ BIMI_TAGS = dict(
         "record MUST be ignored. "
         "It MUST be the first "
         "tag in the list.",
-    ),
-    a=dict(
-        name="Authority Evidence Location",
-        required=False,
-        default="",
-        description="If present, this tag MUST have an empty value "
+    },
+    "a": {
+        "name": "Authority Evidence Location",
+        "required": False,
+        "default": "",
+        "description": "If present, this tag MUST have an empty value "
         "or its value MUST be a single URI. An empty "
         "value for the tag is interpreted to mean the "
         "Domain Owner does not wish to publish or does "
@@ -251,32 +251,32 @@ BIMI_TAGS = dict(
         'HTTPS as the URI scheme ("https"). The URI '
         "SHOULD specify the location of a publicly "
         "retrievable BIMI Evidence Document.",
-    ),
-    l=dict(
-        name="Location",
-        required=False,
-        default="",
-        description="The value of this tag is either empty "
+    },
+    "l": {
+        "name": "Location",
+        "required": False,
+        "default": "",
+        "description": "The value of this tag is either empty "
         "indicating declination to publish, or a single "
         "URI representing the location of a Brand "
         "Indicator file. The only supported transport "
         "is HTTPS.",
-    ),
-    lps=dict(
-        name="Local-Part Selectors",
-        default="",
-        description="A comma separated list of allowed Local-Part Selectors",
-    ),
-    avp=dict(
-        name="Avatar Preference",
-        required=False,
-        default="brand",
-        description="For mail sent to those mailbox providers that both participate in BIMI and "
+    },
+    "lps": {
+        "name": "Local-Part Selectors",
+        "default": "",
+        "description": "A comma separated list of allowed Local-Part Selectors",
+    },
+    "avp": {
+        "name": "Avatar Preference",
+        "required": False,
+        "default": "brand",
+        "description": "For mail sent to those mailbox providers that both participate in BIMI and "
         "support the display of personal avatars, this flag is a way for the Domain "
         "Owner to express its preference as to whether to show the BIMI logo or the "
         "personal avatar. Options are personal or brand",
-    ),
-)
+    },
+}
 
 _mvaca_path = str(files(checkdmarc.resources).joinpath("MVACAs.pem"))
 
@@ -464,7 +464,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
             for attr in rdn:
                 label = OID_LABELS.get(attr.oid) or attr.oid.dotted_string
                 mapping.append((label, attr.value))
-        return dict(mapping)
+        return {k: v for k, v in mapping}
 
     def get_certificate_domains(cert: x509.Certificate):
         try:
@@ -821,7 +821,7 @@ def query_bimi_record(
                 "this subdomain or its base domain."
             )
 
-    return dict([("record", record), ("location", location), ("warnings", warnings)])
+    return {"record": record, "location": location, "warnings": warnings}
 
 
 def parse_bimi_record(
@@ -927,7 +927,7 @@ def parse_bimi_record(
             raise InvalidBIMITag(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
-        tags[tag] = dict(value=tag_value)
+        tags[tag] = {"value": tag_value}
         if include_tag_descriptions:
             tags[tag]["name"] = BIMI_TAGS[tag]["name"]
             tags[tag]["description"] = BIMI_TAGS[tag]["description"]
@@ -938,9 +938,9 @@ def parse_bimi_record(
                 response.raise_for_status()
                 raw_xml = response.content
             except Exception as e:
-                results["image"] = dict(
-                    error=f"Failed to download BIMI image at {tag_value} - {str(e)}"
-                )
+                results["image"] = {
+                    "error": f"Failed to download BIMI image at {tag_value} - {str(e)}"
+                }
             if raw_xml is not None:
                 try:
                     svg_metadata = get_svg_metadata(raw_xml)
@@ -952,9 +952,9 @@ def parse_bimi_record(
                     if len(svg_validation_errors) > 0:
                         svg_metadata["validation_errors"] = svg_validation_errors
                 except Exception as e:
-                    results["image"] = dict(
-                        error=f"Failed to process BIMI image at {tag_value} - {str(e)}"
-                    )
+                    results["image"] = {
+                        "error": f"Failed to process BIMI image at {tag_value} - {str(e)}"
+                    }
         elif tag == "a" and tag_value != "":
             cert_metadata = None
             try:
@@ -970,9 +970,9 @@ def parse_bimi_record(
                             "The image at the l= tag URL does not match the image embedded in the certificate."
                         )
             except Exception as e:
-                results["certificate"] = dict(
-                    error=f"Failed to download the mark certificate at {tag_value} - {str(e)}"
-                )
+                results["certificate"] = {
+                    "error": f"Failed to download the mark certificate at {tag_value} - {str(e)}"
+                }
         elif tag == "avp":
             if tag_value not in ["brand", "personal"]:
                 raise BIMISyntaxError(
@@ -1070,7 +1070,7 @@ def check_bimi(
                       - ``error`` - Tne error message
                       - ``valid`` - False
     """
-    bimi_results = dict([("record", None), ("valid", True)])
+    bimi_results = {"record": None, "valid": True}
     selector = selector.lower()
     try:
         bimi_query = query_bimi_record(

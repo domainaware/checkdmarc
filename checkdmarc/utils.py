@@ -480,7 +480,7 @@ def get_nameservers(
             if not approved:
                 warnings.append(f"Unapproved nameserver: {nameserver}")
 
-    return dict([("hostnames", ns_records), ("warnings", warnings)])
+    return {"hostnames": ns_records, "warnings": warnings}
 
 
 def get_mx_records(
@@ -528,7 +528,7 @@ def get_mx_records(
             record = record.split(" ")
             preference = int(record[0])
             hostname = record[1].rstrip(".").strip().lower()
-            hosts.append(dict([("preference", preference), ("hostname", hostname)]))
+            hosts.append({"preference": preference, "hostname": hostname})
         hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:
         raise DNSExceptionNXDOMAIN("The domain does not exist.")

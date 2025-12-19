@@ -167,24 +167,24 @@ class _STSGrammar(pyleri.Grammar):
     )
 
 
-mta_sts_tags = dict(
-    v=dict(
-        name="Version",
-        required=True,
-        description='Currently, only "STSv1" is supported.',
-    ),
-    id=dict(
-        name="id",
-        required=True,
-        description="A short string used to track policy "
+mta_sts_tags = {
+    "v": {
+        "name": "Version",
+        "required": True,
+        "description": 'Currently, only "STSv1" is supported.',
+    },
+    "id": {
+        "name": "id",
+        "required": True,
+        "description": "A short string used to track policy "
         "updates.  This string MUST uniquely identify "
         "a given instance of a policy, such that "
         "senders can determine when the policy has "
         'been updated by comparing to the "id" of a '
         "previously seen policy. There is no implied "
         'ordering of "id" fields between revisions.',
-    ),
-)
+    },
+}
 
 STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
@@ -547,7 +547,7 @@ def check_mta_sts(
                       - ``valid`` - False
     """
     domain = normalize_domain(domain)
-    mta_sts_results = dict([("valid", True)])
+    mta_sts_results = {"valid": True}
     try:
         mta_sts_record = query_mta_sts_record(
             domain,
