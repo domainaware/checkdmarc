@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, Union, TypedDict, Literal, Any
+from typing import Optional, Union, TypedDict, Literal
 from collections.abc import Sequence
 
 import dns.resolver
@@ -148,6 +148,21 @@ class ParsedMTASTSPolicy(TypedDict):
 class MTASTSPolicyParsingResults(TypedDict):
     policy: ParsedMTASTSPolicy
     warnings: list[str]
+
+
+class MTASTSCheckSuccess(TypedDict):
+    valid: Literal[True]
+    id: str
+    policy: ParsedMTASTSPolicy
+    warnings: list[str]
+
+
+class MTASTSCheckFailure(TypedDict):
+    valid: Literal[False]
+    error: str
+
+
+MTASTSCheckResults = Union[MTASTSCheckSuccess, MTASTSCheckFailure]
 
 
 class _STSGrammar(pyleri.Grammar):
@@ -516,7 +531,7 @@ def check_mta_sts(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> MTASTSCheckResults:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.
 
@@ -544,7 +559,6 @@ def check_mta_sts(
                       - ``valid`` - False
     """
     domain = normalize_domain(domain)
-    mta_sts_results = {"valid": True}
     try:
         mta_sts_record = query_mta_sts_record(
             domain,
@@ -555,18 +569,25 @@ def check_mta_sts(
         )
         warnings = mta_sts_record["warnings"]
         mta_sts_record = parse_mta_sts_record(mta_sts_record["record"])
-        mta_sts_results["id"] = mta_sts_record["tags"]["id"]["value"]
+        id_value = mta_sts_record["tags"]["id"]
         policy = download_mta_sts_policy(domain, http_timeout=timeout)
         warnings += policy["warnings"]
         policy = parse_mta_sts_policy(policy["policy"])
         warnings += policy["warnings"]
-        mta_sts_results["policy"] = policy["policy"]
-        mta_sts_results["warnings"] = warnings
+        
+        mta_sts_results: MTASTSCheckSuccess = {
+            "valid": True,
+            "id": id_value,
+            "policy": policy["policy"],
+            "warnings": warnings,
+        }
+        return mta_sts_results
     except MTASTSError as error:
-        mta_sts_results["valid"] = False
-        mta_sts_results["error"] = str(error)
-
-    return mta_sts_results
+        mta_sts_results_failure: MTASTSCheckFailure = {
+            "valid": False,
+            "error": str(error),
+        }
+        return mta_sts_results_failure
 
 
 def mx_in_mta_sts_patterns(mx_hostname: str, mta_sts_mx_patterns: list[str]) -> bool:
