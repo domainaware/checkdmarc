@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, Union, TypedDict, Literal, cast, Any
+from typing import Optional, Union, TypedDict, Literal, Any
 from collections.abc import Sequence
 
 import dns.resolver
@@ -109,13 +109,9 @@ class MTASTSQueryResults(TypedDict):
     warnings: list[str]
 
 
-class MTASTSTags(TypedDict):
-    value: str
-
-
-class MTASTSTagsWithDescription(TypedDict):
-    value: str
-    description: str
+# Tags is a dict mapping tag names to tag values (simple strings in MTA-STS)
+MTASTSTags = dict[str, str]
+MTASTSTagsWithDescription = dict[str, str]  # Currently no difference, kept for API compat
 
 
 class ParsedMTASTSRecord(TypedDict):
@@ -143,7 +139,7 @@ class DownloadedMTASTSPolicy(TypedDict):
 
 
 class ParsedMTASTSPolicy(TypedDict):
-    v: Literal["STSv1"]
+    version: Literal["STSv1"]
     mode: Union[Literal["enforce"], Literal["testing"], Literal["none"]]
     max_age: int
     mx: list[str]
@@ -375,10 +371,6 @@ def parse_mta_sts_record(
             raise InvalidMTASTSTag(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
-    if include_tag_descriptions:
-        tags = cast(MTASTSTagsWithDescription, tags)
-    else:
-        tags = cast(MTASTSTags, tags)
 
     results: ParsedMTASTSRecord = {"tags": tags, "warnings": warnings}
 
@@ -450,7 +442,12 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     Raises:
         :exc:`checkdmarc.mta_sts.MTASTSPolicySyntaxError`
     """
-    parsed_policy = {}
+    parsed_policy: ParsedMTASTSPolicy = {
+        "version": "STSv1",  # Will be verified below
+        "mode": "none",  # Will be set below
+        "max_age": 0,  # Will be set below
+        "mx": [],  # Will be set below
+    }
     warnings = []
     mx = []
     versions = ["STSv1"]
@@ -506,7 +503,7 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     parsed_policy["mx"] = mx
 
     results: MTASTSPolicyParsingResults = {
-        "policy": cast(ParsedMTASTSPolicy, parsed_policy),
+        "policy": parsed_policy,
         "warnings": warnings,
     }
     return results

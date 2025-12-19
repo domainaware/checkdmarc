@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, TypedDict, Union, Literal, cast
+from typing import Optional, TypedDict, Union, Literal
 from collections.abc import Sequence
 
 import dns.exception
@@ -126,13 +126,21 @@ class SMTPTLSReportingQueryResults(TypedDict):
     warnings: list[str]
 
 
-class SMTPTLSReportingTags(TypedDict):
-    value: str
+class SMTPTLSReportingTagValue(TypedDict):
+    value: Union[str, list[str]]
 
 
-class SMTPTLSReportingTagsWithDescription(TypedDict):
-    value: str
+class _SMTPTLSReportingTagValueOptional(TypedDict, total=False):
     description: str
+
+
+class SMTPTLSReportingTagValueWithDescription(SMTPTLSReportingTagValue, _SMTPTLSReportingTagValueOptional):
+    pass
+
+
+# Tags is a dict mapping tag names to tag values
+SMTPTLSReportingTags = dict[str, SMTPTLSReportingTagValue]
+SMTPTLSReportingTagsWithDescription = dict[str, SMTPTLSReportingTagValueWithDescription]
 
 
 class ParsedSMTPTLSReportingRecord(TypedDict):
@@ -369,10 +377,6 @@ def parse_smtp_tls_reporting_record(
             raise SMTPTLSReportingSyntaxError(
                 f"{uri} is not a valid SMTP TLS reporting URI."
             )
-    if include_tag_descriptions:
-        tags = cast(SMTPTLSReportingTagsWithDescription, tags)
-    else:
-        tags = cast(SMTPTLSReportingTags, tags)
     results: ParsedSMTPTLSReportingRecord = {"tags": tags, "warnings": warnings}
 
     return results
