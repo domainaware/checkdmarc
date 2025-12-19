@@ -1549,9 +1549,7 @@ def check_dmarc(
             timeout=timeout,
             timeout_retries=timeout_retries,
         )
-        
         combined_warnings = dmarc_query["warnings"] + parsed_dmarc_record["warnings"]
-        
         dmarc_results: DMARCResults = {
             "record": dmarc_query["record"],
             "location": dmarc_query["location"],
@@ -1571,5 +1569,4 @@ def check_dmarc(
             # error.data only contains "target" key based on codebase analysis
             if "target" in error.data:
                 error_results["target"] = error.data["target"]
-        
         return error_results
