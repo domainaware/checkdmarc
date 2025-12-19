@@ -1009,9 +1009,8 @@ def parse_bimi_record(
                 )
     if cert_metadata:
         matching_certificate_provided = hash_match and cert_metadata["valid"]
-        if (
-            "l" in tags and tags["l"]["value"] != ""
-        ) and not matching_certificate_provided:
+        l_tag_value = tags. get("l", {}).get("value", "")
+        if l_tag_value != "" and not matching_certificate_provided:
             warnings.append(
                 "Most email providers will not display a BIMI image without a valid mark certificate."
             )
