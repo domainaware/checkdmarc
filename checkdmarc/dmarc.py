@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, TypedDict, Optional, Union
+from typing import TypedDict, Optional, Union, overload, Literal
 from collections.abc import Sequence
 
 import dns.resolver
@@ -57,11 +57,11 @@ class _DMARCBestPracticeWarning(_DMARCWarning):
 class DMARCError(Exception):
     """Raised when a fatal DMARC error occurs"""
 
-    def __init__(self, msg: str, data: Optional[dict] = None):
+    def __init__(self, msg: str, data: Optional[DMARCErrorData] = None):
         """
         Args:
             msg (str): The error message
-            data (dict): A dictionary of data to include in the results
+            data (DMARCErrorData): A dictionary of data to include in the results
         """
         self.data = data
         Exception.__init__(self, msg)
@@ -178,11 +178,6 @@ class DMARCTagDetails(TypedDict):
     description: str
 
 
-class ParsedDmarcRecord(TypedDict):
-    tags: list
-    warnings: list[str]
-
-
 class DMARCRecordQueryResults(TypedDict):
     record: str
     location: str
@@ -190,9 +185,86 @@ class DMARCRecordQueryResults(TypedDict):
 
 
 class ParsedDMARCReportURI(TypedDict):
+    """Structure for a parsed DMARC report URI"""
     scheme: str
     address: str
     size_limit: Union[str, None]
+
+
+# TypedDicts for DMARC tag values
+class DMARCTagValue(TypedDict):
+    """Base structure for a DMARC tag value without descriptions"""
+    value: Union[str, int, list[ParsedDMARCReportURI]]
+    explicit: bool
+
+
+class _DMARCTagValueOptionalFields(TypedDict, total=False):
+    """Optional fields for DMARC tag values with descriptions"""
+    default: Union[str, int]
+
+
+class DMARCTagValueWithDescription(DMARCTagValue, _DMARCTagValueOptionalFields):
+    """Structure for a DMARC tag value with descriptions"""
+    name: str
+    description: str
+
+
+# Type aliases for parsed tags dictionaries
+DMARCParsedTags = dict[str, DMARCTagValue]
+DMARCParsedTagsWithDescriptions = dict[str, DMARCTagValueWithDescription]
+
+
+class ParsedDMARCRecord(TypedDict):
+    """Return type for parse_dmarc_record without descriptions"""
+    tags: DMARCParsedTags
+    warnings: list[str]
+
+
+class ParsedDMARCRecordWithDescriptions(TypedDict):
+    """Return type for parse_dmarc_record with descriptions"""
+    tags: DMARCParsedTagsWithDescriptions
+    warnings: list[str]
+
+
+class DMARCRecord(TypedDict):
+    """Return type for get_dmarc_record without descriptions"""
+    record: str
+    location: str
+    parsed: ParsedDMARCRecord
+
+
+class DMARCRecordWithDescriptions(TypedDict):
+    """Return type for get_dmarc_record with descriptions"""
+    record: str
+    location: str
+    parsed: ParsedDMARCRecordWithDescriptions
+
+
+class DMARCResults(TypedDict):
+    """Success return type for check_dmarc"""
+    record: str
+    location: str
+    valid: bool
+    warnings: list[str]
+    tags: Union[DMARCParsedTags, DMARCParsedTagsWithDescriptions]
+
+
+class _DMARCErrorResultsOptionalFields(TypedDict, total=False):
+    """Optional fields for DMARCErrorResults"""
+    target: str
+
+
+class DMARCErrorResults(_DMARCErrorResultsOptionalFields):
+    """Error return type for check_dmarc"""
+    record: None
+    location: None
+    valid: bool
+    error: str
+
+
+class DMARCErrorData(TypedDict, total=False):
+    """Optional data structure for DMARCError"""
+    target: str
 
 
 version_tag = pyleri.Regex(DMARC_VERSION_REGEX_STRING, re.IGNORECASE)
@@ -524,7 +596,7 @@ dmarc_tags: DMARCTagMap = {
 def _query_dmarc_record(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -629,7 +701,7 @@ def _query_dmarc_record(
 def query_dmarc_record(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -804,7 +876,7 @@ def parse_dmarc_report_uri(uri: str) -> ParsedDMARCReportURI:
 def check_wildcard_dmarc_report_authorization(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
@@ -872,7 +944,7 @@ def verify_dmarc_report_destination(
     source_domain: str,
     destination_domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
@@ -954,19 +1026,51 @@ def verify_dmarc_report_destination(
             raise UnverifiedDMARCURIDestination(message)
 
 
+@overload
+def parse_dmarc_record(
+    record: str,
+    domain: str,
+    *,
+    parked: bool = False,
+    include_tag_descriptions: Literal[False] = False,
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
+    ignore_unrelated_records: bool = False,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
+) -> ParsedDMARCRecord: ...
+
+
+@overload
+def parse_dmarc_record(
+    record: str,
+    domain: str,
+    *,
+    parked: bool = False,
+    include_tag_descriptions: Literal[True],
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
+    ignore_unrelated_records: bool = False,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
+) -> ParsedDMARCRecordWithDescriptions: ...
+
+
 def parse_dmarc_record(
     record: str,
     domain: str,
     *,
     parked: bool = False,
     include_tag_descriptions: bool = False,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
-) -> dict:
+) -> Union[ParsedDMARCRecord, ParsedDMARCRecordWithDescriptions]:
     """
     Parses a DMARC record
 
@@ -1282,15 +1386,39 @@ def parse_dmarc_record(
     return {"tags": tags, "warnings": warnings}
 
 
+@overload
+def get_dmarc_record(
+    domain: str,
+    *,
+    include_tag_descriptions: Literal[False] = False,
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> DMARCRecord: ...
+
+
+@overload
+def get_dmarc_record(
+    domain: str,
+    *,
+    include_tag_descriptions: Literal[True],
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> DMARCRecordWithDescriptions: ...
+
+
 def get_dmarc_record(
     domain: str,
     *,
     include_tag_descriptions: bool = False,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> Union[DMARCRecord, DMARCRecordWithDescriptions]:
     """
     Retrieves a DMARC record for a domain and parses it
 
@@ -1327,19 +1455,38 @@ def get_dmarc_record(
         domain, nameservers=nameservers, resolver=resolver, timeout=timeout
     )
 
-    tag_descriptions = include_tag_descriptions
-
-    tags = parse_dmarc_record(
-        query["record"],
-        query["location"],
-        include_tag_descriptions=tag_descriptions,
-        nameservers=nameservers,
-        resolver=resolver,
-        timeout=timeout,
-        timeout_retries=timeout_retries,
-    )
-
-    return {"record": query["record"], "location": query["location"], "parsed": tags}
+    if include_tag_descriptions:
+        tags = parse_dmarc_record(
+            query["record"],
+            query["location"],
+            include_tag_descriptions=True,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
+        )
+        result: DMARCRecordWithDescriptions = {
+            "record": query["record"],
+            "location": query["location"],
+            "parsed": tags,
+        }
+        return result
+    else:
+        tags = parse_dmarc_record(
+            query["record"],
+            query["location"],
+            include_tag_descriptions=False,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            timeout_retries=timeout_retries,
+        )
+        result_no_desc: DMARCRecord = {
+            "record": query["record"],
+            "location": query["location"],
+            "parsed": tags,
+        }
+        return result_no_desc
 
 
 def check_dmarc(
@@ -1348,11 +1495,11 @@ def check_dmarc(
     parked: bool = False,
     include_dmarc_tag_descriptions: bool = False,
     ignore_unrelated_records: bool = False,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> Union[DMARCResults, DMARCErrorResults]:
     """
     Returns a dictionary with a parsed DMARC record or an error
 
@@ -1382,7 +1529,6 @@ def check_dmarc(
                   - ``valid`` - False
 
     """
-    dmarc_results = {"record": None, "valid": True, "location": None}
     try:
         dmarc_query = query_dmarc_record(
             domain,
@@ -1392,8 +1538,6 @@ def check_dmarc(
             timeout=timeout,
             timeout_retries=timeout_retries,
         )
-        dmarc_results["record"] = dmarc_query["record"]
-        dmarc_results["location"] = dmarc_query["location"]
         parsed_dmarc_record = parse_dmarc_record(
             dmarc_query["record"],
             dmarc_query["location"],
@@ -1405,15 +1549,24 @@ def check_dmarc(
             timeout=timeout,
             timeout_retries=timeout_retries,
         )
-        dmarc_results["warnings"] = dmarc_query["warnings"]
-
-        dmarc_results["tags"] = parsed_dmarc_record["tags"]
-        dmarc_results["warnings"] += parsed_dmarc_record["warnings"]
+        combined_warnings = dmarc_query["warnings"] + parsed_dmarc_record["warnings"]
+        dmarc_results: DMARCResults = {
+            "record": dmarc_query["record"],
+            "location": dmarc_query["location"],
+            "valid": True,
+            "warnings": combined_warnings,
+            "tags": parsed_dmarc_record["tags"],
+        }
+        return dmarc_results
     except DMARCError as error:
-        dmarc_results["error"] = str(error)
-        dmarc_results["valid"] = False
+        error_results: DMARCErrorResults = {
+            "record": None,
+            "location": None,
+            "valid": False,
+            "error": str(error),
+        }
         if hasattr(error, "data") and error.data:
-            for key in error.data:
-                dmarc_results[key] = error.data[key]
-
-    return dmarc_results
+            # error.data only contains "target" key based on codebase analysis
+            if "target" in error.data:
+                error_results["target"] = error.data["target"]
+        return error_results
