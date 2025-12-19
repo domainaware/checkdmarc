@@ -111,7 +111,9 @@ class MTASTSQueryResults(TypedDict):
 
 # Tags is a dict mapping tag names to tag values (simple strings in MTA-STS)
 MTASTSTags = dict[str, str]
-MTASTSTagsWithDescription = dict[str, str]  # Currently no difference, kept for API compat
+MTASTSTagsWithDescription = dict[
+    str, str
+]  # Currently no difference, kept for API compat
 
 
 class ParsedMTASTSRecord(TypedDict):
@@ -574,7 +576,7 @@ def check_mta_sts(
         warnings += policy["warnings"]
         policy = parse_mta_sts_policy(policy["policy"])
         warnings += policy["warnings"]
-        
+
         mta_sts_results: MTASTSCheckSuccess = {
             "valid": True,
             "id": id_value,

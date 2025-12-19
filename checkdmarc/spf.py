@@ -655,11 +655,7 @@ def parse_spf_record(
             exp = exp[0]
             parsed["exp"] = exp
             if "%" in exp:
-                _validate_spf_macros(
-                    exp,
-                    domain,
-                    syntax_error_marker
-                )
+                _validate_spf_macros(exp, domain, syntax_error_marker)
             else:
                 try:
                     exp_txt_records = get_txt_records(
@@ -673,7 +669,9 @@ def parse_spf_record(
                     if len(exp_txt_records) > 1:
                         warnings.append("Too many TXT records at exp value {exp}.")
                 except Exception as e:
-                    warnings.append(f"Failed to get TXT records at exp value {exp}: {e}")
+                    warnings.append(
+                        f"Failed to get TXT records at exp value {exp}: {e}"
+                    )
                 else:
                     warnings.append(
                         "Any text after the all mechanism other than an exp modifier is ignored."
@@ -733,20 +731,16 @@ def parse_spf_record(
                 total_dns_lookups += 1
                 if "%" in value:
                     a_mechanism: SPFAMechanism = {
-                    "action": action,
-                    "mechanism": mechanism,
-                    "value": value,
-                    "dns_lookups": mechanism_dns_lookups,
-                    "void_dns_lookups": mechanism_void_dns_lookups,
-                    "addresses": []
-                }
+                        "action": action,
+                        "mechanism": mechanism,
+                        "value": value,
+                        "dns_lookups": mechanism_dns_lookups,
+                        "void_dns_lookups": mechanism_void_dns_lookups,
+                        "addresses": [],
+                    }
 
                     parsed["mechanisms"].append(a_mechanism)
-                    _validate_spf_macros(
-                    value,
-                    domain,
-                    syntax_error_marker
-                )
+                    _validate_spf_macros(value, domain, syntax_error_marker)
                     continue
                 if value == "":
                     value = domain
@@ -787,20 +781,16 @@ def parse_spf_record(
                 total_dns_lookups += 1
                 if "%" in value:
                     mx_mechanism: ParsedSPFMXMechanism = {
-                    "action": action,
-                    "mechanism": mechanism,
-                    "value": value,
-                    "dns_lookups": mechanism_dns_lookups,
-                    "void_dns_lookups": mechanism_void_dns_lookups,
-                    "hosts": [],
-                }
+                        "action": action,
+                        "mechanism": mechanism,
+                        "value": value,
+                        "dns_lookups": mechanism_dns_lookups,
+                        "void_dns_lookups": mechanism_void_dns_lookups,
+                        "hosts": [],
+                    }
 
                     parsed["mechanisms"].append(mx_mechanism)
-                    _validate_spf_macros(
-                    value,
-                    domain,
-                    syntax_error_marker
-                )
+                    _validate_spf_macros(value, domain, syntax_error_marker)
                     continue
                 # Use the current domain if no value was provided
                 if value == "":
@@ -898,11 +888,7 @@ def parse_spf_record(
                 }
                 parsed["mechanisms"].append(exists_mechanism)
                 if "%" in value:
-                    _validate_spf_macros(
-                    value,
-                    domain,
-                    syntax_error_marker
-                )
+                    _validate_spf_macros(value, domain, syntax_error_marker)
                 if value == "":
                     raise SPFSyntaxError(f"{mechanism} must have a value")
                 if total_dns_lookups > 10:
@@ -924,14 +910,10 @@ def parse_spf_record(
                         "dns_lookups": mechanism_dns_lookups,
                         "void_dns_lookups": mechanism_void_dns_lookups,
                         "parsed": None,
-                        "warnings": []
+                        "warnings": [],
                     }
                     parsed["redirect"] = redirect
-                    _validate_spf_macros(
-                    value,
-                    domain,
-                    syntax_error_marker
-                )
+                    _validate_spf_macros(value, domain, syntax_error_marker)
                     continue
                 if value.lower() in recursion:
                     raise SPFRedirectLoop(f"Redirect loop: {value.lower()}")
@@ -1032,14 +1014,10 @@ def parse_spf_record(
                         "dns_lookups": mechanism_dns_lookups,
                         "void_dns_lookups": mechanism_void_dns_lookups,
                         "parsed": None,
-                        "warnings": []
+                        "warnings": [],
                     }
                     parsed["mechanisms"].append(macro_include)
-                    _validate_spf_macros(
-                    value,
-                    domain,
-                    syntax_error_marker
-                )
+                    _validate_spf_macros(value, domain, syntax_error_marker)
                     continue
                 if value == "":
                     raise SPFSyntaxError(f"{mechanism} must have a value")
@@ -1128,18 +1106,14 @@ def parse_spf_record(
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
                 if "%" in value:
-                    _validate_spf_macros(
-                    value,
-                    domain,
-                    syntax_error_marker
-                )
+                    _validate_spf_macros(value, domain, syntax_error_marker)
                     ptr_mechanism: SPFDNSLookupMechanism = {
-                    "action": action,
-                    "mechanism": mechanism,
-                    "value": value,
-                    "dns_lookups": mechanism_dns_lookups,
-                    "void_dns_lookups": mechanism_void_dns_lookups,
-                }
+                        "action": action,
+                        "mechanism": mechanism,
+                        "value": value,
+                        "dns_lookups": mechanism_dns_lookups,
+                        "void_dns_lookups": mechanism_void_dns_lookups,
+                    }
                     parsed["mechanisms"].append(ptr_mechanism)
                     continue
                 a_records = get_a_records(

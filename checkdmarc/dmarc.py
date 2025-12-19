@@ -186,6 +186,7 @@ class DMARCRecordQueryResults(TypedDict):
 
 class ParsedDMARCReportURI(TypedDict):
     """Structure for a parsed DMARC report URI"""
+
     scheme: str
     address: str
     size_limit: Union[str, None]
@@ -194,17 +195,20 @@ class ParsedDMARCReportURI(TypedDict):
 # TypedDicts for DMARC tag values
 class DMARCTagValue(TypedDict):
     """Base structure for a DMARC tag value without descriptions"""
+
     value: Union[str, int, list[ParsedDMARCReportURI]]
     explicit: bool
 
 
 class _DMARCTagValueOptionalFields(TypedDict, total=False):
     """Optional fields for DMARC tag values with descriptions"""
+
     default: Union[str, int]
 
 
 class DMARCTagValueWithDescription(DMARCTagValue, _DMARCTagValueOptionalFields):
     """Structure for a DMARC tag value with descriptions"""
+
     name: str
     description: str
 
@@ -216,18 +220,21 @@ DMARCParsedTagsWithDescriptions = dict[str, DMARCTagValueWithDescription]
 
 class ParsedDMARCRecord(TypedDict):
     """Return type for parse_dmarc_record without descriptions"""
+
     tags: DMARCParsedTags
     warnings: list[str]
 
 
 class ParsedDMARCRecordWithDescriptions(TypedDict):
     """Return type for parse_dmarc_record with descriptions"""
+
     tags: DMARCParsedTagsWithDescriptions
     warnings: list[str]
 
 
 class DMARCRecord(TypedDict):
     """Return type for get_dmarc_record without descriptions"""
+
     record: str
     location: str
     parsed: ParsedDMARCRecord
@@ -235,6 +242,7 @@ class DMARCRecord(TypedDict):
 
 class DMARCRecordWithDescriptions(TypedDict):
     """Return type for get_dmarc_record with descriptions"""
+
     record: str
     location: str
     parsed: ParsedDMARCRecordWithDescriptions
@@ -242,6 +250,7 @@ class DMARCRecordWithDescriptions(TypedDict):
 
 class DMARCResults(TypedDict):
     """Success return type for check_dmarc"""
+
     record: str
     location: str
     valid: bool
@@ -251,11 +260,13 @@ class DMARCResults(TypedDict):
 
 class _DMARCErrorResultsOptionalFields(TypedDict, total=False):
     """Optional fields for DMARCErrorResults"""
+
     target: str
 
 
 class DMARCErrorResults(_DMARCErrorResultsOptionalFields):
     """Error return type for check_dmarc"""
+
     record: None
     location: None
     valid: bool
@@ -264,6 +275,7 @@ class DMARCErrorResults(_DMARCErrorResultsOptionalFields):
 
 class DMARCErrorData(TypedDict, total=False):
     """Optional data structure for DMARCError"""
+
     target: str
 
 
