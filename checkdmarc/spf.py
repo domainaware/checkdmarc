@@ -7,7 +7,7 @@ import ipaddress
 import logging
 import re
 from typing import Optional, TypedDict, Union
-from collections. abc import Sequence
+from collections.abc import Sequence
 
 import dns
 import dns.exception
@@ -16,7 +16,7 @@ from dns.nameserver import Nameserver
 import pyleri
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
-from checkdmarc. utils import (
+from checkdmarc.utils import (
     DNSException,
     DNSExceptionNXDOMAIN,
     MXHost,
@@ -31,7 +31,7 @@ from checkdmarc. utils import (
 """Copyright 2019-2025 Sean Whalen
 
 Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
+you may not use this file except in compliance with the License. 
 You may obtain a copy of the License at
 
    https://www.apache.org/licenses/LICENSE-2.0
@@ -49,7 +49,7 @@ SPF_MECHANISM_REGEX_STRING = (
     r"(mx: ? |ip4:?|ip6:?|exists:?|include:?|all|a:?|redirect=|exp=|ptr: ?)"
     r"([\w+/_. :\-{}%]*)"
 )
-AFTER_ALL_REGEX_STRING = r"(? : ^|\s)[+\-~?]?all\s+(. +)"
+AFTER_ALL_REGEX_STRING = r"(?: ^|\s)[+\-~?]?all\s+(. +)"
 
 SPF_MECHANISM_REGEX = re.compile(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re. IGNORECASE)
@@ -147,7 +147,7 @@ class _SPFGrammar(pyleri.Grammar):
     mechanism = pyleri.Regex(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 
     # Note: Pyleri skips whitespace by default; explicitly matching whitespace
-    # would break many valid records.  We keep the grammar permissive here and
+    # would break many valid records. We keep the grammar permissive here and
     # perform whitespace separation checks in Python before invoking the grammar.
     START = pyleri.Sequence(version_tag, pyleri.Repeat(mechanism))
 
@@ -234,7 +234,7 @@ def ptr_match(
     domain: str,
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver. Resolver] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
 ) -> bool:
@@ -262,7 +262,7 @@ def ptr_match(
         timeout_retries=timeout_retries,
     )
     for name in hostnames:
-        if not name.endswith(domain):
+        if not name. endswith(domain):
             continue
         ips = get_a_records(
             domain,
@@ -283,7 +283,7 @@ def _raise_macro_syntax_error(
     syntax_error_marker: str,
 ) -> None:
     """Raise SPFSyntaxError with a caret-like marker inside the bad value."""
-    marked_value = value[:pos] + syntax_error_marker + value[pos:]
+    marked_value = value[: pos] + syntax_error_marker + value[pos:]
     raise SPFSyntaxError(
         f"{domain}:  Invalid SPF macro syntax at position {pos} "
         f"(marked with {syntax_error_marker}) in value:  {marked_value}"
@@ -321,7 +321,7 @@ def _validate_spf_macros(
             i += 2
             continue
 
-        # Macro-expand:  %{... }
+        # Macro-expand:  %{...}
         if next_ch != "{":
             _raise_macro_syntax_error(value, i, domain, syntax_error_marker)
 
@@ -376,7 +376,7 @@ def query_spf_record(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     quoted_txt_segments: bool = False,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    resolver: Optional[dns.resolver. Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
 ) -> SPFQueryResults:
@@ -446,7 +446,7 @@ def query_spf_record(
             #
             # Starting with the set of records that were returned by the lookup,
             # discard records that do not begin with a version section of exactly
-            # "v=spf1".   Note that the version section is terminated by either an
+            # "v=spf1".  Note that the version section is terminated by either an
             # SP character or the end of the record.  As an example, a record with
             # a version section of "v=spf10" does not match and is discarded.
             if record.strip('"').startswith(txt_prefix):
@@ -525,7 +525,7 @@ def parse_spf_record(
     parked:  bool = False,
     seen:  Optional[list] = None,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    resolver: Optional[dns. resolver.Resolver] = None,
     recursion:  Optional[list[str]] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
@@ -585,14 +585,14 @@ def parse_spf_record(
             )
 
     # Reject records where an 'all' mechanism is concatenated to the previous
-    # term without a separating space, e.g., "ip4: 203.0.113.7~all". 
+    # term without a separating space, e.g., "ip4:203.0.113.7~all". 
     m = CONCATENATED_ALL_REGEX.search(record)
     if m:
         pos = m.start(1)
         marked_record = record[:pos] + syntax_error_marker + record[pos:]
         raise SPFSyntaxError(
             f"{domain}: Expected whitespace before 'all' at position {pos} "
-            f"(marked with {syntax_error_marker}) in:  {marked_record}"
+            f"(marked with {syntax_error_marker}) in: {marked_record}"
         )
 
     # For grammar-level syntax checking, ignore everything after the first
@@ -644,7 +644,7 @@ def parse_spf_record(
             # macros. It MUST NOT contribute to DNS lookup counting and
             # SHOULD NOT be resolved during static parsing.
             #
-            # Therefore, do not perform any DNS lookups here.  Simply
+            # Therefore, do not perform any DNS lookups here. Simply
             # preserve the provided value (which may include macros) so a
             # caller with SMTP context can expand it at evaluation time.
             exp = items_after_all[0]. split("=")
@@ -670,7 +670,7 @@ def parse_spf_record(
                         timeout_retries=timeout_retries,
                     )
                     if len(exp_txt_records) == 0:
-                        warnings.append(f"No TXT records at exp value {exp}.")
+                        warnings. append(f"No TXT records at exp value {exp}.")
                     if len(exp_txt_records) > 1:
                         warnings.append(f"Too many TXT records at exp value {exp}.")
                 except Exception as e:
@@ -792,11 +792,11 @@ def parse_spf_record(
                         "value": value,
                         "dns_lookups": mechanism_dns_lookups,
                         "void_dns_lookups":  mechanism_void_dns_lookups,
-                        "hosts": {},
+                        "hosts": [],
                     }
                     parsed["mechanisms"].append(mx_mechanism)
 
-                else:
+                else: 
                     mechanism_dns_lookups += 1
                     total_dns_lookups += 1
                     # Use the current domain if no value was provided
@@ -814,7 +814,7 @@ def parse_spf_record(
 
                     if len(mx_hosts) == 0:
                         # MX query resulted in no records; count a single void lookup
-                        # in the outer warning handler to avoid double counting. 
+                        # in the outer warning handler to avoid double counting.
                         raise _SPFMissingRecords(
                             f"An mx mechanism points to {value.lower()}, "
                             "but that domain/subdomain does not have any MX records."
@@ -1032,7 +1032,7 @@ def parse_spf_record(
                         raise SPFSyntaxError(f"{mechanism} must have a value")
                     if value.lower() in recursion:
                         pointer = " -> ". join(recursion + [value.lower()])
-                        raise SPFIncludeLoop(f"Include loop:  {pointer}")
+                        raise SPFIncludeLoop(f"Include loop: {pointer}")
                     if value.lower() in seen:
                         raise _SPFDuplicateInclude(
                             f"Duplicate include: {value.lower()}"
@@ -1074,7 +1074,7 @@ def parse_spf_record(
                             "dns_lookups": combined_mechanism_lookups,
                             "void_dns_lookups": combined_mechanism_void_dns_lookups,
                             "record": include_record,
-                            "parsed": include["parsed"],
+                            "parsed":  include["parsed"],
                             "warnings":  include["warnings"],
                         }
                         parsed["mechanisms"].append(include_mechanism)
@@ -1196,7 +1196,7 @@ def parse_spf_record(
             "record": record,
         }
         return error_result
-    else: 
+    else:
         success_result: ParsedSPFRecordSuccess = {
             "dns_lookups": total_dns_lookups,
             "void_dns_lookups": total_void_dns_lookups,
@@ -1212,7 +1212,7 @@ def get_spf_record(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2. 0,
+    timeout: float = 2.0,
     timeout_retries: int = 2,
 ) -> SPFRecordResults:
     """
@@ -1259,9 +1259,9 @@ def get_spf_record(
 def check_spf(
     domain: str,
     *,
-    parked:  bool = False,
+    parked: bool = False,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns. resolver.Resolver] = None,
+    resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
 ) -> dict:
