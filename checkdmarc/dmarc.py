@@ -129,6 +129,14 @@ class MultipleDMARCRecords(DMARCError):
 class _DMARCGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for DMARC records"""
 
+    version_tag = pyleri.Regex(DMARC_VERSION_REGEX_STRING, re.IGNORECASE)
+    tag_value = pyleri.Regex(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    START = pyleri.Sequence(
+        version_tag,
+        pyleri.List(
+            tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
+        ),
+    )
 
 class DMARCTagMapItem(TypedDict):
     name: str
