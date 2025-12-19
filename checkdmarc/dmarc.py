@@ -1568,7 +1568,8 @@ def check_dmarc(
             "error": str(error),
         }
         if hasattr(error, "data") and error.data:
-            for key in error.data:
-                error_results[key] = error.data[key]
+            # error.data only contains "target" key based on codebase analysis
+            if "target" in error.data:
+                error_results["target"] = error.data["target"]
         
         return error_results
