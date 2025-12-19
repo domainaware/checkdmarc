@@ -249,7 +249,12 @@ class DMARCResults(TypedDict):
     tags: Union[DMARCParsedTags, DMARCParsedTagsWithDescriptions]
 
 
-class DMARCErrorResults(TypedDict):
+class _DMARCErrorResultsOptionalFields(TypedDict, total=False):
+    """Optional fields for DMARCErrorResults"""
+    target: str
+
+
+class DMARCErrorResults(_DMARCErrorResultsOptionalFields):
     """Error return type for check_dmarc"""
     record: None
     location: None
@@ -1564,6 +1569,6 @@ def check_dmarc(
         }
         if hasattr(error, "data") and error.data:
             for key in error.data:
-                error_results[key] = error.data[key]  # type: ignore[literal-required]
+                error_results[key] = error.data[key]
         
         return error_results
