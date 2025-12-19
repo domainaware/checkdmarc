@@ -4,30 +4,34 @@
 
 from __future__ import annotations
 
-import logging
-import dns
 import json
-from collections import OrderedDict
-from typing import Union, Optional, Any
-from time import sleep
-from io import StringIO
+import logging
 from csv import DictWriter
+from io import StringIO
+from time import sleep
+from typing import Optional, Union
+from collections.abc import Sequence
+
+import dns.resolver
+from dns.nameserver import Nameserver
 
 import checkdmarc._constants
-from checkdmarc.utils import (
-    get_base_domain,
-    normalize_domain,
-    get_nameservers,
-    DNSException,
-)
+from checkdmarc.bimi import check_bimi
+from checkdmarc.dmarc import check_dmarc
 from checkdmarc.dnssec import test_dnssec
-from checkdmarc.soa import check_soa
 from checkdmarc.mta_sts import check_mta_sts
 from checkdmarc.smtp import check_mx
-from checkdmarc.spf import check_spf
-from checkdmarc.dmarc import check_dmarc
-from checkdmarc.bimi import check_bimi
 from checkdmarc.smtp_tls_reporting import check_smtp_tls_reporting
+from checkdmarc.soa import check_soa
+from checkdmarc.spf import check_spf
+from checkdmarc.utils import (
+    DNSException,
+    MXHost,
+    NameserverResult,
+    get_base_domain,
+    get_nameservers,
+    normalize_domain,
+)
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -50,18 +54,18 @@ __version__ = checkdmarc._constants.__version__
 def check_domains(
     domains: list[str],
     *,
-    parked: Optional[bool] = False,
-    approved_nameservers: Optional[list[str]] = None,
+    parked: bool = False,
+    approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
     approved_mx_hostnames: Optional[bool] = None,
-    skip_tls: Optional[bool] = False,
-    bimi_selector: Optional[str] = "default",
-    include_tag_descriptions: Optional[bool] = False,
-    nameservers: Optional[list[str]] = None,
+    skip_tls: bool = False,
+    bimi_selector: str = "default",
+    include_tag_descriptions: bool = False,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-    wait: Optional[float] = 0.0,
-) -> Union[OrderedDict, list[OrderedDict[str, Any]]]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+    wait: float = 0.0,
+) -> MXHost:
     """
     Check the given domains for SPF and DMARC records, parse them, and return
     them
@@ -84,15 +88,15 @@ def check_domains(
         wait (float): number of seconds to wait between processing domains
 
     Returns:
-       An ``OrderedDict`` or ``list`` of  `OrderedDict` with the following keys
+       A ``dict`` or ``list`` of  `dict` with the following keys
 
        - ``domain`` - The domain name
        - ``base_domain`` The base domain
        - ``mx`` - See :func:`checkdmarc.smtp.get_mx_hosts`
        - ``spf`` -  A ``valid`` flag, plus the output of
-         :func:`checkdmarc.spf.parse_spf_record` or an ``error``
+         :func:`checkdmarc.spf.parse_spf_record` or a ``error``
        - ``dmarc`` - A ``valid`` flag, plus the output of
-         :func:`checkdmarc.dmarc.parse_dmarc_record` or an ``error``
+         :func:`checkdmarc.dmarc.parse_dmarc_record` or a ``error``
     """
     domains = sorted(
         list(
@@ -117,16 +121,14 @@ def check_domains(
         domain = normalize_domain(domain)
         logging.debug(f"Checking: {domain}")
 
-        domain_results = OrderedDict(
-            [
-                ("domain", domain),
-                ("base_domain", get_base_domain(domain)),
-                ("dnssec", None),
-                ("soa", {}),
-                ("ns", []),
-                ("mx", []),
-            ]
-        )
+        domain_results = {
+            "domain": domain,
+            "base_domain": get_base_domain(domain),
+            "dnssec": None,
+            "soa": {},
+            "ns": [],
+            "mx": [],
+        }
 
         domain_results["dnssec"] = test_dnssec(
             domain, nameservers=nameservers, timeout=timeout
@@ -216,12 +218,12 @@ def check_domains(
 def check_ns(
     domain: str,
     *,
-    approved_nameservers: Optional[list[str]] = None,
-    nameservers: Optional[list[str]] = None,
+    approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> OrderedDict[str, Any]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> NameserverResult:
     """
     Returns a dictionary of nameservers and warnings or a dictionary with an
     empty list and an error.
@@ -234,7 +236,7 @@ def check_ns(
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
     Returns:
-        OrderedDict: A dictionary with the following keys:
+        dict: A dictionary with the following keys:
 
               - ``hostnames`` - A list of nameserver hostnames
               - ``warnings``  - A list of warnings
@@ -255,12 +257,12 @@ def check_ns(
             timeout_retries=timeout_retries,
         )
     except DNSException as error:
-        ns_results = OrderedDict([("hostnames", []), ("error", error.__str__())])
+        ns_results = {"hostnames": [], "error": error.__str__()}
     return ns_results
 
 
 def results_to_json(
-    results: Union[OrderedDict[str, Any], list[OrderedDict[str, Any]]],
+    results: Union[dict[str, object], list[dict[str, str]]],
 ) -> str:
     """
     Converts a dictionary of results or list of results to a JSON string
@@ -276,7 +278,7 @@ def results_to_json(
 
 def results_to_csv_rows(
     results: Union[dict, list[dict]],
-) -> list[dict][str, Union[str, int, float]]:
+) -> list[dict]:
     """
     Converts a results dictionary or list of dictionaries and returns a
     list of CSV row dictionaries
@@ -289,11 +291,11 @@ def results_to_csv_rows(
     """
     rows = []
 
-    if type(results) is OrderedDict:
+    if type(results) is dict:
         results = [results]
 
     for result in results:
-        row = dict()
+        row = {}
         ns = result["ns"]
         mx = result["mx"]
         _mta_sts = result["mta_sts"]
@@ -414,7 +416,7 @@ def results_to_csv_rows(
     return rows
 
 
-def results_to_csv(results: OrderedDict[str, Any]) -> str:
+def results_to_csv(results: dict[str, object]) -> str:
     """
     Converts a dictionary of results to CSV
 

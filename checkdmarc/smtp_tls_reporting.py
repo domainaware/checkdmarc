@@ -6,12 +6,13 @@ from __future__ import annotations
 
 import logging
 import re
-from collections import OrderedDict
+from typing import Optional, TypedDict, Union, Literal
+from collections.abc import Sequence
 
-from typing import Any, Optional
-
-import dns
-from pyleri import Grammar, List, Regex, Sequence
+import dns.exception
+import dns.resolver
+from dns.nameserver import Nameserver
+import pyleri
 
 from checkdmarc._constants import SYNTAX_ERROR_MARKER
 from checkdmarc.utils import (
@@ -53,14 +54,10 @@ SMTPTLSREPORTING_URI_REGEX = re.compile(
 )
 
 
-class _SMTPTLSReportingWarning(Exception):
-    """Raised when a non-fatal SMTP TLS Reporting error occurs"""
-
-
 class SMTPTLSReportingError(Exception):
     """Raised when a fatal SMTP TLS Reporting error occurs"""
 
-    def __init__(self, msg: str, data: dict = None):
+    def __init__(self, msg: str, data: Optional[dict] = None):
         """
         Args:
             msg (str): The error message
@@ -111,39 +108,81 @@ class MultipleSMTPTLSReportingRecords(SMTPTLSReportingError):
     """Raised when multiple SMTP TLS Reporting records are found"""
 
 
-class _SMTPTLSReportingGrammar(Grammar):
+class _SMTPTLSReportingGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for SMTP TLS Reporting records"""
 
-    version_tag = Regex(SMTPTLSREPORTING_VERSION_REGEX_STRING)
-    tag_value = Regex(SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
-    START = Sequence(
+    version_tag = pyleri.Regex(SMTPTLSREPORTING_VERSION_REGEX_STRING)
+    tag_value = pyleri.Regex(SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    START = pyleri.Sequence(
         version_tag,
-        List(tag_value, delimiter=Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True),
+        pyleri.List(
+            tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
+        ),
     )
 
 
-smtp_rpt_tags = OrderedDict(
-    v=OrderedDict(name="Version", description="Must be TLSRPTv1", required=True),
-    rua=OrderedDict(
-        name="Aggregate Reporting URIs",
-        description="A URI specifying the endpoint to which aggregate "
+class SMTPTLSReportingQueryResults(TypedDict):
+    record: str
+    warnings: list[str]
+
+
+class SMTPTLSReportingTagValue(TypedDict):
+    value: Union[str, list[str]]
+
+
+class _SMTPTLSReportingTagValueOptional(TypedDict, total=False):
+    description: str
+
+
+class SMTPTLSReportingTagValueWithDescription(SMTPTLSReportingTagValue, _SMTPTLSReportingTagValueOptional):
+    pass
+
+
+# Tags is a dict mapping tag names to tag values
+SMTPTLSReportingTags = dict[str, SMTPTLSReportingTagValue]
+SMTPTLSReportingTagsWithDescription = dict[str, SMTPTLSReportingTagValueWithDescription]
+
+
+class ParsedSMTPTLSReportingRecord(TypedDict):
+    tags: Union[SMTPTLSReportingTags, SMTPTLSReportingTagsWithDescription]
+    warnings: list[str]
+
+
+class SMTPTLSReportingFailure(TypedDict):
+    valid: Literal[False]
+    error: str
+
+
+class SMTPTLSReportingSuccess(TypedDict):
+    valid: Literal[True]
+    tags: Union[SMTPTLSReportingTags, SMTPTLSReportingTagsWithDescription]
+    warnings: list[str]
+
+
+SMTPTLSReportingResults = Union[SMTPTLSReportingSuccess, SMTPTLSReportingFailure]
+
+smtp_rpt_tags = {
+    "v": {"name": "Version", "description": "Must be TLSRPTv1", "required": True},
+    "rua": {
+        "name": "Aggregate Reporting URIs",
+        "description": "A URI specifying the endpoint to which aggregate "
         "information about policy validation results should be "
         'sent. Two URI schemes are supported: "mailto" and '
         '"https".  As with DMARC the Policy Domain can specify a '
         "comma-separated list of URIs.",
-        required=False,
-    ),
-)
+        "required": False,
+    },
+}
 
 
 def query_smtp_tls_reporting_record(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> OrderedDict[str, Any]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> SMTPTLSReportingQueryResults:
     """
     Queries DNS for an SMTP TLS Reporting record
 
@@ -156,7 +195,7 @@ def query_smtp_tls_reporting_record(
         timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
+        dict: a ``dict`` with the following keys:
                      - ``record`` - the unparsed SMTP TLS Reporting record
                      - ``warnings`` - warning conditions found
 
@@ -234,15 +273,17 @@ def query_smtp_tls_reporting_record(
             "An SMTP TLS Reporting record does not exist."
         )
 
-    return OrderedDict([("record", sts_record), ("warnings", warnings)])
+    results: SMTPTLSReportingQueryResults = {"record": sts_record, "warnings": warnings}
+
+    return results
 
 
 def parse_smtp_tls_reporting_record(
     record: str,
     *,
-    include_tag_descriptions: Optional[bool] = False,
-    syntax_error_marker: Optional[str] = SYNTAX_ERROR_MARKER,
-) -> OrderedDict[str, Any]:
+    include_tag_descriptions: bool = False,
+    syntax_error_marker: str = SYNTAX_ERROR_MARKER,
+) -> ParsedSMTPTLSReportingRecord:
     """
     Parses an SMTP TLS Reporting record
 
@@ -252,8 +293,8 @@ def parse_smtp_tls_reporting_record(
         syntax_error_marker (str): The maker for pointing out syntax errors
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
-         - ``tags`` - An ``OrderedDict`` of SMTP TLS Reporting tags
+        dict: a ``dict`` with the following keys:
+         - ``tags`` - a ``dict`` of SMTP TLS Reporting tags
 
            - ``value`` - The SMTP TLS Reporting tag value
            - ``description`` - A description of the tag/value
@@ -303,7 +344,7 @@ def parse_smtp_tls_reporting_record(
         )
 
     pairs: list[tuple[str, str]] = SMTPTLSREPORTING_TAG_VALUE_REGEX.findall(record)
-    tags = OrderedDict()
+    tags = {}
 
     seen_tags: list[str] = []
     duplicate_tags: list[str] = []
@@ -321,11 +362,11 @@ def parse_smtp_tls_reporting_record(
         else:
             seen_tags.append(tag)
         if len(duplicate_tags):
-            duplicate_tags = ",".join(duplicate_tags)
+            duplicate_tags_str = ",".join(duplicate_tags)
             raise InvalidSMTPTLSReportingTag(
-                f"Duplicate {duplicate_tags} tags are not permitted"
+                f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
-        tags[tag] = OrderedDict(value=tag_value)
+        tags[tag] = {"value": tag_value}
         if include_tag_descriptions:
             tags[tag]["description"] = smtp_rpt_tags[tag]["description"]
     if "rua" not in tags:
@@ -336,18 +377,19 @@ def parse_smtp_tls_reporting_record(
             raise SMTPTLSReportingSyntaxError(
                 f"{uri} is not a valid SMTP TLS reporting URI."
             )
+    results: ParsedSMTPTLSReportingRecord = {"tags": tags, "warnings": warnings}
 
-    return OrderedDict(tags=tags, warnings=warnings)
+    return results
 
 
 def check_smtp_tls_reporting(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> OrderedDict[str, Any]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> SMTPTLSReportingResults:
     """
     Returns a dictionary with a parsed SMTP-TLS Reporting policy or an error.
 
@@ -360,7 +402,7 @@ def check_smtp_tls_reporting(
         timeout_retries (int): The number of times to reattempt a query after a timeout
 
     Returns:
-        OrderedDict: An ``OrderedDict`` with the following keys:
+        dict: a ``dict`` with the following keys:
 
                        - ``valid`` - True
                          ``tags`` - A dictionary of tags and values
@@ -373,7 +415,6 @@ def check_smtp_tls_reporting(
                       - ``valid`` - False
     """
     domain = normalize_domain(domain)
-    smtp_tls_reporting_results = OrderedDict([("valid", True)])
     try:
         smtp_tls_reporting_record = query_smtp_tls_reporting_record(
             domain,
@@ -387,10 +428,16 @@ def check_smtp_tls_reporting(
             smtp_tls_reporting_record["record"]
         )
         warnings += smtp_tls_reporting_record["warnings"]
-        smtp_tls_reporting_results["tags"] = smtp_tls_reporting_record["tags"]
+        tags = smtp_tls_reporting_record["tags"]
+        smtp_tls_reporting_results: SMTPTLSReportingResults = {
+            "valid": True,
+            "tags": tags,
+            "warnings": warnings,
+        }
+        smtp_tls_reporting_results["tags"] = tags
         smtp_tls_reporting_results["warnings"] = warnings
     except SMTPTLSReportingError as error:
-        smtp_tls_reporting_results["valid"] = False
-        smtp_tls_reporting_results["error"] = str(error)
+        failure: SMTPTLSReportingFailure = {"valid": False, "error": str(error)}
+        return failure
 
     return smtp_tls_reporting_results

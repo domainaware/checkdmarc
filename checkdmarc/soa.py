@@ -1,16 +1,40 @@
 from __future__ import annotations
 
-from typing import Any, Optional
-
 import re
-from collections import OrderedDict
+from typing import Optional, TypedDict, Union
+from collections.abc import Sequence
 
-import dns
+import dns.resolver
+from dns.nameserver import Nameserver
+
 from checkdmarc.utils import get_soa_record
 
 """Functions for parsing DNS Start of Authority records"""
 
 U32_MAX = 2**32 - 1
+
+
+class ParsedSOARecord(TypedDict):
+    primary_nameserver: str
+    rname_email_address: str
+    serial: int
+    refresh: int
+    retry: int
+    expire: int
+    minimum: int
+
+
+class SOARecordSuccessful(TypedDict):
+    record: str
+    values: ParsedSOARecord
+
+
+class SOARecordError(TypedDict):
+    record: Union[str, None]
+    error: str
+
+
+SOARecordResults = Union[SOARecordSuccessful, SOARecordError]
 
 
 def soa_rname_to_email(rname: str) -> str:
@@ -28,9 +52,9 @@ def soa_rname_to_email(rname: str) -> str:
     return f"{local}@{domain}"
 
 
-def parse_soa_string(rr: str) -> OrderedDict:
+def parse_soa_string(rr: str) -> ParsedSOARecord:
     """
-    Parses a raw SOA record string and returns an OrderedDict with validated fields.
+    Parses a raw SOA record string and returns an dict with validated fields.
     """
     if not isinstance(rr, str) or not rr.strip():
         raise ValueError("SOA rrdata must be a non-empty string.")
@@ -52,27 +76,27 @@ def parse_soa_string(rr: str) -> OrderedDict:
             raise ValueError(f"{name} out of range: {n}")
         return n
 
-    return OrderedDict(
-        [
-            ("primary_nameserver", mname.rstrip(".")),
-            ("rname_email_address", soa_rname_to_email(rname)),
-            ("serial", check_u32("serial", serial)),
-            ("refresh", check_u32("refresh", refresh)),
-            ("retry", check_u32("retry", retry)),
-            ("expire", check_u32("expire", expire)),
-            ("minimum", check_u32("minimum", minimum)),
-        ]
-    )
+    soa_record: ParsedSOARecord = {
+        "primary_nameserver": mname.rstrip("."),
+        "rname_email_address": soa_rname_to_email(rname),
+        "serial": check_u32("serial", serial),
+        "refresh": check_u32("refresh", refresh),
+        "retry": check_u32("refresh", retry),
+        "expire": check_u32("refresh", expire),
+        "minimum": check_u32("refresh", minimum),
+    }
+
+    return soa_record
 
 
 def check_soa(
     domain: str,
     *,
-    nameservers: Optional[list[str]] = None,
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: Optional[float] = 2.0,
-    timeout_retries: Optional[int] = 2,
-) -> OrderedDict[str, Any]:
+    timeout: float = 2.0,
+    timeout_retries: int = 2,
+) -> SOARecordResults:
     """
     Returns a dictionary of a domain's SOA record and a parsed version of the record or a dictionary with an
     the record and an error.
@@ -85,7 +109,7 @@ def check_soa(
         timeout (float): number of seconds to wait for a record from DNS
         timeout_retries (int): The number of times to reattempt a query after a timeout
     Returns:
-        OrderedDict: A dictionary with the following keys:
+        dict: A dictionary with the following keys:
 
               - ``record`` - The SOA record as a string
               - ``values``  - A parsed version of the SOA record
@@ -104,12 +128,16 @@ def check_soa(
             timeout=timeout,
             timeout_retries=timeout_retries,
         )
-        results = OrderedDict([("record", record)])
+
     except Exception as e:
-        results = OrderedDict([("error", str(e))])
-        return results
+        failure_results: SOARecordError = {"record": None, "error": str(e)}
+        return failure_results
     try:
-        results["values"] = parse_soa_string(record)
+        results: SOARecordSuccessful = {
+            "record": record,
+            "values": parse_soa_string(record),
+        }
+        return results
     except Exception as e:
-        results["error"] = str(e)
-    return results
+        failure_results: SOARecordError = {"record": record, "error": str(e)}
+        return failure_results

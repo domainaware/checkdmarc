@@ -9,6 +9,7 @@ name = "checkdmarc"
 dynamic = [
     "version",
 ]
+python_requires = ">=3.9"
 description = "A Python module and command line parser for SPF and DMARC records"
 readme = "README.md"
 license = "Apache-2.0"
