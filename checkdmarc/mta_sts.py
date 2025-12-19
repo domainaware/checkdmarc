@@ -354,7 +354,7 @@ def parse_mta_sts_record(
         )
 
     pairs: list[tuple[str, str]] = STS_TAG_VALUE_REGEX.findall(record)
-    tags = dict()
+    tags = {}
 
     seen_tags: list[str] = []
     duplicate_tags: list[str] = []
@@ -450,7 +450,7 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     Raises:
         :exc:`checkdmarc.mta_sts.MTASTSPolicySyntaxError`
     """
-    parsed_policy = dict()
+    parsed_policy = {}
     warnings = []
     mx = []
     versions = ["STSv1"]

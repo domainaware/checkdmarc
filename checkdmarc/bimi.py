@@ -377,7 +377,7 @@ class _BIMIGrammar(pyleri.Grammar):
 
 
 def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict:
-    metadata = dict()
+    metadata = {}
     if isinstance(raw_xml, bytes):
         raw_xml = raw_xml.decode(errors="ignore")
     try:
@@ -477,7 +477,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
             x509.DNSName
         )  # pyright: ignore[reportAttributeAccessIssue]
 
-    metadata = dict()
+    metadata = {}
     valid = True
     validation_errors = []
     warnings = []
@@ -869,7 +869,7 @@ def parse_bimi_record(
         :exc:`checkdmarc.bimi.InvalidBIMITagValue`
         :exc:`checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe`
     """
-    results = dict()
+    results = {}
     svg_metadata = None
     cert_metadata = None
     logging.debug("Parsing the BIMI record")
@@ -906,7 +906,7 @@ def parse_bimi_record(
         )
 
     pairs: list[tuple[str, str]] = BIMI_TAG_VALUE_REGEX.findall(record)
-    tags = dict()
+    tags = {}
     hash_match = False
 
     seen_tags: list[str] = []

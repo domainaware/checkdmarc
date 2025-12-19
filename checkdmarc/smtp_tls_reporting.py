@@ -336,7 +336,7 @@ def parse_smtp_tls_reporting_record(
         )
 
     pairs: list[tuple[str, str]] = SMTPTLSREPORTING_TAG_VALUE_REGEX.findall(record)
-    tags = dict()
+    tags = {}
 
     seen_tags: list[str] = []
     duplicate_tags: list[str] = []

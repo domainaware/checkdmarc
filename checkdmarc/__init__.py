@@ -297,7 +297,7 @@ def results_to_csv_rows(
         results = [results]
 
     for result in results:
-        row = dict()
+        row = {}
         ns = result["ns"]
         mx = result["mx"]
         _mta_sts = result["mta_sts"]
