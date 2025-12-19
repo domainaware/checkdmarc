@@ -140,7 +140,7 @@ def test_tls(
         server.ehlo_or_helo_if_needed()
         tls = True
         if cache is not None:
-            cache[hostname] = dict(tls=tls, error=None)
+            cache[hostname] = {"tls": tls, "error": None}
         try:
             server.quit()
             server.close()
@@ -151,37 +151,37 @@ def test_tls(
     except socket.gaierror:
         error = "DNS resolution failed"
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except ConnectionRefusedError:
         error = "Connection refused"
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except ConnectionResetError:
         error = "Connection reset"
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except ConnectionAbortedError:
         error = "Connection aborted"
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except TimeoutError:
         error = "Connection timed out"
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except BlockingIOError as e:
         error = e.__str__()
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except ssl.SSLError as e:
         error = f"SSL error: {e}"
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPConnectError as e:
         message = e.__str__()
@@ -192,12 +192,12 @@ def test_tls(
             message = f" SMTP error code {error_code}"
         error = f"Could not connect: {message}"
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPHeloError as e:
         error = f"HELO error: {e}"
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPException as e:
         error = e.__str__()
@@ -207,17 +207,17 @@ def test_tls(
         except ValueError:
             pass
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except OSError as e:
         error = e.__str__()
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except Exception as e:
         error = e.__str__()
         if cache:
-            cache[hostname] = dict(tls=False, error=error)
+            cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
 
 
@@ -265,7 +265,7 @@ def test_starttls(
             server.ehlo()
             starttls = True
             if cache:
-                cache[hostname] = dict(starttls=starttls, error=None)
+                cache[hostname] = {"starttls": starttls, "error": None}
         try:
             server.quit()
             server.close()
@@ -277,37 +277,37 @@ def test_starttls(
     except socket.gaierror:
         error = "DNS resolution failed"
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except ConnectionRefusedError:
         error = "Connection refused"
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except ConnectionResetError:
         error = "Connection reset"
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except ConnectionAbortedError:
         error = "Connection aborted"
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except TimeoutError:
         error = "Connection timed out"
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except BlockingIOError as e:
         error = e.__str__()
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except ssl.SSLError as e:
         error = f"SSL error: {e}"
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPConnectError as e:
         message = e.__str__()
@@ -318,12 +318,12 @@ def test_starttls(
             message = f" SMTP error code {error_code}"
         error = f"Could not connect: {message}"
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPHeloError as e:
         error = f"HELO error: {e}"
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPException as e:
         error = e.__str__()
@@ -333,17 +333,17 @@ def test_starttls(
         except ValueError:
             pass
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except OSError as e:
         error = e.__str__()
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except Exception as e:
         error = e.__str__()
         if cache:
-            cache[hostname] = dict(starttls=False, error=error)
+            cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
 
 
@@ -399,13 +399,11 @@ def get_mx_hosts(
     )
     for record in mx_records:
         hosts.append(
-            dict(
-                [
-                    ("preference", record["preference"]),
-                    ("hostname", record["hostname"].lower()),
-                    ("addresses", []),
-                ]
-            )
+            {
+                "preference": record["preference"],
+                "hostname": record["hostname"].lower(),
+                "addresses": [],
+            }
         )
     if parked and len(hosts) > 0:
         warnings.append("MX records found on parked domains")

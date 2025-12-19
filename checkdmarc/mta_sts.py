@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, Union, TypedDict, Literal, cast, Any
+from typing import Optional, Union, TypedDict, Literal
 from collections.abc import Sequence
 
 import dns.resolver
@@ -109,13 +109,9 @@ class MTASTSQueryResults(TypedDict):
     warnings: list[str]
 
 
-class MTASTSTags(TypedDict):
-    value: str
-
-
-class MTASTSTagsWithDescription(TypedDict):
-    value: str
-    description: str
+# Tags is a dict mapping tag names to tag values (simple strings in MTA-STS)
+MTASTSTags = dict[str, str]
+MTASTSTagsWithDescription = dict[str, str]  # Currently no difference, kept for API compat
 
 
 class ParsedMTASTSRecord(TypedDict):
@@ -143,7 +139,7 @@ class DownloadedMTASTSPolicy(TypedDict):
 
 
 class ParsedMTASTSPolicy(TypedDict):
-    v: Literal["STSv1"]
+    version: Literal["STSv1"]
     mode: Union[Literal["enforce"], Literal["testing"], Literal["none"]]
     max_age: int
     mx: list[str]
@@ -152,6 +148,21 @@ class ParsedMTASTSPolicy(TypedDict):
 class MTASTSPolicyParsingResults(TypedDict):
     policy: ParsedMTASTSPolicy
     warnings: list[str]
+
+
+class MTASTSCheckSuccess(TypedDict):
+    valid: Literal[True]
+    id: str
+    policy: ParsedMTASTSPolicy
+    warnings: list[str]
+
+
+class MTASTSCheckFailure(TypedDict):
+    valid: Literal[False]
+    error: str
+
+
+MTASTSCheckResults = Union[MTASTSCheckSuccess, MTASTSCheckFailure]
 
 
 class _STSGrammar(pyleri.Grammar):
@@ -167,24 +178,24 @@ class _STSGrammar(pyleri.Grammar):
     )
 
 
-mta_sts_tags = dict(
-    v=dict(
-        name="Version",
-        required=True,
-        description='Currently, only "STSv1" is supported.',
-    ),
-    id=dict(
-        name="id",
-        required=True,
-        description="A short string used to track policy "
+mta_sts_tags = {
+    "v": {
+        "name": "Version",
+        "required": True,
+        "description": 'Currently, only "STSv1" is supported.',
+    },
+    "id": {
+        "name": "id",
+        "required": True,
+        "description": "A short string used to track policy "
         "updates.  This string MUST uniquely identify "
         "a given instance of a policy, such that "
         "senders can determine when the policy has "
         'been updated by comparing to the "id" of a '
         "previously seen policy. There is no implied "
         'ordering of "id" fields between revisions.',
-    ),
-)
+    },
+}
 
 STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
@@ -354,7 +365,7 @@ def parse_mta_sts_record(
         )
 
     pairs: list[tuple[str, str]] = STS_TAG_VALUE_REGEX.findall(record)
-    tags = dict()
+    tags = {}
 
     seen_tags: list[str] = []
     duplicate_tags: list[str] = []
@@ -375,10 +386,6 @@ def parse_mta_sts_record(
             raise InvalidMTASTSTag(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
-    if include_tag_descriptions:
-        tags = cast(MTASTSTagsWithDescription, tags)
-    else:
-        tags = cast(MTASTSTags, tags)
 
     results: ParsedMTASTSRecord = {"tags": tags, "warnings": warnings}
 
@@ -450,7 +457,12 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     Raises:
         :exc:`checkdmarc.mta_sts.MTASTSPolicySyntaxError`
     """
-    parsed_policy = dict()
+    parsed_policy: ParsedMTASTSPolicy = {
+        "version": "STSv1",  # Will be verified below
+        "mode": "none",  # Will be set below
+        "max_age": 0,  # Will be set below
+        "mx": [],  # Will be set below
+    }
     warnings = []
     mx = []
     versions = ["STSv1"]
@@ -506,7 +518,7 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     parsed_policy["mx"] = mx
 
     results: MTASTSPolicyParsingResults = {
-        "policy": cast(ParsedMTASTSPolicy, parsed_policy),
+        "policy": parsed_policy,
         "warnings": warnings,
     }
     return results
@@ -519,7 +531,7 @@ def check_mta_sts(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> MTASTSCheckResults:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.
 
@@ -547,7 +559,6 @@ def check_mta_sts(
                       - ``valid`` - False
     """
     domain = normalize_domain(domain)
-    mta_sts_results = dict([("valid", True)])
     try:
         mta_sts_record = query_mta_sts_record(
             domain,
@@ -558,18 +569,25 @@ def check_mta_sts(
         )
         warnings = mta_sts_record["warnings"]
         mta_sts_record = parse_mta_sts_record(mta_sts_record["record"])
-        mta_sts_results["id"] = mta_sts_record["tags"]["id"]["value"]
+        id_value = mta_sts_record["tags"]["id"]
         policy = download_mta_sts_policy(domain, http_timeout=timeout)
         warnings += policy["warnings"]
         policy = parse_mta_sts_policy(policy["policy"])
         warnings += policy["warnings"]
-        mta_sts_results["policy"] = policy["policy"]
-        mta_sts_results["warnings"] = warnings
+        
+        mta_sts_results: MTASTSCheckSuccess = {
+            "valid": True,
+            "id": id_value,
+            "policy": policy["policy"],
+            "warnings": warnings,
+        }
+        return mta_sts_results
     except MTASTSError as error:
-        mta_sts_results["valid"] = False
-        mta_sts_results["error"] = str(error)
-
-    return mta_sts_results
+        mta_sts_results_failure: MTASTSCheckFailure = {
+            "valid": False,
+            "error": str(error),
+        }
+        return mta_sts_results_failure
 
 
 def mx_in_mta_sts_patterns(mx_hostname: str, mta_sts_mx_patterns: list[str]) -> bool:

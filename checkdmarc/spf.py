@@ -120,7 +120,7 @@ class SPFTooManyDNSLookups(SPFError):
     """Raised when an SPF record requires too many DNS lookups (10 max)"""
 
     def __init__(self, *args, **kwargs):
-        data = dict(dns_lookups=kwargs["dns_lookups"])
+        data = {"dns_lookups": kwargs["dns_lookups"]}
         SPFError.__init__(self, args[0], data=data)
 
 
@@ -128,7 +128,7 @@ class SPFTooManyVoidDNSLookups(SPFError):
     """Raised when an SPF record requires too many void DNS lookups (2 max)"""
 
     def __init__(self, *args, **kwargs):
-        data = dict(void_dns_lookups=kwargs["void_dns_lookups"])
+        data = {"void_dns_lookups": kwargs["void_dns_lookups"]}
         SPFError.__init__(self, args[0], data=data)
 
 
@@ -1221,14 +1221,12 @@ def check_spf(
             - ``valid`` - False
     """
     domain = normalize_domain(domain)
-    spf_results = dict(
-        [
-            ("record", None),
-            ("valid", True),
-            ("dns_lookups", None),
-            ("void_dns_lookups", None),
-        ]
-    )
+    spf_results = {
+        "record": None,
+        "valid": True,
+        "dns_lookups": None,
+        "void_dns_lookups": None,
+    }
     try:
         spf_query = query_spf_record(
             domain,

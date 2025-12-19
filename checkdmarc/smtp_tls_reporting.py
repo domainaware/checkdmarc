@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, TypedDict, Union, Literal, cast
+from typing import Optional, TypedDict, Union, Literal
 from collections.abc import Sequence
 
 import dns.exception
@@ -126,13 +126,21 @@ class SMTPTLSReportingQueryResults(TypedDict):
     warnings: list[str]
 
 
-class SMTPTLSReportingTags(TypedDict):
-    value: str
+class SMTPTLSReportingTagValue(TypedDict):
+    value: Union[str, list[str]]
 
 
-class SMTPTLSReportingTagsWithDescription(TypedDict):
-    value: str
+class _SMTPTLSReportingTagValueOptional(TypedDict, total=False):
     description: str
+
+
+class SMTPTLSReportingTagValueWithDescription(SMTPTLSReportingTagValue, _SMTPTLSReportingTagValueOptional):
+    pass
+
+
+# Tags is a dict mapping tag names to tag values
+SMTPTLSReportingTags = dict[str, SMTPTLSReportingTagValue]
+SMTPTLSReportingTagsWithDescription = dict[str, SMTPTLSReportingTagValueWithDescription]
 
 
 class ParsedSMTPTLSReportingRecord(TypedDict):
@@ -153,18 +161,18 @@ class SMTPTLSReportingSuccess(TypedDict):
 
 SMTPTLSReportingResults = Union[SMTPTLSReportingSuccess, SMTPTLSReportingFailure]
 
-smtp_rpt_tags = dict(
-    v=dict(name="Version", description="Must be TLSRPTv1", required=True),
-    rua=dict(
-        name="Aggregate Reporting URIs",
-        description="A URI specifying the endpoint to which aggregate "
+smtp_rpt_tags = {
+    "v": {"name": "Version", "description": "Must be TLSRPTv1", "required": True},
+    "rua": {
+        "name": "Aggregate Reporting URIs",
+        "description": "A URI specifying the endpoint to which aggregate "
         "information about policy validation results should be "
         'sent. Two URI schemes are supported: "mailto" and '
         '"https".  As with DMARC the Policy Domain can specify a '
         "comma-separated list of URIs.",
-        required=False,
-    ),
-)
+        "required": False,
+    },
+}
 
 
 def query_smtp_tls_reporting_record(
@@ -336,7 +344,7 @@ def parse_smtp_tls_reporting_record(
         )
 
     pairs: list[tuple[str, str]] = SMTPTLSREPORTING_TAG_VALUE_REGEX.findall(record)
-    tags = dict()
+    tags = {}
 
     seen_tags: list[str] = []
     duplicate_tags: list[str] = []
@@ -358,7 +366,7 @@ def parse_smtp_tls_reporting_record(
             raise InvalidSMTPTLSReportingTag(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
-        tags[tag] = dict(value=tag_value)
+        tags[tag] = {"value": tag_value}
         if include_tag_descriptions:
             tags[tag]["description"] = smtp_rpt_tags[tag]["description"]
     if "rua" not in tags:
@@ -369,10 +377,6 @@ def parse_smtp_tls_reporting_record(
             raise SMTPTLSReportingSyntaxError(
                 f"{uri} is not a valid SMTP TLS reporting URI."
             )
-    if include_tag_descriptions:
-        tags = cast(SMTPTLSReportingTagsWithDescription, tags)
-    else:
-        tags = cast(SMTPTLSReportingTags, tags)
     results: ParsedSMTPTLSReportingRecord = {"tags": tags, "warnings": warnings}
 
     return results

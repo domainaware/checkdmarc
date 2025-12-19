@@ -121,16 +121,14 @@ def check_domains(
         domain = normalize_domain(domain)
         logging.debug(f"Checking: {domain}")
 
-        domain_results = dict(
-            [
-                ("domain", domain),
-                ("base_domain", get_base_domain(domain)),
-                ("dnssec", None),
-                ("soa", {}),
-                ("ns", []),
-                ("mx", []),
-            ]
-        )
+        domain_results = {
+            "domain": domain,
+            "base_domain": get_base_domain(domain),
+            "dnssec": None,
+            "soa": {},
+            "ns": [],
+            "mx": [],
+        }
 
         domain_results["dnssec"] = test_dnssec(
             domain, nameservers=nameservers, timeout=timeout
@@ -259,7 +257,7 @@ def check_ns(
             timeout_retries=timeout_retries,
         )
     except DNSException as error:
-        ns_results = dict([("hostnames", []), ("error", error.__str__())])
+        ns_results = {"hostnames": [], "error": error.__str__()}
     return ns_results
 
 
@@ -297,7 +295,7 @@ def results_to_csv_rows(
         results = [results]
 
     for result in results:
-        row = dict()
+        row = {}
         ns = result["ns"]
         mx = result["mx"]
         _mta_sts = result["mta_sts"]
