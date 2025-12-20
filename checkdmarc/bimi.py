@@ -11,7 +11,7 @@ import re
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from sys import getsizeof
-from typing import Optional, Union, TypedDict
+from typing import Optional, Union, TypedDict, Any
 
 try:
     from importlib.resources import files
@@ -68,8 +68,12 @@ limitations under the License."""
 
 
 # TypedDict definitions for BIMI record structures
-class SVGMetadata(TypedDict, total=False):
+
+
+# These typedicts can't be used in Python 3.9-3.10 because these is no way to set a field as optional
+class SVGMetadata(TypedDict):
     """Metadata extracted from SVG image"""
+
     svg_version: str
     base_profile: str
     x: str
@@ -85,6 +89,7 @@ class SVGMetadata(TypedDict, total=False):
 
 class CertificateMetadata(TypedDict):
     """Metadata about a Verified Mark Certificate (VMC)"""
+
     issuer: dict[str, str]
     subject: dict[str, str]
     serial_number: int
@@ -100,6 +105,7 @@ class CertificateMetadata(TypedDict):
 
 class BIMIQueryResult(TypedDict):
     """Result from querying a BIMI record"""
+
     record: str
     location: str
     warnings: list[str]
@@ -107,13 +113,15 @@ class BIMIQueryResult(TypedDict):
 
 class BIMITagValue(TypedDict, total=False):
     """BIMI tag value structure"""
+
     value: str
     name: str
     description: str
 
 
-class BIMIParseResult(TypedDict, total=False):
+class BIMIParseResult(TypedDict):
     """Result from parsing a BIMI record"""
+
     tags: dict[str, BIMITagValue]
     image: Union[SVGMetadata, dict[str, str]]
     certificate: Union[CertificateMetadata, dict[str, str]]
@@ -122,6 +130,7 @@ class BIMIParseResult(TypedDict, total=False):
 
 class BIMICheckResult(TypedDict, total=False):
     """Result from checking BIMI for a domain"""
+
     record: Optional[str]
     valid: bool
     selector: str
@@ -443,8 +452,8 @@ class _BIMIGrammar(pyleri.Grammar):
     )
 
 
-def get_svg_metadata(raw_xml: Union[str, bytes]) -> SVGMetadata:
-    metadata: SVGMetadata = {}
+def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict[str, Any]:
+    metadata = {}
     if isinstance(raw_xml, bytes):
         raw_xml = raw_xml.decode(errors="ignore")
     try:
@@ -508,7 +517,9 @@ def check_svg_requirements(svg_metadata: dict) -> list[str]:
     return _errors
 
 
-def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
+def extract_logo_from_certificate(
+    cert: Union[x509.Certificate, bytes],
+) -> Union[None, bytes]:
     try:
         if not isinstance(cert, x509.Certificate):
             cert = load_pem_x509_certificates(cert)[1]
@@ -522,7 +533,7 @@ def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
         return None
 
 
-def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> CertificateMetadata:
+def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
     """Get metadata about a Verified Mark Certificate (VMC)"""
 
     def get_cert_name_components(cert_field: x509.Name):
@@ -544,7 +555,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> CertificateMetad
             x509.DNSName
         )  # pyright: ignore[reportAttributeAccessIssue]
 
-    metadata: CertificateMetadata = {}
+    metadata = {}
     valid = True
     validation_errors: list[str] = []
     warnings: list[str] = []
@@ -899,7 +910,7 @@ def parse_bimi_record(
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
     http_timeout: float = DEFAULT_HTTP_TIMEOUT,
-) -> BIMIParseResult:
+) -> dict[str, Any]:
     """
     Parses a BIMI record
 
@@ -936,7 +947,7 @@ def parse_bimi_record(
         :exc:`checkdmarc.bimi.InvalidBIMITagValue`
         :exc:`checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe`
     """
-    results: BIMIParseResult = {}
+    results = {}
     svg_metadata = None
     cert_metadata = None
     logging.debug("Parsing the BIMI record")
@@ -1076,7 +1087,7 @@ def parse_bimi_record(
                 )
     if cert_metadata:
         matching_certificate_provided = hash_match and cert_metadata["valid"]
-        l_tag_value = tags. get("l", {}).get("value", "")
+        l_tag_value = tags.get("l", {}).get("value", "")
         if l_tag_value != "" and not matching_certificate_provided:
             warnings.append(
                 "Most email providers will not display a BIMI image without a valid mark certificate."
