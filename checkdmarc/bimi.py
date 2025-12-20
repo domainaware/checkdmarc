@@ -11,7 +11,7 @@ import re
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from sys import getsizeof
-from typing import Any, Optional, Union
+from typing import Optional, Union, TypedDict, Any
 
 try:
     from importlib.resources import files
@@ -65,6 +65,82 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+
+# TypedDict definitions for BIMI record structures
+
+
+# These typedicts can't be used in Python 3.9-3.10 because there is no way to set a field as optional, but keeping them for later
+class SVGMetadata(TypedDict):
+    """Metadata extracted from SVG image"""
+
+    svg_version: str
+    base_profile: str
+    x: str
+    y: str
+    title: str
+    description: str
+    overflow: str
+    width: float
+    height: float
+    filesize: str
+    sha256: str
+
+
+class CertificateMetadata(TypedDict):
+    """Metadata about a Verified Mark Certificate (VMC)"""
+
+    issuer: dict[str, str]
+    subject: dict[str, str]
+    serial_number: int
+    not_valid_before: str
+    not_valid_after: str
+    expired: bool
+    valid: bool
+    domains: Optional[list[str]]
+    logotype_sha256: Optional[str]
+    warnings: list[str]
+    validation_errors: list[str]
+
+
+class BIMIQueryResult(TypedDict):
+    """Result from querying a BIMI record"""
+
+    record: str
+    location: str
+    warnings: list[str]
+
+
+class BIMITagValue(TypedDict, total=False):
+    """BIMI tag value structure"""
+
+    value: str
+    name: str
+    description: str
+
+
+class BIMIParseResult(TypedDict):
+    """Result from parsing a BIMI record"""
+
+    tags: dict[str, BIMITagValue]
+    image: Union[SVGMetadata, dict[str, str]]
+    certificate: Union[CertificateMetadata, dict[str, str]]
+    warnings: list[str]
+
+
+class BIMICheckResult(TypedDict, total=False):
+    """Result from checking BIMI for a domain"""
+
+    record: Optional[str]
+    valid: bool
+    selector: str
+    location: str
+    tags: dict[str, BIMITagValue]
+    image: Union[SVGMetadata, dict[str, str]]
+    certificate: Union[CertificateMetadata, dict[str, str]]
+    warnings: list[str]
+    error: str
+
 
 BIMI_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*BIMI1{WSP_REGEX}*;"
 BIMI_TAG_VALUE_REGEX_STRING = (
@@ -376,7 +452,7 @@ class _BIMIGrammar(pyleri.Grammar):
     )
 
 
-def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict:
+def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict[str, Any]:
     metadata = {}
     if isinstance(raw_xml, bytes):
         raw_xml = raw_xml.decode(errors="ignore")
@@ -441,7 +517,9 @@ def check_svg_requirements(svg_metadata: dict) -> list[str]:
     return _errors
 
 
-def extract_logo_from_certificate(cert: Union[x509.Certificate, bytes]):
+def extract_logo_from_certificate(
+    cert: Union[x509.Certificate, bytes],
+) -> Union[None, bytes]:
     try:
         if not isinstance(cert, x509.Certificate):
             cert = load_pem_x509_certificates(cert)[1]
@@ -479,8 +557,8 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
 
     metadata = {}
     valid = True
-    validation_errors = []
-    warnings = []
+    validation_errors: list[str] = []
+    warnings: list[str] = []
     certs = load_pem_x509_certificates(pem_crt)
     vmc = certs[0]
     for ext in REQUIRED_EXTENSIONS:
@@ -746,7 +824,7 @@ def query_bimi_record(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> BIMIQueryResult:
     """
     Queries DNS for a BIMI record
 
@@ -1009,7 +1087,7 @@ def parse_bimi_record(
                 )
     if cert_metadata:
         matching_certificate_provided = hash_match and cert_metadata["valid"]
-        l_tag_value = tags. get("l", {}).get("value", "")
+        l_tag_value = tags.get("l", {}).get("value", "")
         if l_tag_value != "" and not matching_certificate_provided:
             warnings.append(
                 "Most email providers will not display a BIMI image without a valid mark certificate."
@@ -1034,7 +1112,7 @@ def check_bimi(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict[str, Any]:
+) -> BIMICheckResult:
     """
     Returns a dictionary with a parsed BIMI record or an error.
 
@@ -1069,7 +1147,7 @@ def check_bimi(
                       - ``error`` - Tne error message
                       - ``valid`` - False
     """
-    bimi_results = {"record": None, "valid": True}
+    bimi_results: BIMICheckResult = {"record": None, "valid": True}
     selector = selector.lower()
     try:
         bimi_query = query_bimi_record(

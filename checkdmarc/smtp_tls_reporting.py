@@ -134,7 +134,9 @@ class _SMTPTLSReportingTagValueOptional(TypedDict, total=False):
     description: str
 
 
-class SMTPTLSReportingTagValueWithDescription(SMTPTLSReportingTagValue, _SMTPTLSReportingTagValueOptional):
+class SMTPTLSReportingTagValueWithDescription(
+    SMTPTLSReportingTagValue, _SMTPTLSReportingTagValueOptional
+):
     pass
 
 
