@@ -740,7 +740,6 @@ def parse_spf_record(
                     }
 
                     parsed["mechanisms"].append(a_mechanism)
-                    _validate_spf_macros(value, domain, syntax_error_marker)
                     continue
                 if value == "":
                     value = domain
@@ -790,7 +789,6 @@ def parse_spf_record(
                     }
 
                     parsed["mechanisms"].append(mx_mechanism)
-                    _validate_spf_macros(value, domain, syntax_error_marker)
                     continue
                 # Use the current domain if no value was provided
                 if value == "":
@@ -887,8 +885,6 @@ def parse_spf_record(
                     "void_dns_lookups": mechanism_void_dns_lookups,
                 }
                 parsed["mechanisms"].append(exists_mechanism)
-                if "%" in value:
-                    _validate_spf_macros(value, domain, syntax_error_marker)
                 if value == "":
                     raise SPFSyntaxError(f"{mechanism} must have a value")
                 if total_dns_lookups > 10:
@@ -913,7 +909,6 @@ def parse_spf_record(
                         "warnings": [],
                     }
                     parsed["redirect"] = redirect
-                    _validate_spf_macros(value, domain, syntax_error_marker)
                     continue
                 if value.lower() in recursion:
                     raise SPFRedirectLoop(f"Redirect loop: {value.lower()}")
@@ -985,6 +980,8 @@ def parse_spf_record(
                     raise SPFSyntaxError("Multiple exp values are not permitted")
                 exp_seen = True
                 parsed["exp"] = exp
+                if isinstance(exp, str) and "%" in exp:
+                    continue
                 if isinstance(exp, str):
                     try:
                         exp_txt_records = get_txt_records(
@@ -1017,7 +1014,6 @@ def parse_spf_record(
                         "warnings": [],
                     }
                     parsed["mechanisms"].append(macro_include)
-                    _validate_spf_macros(value, domain, syntax_error_marker)
                     continue
                 if value == "":
                     raise SPFSyntaxError(f"{mechanism} must have a value")
@@ -1106,7 +1102,6 @@ def parse_spf_record(
                 mechanism_dns_lookups += 1
                 total_dns_lookups += 1
                 if "%" in value:
-                    _validate_spf_macros(value, domain, syntax_error_marker)
                     ptr_mechanism: SPFDNSLookupMechanism = {
                         "action": action,
                         "mechanism": mechanism,
@@ -1118,7 +1113,6 @@ def parse_spf_record(
                     raise _SPFWarning(
                         "The ptr mechanism should not be used - (RFC 7208 § 5.5)"
                     )
-                    continue
                 if value == "":
                     value = domain
                 a_records = get_a_records(
