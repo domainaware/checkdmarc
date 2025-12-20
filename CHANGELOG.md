@@ -7,6 +7,10 @@
 - Proper validation of SPF macros (PR #218)
 - More detailed API typing
 
+## Changes
+
+- Invalid  DMARC `pct` tag values no raise an error instead of a warning
+
 ### Fixes
 
 - Missing values in some SPF warnings
