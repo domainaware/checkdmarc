@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.12.27 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.13.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e2a2add5"></script>
+      <script src="../../_static/documentation_options.js?v=9fc23799"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -77,20 +77,23 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span>
-
 <span class="kn">import</span><span class="w"> </span><span class="nn">ipaddress</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grammar</span><span class="p">,</span> <span class="n">Regex</span><span class="p">,</span> <span class="n">Repeat</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.exception</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyleri</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SYNTAX_ERROR_MARKER</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DNSException</span><span class="p">,</span>
     <span class="n">DNSExceptionNXDOMAIN</span><span class="p">,</span>
+    <span class="n">MXHost</span><span class="p">,</span>
     <span class="n">get_a_records</span><span class="p">,</span>
     <span class="n">get_mx_records</span><span class="p">,</span>
     <span class="n">get_reverse_dns</span><span class="p">,</span>
@@ -142,7 +145,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">SPFError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a fatal SPF error occurs&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Args:</span>
 <span class="sd">            msg (str): The error message</span>
@@ -170,7 +173,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">SPFRecordNotFound</span><span class="p">(</span><span class="n">SPFError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an SPF record could not be found&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="ne">Exception</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">Timeout</span><span class="p">):</span>
             <span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">error</span>
@@ -208,7 +211,7 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an SPF record requires too many DNS lookups (10 max)&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dns_lookups</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">])</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]}</span>
         <span class="n">SPFError</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
 
 
@@ -219,7 +222,7 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an SPF record requires too many void DNS lookups (2 max)&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">void_dns_lookups</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">])</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]}</span>
         <span class="n">SPFError</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
 
 
@@ -238,17 +241,115 @@
 
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">_SPFGrammar</span><span class="p">(</span><span class="n">Grammar</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_SPFGrammar</span><span class="p">(</span><span class="n">pyleri</span><span class="o">.</span><span class="n">Grammar</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Defines Pyleri grammar for SPF records&quot;&quot;&quot;</span>
 
-    <span class="n">version_tag</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">SPF_VERSION_TAG_REGEX_STRING</span><span class="p">)</span>
-    <span class="n">mechanism</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">SPF_MECHANISM_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+    <span class="n">version_tag</span> <span class="o">=</span> <span class="n">pyleri</span><span class="o">.</span><span class="n">Regex</span><span class="p">(</span><span class="n">SPF_VERSION_TAG_REGEX_STRING</span><span class="p">)</span>
+    <span class="n">mechanism</span> <span class="o">=</span> <span class="n">pyleri</span><span class="o">.</span><span class="n">Regex</span><span class="p">(</span><span class="n">SPF_MECHANISM_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
 
     <span class="c1"># Note: Pyleri skips whitespace by default; explicitly matching whitespace</span>
     <span class="c1"># would break many valid records. We keep the grammar permissive here and</span>
     <span class="c1"># perform whitespace separation checks in Python before invoking the grammar.</span>
-    <span class="n">START</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">(</span><span class="n">version_tag</span><span class="p">,</span> <span class="n">Repeat</span><span class="p">(</span><span class="n">mechanism</span><span class="p">))</span>
+    <span class="n">START</span> <span class="o">=</span> <span class="n">pyleri</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span><span class="n">version_tag</span><span class="p">,</span> <span class="n">pyleri</span><span class="o">.</span><span class="n">Repeat</span><span class="p">(</span><span class="n">mechanism</span><span class="p">))</span>
 
+
+<div class="viewcode-block" id="SPFQueryResults">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.SPFQueryResults">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SPFQueryResults</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">record</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="SPFMechanism">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.SPFMechanism">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SPFMechanism</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">action</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">mechanism</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<div class="viewcode-block" id="SPFDNSLookupMechanism">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.SPFDNSLookupMechanism">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SPFDNSLookupMechanism</span><span class="p">(</span><span class="n">SPFMechanism</span><span class="p">):</span>
+    <span class="n">dns_lookups</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">void_dns_lookups</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+
+<div class="viewcode-block" id="SPFAMechanism">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.SPFAMechanism">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SPFAMechanism</span><span class="p">(</span><span class="n">SPFDNSLookupMechanism</span><span class="p">):</span>
+    <span class="n">addresses</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="ParsedSPFMXMechanism">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.ParsedSPFMXMechanism">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParsedSPFMXMechanism</span><span class="p">(</span><span class="n">SPFDNSLookupMechanism</span><span class="p">):</span>
+    <span class="n">hosts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">MXHost</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="SPFIncludeMechanism">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.SPFIncludeMechanism">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SPFIncludeMechanism</span><span class="p">(</span><span class="n">SPFDNSLookupMechanism</span><span class="p">):</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">parsed</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ParsedSPFRecord</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="SPFRedirect">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.SPFRedirect">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SPFRedirect</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">dns_lookups</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">void_dns_lookups</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">parsed</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ParsedSPFRecord</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="ParsedSPFRecord">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.ParsedSPFRecord">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParsedSPFRecord</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">mechanisms</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span>
+        <span class="n">Union</span><span class="p">[</span>
+            <span class="n">SPFMechanism</span><span class="p">,</span>
+            <span class="n">SPFDNSLookupMechanism</span><span class="p">,</span>
+            <span class="n">SPFIncludeMechanism</span><span class="p">,</span>
+            <span class="n">SPFAMechanism</span><span class="p">,</span>
+            <span class="n">ParsedSPFMXMechanism</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">redirect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SPFRedirect</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">exp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="nb">all</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<div class="viewcode-block" id="ParsedSPFRecordSuccess">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.ParsedSPFRecordSuccess">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParsedSPFRecordSuccess</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="n">dns_lookups</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">void_dns_lookups</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">parsed</span><span class="p">:</span> <span class="n">ParsedSPFRecord</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="ParsedSPFRecordError">
+<a class="viewcode-back" href="../../api.html#checkdmarc.spf.ParsedSPFRecordError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParsedSPFRecordError</span><span class="p">(</span><span class="n">ParsedSPFRecordSuccess</span><span class="p">):</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DNSException</span><span class="p">]</span></div>
+
+
+
+<span class="n">SPFRecordResults</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">ParsedSPFRecordSuccess</span><span class="p">,</span> <span class="n">ParsedSPFRecordError</span><span class="p">]</span>
 
 <span class="n">spf_qualifiers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;&quot;</span><span class="p">:</span> <span class="s2">&quot;pass&quot;</span><span class="p">,</span>
@@ -265,8 +366,8 @@
     <span class="n">ip_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">resolver</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
     <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -325,7 +426,6 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_validate_spf_macros</span><span class="p">(</span>
     <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="o">*</span><span class="p">,</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">syntax_error_marker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -409,12 +509,12 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">query_spf_record</span><span class="p">(</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">quoted_txt_segments</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">quoted_txt_segments</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SPFQueryResults</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for an SPF record</span>
 
@@ -427,7 +527,7 @@
 <span class="sd">        timeout_retries (int): The number of times to reattempt a query after a timeout</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
+<span class="sd">        dict: A ``dict`` with the following keys:</span>
 <span class="sd">            - ``record`` - The SPF record string</span>
 <span class="sd">            - ``warnings`` - A ``list`` of warnings</span>
 
@@ -547,8 +647,9 @@
         <span class="k">pass</span>
 
     <span class="n">spf_record</span> <span class="o">=</span> <span class="n">spf_record</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">:</span> <span class="n">SPFQueryResults</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">spf_record</span><span class="p">,</span> <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">warnings</span><span class="p">}</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">spf_record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
+    <span class="k">return</span> <span class="n">results</span></div>
 
 
 
@@ -559,15 +660,15 @@
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">ignore_too_many_lookups</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">parked</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">seen</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">parked</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">seen</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">recursion</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OrderedDict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="n">syntax_error_marker</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">recursion</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">syntax_error_marker</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SPFRecordResults</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parses an SPF record, including resolving ``a``, ``mx``, and ``include`` mechanisms</span>
 
@@ -579,15 +680,16 @@
 <span class="sd">        seen (list): A list of domains seen in past loops</span>
 <span class="sd">        nameservers (list): A list of nameservers to query</span>
 <span class="sd">        resolver (dns.resolver.Resolver): A resolver object to use for DNS requests</span>
-<span class="sd">        recursion (OrderedDict): Results from a previous call</span>
+<span class="sd">        recursion (list): A list of domains used in recursion</span>
 <span class="sd">        timeout (float): number of seconds to wait for an answer from DNS</span>
 <span class="sd">        timeout_retries (int): The number of times to reattempt a query after a timeout</span>
 <span class="sd">        syntax_error_marker (str): The maker for pointing out syntax errors</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
+<span class="sd">        dict: A ``dict`` with the following keys:</span>
 <span class="sd">            - ``dns_lookups`` - Number of DNS lookups required by the record</span>
-<span class="sd">            - ``parsed`` - An ``OrderedDict`` of a parsed SPF record values</span>
+<span class="sd">            - ``void_dns_lookups`` - The number of void DNS lookups</span>
+<span class="sd">            - ``parsed`` - A ``dict`` of a parsed SPF record values</span>
 <span class="sd">            - ``warnings`` - A ``list`` of warnings</span>
 
 <span class="sd">    Raises:</span>
@@ -655,24 +757,23 @@
         <span class="n">expecting</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
             <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">expecting</span><span class="p">))</span>
         <span class="p">)</span>
-        <span class="n">expecting</span> <span class="o">=</span> <span class="s2">&quot; or &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expecting</span><span class="p">)</span>
+        <span class="n">expecting_str</span> <span class="o">=</span> <span class="s2">&quot; or &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expecting</span><span class="p">)</span>
         <span class="n">marked_record</span> <span class="o">=</span> <span class="n">record</span><span class="p">[:</span><span class="n">pos</span><span class="p">]</span> <span class="o">+</span> <span class="n">syntax_error_marker</span> <span class="o">+</span> <span class="n">record</span><span class="p">[</span><span class="n">pos</span><span class="p">:]</span>
         <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">: Expected </span><span class="si">{</span><span class="n">expecting</span><span class="si">}</span><span class="s2"> at position </span><span class="si">{</span><span class="n">pos</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">: Expected </span><span class="si">{</span><span class="n">expecting_str</span><span class="si">}</span><span class="s2"> at position </span><span class="si">{</span><span class="n">pos</span><span class="si">}</span><span class="s2"> &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;(marked with </span><span class="si">{</span><span class="n">syntax_error_marker</span><span class="si">}</span><span class="s2">) in: </span><span class="si">{</span><span class="n">marked_record</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
 
-    <span class="n">matches</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">SPF_MECHANISM_REGEX</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="n">matches</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">SPF_MECHANISM_REGEX</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
 
-    <span class="n">parsed</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-        <span class="p">[</span>
-            <span class="p">(</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">,</span> <span class="p">[]),</span>
-            <span class="p">(</span><span class="s2">&quot;redirect&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;neutral&quot;</span><span class="p">),</span>
-        <span class="p">]</span>
-    <span class="p">)</span>
+    <span class="n">parsed</span><span class="p">:</span> <span class="n">ParsedSPFRecord</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;mechanisms&quot;</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s2">&quot;redirect&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;exp&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="s2">&quot;neutral&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
 
+    <span class="n">exp</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">items_after_all</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">AFTER_ALL_REGEX</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">items_after_all</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">items_after_all</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;exp=&quot;</span><span class="p">):</span>
@@ -692,19 +793,24 @@
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;No text should exist after the exp modifier value.&quot;</span><span class="p">)</span>
             <span class="n">exp</span> <span class="o">=</span> <span class="n">exp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;exp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exp</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">exp_txt_records</span> <span class="o">=</span> <span class="n">get_txt_records</span><span class="p">(</span>
-                    <span class="n">exp</span><span class="p">,</span>
-                    <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-                    <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
-                    <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exp_txt_records</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
-                    <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;No TXT records at exp value </span><span class="si">{exp}</span><span class="s2">.&quot;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exp_txt_records</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
-                    <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Too many TXT records at exp value </span><span class="si">{exp}</span><span class="s2">.&quot;</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get TXT records at exp value </span><span class="si">{</span><span class="n">exp</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="n">exp</span><span class="p">:</span>
+                <span class="n">_validate_spf_macros</span><span class="p">(</span><span class="n">exp</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">syntax_error_marker</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">exp_txt_records</span> <span class="o">=</span> <span class="n">get_txt_records</span><span class="p">(</span>
+                        <span class="n">exp</span><span class="p">,</span>
+                        <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+                        <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exp_txt_records</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No TXT records at exp value </span><span class="si">{</span><span class="n">exp</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exp_txt_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Too many TXT records at exp value </span><span class="si">{</span><span class="n">exp</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Failed to get TXT records at exp value </span><span class="si">{</span><span class="n">exp</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="s2">&quot;Any text after the all mechanism other than an exp modifier is ignored.&quot;</span>
@@ -762,6 +868,18 @@
             <span class="k">if</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span>
                 <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="n">a_mechanism</span><span class="p">:</span> <span class="n">SPFAMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                        <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;addresses&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="p">}</span>
+
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a_mechanism</span><span class="p">)</span>
+                    <span class="k">continue</span>
                 <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
                     <span class="n">value</span> <span class="o">=</span> <span class="n">domain</span>
                 <span class="n">cidr</span> <span class="o">=</span> <span class="kc">None</span>
@@ -785,19 +903,32 @@
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a_records</span><span class="p">)):</span>
                     <span class="k">if</span> <span class="n">cidr</span><span class="p">:</span>
                         <span class="n">a_records</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a_records</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">cidr</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="n">pairs</span> <span class="o">=</span> <span class="p">[</span>
-                    <span class="p">(</span><span class="s2">&quot;action&quot;</span><span class="p">,</span> <span class="n">action</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_dns_lookups</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;addresses&quot;</span><span class="p">,</span> <span class="n">a_records</span><span class="p">),</span>
-                <span class="p">]</span>
-                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">pairs</span><span class="p">))</span>
+                <span class="n">a_mechanism</span><span class="p">:</span> <span class="n">SPFAMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                    <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                    <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                    <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                    <span class="s2">&quot;addresses&quot;</span><span class="p">:</span> <span class="n">a_records</span><span class="p">,</span>
+                <span class="p">}</span>
+
+                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a_mechanism</span><span class="p">)</span>
 
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;mx&quot;</span><span class="p">:</span>
                 <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="n">mx_mechanism</span><span class="p">:</span> <span class="n">ParsedSPFMXMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                        <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;hosts&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="p">}</span>
+
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx_mechanism</span><span class="p">)</span>
+                    <span class="k">continue</span>
                 <span class="c1"># Use the current domain if no value was provided</span>
                 <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
                     <span class="n">value</span> <span class="o">=</span> <span class="n">domain</span>
@@ -825,7 +956,7 @@
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> has more than 10 MX records - (RFC 7208 § 4.6.4)&quot;</span><span class="p">,</span>
                         <span class="n">dns_lookups</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">mx_hosts</span><span class="p">),</span>
                     <span class="p">)</span>
-                <span class="n">host_ips</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">mx_host_addresses</span> <span class="o">=</span> <span class="p">{}</span>
                 <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">mx_hosts</span><span class="p">:</span>
                     <span class="n">hostname</span> <span class="o">=</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
                     <span class="c1"># --- perform A/AAAA resolution for each MX host ---</span>
@@ -837,7 +968,7 @@
                             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
                             <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
                         <span class="p">)</span>
-                        <span class="n">host_ips</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="n">_addresses</span>
+                        <span class="n">mx_host_addresses</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="n">_addresses</span>
 
                         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_addresses</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                             <span class="c1"># void lookup: increment void counter</span>
@@ -871,29 +1002,28 @@
                                     <span class="n">void_dns_lookups</span><span class="o">=</span><span class="n">total_void_dns_lookups</span><span class="p">,</span>
                                 <span class="p">)</span>
                         <span class="k">raise</span> <span class="n">_SPFWarning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">dnserror</span><span class="p">))</span>
-                <span class="n">pairs</span> <span class="o">=</span> <span class="p">[</span>
-                    <span class="p">(</span><span class="s2">&quot;action&quot;</span><span class="p">,</span> <span class="n">action</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_dns_lookups</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">),</span>
-                <span class="p">]</span>
-                <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;hosts&quot;</span><span class="p">,</span> <span class="n">host_ips</span><span class="p">))</span>
-                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">pairs</span><span class="p">))</span>
+                <span class="n">mx_mechanism</span><span class="p">:</span> <span class="n">ParsedSPFMXMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                    <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                    <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                    <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                    <span class="s2">&quot;hosts&quot;</span><span class="p">:</span> <span class="n">mx_hosts</span><span class="p">,</span>
+                <span class="p">}</span>
+
+                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx_mechanism</span><span class="p">)</span>
 
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;exists&quot;</span><span class="p">:</span>
                 <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="n">pairs</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-                    <span class="p">[</span>
-                        <span class="p">(</span><span class="s2">&quot;action&quot;</span><span class="p">,</span> <span class="n">action</span><span class="p">),</span>
-                        <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
-                        <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
-                        <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_dns_lookups</span><span class="p">),</span>
-                        <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">),</span>
-                    <span class="p">]</span>
-                <span class="p">)</span>
-                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">pairs</span><span class="p">))</span>
+                <span class="n">exists_mechanism</span><span class="p">:</span> <span class="n">SPFDNSLookupMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                    <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                    <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                    <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exists_mechanism</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mechanism</span><span class="si">}</span><span class="s2"> must have a value&quot;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">total_dns_lookups</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
@@ -908,6 +1038,17 @@
                     <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span><span class="s2">&quot;Multiple redirect modifiers&quot;</span><span class="p">)</span>
                 <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="n">redirect</span><span class="p">:</span> <span class="n">SPFRedirect</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;domain&quot;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
+                        <span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;parsed&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="p">}</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;redirect&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">redirect</span>
+                    <span class="k">continue</span>
                 <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">recursion</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFRedirectLoop</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Redirect loop: </span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
@@ -920,7 +1061,7 @@
                         <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="n">redirect_record</span> <span class="o">=</span> <span class="n">redirect_record</span><span class="p">[</span><span class="s2">&quot;record&quot;</span><span class="p">]</span>
-                    <span class="n">redirect</span> <span class="o">=</span> <span class="n">parse_spf_record</span><span class="p">(</span>
+                    <span class="n">redirected_spf</span> <span class="o">=</span> <span class="n">parse_spf_record</span><span class="p">(</span>
                         <span class="n">redirect_record</span><span class="p">,</span>
                         <span class="n">value</span><span class="p">,</span>
                         <span class="n">seen</span><span class="o">=</span><span class="n">seen</span><span class="p">,</span>
@@ -930,11 +1071,11 @@
                         <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
                         <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
                     <span class="p">)</span>
-                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;parsed&quot;</span><span class="p">][</span><span class="s2">&quot;all&quot;</span><span class="p">]</span>
-                    <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
-                    <span class="n">mechanism_void_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
-                    <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
-                    <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">redirected_spf</span><span class="p">[</span><span class="s2">&quot;parsed&quot;</span><span class="p">][</span><span class="s2">&quot;all&quot;</span><span class="p">]</span>
+                    <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="n">redirected_spf</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
+                    <span class="n">mechanism_void_dns_lookups</span> <span class="o">+=</span> <span class="n">redirected_spf</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
+                    <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="n">redirected_spf</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
+                    <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="n">redirected_spf</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
                     <span class="k">if</span> <span class="n">total_dns_lookups</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="n">SPFTooManyDNSLookups</span><span class="p">(</span>
                             <span class="s2">&quot;Parsing the SPF record requires &quot;</span>
@@ -952,17 +1093,17 @@
                             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">u</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                             <span class="n">void_dns_lookups</span><span class="o">=</span><span class="n">total_void_dns_lookups</span><span class="p">,</span>
                         <span class="p">)</span>
-                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;redirect&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-                        <span class="p">[</span>
-                            <span class="p">(</span><span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">redirect_record</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_dns_lookups</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;parsed&quot;</span><span class="p">,</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;parsed&quot;</span><span class="p">]),</span>
-                            <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]),</span>
-                        <span class="p">]</span>
-                    <span class="p">)</span>
-                    <span class="n">warnings</span> <span class="o">+=</span> <span class="n">redirect</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
+                    <span class="n">redirect</span><span class="p">:</span> <span class="n">SPFRedirect</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;domain&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                        <span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">redirect_record</span><span class="p">,</span>
+                        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;parsed&quot;</span><span class="p">:</span> <span class="n">redirected_spf</span><span class="p">[</span><span class="s2">&quot;parsed&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">redirected_spf</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">],</span>
+                    <span class="p">}</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;redirect&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">redirect</span>
+
+                    <span class="n">warnings</span> <span class="o">+=</span> <span class="n">redirected_spf</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
                 <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
                     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">DNSExceptionNXDOMAIN</span><span class="p">):</span>
                         <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -970,17 +1111,49 @@
 
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">all_seen</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The all mechanism can only be used once.&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span><span class="s2">&quot;The all mechanism can only be used once.&quot;</span><span class="p">)</span>
                 <span class="n">all_seen</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">action</span>
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;exp&quot;</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">exp_seen</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span><span class="s2">&quot;Multiple exp values are not permitted&quot;</span><span class="p">)</span>
                 <span class="n">exp_seen</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;exp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exp</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exp</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="n">exp</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exp</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">exp_txt_records</span> <span class="o">=</span> <span class="n">get_txt_records</span><span class="p">(</span>
+                            <span class="n">exp</span><span class="p">,</span>
+                            <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+                            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exp_txt_records</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No TXT records at exp value </span><span class="si">{</span><span class="n">exp</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exp_txt_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Too many TXT records at exp value </span><span class="si">{</span><span class="n">exp</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Failed to get TXT records at exp value </span><span class="si">{</span><span class="n">exp</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
 
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;include&quot;</span><span class="p">:</span>
                 <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="n">macro_include</span><span class="p">:</span> <span class="n">SPFIncludeMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                        <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                        <span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;parsed&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="p">}</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">macro_include</span><span class="p">)</span>
+                    <span class="k">continue</span>
                 <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mechanism</span><span class="si">}</span><span class="s2"> must have a value&quot;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">recursion</span><span class="p">:</span>
@@ -1017,18 +1190,18 @@
                     <span class="n">combined_mechanism_void_dns_lookups</span> <span class="o">=</span> <span class="p">(</span>
                         <span class="n">mechanism_void_dns_lookups</span> <span class="o">+</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
                     <span class="p">)</span>
-                    <span class="n">include</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-                        <span class="p">[</span>
-                            <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">include_record</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">combined_mechanism_lookups</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">combined_mechanism_void_dns_lookups</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;parsed&quot;</span><span class="p">,</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;parsed&quot;</span><span class="p">]),</span>
-                            <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]),</span>
-                        <span class="p">]</span>
-                    <span class="p">)</span>
-                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">include</span><span class="p">)</span>
+
+                    <span class="n">include_mechanism</span><span class="p">:</span> <span class="n">SPFIncludeMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                        <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">combined_mechanism_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">combined_mechanism_void_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">include_record</span><span class="p">,</span>
+                        <span class="s2">&quot;parsed&quot;</span><span class="p">:</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;parsed&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">],</span>
+                    <span class="p">}</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">include_mechanism</span><span class="p">)</span>
                     <span class="n">warnings</span> <span class="o">+=</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
                     <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">]</span>
                     <span class="n">mechanism_void_dns_lookups</span> <span class="o">+=</span> <span class="n">include</span><span class="p">[</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">]</span>
@@ -1051,21 +1224,36 @@
                         <span class="p">)</span>
                 <span class="k">except</span> <span class="n">SPFRecordNotFound</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="n">include</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-                        <span class="p">[</span>
-                            <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
-                        <span class="p">]</span>
-                    <span class="p">)</span>
-                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">include</span><span class="p">)</span>
+                    <span class="n">failed_include_mechanism</span><span class="p">:</span> <span class="n">SPFIncludeMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                        <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                        <span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;parsed&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="p">}</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">failed_include_mechanism</span><span class="p">)</span>
                     <span class="k">raise</span> <span class="n">_SPFWarning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
 
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;ptr&quot;</span><span class="p">:</span>
                 <span class="n">mechanism_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">total_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="n">ptr_mechanism</span><span class="p">:</span> <span class="n">SPFDNSLookupMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                        <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                    <span class="p">}</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ptr_mechanism</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">_SPFWarning</span><span class="p">(</span>
+                        <span class="s2">&quot;The ptr mechanism should not be used - (RFC 7208 § 5.5)&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">domain</span>
                 <span class="n">a_records</span> <span class="o">=</span> <span class="n">get_a_records</span><span class="p">(</span>
                     <span class="n">value</span><span class="p">,</span>
                     <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
@@ -1079,30 +1267,34 @@
                     <span class="k">raise</span> <span class="n">_SPFMissingRecords</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;A ptr mechanism points to </span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">, but that domain/subdomain does not have any A/AAAA records.&quot;</span>
                     <span class="p">)</span>
-                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">OrderedDict</span><span class="p">(</span>
-                        <span class="p">[</span>
-                            <span class="p">(</span><span class="s2">&quot;action&quot;</span><span class="p">,</span> <span class="n">action</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_dns_lookups</span><span class="p">),</span>
-                            <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">),</span>
-                        <span class="p">]</span>
-                    <span class="p">)</span>
-                <span class="p">)</span>
+                <span class="n">ptr_mechanism</span><span class="p">:</span> <span class="n">SPFDNSLookupMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                    <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                    <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                    <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ptr_mechanism</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">_SPFWarning</span><span class="p">(</span>
                     <span class="s2">&quot;The ptr mechanism should not be used - (RFC 7208 § 5.5)&quot;</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">pairs</span> <span class="o">=</span> <span class="p">[</span>
-                    <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
-                    <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
-                <span class="p">]</span>
                 <span class="k">if</span> <span class="n">mechanism_dns_lookups</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_dns_lookups</span><span class="p">))</span>
-                    <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">))</span>
-                <span class="n">pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;action&quot;</span><span class="p">,</span> <span class="n">action</span><span class="p">))</span>
-                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">pairs</span><span class="p">))</span>
+                    <span class="n">other_spf_dns_mechanism</span><span class="p">:</span> <span class="n">SPFDNSLookupMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                        <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_dns_lookups</span><span class="p">,</span>
+                        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">mechanism_void_dns_lookups</span><span class="p">,</span>
+                    <span class="p">}</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">other_spf_dns_mechanism</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">other_mechanism</span><span class="p">:</span> <span class="n">SPFMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                        <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="p">}</span>
+                    <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">other_mechanism</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="p">(</span><span class="n">SPFTooManyDNSLookups</span><span class="p">,</span> <span class="n">SPFTooManyVoidDNSLookups</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">ignore_too_many_lookups</span><span class="p">:</span>
@@ -1114,16 +1306,15 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">warning</span><span class="p">,</span> <span class="p">(</span><span class="n">_SPFMissingRecords</span><span class="p">,</span> <span class="n">DNSExceptionNXDOMAIN</span><span class="p">)):</span>
                 <span class="n">mechanism_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="n">mechanism</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-                    <span class="p">[</span>
-                        <span class="p">(</span><span class="s2">&quot;mechanism&quot;</span><span class="p">,</span> <span class="n">mechanism</span><span class="p">),</span>
-                        <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
-                        <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                        <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
-                        <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
-                    <span class="p">]</span>
-                <span class="p">)</span>
-                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mechanism</span><span class="p">)</span>
+
+                <span class="n">failed_mechanism</span><span class="p">:</span> <span class="n">SPFDNSLookupMechanism</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+                    <span class="s2">&quot;mechanism&quot;</span><span class="p">:</span> <span class="n">mechanism</span><span class="p">,</span>
+                    <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;mechanisms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">failed_mechanism</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">total_void_dns_lookups</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">SPFTooManyVoidDNSLookups</span><span class="p">(</span>
                         <span class="s2">&quot;Parsing the SPF record has &quot;</span>
@@ -1134,25 +1325,24 @@
             <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">domain</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">total_dns_lookups</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">total_void_dns_lookups</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;parsed&quot;</span><span class="p">,</span> <span class="n">parsed</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">),</span>
-            <span class="p">]</span>
-        <span class="p">)</span>
+        <span class="n">error_result</span><span class="p">:</span> <span class="n">ParsedSPFRecordError</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">total_dns_lookups</span><span class="p">,</span>
+            <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">total_void_dns_lookups</span><span class="p">,</span>
+            <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">,</span>
+            <span class="s2">&quot;parsed&quot;</span><span class="p">:</span> <span class="n">parsed</span><span class="p">,</span>
+            <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">warnings</span><span class="p">,</span>
+            <span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">error_result</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="n">total_dns_lookups</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="n">total_void_dns_lookups</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;parsed&quot;</span><span class="p">,</span> <span class="n">parsed</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">),</span>
-            <span class="p">]</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">result</span></div>
+        <span class="n">success_result</span><span class="p">:</span> <span class="n">ParsedSPFRecordSuccess</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="n">total_dns_lookups</span><span class="p">,</span>
+            <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="n">total_void_dns_lookups</span><span class="p">,</span>
+            <span class="s2">&quot;parsed&quot;</span><span class="p">:</span> <span class="n">parsed</span><span class="p">,</span>
+            <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">warnings</span><span class="p">,</span>
+            <span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="k">return</span> <span class="n">success_result</span></div>
 
 
 
@@ -1161,11 +1351,11 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">get_spf_record</span><span class="p">(</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SPFRecordResults</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Retrieves and parses an SPF record</span>
 
@@ -1177,7 +1367,7 @@
 <span class="sd">        timeout_retries (int): The number of times to reattempt a query after a timeout</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An SPF record parsed by result</span>
+<span class="sd">        dict: An SPF record parsed by result</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        :exc:`checkdmarc.spf.SPFRecordNotFound`</span>
@@ -1213,12 +1403,12 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">check_spf</span><span class="p">(</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">parked</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">parked</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a dictionary with a parsed SPF record or an error.</span>
 
@@ -1231,7 +1421,7 @@
 <span class="sd">        timeout_retries (int): The number of times to reattempt a query after a timeout</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
+<span class="sd">        dict: A ``dict`` with the following keys:</span>
 <span class="sd">            - ``record`` - The SPF record string</span>
 <span class="sd">            - ``parsed`` - The parsed SPF record</span>
 <span class="sd">            - ``dns_lookups`` - The number of DNS lookups</span>
@@ -1244,14 +1434,12 @@
 <span class="sd">            - ``valid`` - False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
-    <span class="n">spf_results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-        <span class="p">[</span>
-            <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;dns_lookups&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-        <span class="p">]</span>
-    <span class="p">)</span>
+    <span class="n">spf_results</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;dns_lookups&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;void_dns_lookups&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">}</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">spf_query</span> <span class="o">=</span> <span class="n">query_spf_record</span><span class="p">(</span>
             <span class="n">domain</span><span class="p">,</span>

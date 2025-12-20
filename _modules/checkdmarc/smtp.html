@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.smtp &mdash; checkdmarc 5.12.27 documentation</title>
+  <title>checkdmarc.smtp &mdash; checkdmarc 5.13.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e2a2add5"></script>
+      <script src="../../_static/documentation_options.js?v=9fc23799"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -79,26 +79,28 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">smtplib</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">ssl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">timeout_decorator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">expiringdict</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpiringDict</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMTP_CACHE_MAX_AGE_SECONDS</span><span class="p">,</span> <span class="n">SMTP_CACHE_MAX_LEN</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.dnssec</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_tlsa_records</span><span class="p">,</span> <span class="n">test_dnssec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.mta_sts</span><span class="w"> </span><span class="kn">import</span> <span class="n">mx_in_mta_sts_patterns</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DNSException</span><span class="p">,</span>
-    <span class="n">normalize_domain</span><span class="p">,</span>
+    <span class="n">MXHost</span><span class="p">,</span>
     <span class="n">get_a_records</span><span class="p">,</span>
-    <span class="n">get_reverse_dns</span><span class="p">,</span>
     <span class="n">get_mx_records</span><span class="p">,</span>
+    <span class="n">get_reverse_dns</span><span class="p">,</span>
+    <span class="n">normalize_domain</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.mta_sts</span><span class="w"> </span><span class="kn">import</span> <span class="n">mx_in_mta_sts_patterns</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.dnssec</span><span class="w"> </span><span class="kn">import</span> <span class="n">test_dnssec</span><span class="p">,</span> <span class="n">get_tlsa_records</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMTP_CACHE_MAX_LEN</span><span class="p">,</span> <span class="n">SMTP_CACHE_MAX_AGE_SECONDS</span>
 
 <span class="sd">&quot;&quot;&quot;Copyright 2019-2023 Sean Whalen</span>
 
@@ -121,6 +123,25 @@
 <span class="n">STARTTLS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span>
     <span class="n">max_len</span><span class="o">=</span><span class="n">SMTP_CACHE_MAX_LEN</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="n">SMTP_CACHE_MAX_AGE_SECONDS</span>
 <span class="p">)</span>
+
+
+<div class="viewcode-block" id="MXResultsSuccess">
+<a class="viewcode-back" href="../../api.html#checkdmarc.smtp.MXResultsSuccess">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MXResultsSuccess</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">hosts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">MXHost</span><span class="p">]</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="MXResultsFailure">
+<a class="viewcode-back" href="../../api.html#checkdmarc.smtp.MXResultsFailure">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MXResultsFailure</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">hosts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">MXHost</span><span class="p">]</span>
+    <span class="n">error</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="n">MXResults</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">MXResultsSuccess</span><span class="p">,</span> <span class="n">MXResultsFailure</span><span class="p">]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_timeout_method</span><span class="p">():</span>
@@ -165,7 +186,7 @@
 <a class="viewcode-back" href="../../api.html#checkdmarc.smtp.test_tls">[docs]</a>
 <span class="nd">@timeout_decorator</span><span class="o">.</span><span class="n">timeout</span><span class="p">(</span>
     <span class="mi">5</span><span class="p">,</span>
-    <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>
+    <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
     <span class="n">exception_message</span><span class="o">=</span><span class="s2">&quot;Connection timed out&quot;</span><span class="p">,</span>
     <span class="n">use_signals</span><span class="o">=</span><span class="n">_get_timeout_method</span><span class="p">(),</span>
 <span class="p">)</span>
@@ -190,9 +211,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">tls</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">hostname</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ExpiringDict</span><span class="p">):</span>
         <span class="n">cached_result</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">cached_result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cached_result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">cached_result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">cached_result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">])</span>
             <span class="k">return</span> <span class="n">cached_result</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span>
@@ -203,7 +224,8 @@
         <span class="n">server</span> <span class="o">=</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTP_SSL</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ssl_context</span><span class="p">)</span>
         <span class="n">server</span><span class="o">.</span><span class="n">ehlo_or_helo_if_needed</span><span class="p">()</span>
         <span class="n">tls</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="n">tls</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="n">tls</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">server</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
             <span class="n">server</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -214,37 +236,37 @@
     <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;DNS resolution failed&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ConnectionRefusedError</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;Connection refused&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ConnectionResetError</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;Connection reset&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ConnectionAbortedError</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;Connection aborted&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">TimeoutError</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;Connection timed out&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">BlockingIOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">ssl</span><span class="o">.</span><span class="n">SSLError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SSL error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTPConnectError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">message</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
@@ -255,12 +277,12 @@
             <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; SMTP error code </span><span class="si">{</span><span class="n">error_code</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Could not connect: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTPHeloError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;HELO error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTPException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
@@ -270,17 +292,17 @@
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span></div>
 
 
@@ -289,7 +311,7 @@
 <a class="viewcode-back" href="../../api.html#checkdmarc.smtp.test_starttls">[docs]</a>
 <span class="nd">@timeout_decorator</span><span class="o">.</span><span class="n">timeout</span><span class="p">(</span>
     <span class="mi">5</span><span class="p">,</span>
-    <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>
+    <span class="n">timeout_exception</span><span class="o">=</span><span class="n">SMTPError</span><span class="p">,</span>  <span class="c1"># pyright: ignore[reportArgumentType]</span>
     <span class="n">exception_message</span><span class="o">=</span><span class="s2">&quot;Connection timed out&quot;</span><span class="p">,</span>
     <span class="n">use_signals</span><span class="o">=</span><span class="n">_get_timeout_method</span><span class="p">(),</span>
 <span class="p">)</span>
@@ -314,9 +336,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">hostname</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
     <span class="n">starttls</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ExpiringDict</span><span class="p">):</span>
         <span class="n">cached_result</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">cached_result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cached_result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">cached_result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">cached_result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">])</span>
             <span class="k">return</span> <span class="n">cached_result</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span>
@@ -331,7 +353,7 @@
             <span class="n">server</span><span class="o">.</span><span class="n">ehlo</span><span class="p">()</span>
             <span class="n">starttls</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-                <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="n">starttls</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="n">starttls</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">server</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
             <span class="n">server</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -343,37 +365,37 @@
     <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;DNS resolution failed&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ConnectionRefusedError</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;Connection refused&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ConnectionResetError</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;Connection reset&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ConnectionAbortedError</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;Connection aborted&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">TimeoutError</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;Connection timed out&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">BlockingIOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">ssl</span><span class="o">.</span><span class="n">SSLError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SSL error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTPConnectError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">message</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
@@ -384,12 +406,12 @@
             <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; SMTP error code </span><span class="si">{</span><span class="n">error_code</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Could not connect: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTPHeloError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;HELO error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTPException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
@@ -399,17 +421,17 @@
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttls&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">}</span>
         <span class="k">raise</span> <span class="n">SMTPError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span></div>
 
 
@@ -419,15 +441,15 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">get_mx_hosts</span><span class="p">(</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">skip_tls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">skip_tls</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">approved_hostnames</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">mta_sts_mx_patterns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">parked</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">parked</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">],</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MXResultsSuccess</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Gets MX hostname and their addresses</span>
 
@@ -443,8 +465,8 @@
 <span class="sd">        timeout (float): number of seconds to wait for a record from DNS</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
-<span class="sd">                     - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of</span>
+<span class="sd">        dict: a ``dict`` with the following keys:</span>
+<span class="sd">                     - ``hosts`` - A ``list`` of ``dict`` with keys of</span>
 
 <span class="sd">                       - ``hostname`` - A hostname</span>
 <span class="sd">                       - ``dnssec`` - DNSSEC status</span>
@@ -468,13 +490,11 @@
     <span class="p">)</span>
     <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">mx_records</span><span class="p">:</span>
         <span class="n">hosts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="n">OrderedDict</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">(</span><span class="s2">&quot;preference&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;preference&quot;</span><span class="p">]),</span>
-                    <span class="p">(</span><span class="s2">&quot;hostname&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()),</span>
-                    <span class="p">(</span><span class="s2">&quot;addresses&quot;</span><span class="p">,</span> <span class="p">[]),</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;preference&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;preference&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;hostname&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+                <span class="s2">&quot;addresses&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="p">}</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">parked</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">hosts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;MX records found on parked domains&quot;</span><span class="p">)</span>
@@ -604,8 +624,8 @@
 
                 <span class="n">host</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
                 <span class="n">host</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
-
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hosts&quot;</span><span class="p">,</span> <span class="n">hosts</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)])</span></div>
+    <span class="n">results</span><span class="p">:</span> <span class="n">MXResultsSuccess</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;hosts&quot;</span><span class="p">:</span> <span class="n">hosts</span><span class="p">,</span> <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">warnings</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">results</span></div>
 
 
 
@@ -615,13 +635,13 @@
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">approved_mx_hostnames</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">mta_sts_mx_patterns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">skip_tls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">mta_sts_mx_patterns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">skip_tls</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">],</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MXResults</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Gets MX hostname and their addresses, or an empty list of hosts and an</span>
 <span class="sd">    error if a DNS error occurs</span>
@@ -638,9 +658,9 @@
 <span class="sd">        timeout_retries (int): The number of times to reattempt a query after a timeout</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
+<span class="sd">        dict: a ``dict`` with the following keys:</span>
 
-<span class="sd">                     - ``hosts`` - A ``list`` of ``OrderedDict`` with keys of</span>
+<span class="sd">                     - ``hosts`` - A ``list`` of ``dict`` with keys of</span>
 
 <span class="sd">                       - ``hostname`` - A hostname</span>
 <span class="sd">                       - ``addresses`` - A ``list`` of IP addresses</span>
@@ -664,9 +684,10 @@
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
             <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="k">return</span> <span class="n">mx_results</span>
     <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="n">mx_results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;hosts&quot;</span><span class="p">,</span> <span class="p">[]),</span> <span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))])</span>
-    <span class="k">return</span> <span class="n">mx_results</span></div>
+        <span class="n">failure</span><span class="p">:</span> <span class="n">MXResultsFailure</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;hosts&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)}</span>
+    <span class="k">return</span> <span class="n">failure</span></div>
 
 </pre></div>
 

@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.bimi &mdash; checkdmarc 5.12.27 documentation</title>
+  <title>checkdmarc.bimi &mdash; checkdmarc 5.13.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e2a2add5"></script>
+      <script src="../../_static/documentation_options.js?v=9fc23799"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -82,10 +82,10 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sys</span><span class="w"> </span><span class="kn">import</span> <span class="n">getsizeof</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Any</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">files</span>
@@ -94,13 +94,15 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">importlib_resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">files</span>
 
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.exception</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xmltodict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography</span><span class="w"> </span><span class="kn">import</span> <span class="n">x509</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.x509</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ExtensionNotFound</span><span class="p">,</span>
-    <span class="n">ExtensionOID</span><span class="p">,</span>
+    <span class="n">ExtensionOID</span><span class="p">,</span>  <span class="c1"># pyright: ignore[reportPrivateImportUsage]</span>
     <span class="n">NameOID</span><span class="p">,</span>
     <span class="n">ObjectIdentifier</span><span class="p">,</span>
     <span class="n">load_pem_x509_certificates</span><span class="p">,</span>
@@ -112,7 +114,7 @@
     <span class="n">Store</span><span class="p">,</span>
     <span class="n">VerificationError</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pyleri</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grammar</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Regex</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyleri</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">checkdmarc.resources</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_HTTP_TIMEOUT</span><span class="p">,</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span> <span class="n">USER_AGENT</span>
@@ -137,6 +139,100 @@
 <span class="sd">WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
+
+
+<span class="c1"># TypedDict definitions for BIMI record structures</span>
+
+
+<span class="c1"># These typedicts can&#39;t be used in Python 3.9-3.10 because there is no way to set a field as optional, but keeping them for later</span>
+<div class="viewcode-block" id="SVGMetadata">
+<a class="viewcode-back" href="../../api.html#checkdmarc.bimi.SVGMetadata">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SVGMetadata</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Metadata extracted from SVG image&quot;&quot;&quot;</span>
+
+    <span class="n">svg_version</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">base_profile</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">y</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">overflow</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">width</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">height</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">filesize</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">sha256</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<div class="viewcode-block" id="CertificateMetadata">
+<a class="viewcode-back" href="../../api.html#checkdmarc.bimi.CertificateMetadata">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CertificateMetadata</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Metadata about a Verified Mark Certificate (VMC)&quot;&quot;&quot;</span>
+
+    <span class="n">issuer</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="n">subject</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="n">serial_number</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">not_valid_before</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">not_valid_after</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">expired</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">valid</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">domains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="n">logotype_sha256</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">validation_errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="BIMIQueryResult">
+<a class="viewcode-back" href="../../api.html#checkdmarc.bimi.BIMIQueryResult">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BIMIQueryResult</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result from querying a BIMI record&quot;&quot;&quot;</span>
+
+    <span class="n">record</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">location</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="BIMITagValue">
+<a class="viewcode-back" href="../../api.html#checkdmarc.bimi.BIMITagValue">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BIMITagValue</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;BIMI tag value structure&quot;&quot;&quot;</span>
+
+    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<div class="viewcode-block" id="BIMIParseResult">
+<a class="viewcode-back" href="../../api.html#checkdmarc.bimi.BIMIParseResult">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BIMIParseResult</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result from parsing a BIMI record&quot;&quot;&quot;</span>
+
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BIMITagValue</span><span class="p">]</span>
+    <span class="n">image</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SVGMetadata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+    <span class="n">certificate</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">CertificateMetadata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="BIMICheckResult">
+<a class="viewcode-back" href="../../api.html#checkdmarc.bimi.BIMICheckResult">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BIMICheckResult</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result from checking BIMI for a domain&quot;&quot;&quot;</span>
+
+    <span class="n">record</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">valid</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">location</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BIMITagValue</span><span class="p">]</span>
+    <span class="n">image</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SVGMetadata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+    <span class="n">certificate</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">CertificateMetadata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">error</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
 
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;v</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*BIMI1</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;&quot;</span>
 <span class="n">BIMI_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="p">(</span>
@@ -293,11 +389,11 @@
 <span class="n">KNOWN_SUBJECT_FIELDS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">KNOWN_SUBJECT_FIELDS</span><span class="p">)</span>
 
 
-<span class="n">BIMI_TAGS</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-    <span class="n">v</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Version&quot;</span><span class="p">,</span>
-        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Identifies the record &quot;</span>
+<span class="n">BIMI_TAGS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;v&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Version&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Identifies the record &quot;</span>
         <span class="s2">&quot;retrieved as a BIMI &quot;</span>
         <span class="s2">&quot;record. It MUST have the &quot;</span>
         <span class="s1">&#39;value of &quot;BIMI1&quot;. The &#39;</span>
@@ -308,12 +404,12 @@
         <span class="s2">&quot;record MUST be ignored. &quot;</span>
         <span class="s2">&quot;It MUST be the first &quot;</span>
         <span class="s2">&quot;tag in the list.&quot;</span><span class="p">,</span>
-    <span class="p">),</span>
-    <span class="n">a</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Authority Evidence Location&quot;</span><span class="p">,</span>
-        <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;If present, this tag MUST have an empty value &quot;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Authority Evidence Location&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;If present, this tag MUST have an empty value &quot;</span>
         <span class="s2">&quot;or its value MUST be a single URI. An empty &quot;</span>
         <span class="s2">&quot;value for the tag is interpreted to mean the &quot;</span>
         <span class="s2">&quot;Domain Owner does not wish to publish or does &quot;</span>
@@ -323,32 +419,32 @@
         <span class="s1">&#39;HTTPS as the URI scheme (&quot;https&quot;). The URI &#39;</span>
         <span class="s2">&quot;SHOULD specify the location of a publicly &quot;</span>
         <span class="s2">&quot;retrievable BIMI Evidence Document.&quot;</span><span class="p">,</span>
-    <span class="p">),</span>
-    <span class="n">l</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Location&quot;</span><span class="p">,</span>
-        <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The value of this tag is either empty &quot;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;l&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Location&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;The value of this tag is either empty &quot;</span>
         <span class="s2">&quot;indicating declination to publish, or a single &quot;</span>
         <span class="s2">&quot;URI representing the location of a Brand &quot;</span>
         <span class="s2">&quot;Indicator file. The only supported transport &quot;</span>
         <span class="s2">&quot;is HTTPS.&quot;</span><span class="p">,</span>
-    <span class="p">),</span>
-    <span class="n">lps</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Local-Part Selectors&quot;</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A comma separated list of allowed Local-Part Selectors&quot;</span><span class="p">,</span>
-    <span class="p">),</span>
-    <span class="n">avp</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Avatar Preference&quot;</span><span class="p">,</span>
-        <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;brand&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;For mail sent to those mailbox providers that both participate in BIMI and &quot;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;lps&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Local-Part Selectors&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;A comma separated list of allowed Local-Part Selectors&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;avp&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Avatar Preference&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;brand&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;For mail sent to those mailbox providers that both participate in BIMI and &quot;</span>
         <span class="s2">&quot;support the display of personal avatars, this flag is a way for the Domain &quot;</span>
         <span class="s2">&quot;Owner to express its preference as to whether to show the BIMI logo or the &quot;</span>
         <span class="s2">&quot;personal avatar. Options are personal or brand&quot;</span><span class="p">,</span>
-    <span class="p">),</span>
-<span class="p">)</span>
+    <span class="p">},</span>
+<span class="p">}</span>
 
 <span class="n">_mvaca_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">files</span><span class="p">(</span><span class="n">checkdmarc</span><span class="o">.</span><span class="n">resources</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s2">&quot;MVACAs.pem&quot;</span><span class="p">))</span>
 
@@ -384,7 +480,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">BIMIError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a fatal BIMI error occurs&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Args:</span>
 <span class="sd">            msg (str): The error message</span>
@@ -465,19 +561,21 @@
 
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">_BIMIGrammar</span><span class="p">(</span><span class="n">Grammar</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_BIMIGrammar</span><span class="p">(</span><span class="n">pyleri</span><span class="o">.</span><span class="n">Grammar</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Defines Pyleri grammar for BIMI records&quot;&quot;&quot;</span>
 
-    <span class="n">version_tag</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">BIMI_VERSION_REGEX_STRING</span><span class="p">)</span>
-    <span class="n">tag_value</span> <span class="o">=</span> <span class="n">Regex</span><span class="p">(</span><span class="n">BIMI_TAG_VALUE_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
-    <span class="n">START</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">(</span>
+    <span class="n">version_tag</span> <span class="o">=</span> <span class="n">pyleri</span><span class="o">.</span><span class="n">Regex</span><span class="p">(</span><span class="n">BIMI_VERSION_REGEX_STRING</span><span class="p">)</span>
+    <span class="n">tag_value</span> <span class="o">=</span> <span class="n">pyleri</span><span class="o">.</span><span class="n">Regex</span><span class="p">(</span><span class="n">BIMI_TAG_VALUE_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+    <span class="n">START</span> <span class="o">=</span> <span class="n">pyleri</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span>
         <span class="n">version_tag</span><span class="p">,</span>
-        <span class="n">List</span><span class="p">(</span><span class="n">tag_value</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="n">Regex</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*&quot;</span><span class="p">),</span> <span class="n">opt</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="n">pyleri</span><span class="o">.</span><span class="n">List</span><span class="p">(</span>
+            <span class="n">tag_value</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="n">pyleri</span><span class="o">.</span><span class="n">Regex</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*&quot;</span><span class="p">),</span> <span class="n">opt</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">),</span>
     <span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_svg_metadata</span><span class="p">(</span><span class="n">raw_xml</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
-    <span class="n">metadata</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_svg_metadata</span><span class="p">(</span><span class="n">raw_xml</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_xml</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
         <span class="n">raw_xml</span> <span class="o">=</span> <span class="n">raw_xml</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
@@ -506,13 +604,15 @@
         <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">width</span>
         <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">height</span>
         <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;filesize&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">raw_xml</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">}</span><span class="s2"> KB&quot;</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;sha256&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">raw_xml</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;sha256&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span>
+            <span class="n">raw_xml</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>  <span class="c1"># pyright: ignore[reportAttributeAccessIssue]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>  <span class="c1"># pyright: ignore[reportAttributeAccessIssue]</span>
         <span class="k">return</span> <span class="n">metadata</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not a SVG file: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">check_svg_requirements</span><span class="p">(</span><span class="n">svg_metadata</span><span class="p">:</span> <span class="n">OrderedDict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_svg_requirements</span><span class="p">(</span><span class="n">svg_metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
     <span class="n">_errors</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">svg_metadata</span><span class="p">[</span><span class="s2">&quot;svg_version&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;1.2&quot;</span><span class="p">:</span>
         <span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -539,12 +639,14 @@
     <span class="k">return</span> <span class="n">_errors</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">extract_logo_from_certificate</span><span class="p">(</span><span class="n">cert</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">x509</span><span class="o">.</span><span class="n">Certificate</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_logo_from_certificate</span><span class="p">(</span>
+    <span class="n">cert</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">x509</span><span class="o">.</span><span class="n">Certificate</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]:</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cert</span><span class="p">,</span> <span class="n">x509</span><span class="o">.</span><span class="n">Certificate</span><span class="p">):</span>
             <span class="n">cert</span> <span class="o">=</span> <span class="n">load_pem_x509_certificates</span><span class="p">(</span><span class="n">cert</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">ext</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get_extension_for_oid</span><span class="p">(</span><span class="n">OID_LOGOTYPE</span><span class="p">)</span>
-        <span class="n">ext_bytes</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">ext_bytes</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">value</span>  <span class="c1"># pyright: ignore[reportAttributeAccessIssue]</span>
         <span class="n">ext_str</span> <span class="o">=</span> <span class="n">ext_bytes</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
         <span class="n">logo_base64</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">ext_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
         <span class="n">logo</span> <span class="o">=</span> <span class="n">gzip</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">logo_base64</span><span class="p">)</span>
@@ -555,7 +657,7 @@
 
 <div class="viewcode-block" id="get_certificate_metadata">
 <a class="viewcode-back" href="../../api.html#checkdmarc.bimi.get_certificate_metadata">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_certificate_metadata</span><span class="p">(</span><span class="n">pem_crt</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_certificate_metadata</span><span class="p">(</span><span class="n">pem_crt</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get metadata about a Verified Mark Certificate (VMC)&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_cert_name_components</span><span class="p">(</span><span class="n">cert_field</span><span class="p">:</span> <span class="n">x509</span><span class="o">.</span><span class="n">Name</span><span class="p">):</span>
@@ -564,7 +666,7 @@
             <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">rdn</span><span class="p">:</span>
                 <span class="n">label</span> <span class="o">=</span> <span class="n">OID_LABELS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">attr</span><span class="o">.</span><span class="n">oid</span><span class="p">)</span> <span class="ow">or</span> <span class="n">attr</span><span class="o">.</span><span class="n">oid</span><span class="o">.</span><span class="n">dotted_string</span>
                 <span class="n">mapping</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">attr</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_certificate_domains</span><span class="p">(</span><span class="n">cert</span><span class="p">:</span> <span class="n">x509</span><span class="o">.</span><span class="n">Certificate</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -573,12 +675,14 @@
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">ExtensionNotFound</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="n">ext</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">get_values_for_type</span><span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">DNSName</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ext</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">get_values_for_type</span><span class="p">(</span>  <span class="c1"># pyright: ignore[reportAttributeAccessIssue]</span>
+            <span class="n">x509</span><span class="o">.</span><span class="n">DNSName</span>
+        <span class="p">)</span>  <span class="c1"># pyright: ignore[reportAttributeAccessIssue]</span>
 
-    <span class="n">metadata</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">validation_errors</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">validation_errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">certs</span> <span class="o">=</span> <span class="n">load_pem_x509_certificates</span><span class="p">(</span><span class="n">pem_crt</span><span class="p">)</span>
     <span class="n">vmc</span> <span class="o">=</span> <span class="n">certs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">REQUIRED_EXTENSIONS</span><span class="p">:</span>
@@ -754,10 +858,10 @@
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">selector</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a BIMI record</span>
@@ -843,11 +947,11 @@
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">selector</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BIMIQueryResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Queries DNS for a BIMI record</span>
 
@@ -861,7 +965,7 @@
 <span class="sd">        timeout_retries (int): The number of times to reattempt a query after a timeout</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
+<span class="sd">        dict: a ``dict`` with the following keys:</span>
 <span class="sd">                     - ``record`` - the unparsed BIMI record string</span>
 <span class="sd">                     - ``location`` - the domain where the record was found</span>
 <span class="sd">                     - ``warnings`` - warning conditions found</span>
@@ -922,9 +1026,7 @@
                 <span class="s2">&quot;this subdomain or its base domain.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span>
-        <span class="p">[(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="n">location</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;warnings&quot;</span><span class="p">,</span> <span class="n">warnings</span><span class="p">)]</span>
-    <span class="p">)</span></div>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">,</span> <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span> <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">warnings</span><span class="p">}</span></div>
 
 
 
@@ -935,10 +1037,10 @@
     <span class="o">*</span><span class="p">,</span>
     <span class="n">domain</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">parsed_dmarc_record</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">include_tag_descriptions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">syntax_error_marker</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span>
-    <span class="n">http_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_HTTP_TIMEOUT</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">include_tag_descriptions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">syntax_error_marker</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span>
+    <span class="n">http_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_HTTP_TIMEOUT</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parses a BIMI record</span>
 
@@ -951,8 +1053,8 @@
 <span class="sd">        http_timeout (float): HTTP timeout in seconds</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
-<span class="sd">         - ``tags`` - An ``OrderedDict`` of BIMI tags</span>
+<span class="sd">        dict: a ``dict`` with the following keys:</span>
+<span class="sd">         - ``tags`` - a ``dict`` of BIMI tags</span>
 
 <span class="sd">           - ``value`` - The BIMI tag value</span>
 <span class="sd">           - ``description`` - A description of the tag/value</span>
@@ -975,7 +1077,7 @@
 <span class="sd">        :exc:`checkdmarc.bimi.InvalidBIMITagValue`</span>
 <span class="sd">        :exc:`checkdmarc.bimi.SPFRecordFoundWhereBIMIRecordShouldBe`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">svg_metadata</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">cert_metadata</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Parsing the BIMI record&quot;</span><span class="p">)</span>
@@ -1012,7 +1114,7 @@
         <span class="p">)</span>
 
     <span class="n">pairs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">BIMI_TAG_VALUE_REGEX</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
-    <span class="n">tags</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">hash_match</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="n">seen_tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1029,9 +1131,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">seen_tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">duplicate_tags</span><span class="p">):</span>
-            <span class="n">duplicate_tags</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">duplicate_tags</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="n">InvalidBIMITag</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duplicate </span><span class="si">{</span><span class="n">duplicate_tags</span><span class="si">}</span><span class="s2"> tags are not permitted&quot;</span><span class="p">)</span>
-        <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">tag_value</span><span class="p">)</span>
+            <span class="n">duplicate_tags_str</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">duplicate_tags</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">InvalidBIMITag</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Duplicate </span><span class="si">{</span><span class="n">duplicate_tags_str</span><span class="si">}</span><span class="s2"> tags are not permitted&quot;</span>
+            <span class="p">)</span>
+        <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">tag_value</span><span class="p">}</span>
         <span class="k">if</span> <span class="n">include_tag_descriptions</span><span class="p">:</span>
             <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">BIMI_TAGS</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">BIMI_TAGS</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;description&quot;</span><span class="p">]</span>
@@ -1042,9 +1146,9 @@
                 <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
                 <span class="n">raw_xml</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">results</span><span class="p">[</span><span class="s2">&quot;image&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-                    <span class="n">error</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Failed to download BIMI image at </span><span class="si">{</span><span class="n">tag_value</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
+                <span class="n">results</span><span class="p">[</span><span class="s2">&quot;image&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to download BIMI image at </span><span class="si">{</span><span class="n">tag_value</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">}</span>
             <span class="k">if</span> <span class="n">raw_xml</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">svg_metadata</span> <span class="o">=</span> <span class="n">get_svg_metadata</span><span class="p">(</span><span class="n">raw_xml</span><span class="p">)</span>
@@ -1056,9 +1160,9 @@
                     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">svg_validation_errors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="n">svg_metadata</span><span class="p">[</span><span class="s2">&quot;validation_errors&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">svg_validation_errors</span>
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;image&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-                        <span class="n">error</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Failed to process BIMI image at </span><span class="si">{</span><span class="n">tag_value</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="p">)</span>
+                    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;image&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to process BIMI image at </span><span class="si">{</span><span class="n">tag_value</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">}</span>
         <span class="k">elif</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;a&quot;</span> <span class="ow">and</span> <span class="n">tag_value</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
             <span class="n">cert_metadata</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">try</span><span class="p">:</span>
@@ -1074,9 +1178,9 @@
                             <span class="s2">&quot;The image at the l= tag URL does not match the image embedded in the certificate.&quot;</span>
                         <span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">results</span><span class="p">[</span><span class="s2">&quot;certificate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-                    <span class="n">error</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Failed to download the mark certificate at </span><span class="si">{</span><span class="n">tag_value</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
+                <span class="n">results</span><span class="p">[</span><span class="s2">&quot;certificate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to download the mark certificate at </span><span class="si">{</span><span class="n">tag_value</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">}</span>
         <span class="k">elif</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;avp&quot;</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">tag_value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;brand&quot;</span><span class="p">,</span> <span class="s2">&quot;personal&quot;</span><span class="p">]:</span>
                 <span class="k">raise</span> <span class="n">BIMISyntaxError</span><span class="p">(</span>
@@ -1111,11 +1215,13 @@
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="s2">&quot;The DMARC pct tag must be set to 100 (the implicit default) if it is used.&quot;</span>
                 <span class="p">)</span>
-    <span class="n">matching_certificate_provided</span> <span class="o">=</span> <span class="n">hash_match</span> <span class="ow">and</span> <span class="n">cert_metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;l&quot;</span> <span class="ow">in</span> <span class="n">tags</span> <span class="ow">and</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;l&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">matching_certificate_provided</span><span class="p">:</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="s2">&quot;Most email providers will not display a BIMI image without a valid mark certificate.&quot;</span>
-        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">cert_metadata</span><span class="p">:</span>
+        <span class="n">matching_certificate_provided</span> <span class="o">=</span> <span class="n">hash_match</span> <span class="ow">and</span> <span class="n">cert_metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span>
+        <span class="n">l_tag_value</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">l_tag_value</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">matching_certificate_provided</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Most email providers will not display a BIMI image without a valid mark certificate.&quot;</span>
+            <span class="p">)</span>
     <span class="n">results</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span>
     <span class="k">if</span> <span class="n">svg_metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">results</span><span class="p">[</span><span class="s2">&quot;image&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">svg_metadata</span>
@@ -1132,14 +1238,14 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">check_bimi</span><span class="p">(</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
     <span class="n">parsed_dmarc_record</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">include_tag_descriptions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">include_tag_descriptions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BIMICheckResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a dictionary with a parsed BIMI record or an error.</span>
 
@@ -1161,7 +1267,7 @@
 <span class="sd">        timeout_retries (int): The number of times to reattempt a query after a timeout</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: An ``OrderedDict`` with the following keys:</span>
+<span class="sd">        dict: a ``dict`` with the following keys:</span>
 
 <span class="sd">                       - ``record`` - The BIMI record string</span>
 <span class="sd">                       - ``parsed`` - The parsed BIMI record</span>
@@ -1174,7 +1280,7 @@
 <span class="sd">                      - ``error`` - Tne error message</span>
 <span class="sd">                      - ``valid`` - False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">bimi_results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)])</span>
+    <span class="n">bimi_results</span><span class="p">:</span> <span class="n">BIMICheckResult</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
     <span class="n">selector</span> <span class="o">=</span> <span class="n">selector</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">bimi_query</span> <span class="o">=</span> <span class="n">query_bimi_record</span><span class="p">(</span>

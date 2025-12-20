@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.soa &mdash; checkdmarc 5.12.27 documentation</title>
+  <title>checkdmarc.soa &mdash; checkdmarc 5.13.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e2a2add5"></script>
+      <script src="../../_static/documentation_options.js?v=9fc23799"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -74,17 +74,50 @@
   <h1>Source code for checkdmarc.soa</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
-
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_soa_record</span>
 
 <span class="sd">&quot;&quot;&quot;Functions for parsing DNS Start of Authority records&quot;&quot;&quot;</span>
 
 <span class="n">U32_MAX</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span> <span class="o">-</span> <span class="mi">1</span>
+
+
+<div class="viewcode-block" id="ParsedSOARecord">
+<a class="viewcode-back" href="../../api.html#checkdmarc.soa.ParsedSOARecord">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParsedSOARecord</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">primary_nameserver</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">rname_email_address</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">serial</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">refresh</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">retry</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">expire</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">minimum</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+
+<div class="viewcode-block" id="SOARecordSuccessful">
+<a class="viewcode-back" href="../../api.html#checkdmarc.soa.SOARecordSuccessful">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SOARecordSuccessful</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">record</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">ParsedSOARecord</span></div>
+
+
+
+<div class="viewcode-block" id="SOARecordError">
+<a class="viewcode-back" href="../../api.html#checkdmarc.soa.SOARecordError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SOARecordError</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">error</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="n">SOARecordResults</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">SOARecordSuccessful</span><span class="p">,</span> <span class="n">SOARecordError</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="soa_rname_to_email">
@@ -107,9 +140,9 @@
 
 <div class="viewcode-block" id="parse_soa_string">
 <a class="viewcode-back" href="../../api.html#checkdmarc.soa.parse_soa_string">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">parse_soa_string</span><span class="p">(</span><span class="n">rr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_soa_string</span><span class="p">(</span><span class="n">rr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParsedSOARecord</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Parses a raw SOA record string and returns an OrderedDict with validated fields.</span>
+<span class="sd">    Parses a raw SOA record string and returns an dict with validated fields.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rr</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">rr</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;SOA rrdata must be a non-empty string.&quot;</span><span class="p">)</span>
@@ -131,17 +164,17 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> out of range: </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">n</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span>
-        <span class="p">[</span>
-            <span class="p">(</span><span class="s2">&quot;primary_nameserver&quot;</span><span class="p">,</span> <span class="n">mname</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)),</span>
-            <span class="p">(</span><span class="s2">&quot;rname_email_address&quot;</span><span class="p">,</span> <span class="n">soa_rname_to_email</span><span class="p">(</span><span class="n">rname</span><span class="p">)),</span>
-            <span class="p">(</span><span class="s2">&quot;serial&quot;</span><span class="p">,</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;serial&quot;</span><span class="p">,</span> <span class="n">serial</span><span class="p">)),</span>
-            <span class="p">(</span><span class="s2">&quot;refresh&quot;</span><span class="p">,</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;refresh&quot;</span><span class="p">,</span> <span class="n">refresh</span><span class="p">)),</span>
-            <span class="p">(</span><span class="s2">&quot;retry&quot;</span><span class="p">,</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;retry&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="p">)),</span>
-            <span class="p">(</span><span class="s2">&quot;expire&quot;</span><span class="p">,</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;expire&quot;</span><span class="p">,</span> <span class="n">expire</span><span class="p">)),</span>
-            <span class="p">(</span><span class="s2">&quot;minimum&quot;</span><span class="p">,</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;minimum&quot;</span><span class="p">,</span> <span class="n">minimum</span><span class="p">)),</span>
-        <span class="p">]</span>
-    <span class="p">)</span></div>
+    <span class="n">soa_record</span><span class="p">:</span> <span class="n">ParsedSOARecord</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;primary_nameserver&quot;</span><span class="p">:</span> <span class="n">mname</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;rname_email_address&quot;</span><span class="p">:</span> <span class="n">soa_rname_to_email</span><span class="p">(</span><span class="n">rname</span><span class="p">),</span>
+        <span class="s2">&quot;serial&quot;</span><span class="p">:</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;serial&quot;</span><span class="p">,</span> <span class="n">serial</span><span class="p">),</span>
+        <span class="s2">&quot;refresh&quot;</span><span class="p">:</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;refresh&quot;</span><span class="p">,</span> <span class="n">refresh</span><span class="p">),</span>
+        <span class="s2">&quot;retry&quot;</span><span class="p">:</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;refresh&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="p">),</span>
+        <span class="s2">&quot;expire&quot;</span><span class="p">:</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;refresh&quot;</span><span class="p">,</span> <span class="n">expire</span><span class="p">),</span>
+        <span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="n">check_u32</span><span class="p">(</span><span class="s2">&quot;refresh&quot;</span><span class="p">,</span> <span class="n">minimum</span><span class="p">),</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">soa_record</span></div>
 
 
 
@@ -150,11 +183,11 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">check_soa</span><span class="p">(</span>
     <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">nameservers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Nameserver</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resolver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">timeout_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SOARecordResults</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns a dictionary of a domain&#39;s SOA record and a parsed version of the record or a dictionary with an</span>
 <span class="sd">    the record and an error.</span>
@@ -167,7 +200,7 @@
 <span class="sd">        timeout (float): number of seconds to wait for a record from DNS</span>
 <span class="sd">        timeout_retries (int): The number of times to reattempt a query after a timeout</span>
 <span class="sd">    Returns:</span>
-<span class="sd">        OrderedDict: A dictionary with the following keys:</span>
+<span class="sd">        dict: A dictionary with the following keys:</span>
 
 <span class="sd">              - ``record`` - The SOA record as a string</span>
 <span class="sd">              - ``values``  - A parsed version of the SOA record</span>
@@ -186,15 +219,19 @@
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
             <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">record</span><span class="p">)])</span>
+
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))])</span>
-        <span class="k">return</span> <span class="n">results</span>
+        <span class="n">failure_results</span><span class="p">:</span> <span class="n">SOARecordError</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">failure_results</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">results</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_soa_string</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+        <span class="n">results</span><span class="p">:</span> <span class="n">SOARecordSuccessful</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">,</span>
+            <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="n">parse_soa_string</span><span class="p">(</span><span class="n">record</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">results</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">results</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">results</span></div>
+        <span class="n">failure_results</span><span class="p">:</span> <span class="n">SOARecordError</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">failure_results</span></div>
 
 </pre></div>
 
