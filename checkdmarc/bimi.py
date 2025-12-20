@@ -70,7 +70,7 @@ limitations under the License."""
 # TypedDict definitions for BIMI record structures
 
 
-# These typedicts can't be used in Python 3.9-3.10 because these is no way to set a field as optional
+# These typedicts can't be used in Python 3.9-3.10 because there is no way to set a field as optional, but keeping them for later
 class SVGMetadata(TypedDict):
     """Metadata extracted from SVG image"""
 

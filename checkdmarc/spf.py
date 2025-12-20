@@ -665,17 +665,17 @@ def parse_spf_record(
                         timeout_retries=timeout_retries,
                     )
                     if len(exp_txt_records) == 0:
-                        warnings.append("No TXT records at exp value {exp}.")
+                        warnings.append(f"No TXT records at exp value {exp}.")
                     if len(exp_txt_records) > 1:
-                        warnings.append("Too many TXT records at exp value {exp}.")
+                        warnings.append(f"Too many TXT records at exp value {exp}.")
                 except Exception as e:
                     warnings.append(
                         f"Failed to get TXT records at exp value {exp}: {e}"
                     )
-                else:
-                    warnings.append(
-                        "Any text after the all mechanism other than an exp modifier is ignored."
-                    )
+        else:
+            warnings.append(
+                "Any text after the all mechanism other than an exp modifier is ignored."
+            )
 
     total_dns_lookups = 0
     total_void_dns_lookups = 0
@@ -994,9 +994,9 @@ def parse_spf_record(
                             timeout_retries=timeout_retries,
                         )
                         if len(exp_txt_records) == 0:
-                            warnings.append("No TXT records at exp value {exp}.")
+                            warnings.append(f"No TXT records at exp value {exp}.")
                         if len(exp_txt_records) > 1:
-                            warnings.append("Too many TXT records at exp value {exp}.")
+                            warnings.append(f"Too many TXT records at exp value {exp}.")
                     except Exception as e:
                         warnings.append(
                             f"Failed to get TXT records at exp value {exp}: {e}"
@@ -1119,6 +1119,8 @@ def parse_spf_record(
                         "The ptr mechanism should not be used - (RFC 7208 § 5.5)"
                     )
                     continue
+                if value == "":
+                    value = domain
                 a_records = get_a_records(
                     value,
                     nameservers=nameservers,
