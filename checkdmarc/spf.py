@@ -1115,6 +1115,9 @@ def parse_spf_record(
                         "void_dns_lookups": mechanism_void_dns_lookups,
                     }
                     parsed["mechanisms"].append(ptr_mechanism)
+                    raise _SPFWarning(
+                        "The ptr mechanism should not be used - (RFC 7208 § 5.5)"
+                    )
                     continue
                 a_records = get_a_records(
                     value,
