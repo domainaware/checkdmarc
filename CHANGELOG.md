@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.13.0
+
+### Improvements
+
+- Proper validation of SPF macros (PR #218)
+- More detailed API typing
+
+### Fixes
+
+- Missing values in some SPF warnings
+
 ## 5.12.27
 
 ### Fixes

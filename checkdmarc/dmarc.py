@@ -1365,9 +1365,7 @@ def parse_dmarc_record(
             )
 
     if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
-        warnings.append(
-            str(InvalidDMARCTagValue("pct value must be an integer between 0 and 100."))
-        )
+        raise DMARCSyntaxError("pct value must be an integer between 0 and 100.")
     elif tags["pct"]["value"] == 0:
         warnings.append("A pct value of 0 disables DMARC enforcement.")
     elif tags["pct"]["value"] < 100:
