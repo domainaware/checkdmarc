@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.13.1
+
+### Fixes
+
+- Fix check_domains return type annotation (PR # 229 fixed issue #228)
+- Fix Dockerfile COPY destination path (PR #230 fixed issue #227)
+
 ## 5.13.0
 
 ### Improvements
