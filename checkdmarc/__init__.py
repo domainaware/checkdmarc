@@ -21,7 +21,10 @@ from checkdmarc.dmarc import check_dmarc, DMARCResults, DMARCErrorResults
 from checkdmarc.dnssec import test_dnssec
 from checkdmarc.mta_sts import check_mta_sts, MTASTSCheckResults
 from checkdmarc.smtp import check_mx, MXResults
-from checkdmarc.smtp_tls_reporting import check_smtp_tls_reporting, SMTPTLSReportingResults
+from checkdmarc.smtp_tls_reporting import (
+    check_smtp_tls_reporting,
+    SMTPTLSReportingResults,
+)
 from checkdmarc.soa import check_soa, SOARecordResults
 from checkdmarc.spf import check_spf, SPFRecordResults
 from checkdmarc.utils import (
@@ -109,9 +112,9 @@ def check_domains(
         wait (float): number of seconds to wait between processing domains
 
     Returns:
-       A single ``DomainCheckResult`` (when one domain is provided) or a 
+       A single ``DomainCheckResult`` (when one domain is provided) or a
        ``list`` of ``DomainCheckResult`` (when multiple domains are provided).
-       
+
        Each ``DomainCheckResult`` contains:
 
        - ``domain`` - The domain name
