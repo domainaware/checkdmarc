@@ -10,23 +10,24 @@ from csv import DictWriter
 from io import StringIO
 from time import sleep
 from typing import Optional, Union
+from typing import TypedDict
 from collections.abc import Sequence
 
 import dns.resolver
 from dns.nameserver import Nameserver
 
 import checkdmarc._constants
-from checkdmarc.bimi import check_bimi
-from checkdmarc.dmarc import check_dmarc
+from checkdmarc.bimi import check_bimi, BIMICheckResult
+from checkdmarc.dmarc import check_dmarc, DMARCResults, DMARCErrorResults
 from checkdmarc.dnssec import test_dnssec
-from checkdmarc.mta_sts import check_mta_sts
-from checkdmarc.smtp import check_mx
-from checkdmarc.smtp_tls_reporting import check_smtp_tls_reporting
-from checkdmarc.soa import check_soa
-from checkdmarc.spf import check_spf
+from checkdmarc.mta_sts import check_mta_sts, MTASTSCheckResults
+from checkdmarc.smtp import check_mx, MXResults
+from checkdmarc.smtp_tls_reporting import check_smtp_tls_reporting, SMTPTLSReportingResults
+from checkdmarc.soa import check_soa, SOARecordResults
+from checkdmarc.spf import check_spf, SPFRecordResults
 from checkdmarc.utils import (
     DNSException,
-    MXHost,
+    MXHost as MXHost,
     NameserverResult,
     get_base_domain,
     get_nameservers,
@@ -51,6 +52,27 @@ limitations under the License."""
 __version__ = checkdmarc._constants.__version__
 
 
+class _DomainCheckResultOptional(TypedDict, total=False):
+    """Optional fields for DomainCheckResult"""
+
+    bimi: BIMICheckResult
+
+
+class DomainCheckResult(_DomainCheckResultOptional):
+    """Result of checking a single domain"""
+
+    domain: str
+    base_domain: str
+    dnssec: bool
+    soa: SOARecordResults
+    ns: NameserverResult
+    mx: MXResults
+    spf: SPFRecordResults
+    dmarc: Union[DMARCResults, DMARCErrorResults]
+    smtp_tls_reporting: SMTPTLSReportingResults
+    mta_sts: MTASTSCheckResults
+
+
 def check_domains(
     domains: list[str],
     *,
@@ -65,7 +87,7 @@ def check_domains(
     timeout: float = 2.0,
     timeout_retries: int = 2,
     wait: float = 0.0,
-) -> MXHost:
+) -> Union[DomainCheckResult, list[DomainCheckResult]]:
     """
     Check the given domains for SPF and DMARC records, parse them, and return
     them
