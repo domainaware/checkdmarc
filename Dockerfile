@@ -11,7 +11,7 @@ WORKDIR /app
 
 RUN pip install hatch
 
-COPY checkdmarc/ checkdmarc/
+COPY checkdmarc/ ./checkdmarc/
 COPY README.md pyproject.toml ./
 
 RUN hatch build
