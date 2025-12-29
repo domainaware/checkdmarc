@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc &mdash; checkdmarc 5.13.0 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 5.13.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=9fc23799"></script>
+      <script src="../_static/documentation_options.js?v=3bbab380"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -82,24 +82,27 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">csv</span><span class="w"> </span><span class="kn">import</span> <span class="n">DictWriter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringIO</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">checkdmarc._constants</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.bimi</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_bimi</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.dmarc</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_dmarc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.bimi</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_bimi</span><span class="p">,</span> <span class="n">BIMICheckResult</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.dmarc</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_dmarc</span><span class="p">,</span> <span class="n">DMARCResults</span><span class="p">,</span> <span class="n">DMARCErrorResults</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.dnssec</span><span class="w"> </span><span class="kn">import</span> <span class="n">test_dnssec</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.mta_sts</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_mta_sts</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.smtp</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_mx</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.smtp_tls_reporting</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_smtp_tls_reporting</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.soa</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_soa</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.spf</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_spf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.mta_sts</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_mta_sts</span><span class="p">,</span> <span class="n">MTASTSCheckResults</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.smtp</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_mx</span><span class="p">,</span> <span class="n">MXResults</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.smtp_tls_reporting</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">check_smtp_tls_reporting</span><span class="p">,</span>
+    <span class="n">SMTPTLSReportingResults</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.soa</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_soa</span><span class="p">,</span> <span class="n">SOARecordResults</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.spf</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_spf</span><span class="p">,</span> <span class="n">SPFRecordResults</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DNSException</span><span class="p">,</span>
-    <span class="n">MXHost</span><span class="p">,</span>
+    <span class="n">MXHost</span> <span class="k">as</span> <span class="n">MXHost</span><span class="p">,</span>
     <span class="n">NameserverResult</span><span class="p">,</span>
     <span class="n">get_base_domain</span><span class="p">,</span>
     <span class="n">get_nameservers</span><span class="p">,</span>
@@ -124,6 +127,30 @@
 <span class="n">__version__</span> <span class="o">=</span> <span class="n">checkdmarc</span><span class="o">.</span><span class="n">_constants</span><span class="o">.</span><span class="n">__version__</span>
 
 
+<span class="k">class</span><span class="w"> </span><span class="nc">_DomainCheckResultOptional</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Optional fields for DomainCheckResult&quot;&quot;&quot;</span>
+
+    <span class="n">bimi</span><span class="p">:</span> <span class="n">BIMICheckResult</span>
+
+
+<div class="viewcode-block" id="DomainCheckResult">
+<a class="viewcode-back" href="../api.html#checkdmarc.DomainCheckResult">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DomainCheckResult</span><span class="p">(</span><span class="n">_DomainCheckResultOptional</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result of checking a single domain&quot;&quot;&quot;</span>
+
+    <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">base_domain</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">dnssec</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">soa</span><span class="p">:</span> <span class="n">SOARecordResults</span>
+    <span class="n">ns</span><span class="p">:</span> <span class="n">NameserverResult</span>
+    <span class="n">mx</span><span class="p">:</span> <span class="n">MXResults</span>
+    <span class="n">spf</span><span class="p">:</span> <span class="n">SPFRecordResults</span>
+    <span class="n">dmarc</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DMARCResults</span><span class="p">,</span> <span class="n">DMARCErrorResults</span><span class="p">]</span>
+    <span class="n">smtp_tls_reporting</span><span class="p">:</span> <span class="n">SMTPTLSReportingResults</span>
+    <span class="n">mta_sts</span><span class="p">:</span> <span class="n">MTASTSCheckResults</span></div>
+
+
+
 <div class="viewcode-block" id="check_domains">
 <a class="viewcode-back" href="../api.html#checkdmarc.check_domains">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_domains</span><span class="p">(</span>
@@ -140,7 +167,7 @@
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
     <span class="n">timeout_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
     <span class="n">wait</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MXHost</span><span class="p">:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">DomainCheckResult</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">DomainCheckResult</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check the given domains for SPF and DMARC records, parse them, and return</span>
 <span class="sd">    them</span>
@@ -163,15 +190,22 @@
 <span class="sd">        wait (float): number of seconds to wait between processing domains</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">       A ``dict`` or ``list`` of  `dict` with the following keys</span>
+<span class="sd">       A single ``DomainCheckResult`` (when one domain is provided) or a</span>
+<span class="sd">       ``list`` of ``DomainCheckResult`` (when multiple domains are provided).</span>
+
+<span class="sd">       Each ``DomainCheckResult`` contains:</span>
 
 <span class="sd">       - ``domain`` - The domain name</span>
-<span class="sd">       - ``base_domain`` The base domain</span>
-<span class="sd">       - ``mx`` - See :func:`checkdmarc.smtp.get_mx_hosts`</span>
-<span class="sd">       - ``spf`` -  A ``valid`` flag, plus the output of</span>
-<span class="sd">         :func:`checkdmarc.spf.parse_spf_record` or a ``error``</span>
-<span class="sd">       - ``dmarc`` - A ``valid`` flag, plus the output of</span>
-<span class="sd">         :func:`checkdmarc.dmarc.parse_dmarc_record` or a ``error``</span>
+<span class="sd">       - ``base_domain`` - The base domain</span>
+<span class="sd">       - ``dnssec`` - DNSSEC validation status (bool)</span>
+<span class="sd">       - ``soa`` - Start of Authority record information</span>
+<span class="sd">       - ``ns`` - Nameserver information and warnings</span>
+<span class="sd">       - ``mx`` - Mail exchanger records and STARTTLS test results</span>
+<span class="sd">       - ``spf`` - SPF record validation results</span>
+<span class="sd">       - ``dmarc`` - DMARC record validation results</span>
+<span class="sd">       - ``smtp_tls_reporting`` - SMTP TLS reporting configuration</span>
+<span class="sd">       - ``mta_sts`` - MTA-STS policy validation results</span>
+<span class="sd">       - ``bimi`` - BIMI record validation results (optional, only if bimi_selector is not None)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">domains</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
         <span class="nb">list</span><span class="p">(</span>
