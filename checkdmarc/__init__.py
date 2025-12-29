@@ -9,8 +9,7 @@ import logging
 from csv import DictWriter
 from io import StringIO
 from time import sleep
-from typing import Optional, Union
-from typing import TypedDict
+from typing import Optional, TypedDict, Union
 from collections.abc import Sequence
 
 import dns.resolver
@@ -110,15 +109,22 @@ def check_domains(
         wait (float): number of seconds to wait between processing domains
 
     Returns:
-       A ``dict`` or ``list`` of  `dict` with the following keys
+       A single ``DomainCheckResult`` (when one domain is provided) or a 
+       ``list`` of ``DomainCheckResult`` (when multiple domains are provided).
+       
+       Each ``DomainCheckResult`` contains:
 
        - ``domain`` - The domain name
-       - ``base_domain`` The base domain
-       - ``mx`` - See :func:`checkdmarc.smtp.get_mx_hosts`
-       - ``spf`` -  A ``valid`` flag, plus the output of
-         :func:`checkdmarc.spf.parse_spf_record` or a ``error``
-       - ``dmarc`` - A ``valid`` flag, plus the output of
-         :func:`checkdmarc.dmarc.parse_dmarc_record` or a ``error``
+       - ``base_domain`` - The base domain
+       - ``dnssec`` - DNSSEC validation status (bool)
+       - ``soa`` - Start of Authority record information
+       - ``ns`` - Nameserver information and warnings
+       - ``mx`` - Mail exchanger records and STARTTLS test results
+       - ``spf`` - SPF record validation results
+       - ``dmarc`` - DMARC record validation results
+       - ``smtp_tls_reporting`` - SMTP TLS reporting configuration
+       - ``mta_sts`` - MTA-STS policy validation results
+       - ``bimi`` - BIMI record validation results (optional, only if bimi_selector is not None)
     """
     domains = sorted(
         list(
