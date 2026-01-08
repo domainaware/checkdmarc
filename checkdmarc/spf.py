@@ -444,15 +444,13 @@ def query_spf_record(
             # "v=spf1".  Note that the version section is terminated by either an
             # SP character or the end of the record. As an example, a record with
             # a version section of "v=spf10" does not match and is discarded.
-            
+
             # Check for undecodable characters
             if record == "Undecodable characters":
                 # We can't determine if this is an SPF record due to encoding issues
-                warnings.append(
-                    "A TXT record with undecodable characters was skipped."
-                )
+                warnings.append("A TXT record with undecodable characters was skipped.")
                 continue
-            
+
             if record.strip('"').startswith(txt_prefix):
                 spf_txt_records.append(record)
             elif record.startswith(txt_prefix):
@@ -1249,7 +1247,7 @@ def get_spf_record(
     )
     record = query_result["record"]
     query_warnings = query_result.get("warnings", [])
-    
+
     parsed_record = parse_spf_record(
         record,
         domain,
@@ -1259,11 +1257,11 @@ def get_spf_record(
         timeout_retries=timeout_retries,
     )
     parsed_record["record"] = record
-    
+
     # Merge warnings from query_spf_record with warnings from parse_spf_record
     if query_warnings:
         parsed_record["warnings"] = query_warnings + parsed_record.get("warnings", [])
-    
+
     return parsed_record
 
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.13.2
+
+### Fixes
+
+- Skip undecodable TXT records instead of raising exception during SPF lookup (PR #232 fixes issue #231)
+
 ## 5.13.1
 
 ### Fixes
