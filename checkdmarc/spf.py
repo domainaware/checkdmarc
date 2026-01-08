@@ -437,10 +437,6 @@ def query_spf_record(
         )
         spf_record = None
         for record in answers:
-            if record == "Undecodable characters":
-                raise UndecodableCharactersInTXTRecord(
-                    "A TXT record contains undecodable characters."
-                )
             # https://datatracker.ietf.org/doc/html/rfc7208#section-4.5
             #
             # Starting with the set of records that were returned by the lookup,
@@ -448,6 +444,15 @@ def query_spf_record(
             # "v=spf1".  Note that the version section is terminated by either an
             # SP character or the end of the record. As an example, a record with
             # a version section of "v=spf10" does not match and is discarded.
+            
+            # Check for undecodable characters
+            if record == "Undecodable characters":
+                # We can't determine if this is an SPF record due to encoding issues
+                warnings.append(
+                    "A TXT record with undecodable characters was skipped."
+                )
+                continue
+            
             if record.strip('"').startswith(txt_prefix):
                 spf_txt_records.append(record)
             elif record.startswith(txt_prefix):
@@ -1235,14 +1240,16 @@ def get_spf_record(
         :exc:`checkdmarc.spf.SPFTooManyDNSLookups`
     """
     domain = normalize_domain(domain)
-    record = query_spf_record(
+    query_result = query_spf_record(
         domain,
         nameservers=nameservers,
         resolver=resolver,
         timeout=timeout,
         timeout_retries=timeout_retries,
     )
-    record = record["record"]
+    record = query_result["record"]
+    query_warnings = query_result.get("warnings", [])
+    
     parsed_record = parse_spf_record(
         record,
         domain,
@@ -1252,6 +1259,11 @@ def get_spf_record(
         timeout_retries=timeout_retries,
     )
     parsed_record["record"] = record
+    
+    # Merge warnings from query_spf_record with warnings from parse_spf_record
+    if query_warnings:
+        parsed_record["warnings"] = query_warnings + parsed_record.get("warnings", [])
+    
     return parsed_record
 
 

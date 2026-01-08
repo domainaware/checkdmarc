@@ -5,6 +5,7 @@
 
 import os
 import unittest
+from unittest.mock import patch
 
 import checkdmarc
 import checkdmarc.bimi
@@ -560,6 +561,37 @@ class Test(unittest.TestCase):
             spf_record,
             domain,
         )
+
+    def testUndecodableCharactersInNonSPFRecord(self):
+        """Non-SPF TXT records with undecodable characters should be ignored with a warning"""
+        domain = "example.com"
+        
+        # Mock query_dns to return:
+        # 1. An undecodable non-SPF TXT record
+        # 2. A valid SPF record
+        with patch('checkdmarc.spf.query_dns') as mock_query_dns:
+            # First call for SPF type records (returns empty)
+            # Second call for TXT records (returns undecodable + valid SPF)
+            mock_query_dns.side_effect = [
+                [],  # No SPF type records
+                [
+                    "Undecodable characters",  # TXT record with undecodable chars
+                    '"v=spf1 include:spf.smtp2go.com -all"'  # Valid SPF record
+                ]
+            ]
+            
+            # This should succeed and return the valid SPF record
+            result = checkdmarc.spf.get_spf_record(domain)
+            
+            # Verify the SPF record was found
+            self.assertIsNotNone(result["record"])
+            self.assertIn("v=spf1", result["record"])
+            
+            # Verify a warning was added for the undecodable record
+            self.assertTrue(len(result["warnings"]) > 0)
+            self.assertTrue(
+                any("TXT record" in w and "undecodable" in w.lower() for w in result["warnings"])
+            )
 
 
 if __name__ == "__main__":
