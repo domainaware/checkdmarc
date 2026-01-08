@@ -575,7 +575,7 @@ class Test(unittest.TestCase):
             mock_query_dns.side_effect = [
                 [],  # No SPF type records
                 [
-                    "Undecodable characters",  # Non-SPF with undecodable chars
+                    "Undecodable characters",  # TXT record with undecodable chars
                     '"v=spf1 include:spf.smtp2go.com -all"'  # Valid SPF record
                 ]
             ]
@@ -590,7 +590,7 @@ class Test(unittest.TestCase):
             # Verify a warning was added for the undecodable record
             self.assertTrue(len(result["warnings"]) > 0)
             self.assertTrue(
-                any("undecodable characters" in w.lower() for w in result["warnings"])
+                any("TXT record" in w and "undecodable" in w.lower() for w in result["warnings"])
             )
 
 

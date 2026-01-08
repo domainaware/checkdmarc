@@ -447,9 +447,9 @@ def query_spf_record(
             
             # Check for undecodable characters
             if record == "Undecodable characters":
-                # We can't determine if this is an SPF record, so treat it as a warning
+                # We can't determine if this is an SPF record due to encoding issues
                 warnings.append(
-                    "A non-SPF TXT record contains undecodable characters and was ignored."
+                    "A TXT record with undecodable characters was skipped."
                 )
                 continue
             
