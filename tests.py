@@ -154,6 +154,7 @@ class Test(unittest.TestCase):
             "include:_spf.elasticemail.com "
             "include:servers.mcsv.net "
             "include:_spf.google.com "
+            "include:service-now.com "
             "~all"
         )
         domain = "example.com"
