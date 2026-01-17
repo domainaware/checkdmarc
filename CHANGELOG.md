@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.13.3
+
+### Fixes
+
+- Refactor `extract_logo_from_certificate()` to improve logo extraction from certificate data (Fixes #233)
+
 ## 5.13.2
 
 ### Fixes

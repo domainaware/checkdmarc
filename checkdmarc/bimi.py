@@ -519,16 +519,45 @@ def check_svg_requirements(svg_metadata: dict) -> list[str]:
 
 def extract_logo_from_certificate(
     cert: Union[x509.Certificate, bytes],
-) -> Union[None, bytes]:
+) -> Optional[bytes]:
     try:
         if not isinstance(cert, x509.Certificate):
             cert = load_pem_x509_certificates(cert)[1]
+
         ext = cert.extensions.get_extension_for_oid(OID_LOGOTYPE)
-        ext_bytes = ext.value.value  # pyright: ignore[reportAttributeAccessIssue]
-        ext_str = ext_bytes.decode("utf-8", errors="ignore")
-        logo_base64 = base64.b64decode(ext_str.split(",")[1])
-        logo = gzip.decompress(logo_base64)
-        return logo
+
+        # This is DER (binary ASN.1)
+        ext_bytes: bytes = ext.value.value  # pyright: ignore[reportAttributeAccessIssue]
+
+        marker = b"data:"
+        idx = ext_bytes.find(marker)
+        if idx == -1:
+            return None
+
+        # Take bytes from the first "data:" onward.
+        tail = ext_bytes[idx:]
+
+        # Decode tail as ASCII/UTF-8 since data: URIs are plain text.
+        tail_str = tail.decode("utf-8", errors="strict")
+
+        # Example: data:image/svg+xml;base64,AAAA....
+        if ";base64," not in tail_str:
+            return None
+
+        b64_part = tail_str.split(";base64,", 1)[1]
+
+        # Some certs may embed trailing ASN.1 bytes after the base64;
+        # strip anything that isn't base64 alphabet.
+        b64_clean = "".join(ch for ch in b64_part if ch.isalnum() or ch in "+/=\n\r")
+
+        compressed = base64.b64decode(b64_clean, validate=False)
+
+        # If it’s gzipped SVG (common), decompress. Otherwise return raw.
+        try:
+            return gzip.decompress(compressed)
+        except OSError:
+            return compressed
+
     except ExtensionNotFound:
         return None
 
