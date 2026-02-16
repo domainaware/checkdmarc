@@ -580,6 +580,9 @@ def parse_spf_record(
 
     if parked:
         correct_record = "v=spf1 -all"
+
+        record = re.sub(r'\s+', " ", record).strip()
+
         if record != correct_record:
             warnings.append(
                 "The SPF record for parked domains should be: "
