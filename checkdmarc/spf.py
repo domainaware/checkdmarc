@@ -581,7 +581,7 @@ def parse_spf_record(
     if parked:
         correct_record = "v=spf1 -all"
 
-        record = re.sub(r'\s+', " ", record).strip()
+        record = re.sub(r"\s+", " ", record).strip()
 
         if record != correct_record:
             warnings.append(

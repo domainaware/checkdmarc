@@ -267,8 +267,8 @@ class _DMARCErrorResultsOptionalFields(TypedDict, total=False):
 class DMARCErrorResults(_DMARCErrorResultsOptionalFields):
     """Error return type for check_dmarc"""
 
-    record: None
-    location: None
+    record: Optional[str]
+    location: Optional[str]
     valid: bool
     error: str
 
@@ -1548,6 +1548,15 @@ def check_dmarc(
             timeout=timeout,
             timeout_retries=timeout_retries,
         )
+    except DMARCError as error:
+        error_results: DMARCErrorResults = {
+            "record": None,
+            "location": None,
+            "valid": False,
+            "error": str(error),
+        }
+        return error_results
+    try:
         parsed_dmarc_record = parse_dmarc_record(
             dmarc_query["record"],
             dmarc_query["location"],
@@ -1570,8 +1579,8 @@ def check_dmarc(
         return dmarc_results
     except DMARCError as error:
         error_results: DMARCErrorResults = {
-            "record": None,
-            "location": None,
+            "record": dmarc_query["record"],
+            "location": dmarc_query["location"],
             "valid": False,
             "error": str(error),
         }

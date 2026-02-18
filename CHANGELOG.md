@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.13.4
+
+### Improvements
+
+- More lax SPF record verification for parked domains. (PR #325)
+
+### Fixes
+
+- Fix regression in `1b19d14` that caused DMARC record output to be `None` if a syntax error was found (Close [#234](https://github.com/domainaware/checkdmarc/issues/234))
+
 ## 5.13.3
 
 ### Fixes
