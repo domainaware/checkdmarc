@@ -162,13 +162,16 @@ class DMARCTagMap(TypedDict):
     adkim: DMARCTagMapItemWithDefault
     aspf: DMARCTagMapItemWithDefault
     fo: DMARCTagMapItemWithDefaultAndValues
+    np: DMARCTagMapItemWithValues
     p: DMARCTagMapItemWithValues
     pct: DMARCTagMapItemWithDefault
+    psd: DMARCTagMapItemWithDefaultAndValues
     rf: DMARCTagMapItemWithDefaultAndValues
     ri: DMARCTagMapItemWithDefault
     rua: DMARCTagMapItem
     ruf: DMARCTagMapItem
     sp: DMARCTagMapItemWithValues
+    t: DMARCTagMapItemWithDefaultAndValues
     v: DMARCTagMapItem
 
 
@@ -384,9 +387,54 @@ dmarc_tags: DMARCTagMap = {
             ),
         },
     },
+    "np": {
+        "name": "Non-existent Subdomain Policy",
+        "required": False,
+        "description": (
+            "Indicates the policy to "
+            "be enacted by the "
+            "Receiver at the request "
+            "of the Domain Owner for "
+            "non-existent subdomains "
+            "of the domain queried. "
+            "Its syntax is identical "
+            'to that of the "p" tag. '
+            "If absent, the policy "
+            'specified by the "sp" tag '
+            "(if present) or the "
+            '"p" tag MUST be applied '
+            "for non-existent subdomains."
+        ),
+        "values": {
+            "none": (
+                "The Domain Owner requests "
+                "no specific action be "
+                "taken regarding delivery "
+                "of messages."
+            ),
+            "quarantine": (
+                "The Domain Owner "
+                "wishes to have "
+                "email that fails "
+                "the DMARC mechanism "
+                "check be treated by "
+                "Mail Receivers as "
+                "suspicious."
+            ),
+            "reject": (
+                "The Domain Owner wishes "
+                "for Mail Receivers to "
+                "reject email that fails "
+                "the DMARC mechanism check. "
+                "Rejection SHOULD occur "
+                "during the SMTP "
+                "transaction."
+            ),
+        },
+    },
     "p": {
         "name": "Requested Mail Receiver Policy",
-        "required": True,
+        "required": False,
         "description": (
             "Specifies the policy to "
             "be enacted by the "
@@ -455,8 +503,46 @@ dmarc_tags: DMARCTagMap = {
             "Domain Owners to enact "
             "a slow rollout of "
             "enforcement of the "
-            "DMARC mechanism."
+            "DMARC mechanism. "
+            "Removed in RFCPLACEHOLDER."
         ),
+    },
+    "psd": {
+        "name": "PSD Flag",
+        "required": False,
+        "default": "u",
+        "description": (
+            "A flag indicating "
+            "whether the domain is a "
+            "Public Suffix Domain (PSD)."
+        ),
+        "values": {
+            "y": (
+                "The domain is a PSD. "
+                "This tag is included "
+                "by PSOs to indicate "
+                "that the domain is a "
+                "Public Suffix Domain."
+            ),
+            "n": (
+                "The DMARC Policy Record "
+                "is published for a domain "
+                "that is not a PSD, but it "
+                "is the Organizational "
+                "Domain for itself and "
+                "its subdomains."
+            ),
+            "u": (
+                "The default indicates "
+                "that the DMARC Policy "
+                "Record is published for "
+                "a domain that is not a "
+                "PSD, and may or may not "
+                "be an Organizational "
+                "Domain for itself and "
+                "its subdomains."
+            ),
+        },
     },
     "rf": {
         "name": "Report Format",
@@ -476,7 +562,8 @@ dmarc_tags: DMARCTagMap = {
             "(the auth-failure report "
             "type) is currently "
             "supported in the "
-            "DMARC standard."
+            "DMARC standard. "
+            "Removed in RFCPLACEHOLDER."
         ),
         "values": {
             "afrf": (
@@ -509,7 +596,8 @@ dmarc_tags: DMARCTagMap = {
             "than a daily report is "
             "understood to be "
             "accommodated on a "
-            "best-effort basis."
+            "best-effort basis. "
+            "Removed in RFCPLACEHOLDER."
         ),
     },
     "rua": {
@@ -582,6 +670,46 @@ dmarc_tags: DMARCTagMap = {
                 "Rejection SHOULD occur "
                 "during the SMTP "
                 "transaction."
+            ),
+        },
+    },
+    "t": {
+        "name": "DMARC Policy Test Mode",
+        "required": False,
+        "default": "n",
+        "description": (
+            "Signals whether or not "
+            "the Domain Owner wishes "
+            "the Domain Owner Assessment "
+            "Policy declared in the "
+            '"p", "sp", and/or "np" tags '
+            "to actually be applied. "
+            "This tag does not affect "
+            "the generation of DMARC "
+            "reports, and it has no "
+            "effect on any policy that "
+            'is "none".'
+        ),
+        "values": {
+            "y": (
+                "A request that the actor "
+                "performing the DMARC "
+                "validation check not "
+                "apply the policy, but "
+                "instead apply any special "
+                "handling rules it might "
+                "have in place. The Domain "
+                "Owner is currently testing "
+                "its specified DMARC "
+                "assessment policy."
+            ),
+            "n": (
+                "The default is a request "
+                "to apply the Domain Owner "
+                "Assessment Policy as "
+                "specified to any message "
+                "that produces a DMARC "
+                '"fail" result.'
             ),
         },
     },
@@ -746,7 +874,6 @@ def query_dmarc_record(
     """
     logging.debug(f"Checking for a DMARC record on {domain}")
     warnings = []
-    base_domain = get_base_domain(domain)
     location = domain.lower()
 
     try:
@@ -759,7 +886,7 @@ def query_dmarc_record(
             ignore_unrelated_records=ignore_unrelated_records,
         )
     except DMARCRecordNotFound:
-        # Skip this exception as we want to query the base domain. If we fail
+        # Skip this exception as we want to perform a tree walk. If we fail
         # at that, at the end of this function we will raise another
         # DMARCRecordNotFound.
         record = None
@@ -781,22 +908,46 @@ def query_dmarc_record(
     except dns.exception.DNSException:
         pass
 
-    if record is None and domain != base_domain:
-        record = _query_dmarc_record(
-            base_domain,
-            nameservers=nameservers,
-            resolver=resolver,
-            timeout=timeout,
-            timeout_retries=timeout_retries,
-            ignore_unrelated_records=ignore_unrelated_records,
-        )
-        location = base_domain
+    # DMARCbis DNS tree walk for DMARC policy discovery
+    if record is None:
+        labels = domain.lower().split(".")
+        num_labels = len(labels)
+        if num_labels > 1:
+            # Determine starting point for tree walk
+            if num_labels <= 8:
+                # Start from the parent domain (remove leftmost label)
+                start = 1
+            else:
+                # Skip to 7 labels
+                start = num_labels - 7
+            # Walk up the tree
+            for i in range(start, num_labels):
+                parent = ".".join(labels[i:])
+                if not parent or "." not in parent:
+                    # Don't query TLDs
+                    break
+                try:
+                    record = _query_dmarc_record(
+                        parent,
+                        nameservers=nameservers,
+                        resolver=resolver,
+                        timeout=timeout,
+                        timeout_retries=timeout_retries,
+                        ignore_unrelated_records=ignore_unrelated_records,
+                    )
+                    if record is not None:
+                        location = parent
+                        break
+                except (DMARCRecordNotFound, DMARCError):
+                    continue
+
     if record is None:
         error_str = "A DMARC record does not exist"
-        if domain == base_domain:
+        labels = domain.lower().split(".")
+        if len(labels) <= 2:
             error_str += "."
         else:
-            error_str += " for this subdomain or its base domain."
+            error_str += " for this domain or its parent domains."
         raise DMARCRecordNotFound(error_str)
 
     return {"record": record, "location": location, "warnings": warnings}
@@ -1185,15 +1336,36 @@ def parse_dmarc_record(
         if tag not in tags and "default" in dmarc_tags[tag]:
             tags[tag] = {"value": dmarc_tags[tag]["default"], "explicit": False}
     if "p" not in tags:
-        raise DMARCSyntaxError('The record is missing the required policy ("p") tag.')
+        tags["p"] = {"value": "none", "explicit": False}
+        warnings.append(
+            "The p tag is optional in RFCPLACEHOLDER, but is required "
+            "in older versions of DMARC."
+        )
     tags["p"]["value"] = tags["p"]["value"].lower()
     if "sp" not in tags:
         tags["sp"] = {"value": tags["p"]["value"], "explicit": False}
     # Normalize sp value for validation consistency (mirrors p behavior)
     tags["sp"]["value"] = tags["sp"]["value"].lower()
-    if list(tags.keys())[1] != "p":
-        raise DMARCSyntaxError("the p tag must immediately follow the v tag.")
+    if "np" not in tags:
+        if "sp" in tags:
+            tags["np"] = {"value": tags["sp"]["value"], "explicit": False}
+        else:
+            tags["np"] = {"value": tags["p"]["value"], "explicit": False}
+    tags["np"]["value"] = tags["np"]["value"].lower()
+    # The p tag must immediately follow v if it is explicit
+    if "p" in tags and tags["p"]["explicit"]:
+        if list(tags.keys())[1] != "p":
+            raise DMARCSyntaxError("the p tag must immediately follow the v tag.")
     tags["v"]["value"] = tags["v"]["value"].upper()
+
+    # Warn about tags removed in DMARCbis
+    removed_tags = {"pct", "rf", "ri"}
+    for tag in removed_tags:
+        if tag in tags and tags[tag]["explicit"]:
+            warnings.append(
+                f"Support for the {tag} tag was removed in RFCPLACEHOLDER."
+            )
+
     # Validate tag values
     for tag in tags:
         tag_value = tags[tag]["value"]
