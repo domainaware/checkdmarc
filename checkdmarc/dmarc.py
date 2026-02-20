@@ -923,7 +923,7 @@ def query_dmarc_record(
             # Walk up the tree
             for i in range(start, num_labels):
                 parent = ".".join(labels[i:])
-                if not parent or "." not in parent:
+                if "." not in parent:
                     # Don't query TLDs
                     break
                 try:
@@ -1347,13 +1347,13 @@ def parse_dmarc_record(
     # Normalize sp value for validation consistency (mirrors p behavior)
     tags["sp"]["value"] = tags["sp"]["value"].lower()
     if "np" not in tags:
-        if "sp" in tags:
+        if tags["sp"]["explicit"]:
             tags["np"] = {"value": tags["sp"]["value"], "explicit": False}
         else:
             tags["np"] = {"value": tags["p"]["value"], "explicit": False}
     tags["np"]["value"] = tags["np"]["value"].lower()
     # The p tag must immediately follow v if it is explicit
-    if "p" in tags and tags["p"]["explicit"]:
+    if tags["p"]["explicit"]:
         if list(tags.keys())[1] != "p":
             raise DMARCSyntaxError("the p tag must immediately follow the v tag.")
     tags["v"]["value"] = tags["v"]["value"].upper()
