@@ -411,6 +411,183 @@ class Test(unittest.TestCase):
             domain,
         )
 
+    def testDMARCbisNewTagNp(self):
+        """DMARCbis np tag is parsed correctly"""
+        dmarc_record = "v=DMARC1; p=reject; np=quarantine"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertEqual(result["tags"]["np"]["value"], "quarantine")
+        self.assertTrue(result["tags"]["np"]["explicit"])
+
+    def testDMARCbisNewTagPsd(self):
+        """DMARCbis psd tag is parsed correctly"""
+        dmarc_record = "v=DMARC1; p=reject; psd=n"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertEqual(result["tags"]["psd"]["value"], "n")
+        self.assertTrue(result["tags"]["psd"]["explicit"])
+
+    def testDMARCbisNewTagT(self):
+        """DMARCbis t tag is parsed correctly"""
+        dmarc_record = "v=DMARC1; p=reject; t=y"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertEqual(result["tags"]["t"]["value"], "y")
+        self.assertTrue(result["tags"]["t"]["explicit"])
+
+    def testDMARCbisInvalidNpValue(self):
+        """An invalid np tag value raises InvalidDMARCTagValue"""
+        dmarc_record = "v=DMARC1; p=reject; np=invalid"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTagValue,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCbisInvalidPsdValue(self):
+        """An invalid psd tag value raises InvalidDMARCTagValue"""
+        dmarc_record = "v=DMARC1; p=reject; psd=x"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTagValue,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCbisInvalidTValue(self):
+        """An invalid t tag value raises InvalidDMARCTagValue"""
+        dmarc_record = "v=DMARC1; p=reject; t=x"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTagValue,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCbisPctRemovedWarning(self):
+        """A warning is issued when the removed pct tag is used"""
+        dmarc_record = "v=DMARC1; p=reject; pct=100"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertTrue(
+            any(
+                "pct tag was removed in RFCPLACEHOLDER" in w
+                for w in result["warnings"]
+            )
+        )
+
+    def testDMARCbisRfRemovedWarning(self):
+        """A warning is issued when the removed rf tag is used"""
+        dmarc_record = "v=DMARC1; p=reject; rf=afrf"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertTrue(
+            any(
+                "rf tag was removed in RFCPLACEHOLDER" in w
+                for w in result["warnings"]
+            )
+        )
+
+    def testDMARCbisRiRemovedWarning(self):
+        """A warning is issued when the removed ri tag is used"""
+        dmarc_record = "v=DMARC1; p=reject; ri=3600"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertTrue(
+            any(
+                "ri tag was removed in RFCPLACEHOLDER" in w
+                for w in result["warnings"]
+            )
+        )
+
+    def testDMARCbisMissingPTagWarning(self):
+        """A missing p tag results in a warning and defaults to none"""
+        dmarc_record = "v=DMARC1; rua=mailto:dmarc@example.com"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertEqual(result["tags"]["p"]["value"], "none")
+        self.assertFalse(result["tags"]["p"]["explicit"])
+        self.assertTrue(
+            any(
+                "p tag is optional in RFCPLACEHOLDER" in w
+                for w in result["warnings"]
+            )
+        )
+
+    def testDMARCbisNpDefaultsToSp(self):
+        """The np tag defaults to the sp tag value when not explicit"""
+        dmarc_record = "v=DMARC1; p=reject; sp=quarantine"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertEqual(result["tags"]["np"]["value"], "quarantine")
+        self.assertFalse(result["tags"]["np"]["explicit"])
+
+    def testDMARCbisNpDefaultsToP(self):
+        """The np tag defaults to the p tag value when sp is also absent"""
+        dmarc_record = "v=DMARC1; p=reject"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertEqual(result["tags"]["np"]["value"], "reject")
+        self.assertFalse(result["tags"]["np"]["explicit"])
+
+    def testDMARCbisPsdDefaultsToU(self):
+        """The psd tag defaults to u when not explicit"""
+        dmarc_record = "v=DMARC1; p=reject"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertEqual(result["tags"]["psd"]["value"], "u")
+        self.assertFalse(result["tags"]["psd"]["explicit"])
+
+    def testDMARCbisTDefaultsToN(self):
+        """The t tag defaults to n when not explicit"""
+        dmarc_record = "v=DMARC1; p=reject"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertEqual(result["tags"]["t"]["value"], "n")
+        self.assertFalse(result["tags"]["t"]["explicit"])
+
+    def testDMARCbisRemovedTagImplicitNoWarning(self):
+        """No warning is issued for implicit (default) removed tags"""
+        dmarc_record = "v=DMARC1; p=reject"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        removed_warnings = [
+            w for w in result["warnings"] if "removed in RFCPLACEHOLDER" in w
+        ]
+        self.assertEqual(len(removed_warnings), 0)
+
+    def testDMARCbisBackwardCompatibility(self):
+        """Old RFC 7489 records with all tags are still valid"""
+        dmarc_record = (
+            "v=DMARC1; p=none; sp=none; fo=1; pct=50; adkim=r; "
+            "aspf=r; rf=afrf; ri=86400; "
+            "rua=mailto:eits.dmarcrua@energy.gov; "
+            "ruf=mailto:eits.dmarcruf@energy.gov"
+        )
+        domain = "energy.gov"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertIsInstance(result, dict)
+        self.assertIn("tags", result)
+
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    def testDMARCbisTreeWalkDiscovery(self):
+        """DNS tree walk discovers DMARC records for parent domains"""
+        # This tests that the tree walk works by using a mock
+        with patch("checkdmarc.dmarc._query_dmarc_record") as mock_query:
+            # First call for sub.example.com returns None
+            # Walk: example.com returns a record
+            mock_query.side_effect = [
+                None,  # _dmarc.sub.example.com
+                "v=DMARC1; p=reject",  # _dmarc.example.com
+            ]
+            result = checkdmarc.dmarc.query_dmarc_record("sub.example.com")
+            self.assertEqual(result["location"], "example.com")
+            self.assertEqual(result["record"], "v=DMARC1; p=reject")
+
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testBIMI(self):
         """Test BIMI checks"""
