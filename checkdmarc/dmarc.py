@@ -820,7 +820,7 @@ def _query_dmarc_record(
         except dns.resolver.NoAnswer:
             pass
         except dns.resolver.NXDOMAIN:
-            raise DMARCRecordNotFound(f"The domain {0} does not exist.".format(domain))
+            raise DMARCRecordNotFound(f"The domain {domain} does not exist.")
         except Exception as error:
             raise DMARCRecordNotFound(error)
 
@@ -976,6 +976,8 @@ def get_dmarc_tag_description(
     allowed_values = {}
     if "default" in dmarc_tags[tag]:
         default = dmarc_tags[tag]["default"]
+    if "values" in dmarc_tags[tag]:
+        allowed_values = dmarc_tags[tag]["values"]
     if type(value) is str and value in allowed_values:
         description = allowed_values[value]
     elif type(value) is list and len(allowed_values):
