@@ -1366,7 +1366,7 @@ def parse_dmarc_record(
     tags["v"]["value"] = tags["v"]["value"].upper()
 
     # Warn about tags removed in DMARCbis
-    removed_tags = {"pct", "rf", "ri"}
+    removed_tags = ("pct", "rf", "ri")
     for tag in removed_tags:
         if tag in tags and tags[tag]["explicit"]:
             warnings.append(

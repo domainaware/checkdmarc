@@ -579,20 +579,21 @@ class Test(unittest.TestCase):
         self.assertIsInstance(result, dict)
         self.assertIn("tags", result)
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testDMARCbisTreeWalkDiscovery(self):
         """DNS tree walk discovers DMARC records for parent domains"""
         # This tests that the tree walk works by using a mock
         with patch("checkdmarc.dmarc._query_dmarc_record") as mock_query:
-            # First call for sub.example.com returns None
-            # Walk: example.com returns a record
-            mock_query.side_effect = [
-                None,  # _dmarc.sub.example.com
-                "v=DMARC1; p=reject",  # _dmarc.example.com
-            ]
-            result = checkdmarc.dmarc.query_dmarc_record("sub.example.com")
-            self.assertEqual(result["location"], "example.com")
-            self.assertEqual(result["record"], "v=DMARC1; p=reject")
+            with patch("checkdmarc.dmarc.query_dns") as mock_root_dns:
+                mock_root_dns.return_value = []
+                # First call for sub.example.com returns None
+                # Walk: example.com returns a record
+                mock_query.side_effect = [
+                    None,  # _dmarc.sub.example.com
+                    "v=DMARC1; p=reject",  # _dmarc.example.com
+                ]
+                result = checkdmarc.dmarc.query_dmarc_record("sub.example.com")
+                self.assertEqual(result["location"], "example.com")
+                self.assertEqual(result["record"], "v=DMARC1; p=reject")
 
     @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testBIMI(self):
@@ -785,7 +786,7 @@ class Test(unittest.TestCase):
     # ================================================================
 
     def testDMARCSyntaxError(self):
-        """A DMARC syntax error raises DMARCSyntaxError"""
+        """An invalid DMARC fo tag value raises InvalidDMARCTagValue"""
         dmarc_record = "v=DMARC1; p=reject; fo=invalid_value"
         domain = "example.com"
         self.assertRaises(
@@ -1183,7 +1184,7 @@ class Test(unittest.TestCase):
             )
 
     def testSPFMultipleRecords(self):
-        """Multiple SPF TXT records raise SPFRecordNotFound (wraps MultipleSPFRTXTRecords)"""
+        """Multiple SPF TXT records raise SPFError"""
         with patch("checkdmarc.spf.query_dns") as mock_dns:
             mock_dns.side_effect = [
                 [],  # SPF type records
@@ -1207,7 +1208,7 @@ class Test(unittest.TestCase):
         )
 
     def testSPFRedirectWithMacro(self):
-        """SPF redirect with macro is accepted without DNS lookup"""
+        """SPF redirect with macro is accepted (counts as 1 DNS lookup)"""
         spf_record = "v=spf1 redirect=%{d}._spf.example.com"
         domain = "example.com"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
