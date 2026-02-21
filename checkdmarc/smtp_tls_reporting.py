@@ -372,7 +372,7 @@ def parse_smtp_tls_reporting_record(
         if include_tag_descriptions:
             tags[tag]["description"] = smtp_rpt_tags[tag]["description"]
     if "rua" not in tags:
-        SMTPTLSReportingSyntaxError("The record is missing the required rua tag.")
+        raise SMTPTLSReportingSyntaxError("The record is missing the required rua tag.")
     tags["rua"]["value"] = tags["rua"]["value"].split(",")
     for uri in tags["rua"]["value"]:
         if len(SMTPTLSREPORTING_URI_REGEX.findall(uri)) != 1:

@@ -5,12 +5,18 @@
 
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+
+import dns.resolver
+import dns.exception
 
 import checkdmarc
 import checkdmarc.bimi
 import checkdmarc.dmarc
 import checkdmarc.dnssec
+import checkdmarc.mta_sts
+import checkdmarc.smtp_tls_reporting
+import checkdmarc.soa
 import checkdmarc.spf
 import checkdmarc.utils
 
@@ -773,6 +779,957 @@ class Test(unittest.TestCase):
                     for w in result["warnings"]
                 )
             )
+
+    # ================================================================
+    # DMARC additional tests
+    # ================================================================
+
+    def testDMARCSyntaxError(self):
+        """A DMARC syntax error raises DMARCSyntaxError"""
+        dmarc_record = "v=DMARC1; p=reject; fo=invalid_value"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTagValue,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCDuplicateTags(self):
+        """Duplicate DMARC tags raise InvalidDMARCTag"""
+        dmarc_record = "v=DMARC1; p=reject; p=none"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTag,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCInvalidTag(self):
+        """An invalid DMARC tag raises InvalidDMARCTag"""
+        dmarc_record = "v=DMARC1; p=reject; xyz=foo"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTag,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCSPFInDMARC(self):
+        """An SPF record where a DMARC record should be raises SPFRecordFoundWhereDMARCRecordShouldBe"""
+        record = "v=spf1 include:example.com -all"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.SPFRecordFoundWhereDMARCRecordShouldBe,
+            checkdmarc.dmarc.parse_dmarc_record,
+            record,
+            domain,
+        )
+
+    def testDMARCPctZero(self):
+        """pct=0 produces a warning about disabling enforcement"""
+        dmarc_record = "v=DMARC1; p=reject; pct=0"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertTrue(
+            any("pct value of 0" in w for w in result["warnings"])
+        )
+
+    def testDMARCPctOutOfRange(self):
+        """pct value out of range raises DMARCSyntaxError"""
+        dmarc_record = "v=DMARC1; p=reject; pct=150"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.DMARCSyntaxError,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCPctNegative(self):
+        """Negative pct value raises DMARCSyntaxError"""
+        dmarc_record = "v=DMARC1; p=reject; pct=-1"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.DMARCSyntaxError,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCPctNonInteger(self):
+        """Non-integer pct value raises InvalidDMARCTagValue"""
+        dmarc_record = "v=DMARC1; p=reject; pct=abc"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTagValue,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCRiNonInteger(self):
+        """Non-integer ri value raises InvalidDMARCTagValue"""
+        dmarc_record = "v=DMARC1; p=reject; ri=abc"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTagValue,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCFoRedundancy(self):
+        """fo=0:1 produces a warning about redundancy"""
+        dmarc_record = "v=DMARC1; p=reject; fo=0:1"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertTrue(
+            any("redundant" in w.lower() for w in result["warnings"])
+        )
+
+    def testDMARCInvalidFoValue(self):
+        """Invalid fo tag value raises InvalidDMARCTagValue"""
+        dmarc_record = "v=DMARC1; p=reject; fo=x"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTagValue,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCInvalidRfValue(self):
+        """Invalid rf tag value raises InvalidDMARCTagValue"""
+        dmarc_record = "v=DMARC1; p=reject; rf=invalid"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTagValue,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCSpNoneWarning(self):
+        """Explicit sp=none produces a warning"""
+        dmarc_record = "v=DMARC1; p=reject; sp=none"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertTrue(
+            any("sp tag value of none" in w for w in result["warnings"])
+        )
+
+    def testDMARCParkedDomainPolicyWarning(self):
+        """Parked domains with p!=reject produce warnings"""
+        dmarc_record = "v=DMARC1; p=none"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(
+            dmarc_record, domain, parked=True
+        )
+        self.assertTrue(
+            any("parked" in w.lower() for w in result["warnings"])
+        )
+
+    def testDMARCParkedDomainSpWarning(self):
+        """Parked domains with sp!=reject produce warnings"""
+        dmarc_record = "v=DMARC1; p=reject; sp=none"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(
+            dmarc_record, domain, parked=True
+        )
+        self.assertTrue(
+            any("subdomain policy" in w.lower() and "parked" in w.lower()
+                for w in result["warnings"])
+        )
+
+    def testDMARCMissingRuaWarning(self):
+        """Missing rua tag produces a best practice warning"""
+        dmarc_record = "v=DMARC1; p=reject"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertTrue(
+            any("rua" in w.lower() for w in result["warnings"])
+        )
+
+    def testDMARCPTagPosition(self):
+        """p tag not immediately after v raises DMARCSyntaxError"""
+        dmarc_record = "v=DMARC1; sp=none; p=reject"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.DMARCSyntaxError,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCTagDescriptions(self):
+        """Tag descriptions are included when requested"""
+        dmarc_record = "v=DMARC1; p=reject"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(
+            dmarc_record, domain, include_tag_descriptions=True
+        )
+        for tag in result["tags"]:
+            self.assertIn("description", result["tags"][tag])
+            self.assertIn("name", result["tags"][tag])
+
+    def testDMARCGetTagDescriptionString(self):
+        """get_dmarc_tag_description returns value-specific descriptions"""
+        details = checkdmarc.dmarc.get_dmarc_tag_description("p", "reject")
+        self.assertIn("reject", details["description"].lower())
+
+    def testDMARCGetTagDescriptionList(self):
+        """get_dmarc_tag_description handles list values (fo tag)"""
+        details = checkdmarc.dmarc.get_dmarc_tag_description("fo", ["0", "d"])
+        self.assertIn("0:", details["description"])
+        self.assertIn("d:", details["description"])
+
+    def testDMARCGetTagDescriptionDefault(self):
+        """get_dmarc_tag_description returns default value"""
+        details = checkdmarc.dmarc.get_dmarc_tag_description("pct")
+        self.assertEqual(details["default"], 100)
+
+    def testDMARCGetTagDescriptionNoDefault(self):
+        """get_dmarc_tag_description returns None for tags without default"""
+        details = checkdmarc.dmarc.get_dmarc_tag_description("v")
+        self.assertIsNone(details["default"])
+
+    def testDMARCInvalidSpValue(self):
+        """Invalid sp tag value raises InvalidDMARCTagValue"""
+        dmarc_record = "v=DMARC1; p=reject; sp=invalid"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCTagValue,
+            checkdmarc.dmarc.parse_dmarc_record,
+            dmarc_record,
+            domain,
+        )
+
+    def testDMARCRecordStartsWithWhitespace(self):
+        """DMARC record with leading whitespace raises DMARCRecordStartsWithWhitespace"""
+        with patch("checkdmarc.dmarc.query_dns") as mock_dns:
+            mock_dns.return_value = [" v=DMARC1; p=reject"]
+            self.assertRaises(
+                checkdmarc.dmarc.DMARCRecordStartsWithWhitespace,
+                checkdmarc.dmarc._query_dmarc_record,
+                "example.com",
+            )
+
+    def testDMARCMultipleRecords(self):
+        """Multiple DMARC records raise MultipleDMARCRecords"""
+        with patch("checkdmarc.dmarc.query_dns") as mock_dns:
+            mock_dns.return_value = [
+                "v=DMARC1; p=reject",
+                "v=DMARC1; p=none",
+            ]
+            self.assertRaises(
+                checkdmarc.dmarc.MultipleDMARCRecords,
+                checkdmarc.dmarc._query_dmarc_record,
+                "example.com",
+            )
+
+    def testDMARCUnrelatedRecords(self):
+        """Unrelated TXT records at _dmarc raise UnrelatedTXTRecordFoundAtDMARC"""
+        with patch("checkdmarc.dmarc.query_dns") as mock_dns:
+            mock_dns.return_value = [
+                "v=DMARC1; p=reject",
+                "some random txt record",
+            ]
+            self.assertRaises(
+                checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC,
+                checkdmarc.dmarc._query_dmarc_record,
+                "example.com",
+            )
+
+    def testDMARCUnrelatedRecordsIgnored(self):
+        """Unrelated records are ignored when ignore_unrelated_records=True"""
+        with patch("checkdmarc.dmarc.query_dns") as mock_dns:
+            mock_dns.return_value = [
+                "v=DMARC1; p=reject",
+                "some random txt record",
+            ]
+            result = checkdmarc.dmarc._query_dmarc_record(
+                "example.com", ignore_unrelated_records=True
+            )
+            self.assertEqual(result, "v=DMARC1; p=reject")
+
+    def testDMARCRecordNotFoundNXDOMAIN(self):
+        """NXDOMAIN during query raises DMARCRecordNotFound"""
+        with patch("checkdmarc.dmarc.query_dns") as mock_dns:
+            mock_dns.side_effect = dns.resolver.NXDOMAIN()
+            self.assertRaises(
+                checkdmarc.dmarc.DMARCRecordNotFound,
+                checkdmarc.dmarc.query_dmarc_record,
+                "nonexistent.example.com",
+            )
+
+    def testDMARCTreeWalkStopsAtTLD(self):
+        """DNS tree walk does not query TLDs"""
+        with patch("checkdmarc.dmarc._query_dmarc_record") as mock_query:
+            with patch("checkdmarc.dmarc.query_dns") as mock_root_dns:
+                mock_root_dns.return_value = []
+                # All queries return None - should stop before TLD
+                mock_query.return_value = None
+                self.assertRaises(
+                    checkdmarc.dmarc.DMARCRecordNotFound,
+                    checkdmarc.dmarc.query_dmarc_record,
+                    "sub.example.com",
+                )
+                # Should have been called for sub.example.com and example.com
+                # but NOT for "com"
+                calls = [str(c) for c in mock_query.call_args_list]
+                self.assertFalse(any("'com'" == c.split("'")[1] for c in calls
+                                     if "'" in c))
+
+    def testDMARCTreeWalkLongDomain(self):
+        """DNS tree walk limits queries for domains with many labels"""
+        with patch("checkdmarc.dmarc._query_dmarc_record") as mock_query:
+            with patch("checkdmarc.dmarc.query_dns") as mock_root_dns:
+                mock_root_dns.return_value = []
+                # For a 9-label domain, it should start from 7 labels (index 2)
+                # Calls: original domain, then tree walk from d.e.f.g.example.com down
+                mock_query.return_value = None
+                domain = "a.b.c.d.e.f.g.example.com"
+                self.assertRaises(
+                    checkdmarc.dmarc.DMARCRecordNotFound,
+                    checkdmarc.dmarc.query_dmarc_record,
+                    domain,
+                )
+
+    def testDMARCCheckDmarcError(self):
+        """check_dmarc returns error results when record not found"""
+        with patch("checkdmarc.dmarc.query_dmarc_record") as mock_query:
+            mock_query.side_effect = checkdmarc.dmarc.DMARCRecordNotFound(
+                "A DMARC record does not exist."
+            )
+            result = checkdmarc.dmarc.check_dmarc("example.com")
+            self.assertFalse(result["valid"])
+            self.assertIn("error", result)
+
+    def testDMARCCheckDmarcParseError(self):
+        """check_dmarc returns error results when parsing fails"""
+        with patch("checkdmarc.dmarc.query_dmarc_record") as mock_query:
+            mock_query.return_value = {
+                "record": "v=DMARC1; p=invalid",
+                "location": "example.com",
+                "warnings": [],
+            }
+            result = checkdmarc.dmarc.check_dmarc("example.com")
+            self.assertFalse(result["valid"])
+
+    def testDMARCCheckDmarcSuccess(self):
+        """check_dmarc returns valid results for a good record"""
+        with patch("checkdmarc.dmarc.query_dmarc_record") as mock_query:
+            mock_query.return_value = {
+                "record": "v=DMARC1; p=reject",
+                "location": "example.com",
+                "warnings": [],
+            }
+            result = checkdmarc.dmarc.check_dmarc("example.com")
+            self.assertTrue(result["valid"])
+            self.assertIn("tags", result)
+
+    def testDMARCParseReportURI(self):
+        """parse_dmarc_report_uri parses valid mailto URIs"""
+        uri = checkdmarc.dmarc.parse_dmarc_report_uri(
+            "mailto:dmarc@example.com"
+        )
+        self.assertEqual(uri["scheme"], "mailto")
+        self.assertEqual(uri["address"], "dmarc@example.com")
+        self.assertIsNone(uri["size_limit"])
+
+    def testDMARCParseReportURIWithSize(self):
+        """parse_dmarc_report_uri parses URIs with size limits"""
+        uri = checkdmarc.dmarc.parse_dmarc_report_uri(
+            "mailto:dmarc@example.com!10m"
+        )
+        self.assertEqual(uri["address"], "dmarc@example.com")
+        self.assertIsNotNone(uri["size_limit"])
+
+    def testDMARCInvalidReportURI(self):
+        """Invalid DMARC report URI raises InvalidDMARCReportURI"""
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCReportURI,
+            checkdmarc.dmarc.parse_dmarc_report_uri,
+            "not_a_valid_uri",
+        )
+
+    def testDMARCRecordAtRoot(self):
+        """DMARC record at root of domain produces warning"""
+        with patch("checkdmarc.dmarc._query_dmarc_record") as mock_query:
+            with patch("checkdmarc.dmarc.query_dns") as mock_dns:
+                mock_query.return_value = "v=DMARC1; p=reject"
+                mock_dns.return_value = ["v=DMARC1; p=reject"]
+                result = checkdmarc.dmarc.query_dmarc_record("example.com")
+                self.assertTrue(
+                    any("no effect" in w for w in result["warnings"])
+                )
+
+    # ================================================================
+    # SPF additional tests
+    # ================================================================
+
+    def testSPFRecordNotFound(self):
+        """Missing SPF record raises SPFRecordNotFound"""
+        with patch("checkdmarc.spf.query_dns") as mock_dns:
+            mock_dns.side_effect = [[], []]
+            self.assertRaises(
+                checkdmarc.spf.SPFRecordNotFound,
+                checkdmarc.spf.query_spf_record,
+                "example.com",
+            )
+
+    def testSPFMultipleRecords(self):
+        """Multiple SPF TXT records raise SPFRecordNotFound (wraps MultipleSPFRTXTRecords)"""
+        with patch("checkdmarc.spf.query_dns") as mock_dns:
+            mock_dns.side_effect = [
+                [],  # SPF type records
+                ["v=spf1 -all", "v=spf1 +all"],  # Two SPF TXT records
+            ]
+            self.assertRaises(
+                checkdmarc.spf.SPFError,
+                checkdmarc.spf.query_spf_record,
+                "example.com",
+            )
+
+    def testSPFParkedDomainWarning(self):
+        """Parked domains with wrong SPF record produce a warning"""
+        spf_record = "v=spf1 ip4:192.0.2.1 -all"
+        domain = "parked-example.com"
+        result = checkdmarc.spf.parse_spf_record(
+            spf_record, domain, parked=True
+        )
+        self.assertTrue(
+            any("parked" in w.lower() for w in result["warnings"])
+        )
+
+    def testSPFRedirectWithMacro(self):
+        """SPF redirect with macro is accepted without DNS lookup"""
+        spf_record = "v=spf1 redirect=%{d}._spf.example.com"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertIsNotNone(results["parsed"]["redirect"])
+        self.assertEqual(results["dns_lookups"], 1)
+
+    def testSPFAllMechanism(self):
+        """SPF all mechanism is parsed correctly"""
+        spf_record = "v=spf1 -all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertEqual(results["parsed"]["all"], "fail")
+
+    def testSPFSoftfailAll(self):
+        """SPF ~all mechanism is parsed as softfail"""
+        spf_record = "v=spf1 ~all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertEqual(results["parsed"]["all"], "softfail")
+
+    def testSPFNeutralAll(self):
+        """SPF ?all mechanism is parsed as neutral"""
+        spf_record = "v=spf1 ?all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertEqual(results["parsed"]["all"], "neutral")
+
+    def testSPFIP6Mechanism(self):
+        """IP6 mechanism is parsed correctly"""
+        spf_record = "v=spf1 ip6:2001:db8::1 -all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertTrue(len(results["parsed"]["mechanisms"]) > 0)
+        self.assertEqual(results["dns_lookups"], 0)
+
+    def testSPFCheckSpfSuccess(self):
+        """check_spf returns valid results for a domain with SPF"""
+        with patch("checkdmarc.spf.query_spf_record") as mock_query:
+            mock_query.return_value = {
+                "record": "v=spf1 -all",
+                "warnings": [],
+            }
+            result = checkdmarc.spf.check_spf("example.com")
+            self.assertTrue(result["valid"])
+
+    def testSPFCheckSpfError(self):
+        """check_spf returns error results when SPF not found"""
+        with patch("checkdmarc.spf.query_spf_record") as mock_query:
+            mock_query.side_effect = checkdmarc.spf.SPFRecordNotFound(
+                "An SPF record does not exist.", "example.com"
+            )
+            result = checkdmarc.spf.check_spf("example.com")
+            self.assertFalse(result["valid"])
+            self.assertIn("error", result)
+
+    def testSPFExistsMechanism(self):
+        """SPF exists mechanism is parsed correctly"""
+        spf_record = "v=spf1 exists:%{i}._spf.example.com -all"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertEqual(results["dns_lookups"], 1)
+
+    # ================================================================
+    # Utils tests
+    # ================================================================
+
+    def testNormalizeDomain(self):
+        """normalize_domain handles various inputs correctly"""
+        # Basic lowering
+        self.assertEqual(
+            checkdmarc.utils.normalize_domain("Example.COM"), "example.com"
+        )
+        # Zero-width character removal
+        self.assertEqual(
+            checkdmarc.utils.normalize_domain("exam\u200bple.com"),
+            "example.com",
+        )
+        # Unicode normalization
+        self.assertEqual(
+            checkdmarc.utils.normalize_domain("example.com"), "example.com"
+        )
+
+    def testResultsToJson(self):
+        """results_to_json produces valid JSON"""
+        import json
+        results = {"domain": "example.com", "valid": True}
+        json_str = checkdmarc.results_to_json(results)
+        parsed = json.loads(json_str)
+        self.assertEqual(parsed["domain"], "example.com")
+
+    def testResultsToJsonList(self):
+        """results_to_json handles list of results"""
+        import json
+        results = [
+            {"domain": "example.com"},
+            {"domain": "example.org"},
+        ]
+        json_str = checkdmarc.results_to_json(results)
+        parsed = json.loads(json_str)
+        self.assertEqual(len(parsed), 2)
+
+    def testResultsToCsvRows(self):
+        """results_to_csv_rows converts results to CSV row dicts"""
+        results = {
+            "domain": "example.com",
+            "base_domain": "example.com",
+            "dnssec": False,
+            "ns": {"hostnames": ["ns1.example.com"], "warnings": []},
+            "mx": {"hosts": [], "warnings": []},
+            "mta_sts": {"valid": False, "error": "not found"},
+            "spf": {
+                "record": "v=spf1 -all",
+                "valid": True,
+                "warnings": [],
+            },
+            "dmarc": {
+                "record": "v=DMARC1; p=reject",
+                "location": "example.com",
+                "valid": True,
+                "tags": {
+                    "adkim": {"value": "r"},
+                    "aspf": {"value": "r"},
+                    "fo": {"value": ["0"]},
+                    "p": {"value": "reject"},
+                    "pct": {"value": 100},
+                    "rf": {"value": ["afrf"]},
+                    "ri": {"value": 86400},
+                    "sp": {"value": "reject"},
+                },
+                "warnings": [],
+            },
+            "smtp_tls_reporting": {
+                "valid": False,
+                "error": "not found",
+            },
+        }
+        rows = checkdmarc.results_to_csv_rows(results)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["domain"], "example.com")
+
+    def testCheckNsSuccess(self):
+        """check_ns returns nameservers on success"""
+        with patch("checkdmarc.get_nameservers") as mock_ns:
+            mock_ns.return_value = {
+                "hostnames": ["ns1.example.com"],
+                "warnings": [],
+            }
+            result = checkdmarc.check_ns("example.com")
+            self.assertIn("hostnames", result)
+            self.assertEqual(len(result["hostnames"]), 1)
+
+    def testCheckNsError(self):
+        """check_ns returns error on DNS failure"""
+        with patch("checkdmarc.get_nameservers") as mock_ns:
+            mock_ns.side_effect = checkdmarc.utils.DNSException("DNS error")
+            result = checkdmarc.check_ns("example.com")
+            self.assertIn("error", result)
+
+    # ================================================================
+    # SOA tests
+    # ================================================================
+
+    def testSoaRnameToEmail(self):
+        """soa_rname_to_email converts RNAME to email"""
+        email = checkdmarc.soa.soa_rname_to_email("admin.example.com.")
+        self.assertEqual(email, "admin@example.com")
+
+    def testSoaRnameToEmailEscapedDot(self):
+        """soa_rname_to_email handles escaped dots in local part"""
+        email = checkdmarc.soa.soa_rname_to_email(r"first\.last.example.com.")
+        self.assertEqual(email, "first.last@example.com")
+
+    def testSoaRnameToEmailInvalid(self):
+        """soa_rname_to_email raises ValueError for invalid RNAME"""
+        self.assertRaises(
+            ValueError,
+            checkdmarc.soa.soa_rname_to_email,
+            "nodotatall",
+        )
+
+    def testParseSoaString(self):
+        """parse_soa_string parses a valid SOA record"""
+        soa_record = "ns1.example.com. admin.example.com. 2024010101 3600 900 604800 86400"
+        result = checkdmarc.soa.parse_soa_string(soa_record)
+        self.assertEqual(result["primary_nameserver"], "ns1.example.com")
+        self.assertEqual(result["serial"], 2024010101)
+        self.assertEqual(result["refresh"], 3600)
+
+    def testParseSoaStringEmpty(self):
+        """parse_soa_string raises ValueError for empty string"""
+        self.assertRaises(
+            ValueError,
+            checkdmarc.soa.parse_soa_string,
+            "",
+        )
+
+    def testParseSoaStringWrongFields(self):
+        """parse_soa_string raises ValueError for wrong number of fields"""
+        self.assertRaises(
+            ValueError,
+            checkdmarc.soa.parse_soa_string,
+            "ns1.example.com. admin.example.com. 12345",
+        )
+
+    def testCheckSoaSuccess(self):
+        """check_soa returns parsed record on success"""
+        with patch("checkdmarc.soa.get_soa_record") as mock_soa:
+            mock_soa.return_value = (
+                "ns1.example.com. admin.example.com. 2024010101 3600 900 604800 86400"
+            )
+            result = checkdmarc.soa.check_soa("example.com")
+            self.assertIn("values", result)
+            self.assertEqual(result["values"]["serial"], 2024010101)
+
+    def testCheckSoaError(self):
+        """check_soa returns error on failure"""
+        with patch("checkdmarc.soa.get_soa_record") as mock_soa:
+            mock_soa.side_effect = Exception("DNS error")
+            result = checkdmarc.soa.check_soa("example.com")
+            self.assertIn("error", result)
+
+    # ================================================================
+    # MTA-STS tests
+    # ================================================================
+
+    def testParseMtaStsRecord(self):
+        """parse_mta_sts_record parses a valid MTA-STS record"""
+        record = "v=STSv1; id=20240101T010101"
+        result = checkdmarc.mta_sts.parse_mta_sts_record(record)
+        self.assertEqual(result["tags"]["v"], "STSv1")
+        self.assertEqual(result["tags"]["id"], "20240101T010101")
+
+    def testParseMtaStsRecordInvalidTag(self):
+        """Invalid MTA-STS tag raises MTASTSRecordSyntaxError"""
+        record = "v=STSv1; xyz=foo"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSRecordSyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_record,
+            record,
+        )
+
+    def testParseMtaStsRecordSPF(self):
+        """SPF record in MTA-STS raises SPFRecordFoundWhereMTASTSRecordShouldBe"""
+        record = "v=spf1 -all"
+        self.assertRaises(
+            checkdmarc.mta_sts.SPFRecordFoundWhereMTASTSRecordShouldBe,
+            checkdmarc.mta_sts.parse_mta_sts_record,
+            record,
+        )
+
+    def testParseMtaStsRecordDuplicateTag(self):
+        """Duplicate MTA-STS tag raises InvalidMTASTSTag"""
+        record = "v=STSv1; id=foo; id=bar"
+        self.assertRaises(
+            checkdmarc.mta_sts.InvalidMTASTSTag,
+            checkdmarc.mta_sts.parse_mta_sts_record,
+            record,
+        )
+
+    def testParseMtaStsPolicy(self):
+        """parse_mta_sts_policy parses a valid policy"""
+        policy = "version: STSv1\r\nmode: enforce\r\nmax_age: 86400\r\nmx: mail.example.com\r\n"
+        result = checkdmarc.mta_sts.parse_mta_sts_policy(policy)
+        self.assertEqual(result["policy"]["mode"], "enforce")
+        self.assertEqual(result["policy"]["max_age"], 86400)
+        self.assertEqual(result["policy"]["mx"], ["mail.example.com"])
+
+    def testParseMtaStsPolicyUnixLineEndings(self):
+        """parse_mta_sts_policy handles Unix line endings"""
+        policy = "version: STSv1\nmode: testing\nmax_age: 3600\nmx: *.example.com\n"
+        result = checkdmarc.mta_sts.parse_mta_sts_policy(policy)
+        self.assertEqual(result["policy"]["mode"], "testing")
+
+    def testParseMtaStsPolicyMissingKey(self):
+        """parse_mta_sts_policy raises error for missing required keys"""
+        policy = "version: STSv1\r\nmode: enforce\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyInvalidMaxAge(self):
+        """parse_mta_sts_policy raises error for negative max_age"""
+        policy = "version: STSv1\r\nmode: enforce\r\nmax_age: -1\r\nmx: mail.example.com\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyDecimalMaxAge(self):
+        """parse_mta_sts_policy raises error for decimal max_age"""
+        policy = "version: STSv1\r\nmode: enforce\r\nmax_age: 86400.5\r\nmx: mail.example.com\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyTooLargeMaxAge(self):
+        """parse_mta_sts_policy raises error for max_age > 31557600"""
+        policy = "version: STSv1\r\nmode: enforce\r\nmax_age: 99999999\r\nmx: mail.example.com\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyNonIntegerMaxAge(self):
+        """parse_mta_sts_policy raises error for non-integer max_age"""
+        policy = "version: STSv1\r\nmode: enforce\r\nmax_age: abc\r\nmx: mail.example.com\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyDuplicateKey(self):
+        """parse_mta_sts_policy raises error for duplicate key"""
+        policy = "version: STSv1\r\nmode: enforce\r\nmode: testing\r\nmax_age: 86400\r\nmx: mail.example.com\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyInvalidVersion(self):
+        """parse_mta_sts_policy raises error for invalid version"""
+        policy = "version: STSv2\r\nmode: enforce\r\nmax_age: 86400\r\nmx: mail.example.com\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyInvalidMode(self):
+        """parse_mta_sts_policy raises error for invalid mode"""
+        policy = "version: STSv1\r\nmode: invalid\r\nmax_age: 86400\r\nmx: mail.example.com\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyEnforceModeNoMx(self):
+        """enforce mode without mx raises error"""
+        policy = "version: STSv1\r\nmode: enforce\r\nmax_age: 86400\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyBadKeyValue(self):
+        """parse_mta_sts_policy raises error for bad key:value pair"""
+        policy = "version: STSv1\r\nnot_a_pair\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testParseMtaStsPolicyUnexpectedKey(self):
+        """parse_mta_sts_policy raises error for unexpected key"""
+        policy = "version: STSv1\r\nmode: enforce\r\nmax_age: 86400\r\nmx: mail.example.com\r\nbadkey: badvalue\r\n"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
+    def testMxInMtaStsPatterns(self):
+        """mx_in_mta_sts_patterns correctly matches hostnames"""
+        self.assertTrue(
+            checkdmarc.mta_sts.mx_in_mta_sts_patterns(
+                "mail.example.com", ["mail.example.com"]
+            )
+        )
+        self.assertTrue(
+            checkdmarc.mta_sts.mx_in_mta_sts_patterns(
+                "mail.example.com", ["*.example.com"]
+            )
+        )
+        self.assertFalse(
+            checkdmarc.mta_sts.mx_in_mta_sts_patterns(
+                "mail.other.com", ["*.example.com"]
+            )
+        )
+
+    def testCheckMtaStsError(self):
+        """check_mta_sts returns error when record not found"""
+        with patch("checkdmarc.mta_sts.query_mta_sts_record") as mock_query:
+            mock_query.side_effect = checkdmarc.mta_sts.MTASTSRecordNotFound(
+                "An MTA-STS DNS record does not exist."
+            )
+            result = checkdmarc.mta_sts.check_mta_sts("example.com")
+            self.assertFalse(result["valid"])
+
+    # ================================================================
+    # SMTP TLS Reporting tests
+    # ================================================================
+
+    def testParseSmtpTlsReportingRecord(self):
+        """parse_smtp_tls_reporting_record parses a valid record"""
+        record = "v=TLSRPTv1; rua=mailto:tlsrpt@example.com"
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            record
+        )
+        self.assertIn("rua", result["tags"])
+        self.assertIn("mailto:tlsrpt@example.com", result["tags"]["rua"]["value"])
+
+    def testParseSmtpTlsReportingRecordWithDescriptions(self):
+        """parse_smtp_tls_reporting_record includes descriptions when requested"""
+        record = "v=TLSRPTv1; rua=mailto:tlsrpt@example.com"
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            record, include_tag_descriptions=True
+        )
+        self.assertIn("description", result["tags"]["rua"])
+
+    def testParseSmtpTlsReportingInvalidTag(self):
+        """Invalid SMTP TLS tag raises InvalidSMTPTLSReportingTag"""
+        record = "v=TLSRPTv1; xyz=foo"
+        self.assertRaises(
+            checkdmarc.smtp_tls_reporting.InvalidSMTPTLSReportingTag,
+            checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+            record,
+        )
+
+    def testParseSmtpTlsReportingDuplicateTag(self):
+        """Duplicate SMTP TLS tag raises InvalidSMTPTLSReportingTag"""
+        record = "v=TLSRPTv1; rua=mailto:a@example.com; rua=mailto:b@example.com"
+        self.assertRaises(
+            checkdmarc.smtp_tls_reporting.InvalidSMTPTLSReportingTag,
+            checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+            record,
+        )
+
+    def testParseSmtpTlsReportingSPF(self):
+        """SPF in SMTP TLS Reporting raises SPFRecordFoundWhereTLSRPTShouldBe"""
+        record = "v=spf1 -all"
+        self.assertRaises(
+            checkdmarc.smtp_tls_reporting.SPFRecordFoundWhereTLSRPTShouldBe,
+            checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+            record,
+        )
+
+    def testParseSmtpTlsReportingInvalidURI(self):
+        """Invalid URI raises SMTPTLSReportingSyntaxError"""
+        record = "v=TLSRPTv1; rua=not_a_valid_uri"
+        self.assertRaises(
+            checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError,
+            checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+            record,
+        )
+
+    def testParseSmtpTlsReportingMissingRua(self):
+        """Missing rua tag raises SMTPTLSReportingSyntaxError"""
+        record = "v=TLSRPTv1"
+        self.assertRaises(
+            checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError,
+            checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+            record,
+        )
+
+    def testParseSmtpTlsReportingHttpsURI(self):
+        """HTTPS URIs are accepted in SMTP TLS Reporting"""
+        record = "v=TLSRPTv1; rua=https://tlsrpt.example.com/report"
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            record
+        )
+        self.assertIn("rua", result["tags"])
+
+    def testCheckSmtpTlsReportingError(self):
+        """check_smtp_tls_reporting returns error when record not found"""
+        with patch(
+            "checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record"
+        ) as mock_query:
+            mock_query.side_effect = (
+                checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordNotFound(
+                    "Record not found"
+                )
+            )
+            result = checkdmarc.smtp_tls_reporting.check_smtp_tls_reporting(
+                "example.com"
+            )
+            self.assertFalse(result["valid"])
+
+    # ================================================================
+    # DNSSEC tests (mocked)
+    # ================================================================
+
+    def testDnssecFalseWhenNoKey(self):
+        """test_dnssec returns False when no DNSKEY found"""
+        with patch("checkdmarc.dnssec.get_dnskey") as mock_key:
+            mock_key.return_value = None
+            result = checkdmarc.dnssec.test_dnssec("example.com")
+            self.assertFalse(result)
+
+    def testGetDnskeyCache(self):
+        """get_dnskey uses cache"""
+        from expiringdict import ExpiringDict
+        cache = ExpiringDict(max_len=100, max_age_seconds=60)
+        mock_key = {"test": "data"}
+        cache["example.com"] = mock_key
+        result = checkdmarc.dnssec.get_dnskey("example.com", cache=cache)
+        self.assertEqual(result, mock_key)
+
+    # ================================================================
+    # _constants tests
+    # ================================================================
+
+    def testConstantsVersion(self):
+        """Version string is defined"""
+        self.assertIsNotNone(checkdmarc.__version__)
+        self.assertIsInstance(checkdmarc.__version__, str)
+
+    def testConstantsEnvironmentOverrides(self):
+        """Environment variable overrides work for constants"""
+        import checkdmarc._constants as constants
+        self.assertIsInstance(constants.CACHE_MAX_LEN, int)
+        self.assertIsInstance(constants.CACHE_MAX_AGE_SECONDS, int)
+        self.assertIsInstance(constants.SYNTAX_ERROR_MARKER, str)
 
 
 if __name__ == "__main__":

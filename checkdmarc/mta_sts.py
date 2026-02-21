@@ -472,6 +472,7 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     required_keys = ["version", "mode", "max_age"]
     acceptable_keys = required_keys.copy()
     acceptable_keys.append("mx")
+    seen_keys: set[str] = set()
     if "\n" in policy and "\r\n" not in policy:
         policy = policy.replace("\n", "\r\n")
     lines = policy.split("\r\n")
@@ -486,12 +487,13 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
         value = key_value[1].strip()
         if key not in acceptable_keys:
             raise MTASTSPolicySyntaxError(f"Line {line}: Unexpected key: {key}")
-        if key in parsed_policy and key != "mx":
-            MTASTSPolicySyntaxError(f"Line {line}: Duplicate key: {key}")
-        elif key == "version" and value not in versions:
-            MTASTSPolicySyntaxError(f"Line {line}: Invalid version: {value}")
+        if key in seen_keys and key != "mx":
+            raise MTASTSPolicySyntaxError(f"Line {line}: Duplicate key: {key}")
+        seen_keys.add(key)
+        if key == "version" and value not in versions:
+            raise MTASTSPolicySyntaxError(f"Line {line}: Invalid version: {value}")
         elif key == "mode" and value not in modes:
-            MTASTSPolicySyntaxError(f"Line {line}: Invalid mode: {value}")
+            raise MTASTSPolicySyntaxError(f"Line {line}: Invalid mode: {value}")
         elif key == "max_age":
             error_msg = "max_age must be an integer value between 0 and 31557600."
             if "." in value:
@@ -501,7 +503,7 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
                 if value < 0 or value > 31557600:
                     raise MTASTSPolicySyntaxError(error_msg)
             except ValueError:
-                MTASTSPolicySyntaxError(error_msg)
+                raise MTASTSPolicySyntaxError(error_msg)
         if key != "mx":
             parsed_policy[key] = value
         else:
