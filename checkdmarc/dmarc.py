@@ -512,9 +512,7 @@ dmarc_tags: DMARCTagMap = {
         "required": False,
         "default": "u",
         "description": (
-            "A flag indicating "
-            "whether the domain is a "
-            "Public Suffix Domain (PSD)."
+            "A flag indicating whether the domain is a Public Suffix Domain (PSD)."
         ),
         "values": {
             "y": (
@@ -1370,9 +1368,7 @@ def parse_dmarc_record(
     removed_tags = ("pct", "rf", "ri")
     for tag in removed_tags:
         if tag in tags and tags[tag]["explicit"]:
-            warnings.append(
-                f"Support for the {tag} tag was removed in DMARCbis."
-            )
+            warnings.append(f"Support for the {tag} tag was removed in DMARCbis.")
 
     # Validate tag values
     for tag in tags:

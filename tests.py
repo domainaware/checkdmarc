@@ -480,10 +480,7 @@ class Test(unittest.TestCase):
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         self.assertTrue(
-            any(
-                "pct tag was removed in DMARCbis" in w
-                for w in result["warnings"]
-            )
+            any("pct tag was removed in DMARCbis" in w for w in result["warnings"])
         )
 
     def testDMARCbisRfRemovedWarning(self):
@@ -492,10 +489,7 @@ class Test(unittest.TestCase):
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         self.assertTrue(
-            any(
-                "rf tag was removed in DMARCbis" in w
-                for w in result["warnings"]
-            )
+            any("rf tag was removed in DMARCbis" in w for w in result["warnings"])
         )
 
     def testDMARCbisRiRemovedWarning(self):
@@ -504,10 +498,7 @@ class Test(unittest.TestCase):
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         self.assertTrue(
-            any(
-                "ri tag was removed in DMARCbis" in w
-                for w in result["warnings"]
-            )
+            any("ri tag was removed in DMARCbis" in w for w in result["warnings"])
         )
 
     def testDMARCbisMissingPTagWarning(self):
@@ -518,10 +509,7 @@ class Test(unittest.TestCase):
         self.assertEqual(result["tags"]["p"]["value"], "none")
         self.assertFalse(result["tags"]["p"]["explicit"])
         self.assertTrue(
-            any(
-                "p tag is optional in DMARCbis" in w
-                for w in result["warnings"]
-            )
+            any("p tag is optional in DMARCbis" in w for w in result["warnings"])
         )
 
     def testDMARCbisNpDefaultsToSp(self):
@@ -561,9 +549,7 @@ class Test(unittest.TestCase):
         dmarc_record = "v=DMARC1; p=reject"
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
-        removed_warnings = [
-            w for w in result["warnings"] if "removed in DMARCbis" in w
-        ]
+        removed_warnings = [w for w in result["warnings"] if "removed in DMARCbis" in w]
         self.assertEqual(len(removed_warnings), 0)
 
     def testDMARCbisBackwardCompatibility(self):
@@ -834,9 +820,7 @@ class Test(unittest.TestCase):
         dmarc_record = "v=DMARC1; p=reject; pct=0"
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
-        self.assertTrue(
-            any("pct value of 0" in w for w in result["warnings"])
-        )
+        self.assertTrue(any("pct value of 0" in w for w in result["warnings"]))
 
     def testDMARCPctOutOfRange(self):
         """pct value out of range raises DMARCSyntaxError"""
@@ -887,9 +871,7 @@ class Test(unittest.TestCase):
         dmarc_record = "v=DMARC1; p=reject; fo=0:1"
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
-        self.assertTrue(
-            any("redundant" in w.lower() for w in result["warnings"])
-        )
+        self.assertTrue(any("redundant" in w.lower() for w in result["warnings"]))
 
     def testDMARCInvalidFoValue(self):
         """Invalid fo tag value raises InvalidDMARCTagValue"""
@@ -918,31 +900,25 @@ class Test(unittest.TestCase):
         dmarc_record = "v=DMARC1; p=reject; sp=none"
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
-        self.assertTrue(
-            any("sp tag value of none" in w for w in result["warnings"])
-        )
+        self.assertTrue(any("sp tag value of none" in w for w in result["warnings"]))
 
     def testDMARCParkedDomainPolicyWarning(self):
         """Parked domains with p!=reject produce warnings"""
         dmarc_record = "v=DMARC1; p=none"
         domain = "example.com"
-        result = checkdmarc.dmarc.parse_dmarc_record(
-            dmarc_record, domain, parked=True
-        )
-        self.assertTrue(
-            any("parked" in w.lower() for w in result["warnings"])
-        )
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain, parked=True)
+        self.assertTrue(any("parked" in w.lower() for w in result["warnings"]))
 
     def testDMARCParkedDomainSpWarning(self):
         """Parked domains with sp!=reject produce warnings"""
         dmarc_record = "v=DMARC1; p=reject; sp=none"
         domain = "example.com"
-        result = checkdmarc.dmarc.parse_dmarc_record(
-            dmarc_record, domain, parked=True
-        )
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain, parked=True)
         self.assertTrue(
-            any("subdomain policy" in w.lower() and "parked" in w.lower()
-                for w in result["warnings"])
+            any(
+                "subdomain policy" in w.lower() and "parked" in w.lower()
+                for w in result["warnings"]
+            )
         )
 
     def testDMARCMissingRuaWarning(self):
@@ -950,9 +926,7 @@ class Test(unittest.TestCase):
         dmarc_record = "v=DMARC1; p=reject"
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
-        self.assertTrue(
-            any("rua" in w.lower() for w in result["warnings"])
-        )
+        self.assertTrue(any("rua" in w.lower() for w in result["warnings"]))
 
     def testDMARCPTagPosition(self):
         """p tag not immediately after v raises DMARCSyntaxError"""
@@ -1080,9 +1054,7 @@ class Test(unittest.TestCase):
                 )
                 # Should have been called for sub.example.com and example.com
                 # but NOT for "com"
-                queried_domains = [
-                    c.args[0] for c in mock_query.call_args_list
-                ]
+                queried_domains = [c.args[0] for c in mock_query.call_args_list]
                 self.assertNotIn("com", queried_domains)
 
     def testDMARCTreeWalkLongDomain(self):
@@ -1135,18 +1107,14 @@ class Test(unittest.TestCase):
 
     def testDMARCParseReportURI(self):
         """parse_dmarc_report_uri parses valid mailto URIs"""
-        uri = checkdmarc.dmarc.parse_dmarc_report_uri(
-            "mailto:dmarc@example.com"
-        )
+        uri = checkdmarc.dmarc.parse_dmarc_report_uri("mailto:dmarc@example.com")
         self.assertEqual(uri["scheme"], "mailto")
         self.assertEqual(uri["address"], "dmarc@example.com")
         self.assertIsNone(uri["size_limit"])
 
     def testDMARCParseReportURIWithSize(self):
         """parse_dmarc_report_uri parses URIs with size limits"""
-        uri = checkdmarc.dmarc.parse_dmarc_report_uri(
-            "mailto:dmarc@example.com!10m"
-        )
+        uri = checkdmarc.dmarc.parse_dmarc_report_uri("mailto:dmarc@example.com!10m")
         self.assertEqual(uri["address"], "dmarc@example.com")
         self.assertIsNotNone(uri["size_limit"])
 
@@ -1165,9 +1133,7 @@ class Test(unittest.TestCase):
                 mock_query.return_value = "v=DMARC1; p=reject"
                 mock_dns.return_value = ["v=DMARC1; p=reject"]
                 result = checkdmarc.dmarc.query_dmarc_record("example.com")
-                self.assertTrue(
-                    any("no effect" in w for w in result["warnings"])
-                )
+                self.assertTrue(any("no effect" in w for w in result["warnings"]))
 
     # ================================================================
     # SPF additional tests
@@ -1200,12 +1166,8 @@ class Test(unittest.TestCase):
         """Parked domains with wrong SPF record produce a warning"""
         spf_record = "v=spf1 ip4:192.0.2.1 -all"
         domain = "parked-example.com"
-        result = checkdmarc.spf.parse_spf_record(
-            spf_record, domain, parked=True
-        )
-        self.assertTrue(
-            any("parked" in w.lower() for w in result["warnings"])
-        )
+        result = checkdmarc.spf.parse_spf_record(spf_record, domain, parked=True)
+        self.assertTrue(any("parked" in w.lower() for w in result["warnings"]))
 
     def testSPFRedirectWithMacro(self):
         """SPF redirect with macro is accepted (counts as 1 DNS lookup)"""
@@ -1389,7 +1351,9 @@ class Test(unittest.TestCase):
 
     def testParseSoaString(self):
         """parse_soa_string parses a valid SOA record"""
-        soa_record = "ns1.example.com. admin.example.com. 2024010101 3600 900 604800 86400"
+        soa_record = (
+            "ns1.example.com. admin.example.com. 2024010101 3600 900 604800 86400"
+        )
         result = checkdmarc.soa.parse_soa_string(soa_record)
         self.assertEqual(result["primary_nameserver"], "ns1.example.com")
         self.assertEqual(result["serial"], 2024010101)
@@ -1491,7 +1455,9 @@ class Test(unittest.TestCase):
 
     def testParseMtaStsPolicyInvalidMaxAge(self):
         """parse_mta_sts_policy raises error for negative max_age"""
-        policy = "version: STSv1\r\nmode: enforce\r\nmax_age: -1\r\nmx: mail.example.com\r\n"
+        policy = (
+            "version: STSv1\r\nmode: enforce\r\nmax_age: -1\r\nmx: mail.example.com\r\n"
+        )
         self.assertRaises(
             checkdmarc.mta_sts.MTASTSPolicySyntaxError,
             checkdmarc.mta_sts.parse_mta_sts_policy,
@@ -1613,9 +1579,7 @@ class Test(unittest.TestCase):
     def testParseSmtpTlsReportingRecord(self):
         """parse_smtp_tls_reporting_record parses a valid record"""
         record = "v=TLSRPTv1; rua=mailto:tlsrpt@example.com"
-        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
-            record
-        )
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(record)
         self.assertIn("rua", result["tags"])
         self.assertIn("mailto:tlsrpt@example.com", result["tags"]["rua"]["value"])
 
@@ -1675,9 +1639,7 @@ class Test(unittest.TestCase):
     def testParseSmtpTlsReportingHttpsURI(self):
         """HTTPS URIs are accepted in SMTP TLS Reporting"""
         record = "v=TLSRPTv1; rua=https://tlsrpt.example.com/report"
-        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
-            record
-        )
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(record)
         self.assertIn("rua", result["tags"])
 
     def testCheckSmtpTlsReportingError(self):
@@ -1709,6 +1671,7 @@ class Test(unittest.TestCase):
     def testGetDnskeyCache(self):
         """get_dnskey uses cache"""
         from expiringdict import ExpiringDict
+
         cache = ExpiringDict(max_len=100, max_age_seconds=60)
         mock_key = {"test": "data"}
         cache["example.com"] = mock_key
@@ -1727,6 +1690,7 @@ class Test(unittest.TestCase):
     def testConstantsEnvironmentOverrides(self):
         """Environment variable overrides work for constants"""
         import checkdmarc._constants as constants
+
         self.assertIsInstance(constants.CACHE_MAX_LEN, int)
         self.assertIsInstance(constants.CACHE_MAX_AGE_SECONDS, int)
         self.assertIsInstance(constants.SYNTAX_ERROR_MARKER, str)
