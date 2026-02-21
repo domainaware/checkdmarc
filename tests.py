@@ -3,6 +3,7 @@
 
 """Automated tests"""
 
+import json
 import os
 import unittest
 from unittest.mock import patch, MagicMock
@@ -1079,9 +1080,10 @@ class Test(unittest.TestCase):
                 )
                 # Should have been called for sub.example.com and example.com
                 # but NOT for "com"
-                calls = [str(c) for c in mock_query.call_args_list]
-                self.assertFalse(any("'com'" == c.split("'")[1] for c in calls
-                                     if "'" in c))
+                queried_domains = [
+                    c.args[0] for c in mock_query.call_args_list
+                ]
+                self.assertNotIn("com", queried_domains)
 
     def testDMARCTreeWalkLongDomain(self):
         """DNS tree walk limits queries for domains with many labels"""
@@ -1291,7 +1293,6 @@ class Test(unittest.TestCase):
 
     def testResultsToJson(self):
         """results_to_json produces valid JSON"""
-        import json
         results = {"domain": "example.com", "valid": True}
         json_str = checkdmarc.results_to_json(results)
         parsed = json.loads(json_str)
@@ -1299,7 +1300,6 @@ class Test(unittest.TestCase):
 
     def testResultsToJsonList(self):
         """results_to_json handles list of results"""
-        import json
         results = [
             {"domain": "example.com"},
             {"domain": "example.org"},
