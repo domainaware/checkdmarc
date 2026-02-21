@@ -938,8 +938,13 @@ def query_dmarc_record(
                     if record is not None:
                         location = parent
                         break
-                except (DMARCRecordNotFound, DMARCError):
+                except DMARCRecordNotFound:
+                    # No DMARC record at this parent; continue walking up the tree
                     continue
+                except DMARCError:
+                    # A DMARC record exists but is invalid or otherwise problematic;
+                    # re-raise so the caller can surface the actual configuration error.
+                    raise
 
     if record is None:
         error_str = "A DMARC record does not exist"
