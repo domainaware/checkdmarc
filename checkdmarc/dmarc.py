@@ -872,9 +872,10 @@ def query_dmarc_record(
         :exc:`checkdmarc.dmarc.SPFRecordFoundWhereDMARCRecordShouldBe`
 
     """
+    domain = normalize_domain(domain).rstrip(".")
     logging.debug(f"Checking for a DMARC record on {domain}")
     warnings = []
-    location = domain.lower()
+    location = domain
 
     try:
         record = _query_dmarc_record(
@@ -910,7 +911,7 @@ def query_dmarc_record(
 
     # DMARCbis DNS tree walk for DMARC policy discovery
     if record is None:
-        labels = domain.lower().split(".")
+        labels = domain.split(".")
         num_labels = len(labels)
         if num_labels > 1:
             # Determine starting point for tree walk
@@ -948,7 +949,7 @@ def query_dmarc_record(
 
     if record is None:
         error_str = "A DMARC record does not exist"
-        labels = domain.lower().split(".")
+        labels = domain.split(".")
         if len(labels) <= 2:
             error_str += "."
         else:
