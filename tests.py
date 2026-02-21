@@ -482,7 +482,7 @@ class Test(unittest.TestCase):
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         self.assertTrue(
             any(
-                "pct tag was removed in RFCPLACEHOLDER" in w
+                "pct tag was removed in DMARCbis" in w
                 for w in result["warnings"]
             )
         )
@@ -494,7 +494,7 @@ class Test(unittest.TestCase):
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         self.assertTrue(
             any(
-                "rf tag was removed in RFCPLACEHOLDER" in w
+                "rf tag was removed in DMARCbis" in w
                 for w in result["warnings"]
             )
         )
@@ -506,7 +506,7 @@ class Test(unittest.TestCase):
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         self.assertTrue(
             any(
-                "ri tag was removed in RFCPLACEHOLDER" in w
+                "ri tag was removed in DMARCbis" in w
                 for w in result["warnings"]
             )
         )
@@ -520,7 +520,7 @@ class Test(unittest.TestCase):
         self.assertFalse(result["tags"]["p"]["explicit"])
         self.assertTrue(
             any(
-                "p tag is optional in RFCPLACEHOLDER" in w
+                "p tag is optional in DMARCbis" in w
                 for w in result["warnings"]
             )
         )
@@ -563,7 +563,7 @@ class Test(unittest.TestCase):
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         removed_warnings = [
-            w for w in result["warnings"] if "removed in RFCPLACEHOLDER" in w
+            w for w in result["warnings"] if "removed in DMARCbis" in w
         ]
         self.assertEqual(len(removed_warnings), 0)
 
