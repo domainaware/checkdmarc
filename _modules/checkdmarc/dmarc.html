@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.dmarc &mdash; checkdmarc 5.13.4 documentation</title>
+  <title>checkdmarc.dmarc &mdash; checkdmarc 5.14.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=63b32d3e"></script>
+      <script src="../../_static/documentation_options.js?v=1199c657"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -289,13 +289,16 @@
     <span class="n">adkim</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithDefault</span>
     <span class="n">aspf</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithDefault</span>
     <span class="n">fo</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithDefaultAndValues</span>
+    <span class="n">np</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithValues</span>
     <span class="n">p</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithValues</span>
     <span class="n">pct</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithDefault</span>
+    <span class="n">psd</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithDefaultAndValues</span>
     <span class="n">rf</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithDefaultAndValues</span>
     <span class="n">ri</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithDefault</span>
     <span class="n">rua</span><span class="p">:</span> <span class="n">DMARCTagMapItem</span>
     <span class="n">ruf</span><span class="p">:</span> <span class="n">DMARCTagMapItem</span>
     <span class="n">sp</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithValues</span>
+    <span class="n">t</span><span class="p">:</span> <span class="n">DMARCTagMapItemWithDefaultAndValues</span>
     <span class="n">v</span><span class="p">:</span> <span class="n">DMARCTagMapItem</span></div>
 
 
@@ -548,9 +551,54 @@
             <span class="p">),</span>
         <span class="p">},</span>
     <span class="p">},</span>
+    <span class="s2">&quot;np&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Non-existent Subdomain Policy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+            <span class="s2">&quot;Indicates the policy to &quot;</span>
+            <span class="s2">&quot;be enacted by the &quot;</span>
+            <span class="s2">&quot;Receiver at the request &quot;</span>
+            <span class="s2">&quot;of the Domain Owner for &quot;</span>
+            <span class="s2">&quot;non-existent subdomains &quot;</span>
+            <span class="s2">&quot;of the domain queried. &quot;</span>
+            <span class="s2">&quot;Its syntax is identical &quot;</span>
+            <span class="s1">&#39;to that of the &quot;p&quot; tag. &#39;</span>
+            <span class="s2">&quot;If absent, the policy &quot;</span>
+            <span class="s1">&#39;specified by the &quot;sp&quot; tag &#39;</span>
+            <span class="s2">&quot;(if present) or the &quot;</span>
+            <span class="s1">&#39;&quot;p&quot; tag MUST be applied &#39;</span>
+            <span class="s2">&quot;for non-existent subdomains.&quot;</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;none&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;The Domain Owner requests &quot;</span>
+                <span class="s2">&quot;no specific action be &quot;</span>
+                <span class="s2">&quot;taken regarding delivery &quot;</span>
+                <span class="s2">&quot;of messages.&quot;</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;quarantine&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;The Domain Owner &quot;</span>
+                <span class="s2">&quot;wishes to have &quot;</span>
+                <span class="s2">&quot;email that fails &quot;</span>
+                <span class="s2">&quot;the DMARC mechanism &quot;</span>
+                <span class="s2">&quot;check be treated by &quot;</span>
+                <span class="s2">&quot;Mail Receivers as &quot;</span>
+                <span class="s2">&quot;suspicious.&quot;</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;reject&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;The Domain Owner wishes &quot;</span>
+                <span class="s2">&quot;for Mail Receivers to &quot;</span>
+                <span class="s2">&quot;reject email that fails &quot;</span>
+                <span class="s2">&quot;the DMARC mechanism check. &quot;</span>
+                <span class="s2">&quot;Rejection SHOULD occur &quot;</span>
+                <span class="s2">&quot;during the SMTP &quot;</span>
+                <span class="s2">&quot;transaction.&quot;</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
     <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Requested Mail Receiver Policy&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
             <span class="s2">&quot;Specifies the policy to &quot;</span>
             <span class="s2">&quot;be enacted by the &quot;</span>
@@ -619,8 +667,44 @@
             <span class="s2">&quot;Domain Owners to enact &quot;</span>
             <span class="s2">&quot;a slow rollout of &quot;</span>
             <span class="s2">&quot;enforcement of the &quot;</span>
-            <span class="s2">&quot;DMARC mechanism.&quot;</span>
+            <span class="s2">&quot;DMARC mechanism. &quot;</span>
+            <span class="s2">&quot;Removed in DMARCbis.&quot;</span>
         <span class="p">),</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;psd&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;PSD Flag&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;u&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+            <span class="s2">&quot;A flag indicating whether the domain is a Public Suffix Domain (PSD).&quot;</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;The domain is a PSD. &quot;</span>
+                <span class="s2">&quot;This tag is included &quot;</span>
+                <span class="s2">&quot;by PSOs to indicate &quot;</span>
+                <span class="s2">&quot;that the domain is a &quot;</span>
+                <span class="s2">&quot;Public Suffix Domain.&quot;</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;n&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;The DMARC Policy Record &quot;</span>
+                <span class="s2">&quot;is published for a domain &quot;</span>
+                <span class="s2">&quot;that is not a PSD, but it &quot;</span>
+                <span class="s2">&quot;is the Organizational &quot;</span>
+                <span class="s2">&quot;Domain for itself and &quot;</span>
+                <span class="s2">&quot;its subdomains.&quot;</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;The default indicates &quot;</span>
+                <span class="s2">&quot;that the DMARC Policy &quot;</span>
+                <span class="s2">&quot;Record is published for &quot;</span>
+                <span class="s2">&quot;a domain that is not a &quot;</span>
+                <span class="s2">&quot;PSD, and may or may not &quot;</span>
+                <span class="s2">&quot;be an Organizational &quot;</span>
+                <span class="s2">&quot;Domain for itself and &quot;</span>
+                <span class="s2">&quot;its subdomains.&quot;</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
     <span class="p">},</span>
     <span class="s2">&quot;rf&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Report Format&quot;</span><span class="p">,</span>
@@ -640,7 +724,8 @@
             <span class="s2">&quot;(the auth-failure report &quot;</span>
             <span class="s2">&quot;type) is currently &quot;</span>
             <span class="s2">&quot;supported in the &quot;</span>
-            <span class="s2">&quot;DMARC standard.&quot;</span>
+            <span class="s2">&quot;DMARC standard. &quot;</span>
+            <span class="s2">&quot;Removed in DMARCbis.&quot;</span>
         <span class="p">),</span>
         <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">&quot;afrf&quot;</span><span class="p">:</span> <span class="p">(</span>
@@ -673,7 +758,8 @@
             <span class="s2">&quot;than a daily report is &quot;</span>
             <span class="s2">&quot;understood to be &quot;</span>
             <span class="s2">&quot;accommodated on a &quot;</span>
-            <span class="s2">&quot;best-effort basis.&quot;</span>
+            <span class="s2">&quot;best-effort basis. &quot;</span>
+            <span class="s2">&quot;Removed in DMARCbis.&quot;</span>
         <span class="p">),</span>
     <span class="p">},</span>
     <span class="s2">&quot;rua&quot;</span><span class="p">:</span> <span class="p">{</span>
@@ -746,6 +832,46 @@
                 <span class="s2">&quot;Rejection SHOULD occur &quot;</span>
                 <span class="s2">&quot;during the SMTP &quot;</span>
                 <span class="s2">&quot;transaction.&quot;</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;DMARC Policy Test Mode&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;n&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+            <span class="s2">&quot;Signals whether or not &quot;</span>
+            <span class="s2">&quot;the Domain Owner wishes &quot;</span>
+            <span class="s2">&quot;the Domain Owner Assessment &quot;</span>
+            <span class="s2">&quot;Policy declared in the &quot;</span>
+            <span class="s1">&#39;&quot;p&quot;, &quot;sp&quot;, and/or &quot;np&quot; tags &#39;</span>
+            <span class="s2">&quot;to actually be applied. &quot;</span>
+            <span class="s2">&quot;This tag does not affect &quot;</span>
+            <span class="s2">&quot;the generation of DMARC &quot;</span>
+            <span class="s2">&quot;reports, and it has no &quot;</span>
+            <span class="s2">&quot;effect on any policy that &quot;</span>
+            <span class="s1">&#39;is &quot;none&quot;.&#39;</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;A request that the actor &quot;</span>
+                <span class="s2">&quot;performing the DMARC &quot;</span>
+                <span class="s2">&quot;validation check not &quot;</span>
+                <span class="s2">&quot;apply the policy, but &quot;</span>
+                <span class="s2">&quot;instead apply any special &quot;</span>
+                <span class="s2">&quot;handling rules it might &quot;</span>
+                <span class="s2">&quot;have in place. The Domain &quot;</span>
+                <span class="s2">&quot;Owner is currently testing &quot;</span>
+                <span class="s2">&quot;its specified DMARC &quot;</span>
+                <span class="s2">&quot;assessment policy.&quot;</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;n&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;The default is a request &quot;</span>
+                <span class="s2">&quot;to apply the Domain Owner &quot;</span>
+                <span class="s2">&quot;Assessment Policy as &quot;</span>
+                <span class="s2">&quot;specified to any message &quot;</span>
+                <span class="s2">&quot;that produces a DMARC &quot;</span>
+                <span class="s1">&#39;&quot;fail&quot; result.&#39;</span>
             <span class="p">),</span>
         <span class="p">},</span>
     <span class="p">},</span>
@@ -856,7 +982,7 @@
         <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The domain </span><span class="si">{</span><span class="mi">0</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">domain</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The domain </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
@@ -910,10 +1036,10 @@
 <span class="sd">        :exc:`checkdmarc.dmarc.SPFRecordFoundWhereDMARCRecordShouldBe`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for a DMARC record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">base_domain</span> <span class="o">=</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
-    <span class="n">location</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="n">domain</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dmarc_record</span><span class="p">(</span>
@@ -925,7 +1051,7 @@
             <span class="n">ignore_unrelated_records</span><span class="o">=</span><span class="n">ignore_unrelated_records</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="n">DMARCRecordNotFound</span><span class="p">:</span>
-        <span class="c1"># Skip this exception as we want to query the base domain. If we fail</span>
+        <span class="c1"># Skip this exception as we want to perform a tree walk. If we fail</span>
         <span class="c1"># at that, at the end of this function we will raise another</span>
         <span class="c1"># DMARCRecordNotFound.</span>
         <span class="n">record</span> <span class="o">=</span> <span class="kc">None</span>
@@ -947,22 +1073,51 @@
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span><span class="p">:</span>
         <span class="k">pass</span>
 
-    <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">domain</span> <span class="o">!=</span> <span class="n">base_domain</span><span class="p">:</span>
-        <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dmarc_record</span><span class="p">(</span>
-            <span class="n">base_domain</span><span class="p">,</span>
-            <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
-            <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
-            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
-            <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
-            <span class="n">ignore_unrelated_records</span><span class="o">=</span><span class="n">ignore_unrelated_records</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">location</span> <span class="o">=</span> <span class="n">base_domain</span>
+    <span class="c1"># DMARCbis DNS tree walk for DMARC policy discovery</span>
+    <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="n">num_labels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_labels</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># Determine starting point for tree walk</span>
+            <span class="k">if</span> <span class="n">num_labels</span> <span class="o">&lt;=</span> <span class="mi">8</span><span class="p">:</span>
+                <span class="c1"># Start from the parent domain (remove leftmost label)</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Skip to 7 labels</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">num_labels</span> <span class="o">-</span> <span class="mi">7</span>
+            <span class="c1"># Walk up the tree</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">):</span>
+                <span class="n">parent</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">:])</span>
+                <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">parent</span><span class="p">:</span>
+                    <span class="c1"># Don&#39;t query TLDs</span>
+                    <span class="k">break</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">record</span> <span class="o">=</span> <span class="n">_query_dmarc_record</span><span class="p">(</span>
+                        <span class="n">parent</span><span class="p">,</span>
+                        <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                        <span class="n">resolver</span><span class="o">=</span><span class="n">resolver</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+                        <span class="n">timeout_retries</span><span class="o">=</span><span class="n">timeout_retries</span><span class="p">,</span>
+                        <span class="n">ignore_unrelated_records</span><span class="o">=</span><span class="n">ignore_unrelated_records</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">location</span> <span class="o">=</span> <span class="n">parent</span>
+                        <span class="k">break</span>
+                <span class="k">except</span> <span class="n">DMARCRecordNotFound</span><span class="p">:</span>
+                    <span class="c1"># No DMARC record at this parent; continue walking up the tree</span>
+                    <span class="k">continue</span>
+                <span class="k">except</span> <span class="n">DMARCError</span><span class="p">:</span>
+                    <span class="c1"># A DMARC record exists but is invalid or otherwise problematic;</span>
+                    <span class="c1"># re-raise so the caller can surface the actual configuration error.</span>
+                    <span class="k">raise</span>
+
     <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">error_str</span> <span class="o">=</span> <span class="s2">&quot;A DMARC record does not exist&quot;</span>
-        <span class="k">if</span> <span class="n">domain</span> <span class="o">==</span> <span class="n">base_domain</span><span class="p">:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
             <span class="n">error_str</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">error_str</span> <span class="o">+=</span> <span class="s2">&quot; for this subdomain or its base domain.&quot;</span>
+            <span class="n">error_str</span> <span class="o">+=</span> <span class="s2">&quot; for this domain or its parent domains.&quot;</span>
         <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="n">error_str</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">,</span> <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span> <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">warnings</span><span class="p">}</span></div>
@@ -994,6 +1149,8 @@
     <span class="n">allowed_values</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="s2">&quot;default&quot;</span> <span class="ow">in</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]:</span>
         <span class="n">default</span> <span class="o">=</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s2">&quot;values&quot;</span> <span class="ow">in</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]:</span>
+        <span class="n">allowed_values</span> <span class="o">=</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;values&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">allowed_values</span><span class="p">:</span>
         <span class="n">description</span> <span class="o">=</span> <span class="n">allowed_values</span><span class="p">[</span><span class="n">value</span><span class="p">]</span>
     <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">allowed_values</span><span class="p">):</span>
@@ -1366,15 +1523,34 @@
         <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span> <span class="ow">and</span> <span class="s2">&quot;default&quot;</span> <span class="ow">in</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]:</span>
             <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">],</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
     <span class="k">if</span> <span class="s2">&quot;p&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCSyntaxError</span><span class="p">(</span><span class="s1">&#39;The record is missing the required policy (&quot;p&quot;) tag.&#39;</span><span class="p">)</span>
+        <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">&quot;The p tag is optional in DMARCbis, but is required &quot;</span>
+            <span class="s2">&quot;in older versions of DMARC.&quot;</span>
+        <span class="p">)</span>
     <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="k">if</span> <span class="s2">&quot;sp&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">],</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
     <span class="c1"># Normalize sp value for validation consistency (mirrors p behavior)</span>
     <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">tags</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">DMARCSyntaxError</span><span class="p">(</span><span class="s2">&quot;the p tag must immediately follow the v tag.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;np&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">][</span><span class="s2">&quot;explicit&quot;</span><span class="p">]:</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;np&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">],</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;np&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">],</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;np&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;np&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="c1"># The p tag must immediately follow v if it is explicit</span>
+    <span class="k">if</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;explicit&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">tags</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">DMARCSyntaxError</span><span class="p">(</span><span class="s2">&quot;the p tag must immediately follow the v tag.&quot;</span><span class="p">)</span>
     <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;v&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;v&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+    <span class="c1"># Warn about tags removed in DMARCbis</span>
+    <span class="n">removed_tags</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;pct&quot;</span><span class="p">,</span> <span class="s2">&quot;rf&quot;</span><span class="p">,</span> <span class="s2">&quot;ri&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">removed_tags</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span> <span class="ow">and</span> <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;explicit&quot;</span><span class="p">]:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Support for the </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2"> tag was removed in DMARCbis.&quot;</span><span class="p">)</span>
+
     <span class="c1"># Validate tag values</span>
     <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="n">tag_value</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
