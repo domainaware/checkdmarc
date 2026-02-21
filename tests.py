@@ -9,7 +9,6 @@ import unittest
 from unittest.mock import patch
 
 import dns.resolver
-import dns.exception
 
 import checkdmarc
 import checkdmarc.bimi
