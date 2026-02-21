@@ -504,7 +504,7 @@ dmarc_tags: DMARCTagMap = {
             "a slow rollout of "
             "enforcement of the "
             "DMARC mechanism. "
-            "Removed in RFCPLACEHOLDER."
+            "Removed in DMARCbis."
         ),
     },
     "psd": {
@@ -563,7 +563,7 @@ dmarc_tags: DMARCTagMap = {
             "type) is currently "
             "supported in the "
             "DMARC standard. "
-            "Removed in RFCPLACEHOLDER."
+            "Removed in DMARCbis."
         ),
         "values": {
             "afrf": (
@@ -597,7 +597,7 @@ dmarc_tags: DMARCTagMap = {
             "understood to be "
             "accommodated on a "
             "best-effort basis. "
-            "Removed in RFCPLACEHOLDER."
+            "Removed in DMARCbis."
         ),
     },
     "rua": {
@@ -1340,7 +1340,7 @@ def parse_dmarc_record(
     if "p" not in tags:
         tags["p"] = {"value": "none", "explicit": False}
         warnings.append(
-            "The p tag is optional in RFCPLACEHOLDER, but is required "
+            "The p tag is optional in DMARCbis, but is required "
             "in older versions of DMARC."
         )
     tags["p"]["value"] = tags["p"]["value"].lower()
@@ -1365,7 +1365,7 @@ def parse_dmarc_record(
     for tag in removed_tags:
         if tag in tags and tags[tag]["explicit"]:
             warnings.append(
-                f"Support for the {tag} tag was removed in RFCPLACEHOLDER."
+                f"Support for the {tag} tag was removed in DMARCbis."
             )
 
     # Validate tag values
