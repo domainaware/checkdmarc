@@ -1,5 +1,38 @@
 # Changelog
 
+## 5.14.0
+
+### DMARCbis changes
+
+- **New tags**: `np` (non-existent subdomain policy), `psd` (PSD flag), `t` (test mode) with descriptions, defaults, and validation
+- **Removed tag warnings**: `pct`, `rf`, `ri` descriptions appended with "Removed in DMARCbis." and emit warnings when explicitly present in a record
+- **Optional `p` tag**: Missing `p` now produces a warning and defaults to `none` instead of raising an error
+
+  ```text
+  "The p tag is optional in DMARCbis, but is required in older versions of DMARC."
+  ```
+
+- **DNS tree walk**: `query_dmarc_record` replaces PSL-based `get_base_domain` lookup with the DMARCbis tree walk algorithm (walks parent domains one label at a time, with 8-label query limit optimization)
+
+### Bug fixes
+
+- **`dmarc.py` — `get_dmarc_tag_description`**: `allowed_values` was always `{}` — never populated from `dmarc_tags[tag]["values"]`, making value-specific descriptions dead code
+- **`dmarc.py` — `_query_dmarc_record`**: `f"The domain {0} does not exist.".format(domain)` mixed f-string with `.format()`, producing `"The domain 0 does not exist."` regardless of input
+- **`mta_sts.py` — `parse_mta_sts_policy`**: 4 missing `raise` keywords — exceptions for duplicate keys, invalid version, invalid mode, and non-integer max_age were instantiated but never raised, silently accepting invalid policies. Also fixed the duplicate key detection which incorrectly used the pre-populated `parsed_policy` dict (where defaults like `max_age: 0` were already present), replaced with a `seen_keys` set.
+- **`smtp_tls_reporting.py` — `parse_smtp_tls_reporting_record`**: Missing `raise` keyword — `SMTPTLSReportingSyntaxError` for a missing required `rua` tag was instantiated but never raised, silently allowing records without the required tag.
+
+### Tests
+
+92 new unit tests (153 total, up from 61) providing comprehensive coverage across all modules. Overall project test coverage improved from 45% to 58%.
+
+- **`dmarc.py`** (60% → 82%): Tag descriptions, syntax errors, duplicate/invalid tags, pct edge cases, parked domain warnings, fo/rf/sp tag warnings, report URI parsing, record queries, DNS tree walk, `check_dmarc`
+- **`mta_sts.py`** (32% → 71%): Record/policy parsing, duplicate keys, invalid version/mode/max_age, missing keys, mx pattern matching
+- **`smtp_tls_reporting.py`** (38% → 69%): Record parsing, tag descriptions, invalid/duplicate tags, missing rua, HTTPS URIs
+- **`soa.py`** (43% → 89%): `soa_rname_to_email`, `parse_soa_string`, `check_soa`
+- **`__init__.py`** (21% → 54%): `results_to_json`, `results_to_csv_rows`, `check_ns`
+- **`spf.py`** (73% → 77%): `query_spf_record`, `check_spf`, parked domains, redirect macros, all mechanism variants
+- **`dnssec.py`** (16% → 28%): `test_dnssec` (mocked), DNSKEY cache
+
 ## 5.13.4
 
 ### Improvements
