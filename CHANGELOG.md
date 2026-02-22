@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.14.1
+
+### Fixes
+
+- Make the DMARC `p` tag required again until DMARCbis is released with an RFC number.
+
 ## 5.14.0
 
 ### DMARCbis changes

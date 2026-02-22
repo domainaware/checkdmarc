@@ -434,7 +434,7 @@ dmarc_tags: DMARCTagMap = {
     },
     "p": {
         "name": "Requested Mail Receiver Policy",
-        "required": False,
+        "required": True,
         "description": (
             "Specifies the policy to "
             "be enacted by the "
@@ -1342,11 +1342,12 @@ def parse_dmarc_record(
         if tag not in tags and "default" in dmarc_tags[tag]:
             tags[tag] = {"value": dmarc_tags[tag]["default"], "explicit": False}
     if "p" not in tags:
-        tags["p"] = {"value": "none", "explicit": False}
-        warnings.append(
-            "The p tag is optional in DMARCbis, but is required "
-            "in older versions of DMARC."
-        )
+        raise DMARCSyntaxError('The record is missing the required policy ("p") tag.')
+    # tags["p"] = {"value": "none", "explicit": False}
+    # warnings.append(
+    #  "A missing p tag is equivalent to p=none in DMARCbis, "
+    # "but a p tag is required in older versions of DMARC."
+    # )
     tags["p"]["value"] = tags["p"]["value"].lower()
     if "sp" not in tags:
         tags["sp"] = {"value": tags["p"]["value"], "explicit": False}
