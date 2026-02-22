@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.dmarc &mdash; checkdmarc 5.14.0 documentation</title>
+  <title>checkdmarc.dmarc &mdash; checkdmarc 5.14.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1199c657"></script>
+      <script src="../../_static/documentation_options.js?v=b5e1424e"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -598,7 +598,7 @@
     <span class="p">},</span>
     <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Requested Mail Receiver Policy&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
         <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
             <span class="s2">&quot;Specifies the policy to &quot;</span>
             <span class="s2">&quot;be enacted by the &quot;</span>
@@ -1523,11 +1523,12 @@
         <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span> <span class="ow">and</span> <span class="s2">&quot;default&quot;</span> <span class="ow">in</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]:</span>
             <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">],</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
     <span class="k">if</span> <span class="s2">&quot;p&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
-        <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="s2">&quot;The p tag is optional in DMARCbis, but is required &quot;</span>
-            <span class="s2">&quot;in older versions of DMARC.&quot;</span>
-        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">DMARCSyntaxError</span><span class="p">(</span><span class="s1">&#39;The record is missing the required policy (&quot;p&quot;) tag.&#39;</span><span class="p">)</span>
+    <span class="c1"># tags[&quot;p&quot;] = {&quot;value&quot;: &quot;none&quot;, &quot;explicit&quot;: False}</span>
+    <span class="c1"># warnings.append(</span>
+    <span class="c1">#  &quot;A missing p tag is equivalent to p=none in DMARCbis, &quot;</span>
+    <span class="c1"># &quot;but a p tag is required in older versions of DMARC.&quot;</span>
+    <span class="c1"># )</span>
     <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="k">if</span> <span class="s2">&quot;sp&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;sp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">],</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
