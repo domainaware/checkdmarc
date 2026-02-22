@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-https://github.com/domainaware/checkdmarc
 
 """Automated tests"""
 
@@ -20,10 +20,40 @@ import checkdmarc.soa
 import checkdmarc.spf
 import checkdmarc.utils
 
+# Detect if running in GitHub Actions to skip DNS lookups
+OFFLINE_MODE = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
+
 known_good_domains = ["fbi.gov", "pm.me", "ssa.gov"]
 
 
 class Test(unittest.TestCase):
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    def testKnownGood(self):
+        """Domains with known good, SPF and DMARC records"""
+
+        results = checkdmarc.check_domains(known_good_domains)
+        for result in results:
+            spf_error = None
+            dmarc_error = None
+            if "error" in result["spf"]:
+                spf_error = result["spf"]["error"]
+            if "error" in result["dmarc"]:
+                dmarc_error = result["dmarc"]["error"]
+            self.assertEqual(
+                result["spf"]["valid"],
+                True,
+                "Known good domain {0} failed SPF check:\n\n{1}".format(
+                    result["domain"], spf_error
+                ),
+            )
+            self.assertEqual(
+                result["dmarc"]["valid"],
+                True,
+                "Known good domain {0} failed DMARC check:\n\n{1}".format(
+                    result["domain"], dmarc_error
+                ),
+            )
+
     def testDMARCMixedFormatting(self):
         """DMARC records with extra spaces and mixed case are still valid"""
         examples = [
@@ -75,7 +105,7 @@ class Test(unittest.TestCase):
         self.assertEqual(len(results["warnings"]), 0)
         self.assertEqual(results["dns_lookups"], 0)
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testSplitSPFRecord(self):
         """Split SPF records are parsed properly"""
 
@@ -85,7 +115,7 @@ class Test(unittest.TestCase):
 
         self.assertEqual(parsed_record["parsed"]["all"], "fail")
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testJunkAfterAll(self):
         """Ignore any mechanisms after the all mechanism, but warn about it"""
         rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"
@@ -97,12 +127,12 @@ class Test(unittest.TestCase):
         parsed_record = checkdmarc.spf.parse_spf_record(rec, domain)
         self.assertIn(warning, parsed_record["warnings"])
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testDNSSEC(self):
         """Test known good DNSSEC"""
         self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testIncludeMissingSPF(self):
         """A warning is included for SPF records that include domains that are missing SPF records"""
 
@@ -114,7 +144,7 @@ class Test(unittest.TestCase):
         )
         self.assertEqual(results["dns_lookups"], 1)
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testTooManySPFDNSLookups(self):
         """SPF records with > 10 SPF mechanisms that cause DNS lookups raise
         SPFTooManyDNSLookups"""
@@ -137,7 +167,7 @@ class Test(unittest.TestCase):
             domain,
         )
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testTooManySPFVoidDNSLookups(self):
         """SPF records with > 2 void DNS lookups"""
 
@@ -263,7 +293,7 @@ class Test(unittest.TestCase):
             domain,
         )
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testSPFMissingMXRecord(self):
         """A warning is issued if an SPF record contains a mx mechanism
         pointing to a domain that has no MX records"""
@@ -279,7 +309,7 @@ class Test(unittest.TestCase):
         )
         self.assertEqual(results["dns_lookups"], 1)
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testSPFMissingARecord(self):
         """A warning is issued if an SPF record contains an a mechanism
         pointing to a domain that has no A records"""
@@ -291,7 +321,7 @@ class Test(unittest.TestCase):
         self.assertTrue(any(snipit in s for s in results["warnings"]))
         self.assertEqual(results["dns_lookups"], 1)
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testSPFMXMechanism(self):
         """Addresses are included in the output for SPF records with an mx lookup"""
         spf_record = "v=spf1 mx:proton.me ~all"
@@ -330,7 +360,7 @@ class Test(unittest.TestCase):
                 self.assertTrue(len(mechanism["addresses"]) > 0)
         self.assertEqual(results["dns_lookups"], 1)
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testDMARCPctLessThan100Warning(self):
         """A warning is issued if the DMARC pct value is less than 100"""
 
@@ -550,7 +580,7 @@ class Test(unittest.TestCase):
                 self.assertEqual(result["location"], "example.com")
                 self.assertEqual(result["record"], "v=DMARC1; p=reject")
 
-    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
+    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
     def testBIMI(self):
         """Test BIMI checks"""
         domain = "chase.com"
