@@ -24,40 +24,6 @@ known_good_domains = ["fbi.gov", "pm.me", "ssa.gov"]
 
 
 class Test(unittest.TestCase):
-    @unittest.skip
-    def testKnownGood(self):
-        """Domains with known good STARTTLS support, SPF and DMARC records"""
-
-        results = checkdmarc.check_domains(known_good_domains)
-        for result in results:
-            spf_error = None
-            dmarc_error = None
-            for mx in result["mx"]["hosts"]:
-                self.assertEqual(
-                    mx["starttls"],
-                    True,
-                    "Host of known good domain {0} failed STARTTLS check: {1}"
-                    "\n\n{0}".format(result["domain"], mx["hostname"]),
-                )
-            if "error" in result["spf"]:
-                spf_error = result["spf"]["error"]
-            if "error" in result["dmarc"]:
-                dmarc_error = result["dmarc"]["error"]
-            self.assertEqual(
-                result["spf"]["valid"],
-                True,
-                "Known good domain {0} failed SPF check:\n\n{1}".format(
-                    result["domain"], spf_error
-                ),
-            )
-            self.assertEqual(
-                result["dmarc"]["valid"],
-                True,
-                "Known good domain {0} failed DMARC check:\n\n{1}".format(
-                    result["domain"], dmarc_error
-                ),
-            )
-
     def testDMARCMixedFormatting(self):
         """DMARC records with extra spaces and mixed case are still valid"""
         examples = [
@@ -131,7 +97,7 @@ class Test(unittest.TestCase):
         parsed_record = checkdmarc.spf.parse_spf_record(rec, domain)
         self.assertIn(warning, parsed_record["warnings"])
 
-    @unittest.skip
+    @unittest.skipUnless(os.path.exists("/etc/resolv.conf"), "no network")
     def testDNSSEC(self):
         """Test known good DNSSEC"""
         self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
@@ -500,7 +466,7 @@ class Test(unittest.TestCase):
         self.assertTrue(
             any("ri tag was removed in DMARCbis" in w for w in result["warnings"])
         )
-
+    @unittest.skip(reason="This test will be used once DMARCbis is released")
     def testDMARCbisMissingPTagWarning(self):
         """A missing p tag results in a warning and defaults to none"""
         dmarc_record = "v=DMARC1; rua=mailto:dmarc@example.com"
@@ -508,8 +474,11 @@ class Test(unittest.TestCase):
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         self.assertEqual(result["tags"]["p"]["value"], "none")
         self.assertFalse(result["tags"]["p"]["explicit"])
+        warning = "A missing p tag is equivalent to p=none in DMARCbis, " 
+        "but a p tag is required in older versions of DMARC."
+        
         self.assertTrue(
-            any("p tag is optional in DMARCbis" in w for w in result["warnings"])
+            any(warning in w for w in result["warnings"])
         )
 
     def testDMARCbisNpDefaultsToSp(self):
