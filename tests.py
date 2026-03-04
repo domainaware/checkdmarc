@@ -513,9 +513,9 @@ class Test(unittest.TestCase):
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         self.assertEqual(result["tags"]["p"]["value"], "none")
         self.assertFalse(result["tags"]["p"]["explicit"])
-        warning = "A missing p tag is equivalent to p=none in DMARCbis, " 
-        "but a p tag is required in older versions of DMARC."
-        
+        warning = ("A missing p tag is equivalent to p=none in DMARCbis, "
+                   "but a p tag is required in older versions of DMARC.")
+
         self.assertTrue(
             any(warning in w for w in result["warnings"])
         )
