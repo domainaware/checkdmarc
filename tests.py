@@ -19,6 +19,9 @@ import checkdmarc.smtp_tls_reporting
 import checkdmarc.soa
 import checkdmarc.spf
 import checkdmarc.utils
+from typing import Any, cast
+from checkdmarc.spf import ParsedSPFMXMechanism, SPFAMechanism
+from checkdmarc.soa import SOARecordSuccessful
 
 # Detect if running in GitHub Actions to skip DNS lookups
 OFFLINE_MODE = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
@@ -32,22 +35,26 @@ class Test(unittest.TestCase):
         """Domains with known good, SPF and DMARC records"""
 
         results = checkdmarc.check_domains(known_good_domains)
+        if not isinstance(results, list):
+            results = [results]
         for result in results:
+            spf_result = cast(Any, result["spf"])
+            dmarc_result = result["dmarc"]
             spf_error = None
             dmarc_error = None
-            if "error" in result["spf"]:
-                spf_error = result["spf"]["error"]
-            if "error" in result["dmarc"]:
-                dmarc_error = result["dmarc"]["error"]
+            if "error" in spf_result:
+                spf_error = spf_result["error"]
+            if "error" in dmarc_result:
+                dmarc_error = dmarc_result["error"]
             self.assertEqual(
-                result["spf"]["valid"],
+                spf_result["valid"],
                 True,
                 "Known good domain {0} failed SPF check:\n\n{1}".format(
                     result["domain"], spf_error
                 ),
             )
             self.assertEqual(
-                result["dmarc"]["valid"],
+                dmarc_result["valid"],
                 True,
                 "Known good domain {0} failed DMARC check:\n\n{1}".format(
                     result["domain"], dmarc_error
@@ -329,9 +336,10 @@ class Test(unittest.TestCase):
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         for mechanism in results["parsed"]["mechanisms"]:
             if mechanism["mechanism"] == "mx":
-                self.assertTrue(len(mechanism["hosts"]) > 0)
-            for host in mechanism["hosts"]:
-                self.assertTrue(len(host) > 0)
+                mx_mechanism = cast(ParsedSPFMXMechanism, mechanism)
+                self.assertTrue(len(mx_mechanism["hosts"]) > 0)
+                for host in mx_mechanism["hosts"]:
+                    self.assertTrue(len(host) > 0)
         self.assertEqual(results["dns_lookups"], 1)
 
     def testSPFMacrosExists(self):
@@ -357,7 +365,8 @@ class Test(unittest.TestCase):
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         for mechanism in results["parsed"]["mechanisms"]:
             if mechanism["mechanism"] == "a":
-                self.assertTrue(len(mechanism["addresses"]) > 0)
+                a_mechanism = cast(SPFAMechanism, mechanism)
+                self.assertTrue(len(a_mechanism["addresses"]) > 0)
         self.assertEqual(results["dns_lookups"], 1)
 
     @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
@@ -587,7 +596,7 @@ class Test(unittest.TestCase):
 
         results = checkdmarc.bimi.check_bimi(domain)
 
-        self.assertEqual(len(results["warnings"]), 0)
+        self.assertEqual(len(cast(Any, results)["warnings"]), 0)
 
     def testSPFValidAMechanismMacro(self):
         """SPF records with valid macros are accepted"""
@@ -755,7 +764,7 @@ class Test(unittest.TestCase):
 
             # Verify the SPF record was found
             self.assertIsNotNone(result["record"])
-            self.assertIn("v=spf1", result["record"])
+            self.assertIn("v=spf1", cast(str, result["record"]))
 
             # Verify a warning was added for the undecodable record
             self.assertTrue(len(result["warnings"]) > 0)
@@ -1382,7 +1391,7 @@ class Test(unittest.TestCase):
             )
             result = checkdmarc.soa.check_soa("example.com")
             self.assertIn("values", result)
-            self.assertEqual(result["values"]["serial"], 2024010101)
+            self.assertEqual(cast(SOARecordSuccessful, result)["values"]["serial"], 2024010101)
 
     def testCheckSoaError(self):
         """check_soa returns error on failure"""
