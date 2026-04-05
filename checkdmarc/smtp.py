@@ -13,7 +13,7 @@ from collections.abc import Sequence
 
 import dns.resolver
 from dns.nameserver import Nameserver
-import timeout_decorator
+
 from expiringdict import ExpiringDict
 
 from checkdmarc._constants import SMTP_CACHE_MAX_AGE_SECONDS, SMTP_CACHE_MAX_LEN
@@ -64,52 +64,17 @@ class MXResultsFailure(TypedDict):
 MXResults = Union[MXResultsSuccess, MXResultsFailure]
 
 
-def _get_timeout_method():
-    """
-    Determine the best timeout method based on platform and environment.
-
-    Returns:
-        bool: True to use signals, False to use multiprocessing
-    """
-    # On macOS, use signals to avoid multiprocessing spawn issues
-    if platform.system() == "Darwin":
-        return True
-
-    # On Windows, signals are not available, so use multiprocessing
-    if platform.system() == "Windows":
-        return False
-
-    # On Linux and other Unix-like systems, prefer signals for better performance
-    # unless we detect we're in a multithreaded environment
-    try:
-        # Check if we're in a multithreaded environment by looking for threading
-        import threading
-
-        if threading.active_count() > 1:
-            # Multiple threads detected, use multiprocessing to avoid signal conflicts
-            return False
-    except ImportError:
-        pass
-
-    # Default to signals for better performance on Unix-like systems
-    return True
-
 
 class SMTPError(Exception):
     """Raised when SMTP error occurs"""
 
 
-@timeout_decorator.timeout(
-    5,
-    timeout_exception=SMTPError,  # type: ignore
-    exception_message="Connection timed out",
-    use_signals=_get_timeout_method(),
-)
 def test_tls(
     hostname: str,
     *,
     ssl_context: Optional[ssl.SSLContext] = None,
     cache: Optional[ExpiringDict] = None,
+    timeout: float = 5,
 ) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
@@ -136,17 +101,13 @@ def test_tls(
         ssl_context = ssl.create_default_context()
     logging.debug(f"Testing TLS/SSL on {hostname}")
     try:
-        server = smtplib.SMTP_SSL(hostname, context=ssl_context)
-        server.ehlo_or_helo_if_needed()
-        tls = True
-        if cache is not None:
-            cache[hostname] = {"tls": tls, "error": None}
-        try:
-            server.quit()
-            server.close()
-        except Exception as e:
-            logging.debug(e)
-        return tls
+        with smtplib.SMTP_SSL(hostname, context=ssl_context,
+                              timeout=timeout) as server:
+            server.ehlo_or_helo_if_needed()
+            tls = True
+            if cache is not None:
+                cache[hostname] = {"tls": tls, "error": None}
+            return tls
 
     except socket.gaierror:
         error = "DNS resolution failed"
@@ -221,17 +182,12 @@ def test_tls(
         raise SMTPError(error)
 
 
-@timeout_decorator.timeout(
-    5,
-    timeout_exception=SMTPError,  # pyright: ignore[reportArgumentType]
-    exception_message="Connection timed out",
-    use_signals=_get_timeout_method(),
-)
 def test_starttls(
     hostname: str,
     *,
     ssl_context: Optional[ssl.SSLContext] = None,
     cache: Optional[ExpiringDict] = None,
+    timeout: float = 5,
 ) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support
@@ -258,21 +214,15 @@ def test_starttls(
         ssl_context = ssl.create_default_context()
     logging.debug(f"Testing STARTTLS on {hostname}")
     try:
-        server = smtplib.SMTP(hostname)
-        server.ehlo_or_helo_if_needed()
-        if server.has_extn("starttls"):
-            server.starttls(context=ssl_context)
-            server.ehlo()
-            starttls = True
-            if cache:
-                cache[hostname] = {"starttls": starttls, "error": None}
-        try:
-            server.quit()
-            server.close()
-
-        except Exception as e:
-            logging.debug(e)
-        return starttls
+        with smtplib.SMTP(hostname, timeout=timeout) as server:
+            server.ehlo_or_helo_if_needed()
+            if server.has_extn("starttls"):
+                server.starttls(context=ssl_context)
+                server.ehlo()
+                starttls = True
+                if cache:
+                    cache[hostname] = {"starttls": starttls, "error": None}
+            return starttls
 
     except socket.gaierror:
         error = "DNS resolution failed"

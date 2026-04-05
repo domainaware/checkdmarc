@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.14.2
+
+### Fixes
+
+- Fix unclosed socket `ResourceWarning` in `test_tls` and `test_starttls` by
+  using SMTP context managers and replacing `timeout-decorator` with smtplib's
+  built-in `timeout` parameter
+- Remove `timeout-decorator` dependency
+
 ## 5.14.1
 
 ### Fixes

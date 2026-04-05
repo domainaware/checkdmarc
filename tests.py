@@ -505,6 +505,7 @@ class Test(unittest.TestCase):
         self.assertTrue(
             any("ri tag was removed in DMARCbis" in w for w in result["warnings"])
         )
+
     @unittest.skip(reason="This test will be used once DMARCbis is released")
     def testDMARCbisMissingPTagWarning(self):
         """A missing p tag results in a warning and defaults to none"""
@@ -513,12 +514,12 @@ class Test(unittest.TestCase):
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
         self.assertEqual(result["tags"]["p"]["value"], "none")
         self.assertFalse(result["tags"]["p"]["explicit"])
-        warning = ("A missing p tag is equivalent to p=none in DMARCbis, "
-                   "but a p tag is required in older versions of DMARC.")
-
-        self.assertTrue(
-            any(warning in w for w in result["warnings"])
+        warning = (
+            "A missing p tag is equivalent to p=none in DMARCbis, "
+            "but a p tag is required in older versions of DMARC."
         )
+
+        self.assertTrue(any(warning in w for w in result["warnings"]))
 
     def testDMARCbisNpDefaultsToSp(self):
         """The np tag defaults to the sp tag value when not explicit"""
@@ -1391,7 +1392,9 @@ class Test(unittest.TestCase):
             )
             result = checkdmarc.soa.check_soa("example.com")
             self.assertIn("values", result)
-            self.assertEqual(cast(SOARecordSuccessful, result)["values"]["serial"], 2024010101)
+            self.assertEqual(
+                cast(SOARecordSuccessful, result)["values"]["serial"], 2024010101
+            )
 
     def testCheckSoaError(self):
         """check_soa returns error on failure"""
