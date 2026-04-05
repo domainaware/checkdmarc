@@ -1,6 +1,6 @@
 # Installation
 
-`checkdmarc` requires Python 3.
+`checkdmarc` requires Python 3.10 or later.
 
 On Debian or Ubuntu systems, run:
 
