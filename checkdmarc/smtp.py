@@ -64,7 +64,6 @@ class MXResultsFailure(TypedDict):
 MXResults = Union[MXResultsSuccess, MXResultsFailure]
 
 
-
 class SMTPError(Exception):
     """Raised when SMTP error occurs"""
 
@@ -101,8 +100,7 @@ def test_tls(
         ssl_context = ssl.create_default_context()
     logging.debug(f"Testing TLS/SSL on {hostname}")
     try:
-        with smtplib.SMTP_SSL(hostname, context=ssl_context,
-                              timeout=timeout) as server:
+        with smtplib.SMTP_SSL(hostname, context=ssl_context, timeout=timeout) as server:
             server.ehlo_or_helo_if_needed()
             tls = True
             if cache is not None:

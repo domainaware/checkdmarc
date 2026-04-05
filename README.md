@@ -6,6 +6,11 @@
 
 A Python module, command line utility, and [web application](https://github.com/domainaware/checkdmarc-web-frontend) for validating SPF and DMARC DNS records.
 
+## Sponcers
+
+This is a project is maintained by one developer.
+Please consider [sponsoring my work](https://github.com/sponsors/seanthegeek) if you or your organization benefit from it.
+
 ## Features
 
 - API, CLI, and web interfaces
