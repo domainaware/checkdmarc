@@ -1195,7 +1195,7 @@ def check_bimi(
             include_tag_descriptions=include_tag_descriptions,
             domain=domain,
             parsed_dmarc_record=parsed_dmarc_record,
-            http_timeout=timeout,
+            http_timeout=DEFAULT_HTTP_TIMEOUT,
         )
         bimi_results["tags"] = parsed_bimi["tags"]
         if "image" in parsed_bimi.keys():
