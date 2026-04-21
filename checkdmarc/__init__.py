@@ -80,7 +80,7 @@ def check_domains(
     *,
     parked: bool = False,
     approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
-    approved_mx_hostnames: Optional[bool] = None,
+    approved_mx_hostnames: Optional[list[str]] = None,
     skip_tls: bool = False,
     bimi_selector: str = "default",
     include_tag_descriptions: bool = False,
