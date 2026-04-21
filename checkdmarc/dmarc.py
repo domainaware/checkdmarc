@@ -256,7 +256,7 @@ class DMARCResults(TypedDict):
 
     record: str
     location: str
-    valid: bool
+    valid: Literal[True]
     warnings: list[str]
     tags: Union[DMARCParsedTags, DMARCParsedTagsWithDescriptions]
 
@@ -272,7 +272,7 @@ class DMARCErrorResults(_DMARCErrorResultsOptionalFields):
 
     record: Optional[str]
     location: Optional[str]
-    valid: bool
+    valid: Literal[False]
     error: str
 
 

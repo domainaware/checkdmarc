@@ -44,6 +44,7 @@ import pyleri
 
 import checkdmarc.resources
 from checkdmarc._constants import DEFAULT_HTTP_TIMEOUT, SYNTAX_ERROR_MARKER, USER_AGENT
+from checkdmarc.dmarc import DMARCErrorResults, DMARCResults
 from checkdmarc.utils import (
     HTTPS_REGEX,
     WSP_REGEX,
@@ -935,7 +936,7 @@ def parse_bimi_record(
     record: str,
     *,
     domain: Optional[str] = None,
-    parsed_dmarc_record: Optional[dict] = None,
+    parsed_dmarc_record: Optional[Union[DMARCResults, DMARCErrorResults]] = None,
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
     http_timeout: float = DEFAULT_HTTP_TIMEOUT,
@@ -1091,7 +1092,7 @@ def parse_bimi_record(
                 tag_value[i] = tag_value[i].lower()
 
     if parsed_dmarc_record and not tags["l"] == "":
-        if not parsed_dmarc_record["valid"]:
+        if parsed_dmarc_record["valid"] is False:
             warnings.append(
                 "The domain does not have a valid DMARC record. A DMARC policy of quarantine or reject must be in place."
             )
@@ -1135,7 +1136,7 @@ def check_bimi(
     domain: str,
     *,
     selector: str = "default",
-    parsed_dmarc_record: Optional[dict] = None,
+    parsed_dmarc_record: Optional[Union[DMARCResults, DMARCErrorResults]] = None,
     include_tag_descriptions: bool = False,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,

@@ -430,7 +430,7 @@ def get_nameservers(
     resolver: Optional[dns.resolver.Resolver] = None,
     timeout: float = 2.0,
     timeout_retries: int = 2,
-) -> dict:
+) -> NameserverResultOk:
     """
     Gets a list of nameservers for a given domain
 
@@ -480,7 +480,8 @@ def get_nameservers(
             if not approved:
                 warnings.append(f"Unapproved nameserver: {nameserver}")
 
-    return {"hostnames": ns_records, "warnings": warnings}
+    result: NameserverResultOk = {"hostnames": ns_records, "warnings": warnings}
+    return result
 
 
 def get_mx_records(

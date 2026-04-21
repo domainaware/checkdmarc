@@ -31,6 +31,7 @@ from checkdmarc.utils import (
     DNSException,
     MXHost as MXHost,
     NameserverResult,
+    NameserverResultError,
     get_base_domain,
     get_nameservers,
     normalize_domain,
@@ -178,15 +179,16 @@ def check_domains(
         )
 
         mta_sts_mx_patterns = None
-        domain_results["mta_sts"] = check_mta_sts(
+        mta_sts_result = check_mta_sts(
             domain,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
             timeout_retries=timeout_retries,
         )
-        if domain_results["mta_sts"]["valid"]:
-            mta_sts_mx_patterns = domain_results["mta_sts"]["policy"]["mx"]
+        domain_results["mta_sts"] = mta_sts_result
+        if mta_sts_result["valid"] is True:
+            mta_sts_mx_patterns = mta_sts_result["policy"]["mx"]
         domain_results["mx"] = check_mx(
             domain,
             approved_mx_hostnames=approved_mx_hostnames,
@@ -288,12 +290,16 @@ def check_ns(
             timeout_retries=timeout_retries,
         )
     except DNSException as error:
-        ns_results = {"hostnames": [], "error": error.__str__()}
+        ns_error: NameserverResultError = {
+            "hostnames": [],
+            "error": error.__str__(),
+        }
+        return ns_error
     return ns_results
 
 
 def results_to_json(
-    results: Union[dict[str, object], list[dict[str, str]]],
+    results: Union[DomainCheckResult, list[DomainCheckResult]],
 ) -> str:
     """
     Converts a dictionary of results or list of results to a JSON string
@@ -308,7 +314,7 @@ def results_to_json(
 
 
 def results_to_csv_rows(
-    results: Union[dict, list[dict]],
+    results: Union[DomainCheckResult, list[DomainCheckResult]],
 ) -> list[dict]:
     """
     Converts a results dictionary or list of dictionaries and returns a
@@ -322,10 +328,12 @@ def results_to_csv_rows(
     """
     rows = []
 
-    if type(results) is dict:
-        results = [results]
+    if isinstance(results, list):
+        items: list[dict] = [dict(r) for r in results]
+    else:
+        items = [dict(results)]
 
-    for result in results:
+    for result in items:
         row = {}
         ns = result["ns"]
         mx = result["mx"]
@@ -447,7 +455,9 @@ def results_to_csv_rows(
     return rows
 
 
-def results_to_csv(results: dict[str, object]) -> str:
+def results_to_csv(
+    results: Union[DomainCheckResult, list[DomainCheckResult]],
+) -> str:
     """
     Converts a dictionary of results to CSV
 

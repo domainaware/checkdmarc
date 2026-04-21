@@ -1,5 +1,23 @@
 # Changelog
 
+## 5.14.3
+
+### Fixes
+
+- Fix type of `approved_mx_hostnames` parameter in `check_domains` (closes #238)
+- Resolve Pyright/Pylance type errors and warnings across the project:
+  - Use `Literal[True]`/`Literal[False]` for `valid` in `DMARCResults` /
+    `DMARCErrorResults` to enable discriminated union narrowing
+  - Make `nameservers` parameter `Optional` in `check_mx`, `get_mx_hosts`, and
+    `get_tlsa_records` to match call sites and the underlying `query_dns`
+  - Type `get_nameservers` return as `NameserverResultOk`; type the error path
+    in `check_ns` as `NameserverResultError`
+  - Type `parsed_dmarc_record` in `parse_bimi_record` / `check_bimi` as
+    `Optional[Union[DMARCResults, DMARCErrorResults]]`
+  - Type `results_to_json`, `results_to_csv`, and `results_to_csv_rows` inputs
+    as `DomainCheckResult | list[DomainCheckResult]`
+  - Remove stray tuple wrapper around an `add_argument` call in the CLI
+
 ## 5.14.2
 
 ### Fixes

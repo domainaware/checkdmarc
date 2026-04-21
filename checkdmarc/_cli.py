@@ -91,14 +91,12 @@ def _main():
         "-b", "--bimi-selector", default="default", help="the BIMI selector to use"
     )
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
-    (
-        arg_parser.add_argument(
-            "-w",
-            "--wait",
-            type=float,
-            help="number of seconds to wait between checking domains (default 0.0)",
-            default=0.0,
-        ),
+    arg_parser.add_argument(
+        "-w",
+        "--wait",
+        type=float,
+        help="number of seconds to wait between checking domains (default 0.0)",
+        default=0.0,
     )
     arg_parser.add_argument(
         "--skip-tls", action="store_true", help="skip TLS/SSL testing"

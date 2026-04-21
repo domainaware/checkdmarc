@@ -175,7 +175,7 @@ def test_dnssec(
 def get_tlsa_records(
     hostname: str,
     *,
-    nameservers: Sequence[str | Nameserver],
+    nameservers: Optional[Sequence[str | Nameserver]] = None,
     timeout: float = 2.0,
     port: int = 25,
     protocol: str = "tcp",

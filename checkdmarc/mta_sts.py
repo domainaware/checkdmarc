@@ -601,7 +601,7 @@ def mx_in_mta_sts_patterns(mx_hostname: str, mta_sts_mx_patterns: list[str]) -> 
 
     Args:
         mx_hostname (str): The MX hostname to test
-        mta_sts_mx_patterns (str): The list of MTA-STS MX patterns
+        mta_sts_mx_patterns (list): The list of MTA-STS MX patterns
 
     Returns: True if the MX hostname is included, false if not
     """
