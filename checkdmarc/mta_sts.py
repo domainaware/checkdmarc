@@ -14,7 +14,13 @@ from dns.nameserver import Nameserver
 import requests
 import pyleri
 
-from checkdmarc._constants import DEFAULT_HTTP_TIMEOUT, SYNTAX_ERROR_MARKER, USER_AGENT
+from checkdmarc._constants import (
+    DEFAULT_DNS_TIMEOUT,
+    DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_HTTP_TIMEOUT,
+    SYNTAX_ERROR_MARKER,
+    USER_AGENT,
+)
 from checkdmarc.utils import WSP_REGEX, normalize_domain, query_dns
 
 """Copyright 2019-2023 Sean Whalen
@@ -207,8 +213,8 @@ def query_mta_sts_record(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> MTASTSQueryResults:
     """
     Queries DNS for an MTA-STS record
@@ -219,7 +225,7 @@ def query_mta_sts_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
 
     Returns:
@@ -249,7 +255,7 @@ def query_mta_sts_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         for record in records:
             if record.startswith(txt_prefix):
@@ -277,7 +283,7 @@ def query_mta_sts_record(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
-                timeout_retries=timeout_retries,
+                retries=retries,
             )
             for record in records:
                 if record.startswith(txt_prefix):
@@ -533,8 +539,8 @@ def check_mta_sts(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> MTASTSCheckResults:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.
@@ -545,7 +551,7 @@ def check_mta_sts(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
 
     Returns:
@@ -569,7 +575,7 @@ def check_mta_sts(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         warnings = mta_sts_record["warnings"]
         mta_sts_record = parse_mta_sts_record(mta_sts_record["record"])

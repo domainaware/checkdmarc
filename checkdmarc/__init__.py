@@ -16,6 +16,7 @@ import dns.resolver
 from dns.nameserver import Nameserver
 
 import checkdmarc._constants
+from checkdmarc._constants import DEFAULT_DNS_TIMEOUT, DEFAULT_DNS_MAX_RETRIES
 from checkdmarc.bimi import check_bimi, BIMICheckResult
 from checkdmarc.dmarc import check_dmarc, DMARCResults, DMARCErrorResults
 from checkdmarc.dnssec import test_dnssec
@@ -87,8 +88,8 @@ def check_domains(
     include_tag_descriptions: bool = False,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
     wait: float = 0.0,
 ) -> Union[DomainCheckResult, list[DomainCheckResult]]:
     """
@@ -109,7 +110,7 @@ def check_domains(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
         wait (float): number of seconds to wait between processing domains
 
     Returns:
@@ -175,7 +176,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
 
         mta_sts_mx_patterns = None
@@ -184,7 +185,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         domain_results["mta_sts"] = mta_sts_result
         if mta_sts_result["valid"] is True:
@@ -197,7 +198,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
 
         domain_results["spf"] = check_spf(
@@ -206,7 +207,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
 
         domain_results["dmarc"] = check_dmarc(
@@ -216,7 +217,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
 
         domain_results["smtp_tls_reporting"] = check_smtp_tls_reporting(
@@ -224,7 +225,7 @@ def check_domains(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         if bimi_selector is not None:
             domain_results["bimi"] = check_bimi(
@@ -235,7 +236,7 @@ def check_domains(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
-                timeout_retries=timeout_retries,
+                retries=retries,
             )
 
         results.append(domain_results)
@@ -254,8 +255,8 @@ def check_ns(
     approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> NameserverResult:
     """
     Returns a dictionary of nameservers and warnings or a dictionary with an
@@ -287,7 +288,7 @@ def check_ns(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
     except DNSException as error:
         ns_error: NameserverResultError = {

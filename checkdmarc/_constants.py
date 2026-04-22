@@ -19,13 +19,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "5.14.3"
+__version__ = "5.15.0"
 
 OS = platform.system()
 OS_RELEASE = platform.release()
 USER_AGENT = f"Mozilla/5.0 (({OS} {OS_RELEASE})) checkdmarc/{__version__}"
 SYNTAX_ERROR_MARKER = "➞"
 DEFAULT_HTTP_TIMEOUT = 2.0
+DEFAULT_DNS_TIMEOUT = 2.0
+DEFAULT_DNS_MAX_RETRIES = 0
+# Mix providers so a single operator's anycast outage or authoritative-server
+# incompatibility (e.g. Cloudflare's QNAME minimization vs. certain auth
+# servers) falls through to a different provider within one resolve() call.
+DEFAULT_DNS_NAMESERVERS = ("1.1.1.1", "8.8.8.8")
+DEFAULT_SMTP_TIMEOUT = 5.0
 CACHE_MAX_LEN = 200000
 CACHE_MAX_AGE_SECONDS = 1800
 

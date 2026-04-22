@@ -9,6 +9,11 @@ from argparse import ArgumentParser
 
 import logging
 
+from checkdmarc._constants import (
+    DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_DNS_NAMESERVERS,
+    DEFAULT_DNS_TIMEOUT,
+)
 from checkdmarc import (
     __version__,
     check_domains,
@@ -71,20 +76,29 @@ def _main():
         "(silences screen output)",
     )
     arg_parser.add_argument(
-        "-n", "--nameserver", nargs="+", help="nameservers to query"
+        "-n",
+        "--nameserver",
+        nargs="+",
+        help=(f"nameservers to query (default: {' '.join(DEFAULT_DNS_NAMESERVERS)})"),
     )
     arg_parser.add_argument(
         "-t",
         "--timeout",
-        help="number of seconds to wait for an answer from DNS (default 2.0)",
+        help=(
+            "number of seconds to wait for an answer from DNS "
+            f"(default {DEFAULT_DNS_TIMEOUT})"
+        ),
         type=float,
-        default=2.0,
+        default=DEFAULT_DNS_TIMEOUT,
     )
     arg_parser.add_argument(
-        "--timeout-retries",
-        help="number of times to reattempt a query after a timeout (default 2)",
+        "--retries",
+        help=(
+            "number of times to retry on timeout or other transient errors "
+            f"(default {DEFAULT_DNS_MAX_RETRIES})"
+        ),
         type=int,
-        default=2,
+        default=DEFAULT_DNS_MAX_RETRIES,
     )
 
     arg_parser.add_argument(
@@ -142,7 +156,7 @@ def _main():
         include_tag_descriptions=args.descriptions,
         nameservers=args.nameserver,
         timeout=args.timeout,
-        timeout_retries=args.timeout_retries,
+        retries=args.retries,
         bimi_selector=args.bimi_selector,
         wait=args.wait,
     )

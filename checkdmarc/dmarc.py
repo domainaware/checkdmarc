@@ -13,7 +13,11 @@ import dns.exception
 from dns.nameserver import Nameserver
 import pyleri
 
-from checkdmarc._constants import SYNTAX_ERROR_MARKER
+from checkdmarc._constants import (
+    DEFAULT_DNS_TIMEOUT,
+    DEFAULT_DNS_MAX_RETRIES,
+    SYNTAX_ERROR_MARKER,
+)
 from checkdmarc.utils import (
     MAILTO_REGEX,
     WSP_REGEX,
@@ -736,8 +740,8 @@ def _query_dmarc_record(
     *,
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
     ignore_unrelated_records: bool = False,
 ) -> Union[str, None]:
     """
@@ -749,7 +753,7 @@ def _query_dmarc_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
         ignore_unrelated_records (bool): Do not raise a warning if unrelated records are found
 
     Returns:
@@ -769,7 +773,7 @@ def _query_dmarc_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         for record in records:
             if record.startswith(txt_prefix):
@@ -808,7 +812,7 @@ def _query_dmarc_record(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
-                timeout_retries=timeout_retries,
+                retries=retries,
             )
             for record in records:
                 if record.startswith(txt_prefix):
@@ -841,8 +845,8 @@ def query_dmarc_record(
     *,
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
     ignore_unrelated_records: bool = False,
 ) -> DMARCRecordQueryResults:
     """
@@ -854,7 +858,7 @@ def query_dmarc_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
         ignore_unrelated_records (bool): Ignore unrelated TXT records
 
     Returns:
@@ -881,7 +885,7 @@ def query_dmarc_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
             ignore_unrelated_records=ignore_unrelated_records,
         )
     except DMARCRecordNotFound:
@@ -897,7 +901,7 @@ def query_dmarc_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         for root_record in root_records:
             if root_record.startswith("v=DMARC1"):
@@ -931,7 +935,7 @@ def query_dmarc_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                         ignore_unrelated_records=ignore_unrelated_records,
                     )
                     if record is not None:
@@ -1048,8 +1052,8 @@ def check_wildcard_dmarc_report_authorization(
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> bool:
     """
     Checks for a wildcard DMARC report authorization record, e.g.:
@@ -1065,7 +1069,7 @@ def check_wildcard_dmarc_report_authorization(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
 
     Returns:
@@ -1082,7 +1086,7 @@ def check_wildcard_dmarc_report_authorization(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
 
         for record in records:
@@ -1116,8 +1120,8 @@ def verify_dmarc_report_destination(
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> None:
     """
     Checks if the report destination accepts reports for the source domain
@@ -1132,7 +1136,7 @@ def verify_dmarc_report_destination(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                         requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
 
     Raises:
@@ -1150,7 +1154,7 @@ def verify_dmarc_report_destination(
             ignore_unrelated_records=ignore_unrelated_records,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         ):
             return
         target = f"{source_domain}._report._dmarc.{destination_domain}"
@@ -1170,7 +1174,7 @@ def verify_dmarc_report_destination(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
-                timeout_retries=timeout_retries,
+                retries=retries,
             )
 
             for record in records:
@@ -1205,8 +1209,8 @@ def parse_dmarc_record(
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> ParsedDMARCRecord: ...
 
@@ -1221,8 +1225,8 @@ def parse_dmarc_record(
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> ParsedDMARCRecordWithDescriptions: ...
 
@@ -1236,8 +1240,8 @@ def parse_dmarc_record(
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     ignore_unrelated_records: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> Union[ParsedDMARCRecord, ParsedDMARCRecordWithDescriptions]:
     """
@@ -1253,7 +1257,7 @@ def parse_dmarc_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
         syntax_error_marker (str): The maker for pointing out syntax errors
 
     Returns:
@@ -1443,7 +1447,7 @@ def parse_dmarc_record(
                         ignore_unrelated_records=ignore_unrelated_records,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                 try:
                     hosts = get_mx_records(
@@ -1451,7 +1455,7 @@ def parse_dmarc_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                     if len(hosts) == 0:
                         raise DMARCReportEmailAddressMissingMXRecords(
@@ -1506,7 +1510,7 @@ def parse_dmarc_record(
                         ignore_unrelated_records=ignore_unrelated_records,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                 try:
                     hosts = get_mx_records(
@@ -1514,7 +1518,7 @@ def parse_dmarc_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                     if len(hosts) == 0:
                         raise DMARCReportEmailAddressMissingMXRecords(
@@ -1580,8 +1584,8 @@ def get_dmarc_record(
     include_tag_descriptions: Literal[False] = False,
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> DMARCRecord: ...
 
 
@@ -1592,8 +1596,8 @@ def get_dmarc_record(
     include_tag_descriptions: Literal[True],
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> DMARCRecordWithDescriptions: ...
 
 
@@ -1603,8 +1607,8 @@ def get_dmarc_record(
     include_tag_descriptions: bool = False,
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> Union[DMARCRecord, DMARCRecordWithDescriptions]:
     """
     Retrieves a DMARC record for a domain and parses it
@@ -1616,7 +1620,7 @@ def get_dmarc_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: a ``dict`` with the following keys:
@@ -1650,7 +1654,7 @@ def get_dmarc_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         result: DMARCRecordWithDescriptions = {
             "record": query["record"],
@@ -1666,7 +1670,7 @@ def get_dmarc_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         result_no_desc: DMARCRecord = {
             "record": query["record"],
@@ -1684,8 +1688,8 @@ def check_dmarc(
     ignore_unrelated_records: bool = False,
     nameservers: Optional[Sequence[Union[str, Nameserver]]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> Union[DMARCResults, DMARCErrorResults]:
     """
     Returns a dictionary with a parsed DMARC record or an error
@@ -1699,7 +1703,7 @@ def check_dmarc(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
 
     Returns:
@@ -1723,7 +1727,7 @@ def check_dmarc(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
     except DMARCError as error:
         error_results: DMARCErrorResults = {
@@ -1743,7 +1747,7 @@ def check_dmarc(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         combined_warnings = dmarc_query["warnings"] + parsed_dmarc_record["warnings"]
         dmarc_results: DMARCResults = {

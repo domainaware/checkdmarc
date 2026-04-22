@@ -16,7 +16,13 @@ from dns.nameserver import Nameserver
 
 from expiringdict import ExpiringDict
 
-from checkdmarc._constants import SMTP_CACHE_MAX_AGE_SECONDS, SMTP_CACHE_MAX_LEN
+from checkdmarc._constants import (
+    DEFAULT_DNS_TIMEOUT,
+    DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_SMTP_TIMEOUT,
+    SMTP_CACHE_MAX_AGE_SECONDS,
+    SMTP_CACHE_MAX_LEN,
+)
 from checkdmarc.dnssec import get_tlsa_records, test_dnssec
 from checkdmarc.mta_sts import mx_in_mta_sts_patterns
 from checkdmarc.utils import (
@@ -73,7 +79,7 @@ def test_tls(
     *,
     ssl_context: Optional[ssl.SSLContext] = None,
     cache: Optional[ExpiringDict] = None,
-    timeout: float = 5,
+    timeout: float = DEFAULT_SMTP_TIMEOUT,
 ) -> bool:
     """
     Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
@@ -185,7 +191,7 @@ def test_starttls(
     *,
     ssl_context: Optional[ssl.SSLContext] = None,
     cache: Optional[ExpiringDict] = None,
-    timeout: float = 5,
+    timeout: float = DEFAULT_SMTP_TIMEOUT,
 ) -> bool:
     """
     Attempt to connect to an SMTP server and validate STARTTLS support
@@ -304,8 +310,8 @@ def get_mx_hosts(
     parked: bool = False,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> MXResultsSuccess:
     """
     Gets MX hostname and their addresses
@@ -343,7 +349,7 @@ def get_mx_hosts(
         nameservers=nameservers,
         resolver=resolver,
         timeout=timeout,
-        timeout_retries=timeout_retries,
+        retries=retries,
     )
     for record in mx_records:
         hosts.append(
@@ -395,7 +401,7 @@ def get_mx_hosts(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
-                timeout_retries=timeout_retries,
+                retries=retries,
             )
             tlsa_records = get_tlsa_records(
                 hostname,
@@ -424,7 +430,7 @@ def get_mx_hosts(
                     nameservers=nameservers,
                     resolver=resolver,
                     timeout=timeout,
-                    timeout_retries=timeout_retries,
+                    retries=retries,
                 )
             except DNSException:
                 reverse_hostnames = []
@@ -438,7 +444,7 @@ def get_mx_hosts(
                         reverse_hostname,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                 except DNSException as warning:
                     warnings.append(str(warning))
@@ -493,8 +499,8 @@ def check_mx(
     skip_tls: bool = False,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> MXResults:
     """
     Gets MX hostname and their addresses, or an empty list of hosts and an
@@ -509,7 +515,7 @@ def check_mx(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: a ``dict`` with the following keys:
@@ -536,7 +542,7 @@ def check_mx(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         return mx_results
     except DNSException as error:
