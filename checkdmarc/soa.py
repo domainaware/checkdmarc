@@ -7,6 +7,7 @@ from collections.abc import Sequence
 import dns.resolver
 from dns.nameserver import Nameserver
 
+from checkdmarc._constants import DEFAULT_DNS_TIMEOUT, DEFAULT_DNS_MAX_RETRIES
 from checkdmarc.utils import get_soa_record
 
 """Functions for parsing DNS Start of Authority records"""
@@ -94,8 +95,8 @@ def check_soa(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SOARecordResults:
     """
     Returns a dictionary of a domain's SOA record and a parsed version of the record or a dictionary with an
@@ -107,7 +108,7 @@ def check_soa(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
     Returns:
         dict: A dictionary with the following keys:
 
@@ -126,7 +127,7 @@ def check_soa(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
 
     except Exception as e:

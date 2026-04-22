@@ -14,7 +14,11 @@ import dns.resolver
 from dns.nameserver import Nameserver
 import pyleri
 
-from checkdmarc._constants import SYNTAX_ERROR_MARKER
+from checkdmarc._constants import (
+    DEFAULT_DNS_TIMEOUT,
+    DEFAULT_DNS_MAX_RETRIES,
+    SYNTAX_ERROR_MARKER,
+)
 from checkdmarc.utils import (
     HTTPS_REGEX,
     MAILTO_REGEX_STRING,
@@ -182,8 +186,8 @@ def query_smtp_tls_reporting_record(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SMTPTLSReportingQueryResults:
     """
     Queries DNS for an SMTP TLS Reporting record
@@ -194,7 +198,7 @@ def query_smtp_tls_reporting_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: a ``dict`` with the following keys:
@@ -223,7 +227,7 @@ def query_smtp_tls_reporting_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         for record in records:
             if record.startswith(txt_prefix):
@@ -253,7 +257,7 @@ def query_smtp_tls_reporting_record(
                 nameservers=nameservers,
                 resolver=resolver,
                 timeout=timeout,
-                timeout_retries=timeout_retries,
+                retries=retries,
             )
             for record in records:
                 if record.startswith(txt_prefix):
@@ -389,8 +393,8 @@ def check_smtp_tls_reporting(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SMTPTLSReportingResults:
     """
     Returns a dictionary with a parsed SMTP-TLS Reporting policy or an error.
@@ -401,7 +405,7 @@ def check_smtp_tls_reporting(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: a ``dict`` with the following keys:
@@ -423,7 +427,7 @@ def check_smtp_tls_reporting(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         warnings = smtp_tls_reporting_record["warnings"]
         smtp_tls_reporting_record = parse_smtp_tls_reporting_record(

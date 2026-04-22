@@ -15,7 +15,11 @@ import dns.resolver
 from dns.nameserver import Nameserver
 import pyleri
 
-from checkdmarc._constants import SYNTAX_ERROR_MARKER
+from checkdmarc._constants import (
+    DEFAULT_DNS_TIMEOUT,
+    DEFAULT_DNS_MAX_RETRIES,
+    SYNTAX_ERROR_MARKER,
+)
 from checkdmarc.utils import (
     DNSException,
     DNSExceptionNXDOMAIN,
@@ -235,8 +239,8 @@ def ptr_match(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> bool:
     """
     Preforms a ptr mechanism check.
@@ -259,7 +263,7 @@ def ptr_match(
         nameservers=nameservers,
         resolver=resolver,
         timeout=timeout,
-        timeout_retries=timeout_retries,
+        retries=retries,
     )
     for name in hostnames:
         if not name.endswith(domain):
@@ -269,7 +273,7 @@ def ptr_match(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         if ip_address in ips:
             return True
@@ -376,8 +380,8 @@ def query_spf_record(
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     quoted_txt_segments: bool = False,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SPFQueryResults:
     """
     Queries DNS for an SPF record
@@ -388,7 +392,7 @@ def query_spf_record(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: A ``dict`` with the following keys:
@@ -412,7 +416,7 @@ def query_spf_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
     except (dns.resolver.NoAnswer, Exception):
         pass
@@ -433,7 +437,7 @@ def query_spf_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         spf_record = None
         for record in answers:
@@ -529,8 +533,8 @@ def parse_spf_record(
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
     recursion: Optional[list[str]] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
 ) -> SPFRecordResults:
     """
@@ -546,7 +550,7 @@ def parse_spf_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         recursion (list): A list of domains used in recursion
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
         syntax_error_marker (str): The maker for pointing out syntax errors
 
     Returns:
@@ -668,7 +672,7 @@ def parse_spf_record(
                         exp,
                         nameservers=nameservers,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                     if len(exp_txt_records) == 0:
                         warnings.append(f"No TXT records at exp value {exp}.")
@@ -759,7 +763,7 @@ def parse_spf_record(
                     nameservers=nameservers,
                     resolver=resolver,
                     timeout=timeout,
-                    timeout_retries=timeout_retries,
+                    retries=retries,
                 )
                 if len(a_records) == 0:
                     # Do not pre-increment void counters here; let the outer
@@ -806,7 +810,7 @@ def parse_spf_record(
                     nameservers=nameservers,
                     resolver=resolver,
                     timeout=timeout,
-                    timeout_retries=timeout_retries,
+                    retries=retries,
                 )
 
                 if len(mx_hosts) == 0:
@@ -833,7 +837,7 @@ def parse_spf_record(
                             nameservers=nameservers,
                             resolver=resolver,
                             timeout=timeout,
-                            timeout_retries=timeout_retries,
+                            retries=retries,
                         )
                         mx_host_addresses[hostname] = _addresses
 
@@ -925,7 +929,7 @@ def parse_spf_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                     redirect_record = redirect_record["record"]
                     redirected_spf = parse_spf_record(
@@ -936,7 +940,7 @@ def parse_spf_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                     parsed["all"] = redirected_spf["parsed"]["all"]
                     mechanism_dns_lookups += redirected_spf["dns_lookups"]
@@ -994,7 +998,7 @@ def parse_spf_record(
                             exp,
                             nameservers=nameservers,
                             timeout=timeout,
-                            timeout_retries=timeout_retries,
+                            retries=retries,
                         )
                         if len(exp_txt_records) == 0:
                             warnings.append(f"No TXT records at exp value {exp}.")
@@ -1036,7 +1040,7 @@ def parse_spf_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                     include_record = include_record["record"]
                     include = parse_spf_record(
@@ -1047,7 +1051,7 @@ def parse_spf_record(
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
-                        timeout_retries=timeout_retries,
+                        retries=retries,
                     )
                     total_dns_lookups += include["dns_lookups"]
                     total_void_dns_lookups += include["void_dns_lookups"]
@@ -1126,7 +1130,7 @@ def parse_spf_record(
                     nameservers=nameservers,
                     resolver=resolver,
                     timeout=timeout,
-                    timeout_retries=timeout_retries,
+                    retries=retries,
                 )
                 if len(a_records) == 0:
                     # Do not pre-increment void counters here; let the outer
@@ -1217,8 +1221,8 @@ def get_spf_record(
     *,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SPFRecordResults:
     """
     Retrieves and parses an SPF record
@@ -1228,7 +1232,7 @@ def get_spf_record(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         timeout (float): Number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: An SPF record parsed by result
@@ -1246,7 +1250,7 @@ def get_spf_record(
         nameservers=nameservers,
         resolver=resolver,
         timeout=timeout,
-        timeout_retries=timeout_retries,
+        retries=retries,
     )
     record = query_result["record"]
     query_warnings = query_result.get("warnings", [])
@@ -1257,7 +1261,7 @@ def get_spf_record(
         nameservers=nameservers,
         resolver=resolver,
         timeout=timeout,
-        timeout_retries=timeout_retries,
+        retries=retries,
     )
     parsed_record["record"] = record
 
@@ -1274,8 +1278,8 @@ def check_spf(
     parked: bool = False,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> dict:
     """
     Returns a dictionary with a parsed SPF record or an error.
@@ -1286,7 +1290,7 @@ def check_spf(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: A ``dict`` with the following keys:
@@ -1315,7 +1319,7 @@ def check_spf(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         spf_results["record"] = spf_query["record"]
         spf_results["warnings"] = spf_query["warnings"]
@@ -1328,7 +1332,7 @@ def check_spf(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
 
         spf_results["dns_lookups"] = parsed_spf["dns_lookups"]

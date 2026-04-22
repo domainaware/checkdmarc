@@ -43,7 +43,13 @@ from cryptography.x509.verification import (
 import pyleri
 
 import checkdmarc.resources
-from checkdmarc._constants import DEFAULT_HTTP_TIMEOUT, SYNTAX_ERROR_MARKER, USER_AGENT
+from checkdmarc._constants import (
+    DEFAULT_DNS_TIMEOUT,
+    DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_HTTP_TIMEOUT,
+    SYNTAX_ERROR_MARKER,
+    USER_AGENT,
+)
 from checkdmarc.dmarc import DMARCErrorResults, DMARCResults
 from checkdmarc.utils import (
     HTTPS_REGEX,
@@ -765,8 +771,8 @@ def _query_bimi_record(
     selector: Optional[str] = "default",
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ):
     """
     Queries DNS for a BIMI record
@@ -778,7 +784,7 @@ def _query_bimi_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         str: A record string or None
@@ -797,7 +803,7 @@ def _query_bimi_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         for record in records:
             if record.startswith(txt_prefix):
@@ -852,8 +858,8 @@ def query_bimi_record(
     selector: Optional[str] = "default",
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> BIMIQueryResult:
     """
     Queries DNS for a BIMI record
@@ -865,7 +871,7 @@ def query_bimi_record(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for a record from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: a ``dict`` with the following keys:
@@ -890,7 +896,7 @@ def query_bimi_record(
         nameservers=nameservers,
         resolver=resolver,
         timeout=timeout,
-        timeout_retries=timeout_retries,
+        retries=retries,
     )
     try:
         root_records = query_dns(
@@ -899,7 +905,7 @@ def query_bimi_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         for root_record in root_records:
             if root_record.startswith("v=BIMI1"):
@@ -915,7 +921,7 @@ def query_bimi_record(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         location = base_domain
     if record is None:
@@ -1140,8 +1146,8 @@ def check_bimi(
     include_tag_descriptions: bool = False,
     nameservers: Optional[Sequence[str | Nameserver]] = None,
     resolver: Optional[dns.resolver.Resolver] = None,
-    timeout: float = 2.0,
-    timeout_retries: int = 2,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> BIMICheckResult:
     """
     Returns a dictionary with a parsed BIMI record or an error.
@@ -1161,7 +1167,7 @@ def check_bimi(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
-        timeout_retries (int): The number of times to reattempt a query after a timeout
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: a ``dict`` with the following keys:
@@ -1186,7 +1192,7 @@ def check_bimi(
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
-            timeout_retries=timeout_retries,
+            retries=retries,
         )
         bimi_results["selector"] = selector
         bimi_results["location"] = bimi_query["location"]

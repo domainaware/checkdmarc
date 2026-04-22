@@ -1,5 +1,40 @@
 # Changelog
 
+## 5.15.0
+
+### Changes (breaking)
+
+- Rename the `timeout_retries` kwarg to `retries` across all public APIs, and
+  rename the CLI flag `--timeout-retries` to `--retries`. The retry logic now
+  covers transient failures beyond timeouts — `dns.resolver.LifetimeTimeout`,
+  `dns.resolver.NoNameservers` (typically a SERVFAIL from upstream), and
+  `OSError` during TCP fallback. `NXDOMAIN` and `NoAnswer` remain
+  non-retryable (definitive negative answers).
+- Change the default retry count from `2` to `0`. The retry loop tripled
+  worst-case query time without helping when stalls were caused by
+  misbehaving authoritative nameservers. Callers that want retries can pass
+  `retries=2` or use `--retries 2` on the CLI.
+- Cap the per-nameserver query budget at `min(1.0, timeout)` seconds, with
+  an overall `lifetime = timeout * len(nameservers)`. When multiple
+  nameservers are configured, dnspython now falls through to the next one
+  after at most 1s instead of letting a single slow or broken nameserver
+  consume the whole lifetime before any fallback is attempted. Failover
+  across the configured list happens inside each attempt; `retries` retries
+  the whole attempt after all configured nameservers have been tried.
+- Default to a mix of public DNS providers (`1.1.1.1`, `8.8.8.8`) when no
+  nameservers are passed, instead of falling back to `/etc/resolv.conf`.
+  Combined with the per-nameserver cap above, this gives cross-provider
+  failover out of the box — a slow or broken path at one resolver falls
+  through to the other within ~1s. Exposed as
+  `checkdmarc._constants.DEFAULT_DNS_NAMESERVERS`. Users that need
+  system-configured or internal resolvers can still pass them explicitly
+  via `nameservers=...` or `--nameserver`.
+- Centralize default timeouts and retry counts as constants in
+  `checkdmarc._constants` (`DEFAULT_DNS_TIMEOUT`, `DEFAULT_DNS_MAX_RETRIES`,
+  `DEFAULT_SMTP_TIMEOUT`), matching the existing `DEFAULT_HTTP_TIMEOUT`
+  pattern. Function defaults now reference these constants so tuning is a
+  one-file change.
+
 ## 5.14.3
 
 ### Fixes
