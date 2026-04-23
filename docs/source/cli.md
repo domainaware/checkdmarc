@@ -24,7 +24,9 @@ options:
                         one or more file paths to output to (must end in .json or .csv)
                         (silences screen output)
   -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
-                        nameservers to query
+                        nameservers to query (default: the system-configured
+                        resolvers). For reliability, passing a mix of public
+                        resolvers is recommended, e.g. 1.1.1.1 8.8.8.8
   -t TIMEOUT, --timeout TIMEOUT
                         number of seconds to wait for an answer from DNS (default 2.0)
   -b BIMI_SELECTOR, --bimi-selector BIMI_SELECTOR
@@ -34,6 +36,42 @@ options:
   --skip-tls            skip TLS/SSL testing
   --debug               enable debugging output
 ```
+
+## Best practice: DNS resolvers
+
+By default, `checkdmarc` queries the nameservers your operating system is
+configured to use (`/etc/resolv.conf` on Linux/macOS, the OS resolver on
+Windows). That keeps behavior predictable for environments that rely on
+split-horizon or internal DNS.
+
+For public-internet checks, **passing a mix of public resolvers from
+different providers is recommended**. It gives you cross-provider failover
+out of the box — if one provider's anycast path is slow or its resolver is
+incompatible with a given authoritative server (e.g. Cloudflare's QNAME
+minimization with certain auth servers), the query falls through to the
+next provider within ~1 second instead of timing out.
+
+On the CLI:
+
+```bash
+checkdmarc -n 1.1.1.1 8.8.8.8 --skip-tls proton.me
+```
+
+In the API, the recommended pair is exposed as
+`checkdmarc.RECOMMENDED_DNS_NAMESERVERS`:
+
+```python
+from checkdmarc import check_domains, RECOMMENDED_DNS_NAMESERVERS
+
+results = check_domains(
+    ["proton.me"],
+    nameservers=RECOMMENDED_DNS_NAMESERVERS,
+)
+```
+
+Pick providers that make sense for your threat model and jurisdiction;
+Cloudflare (`1.1.1.1`), Google (`8.8.8.8`), and Quad9 (`9.9.9.9`) are all
+reasonable starting points.
 
 ## Example
 

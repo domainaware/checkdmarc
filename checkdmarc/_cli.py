@@ -11,8 +11,8 @@ import logging
 
 from checkdmarc._constants import (
     DEFAULT_DNS_MAX_RETRIES,
-    DEFAULT_DNS_NAMESERVERS,
     DEFAULT_DNS_TIMEOUT,
+    RECOMMENDED_DNS_NAMESERVERS,
 )
 from checkdmarc import (
     __version__,
@@ -79,7 +79,11 @@ def _main():
         "-n",
         "--nameserver",
         nargs="+",
-        help=(f"nameservers to query (default: {' '.join(DEFAULT_DNS_NAMESERVERS)})"),
+        help=(
+            "nameservers to query (default: the system-configured resolvers). "
+            "For reliability, passing a mix of public resolvers is recommended, "
+            f"e.g. {' '.join(RECOMMENDED_DNS_NAMESERVERS)}"
+        ),
     )
     arg_parser.add_argument(
         "-t",

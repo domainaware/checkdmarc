@@ -18,7 +18,6 @@ from expiringdict import ExpiringDict
 
 from checkdmarc._constants import (
     DEFAULT_DNS_MAX_RETRIES,
-    DEFAULT_DNS_NAMESERVERS,
     DEFAULT_DNS_TIMEOUT,
     DNS_CACHE_MAX_LEN,
     DNSSEC_CACHE_MAX_AGE_SECONDS,
@@ -153,16 +152,19 @@ def query_dns(
         record_type (str): The record type to query for
         quoted_txt_segments (bool): Preserve quotes in TXT records
         nameservers (list): A list of one or more nameservers to use.
-                            Defaults to ``DEFAULT_DNS_NAMESERVERS`` (a mix of
-                            Cloudflare and Google public resolvers) so that
-                            failover happens out of the box when one
+                            Defaults to the system-configured resolvers
+                            (``/etc/resolv.conf`` on Linux/macOS, the OS
+                            resolver on Windows). For reliability, pass
+                            ``RECOMMENDED_DNS_NAMESERVERS`` or your own mix
+                            of public resolvers so failover happens when one
                             provider's path is slow or broken.
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): Overall DNS lifetime budget in seconds per
-                         configured nameserver; per-nameserver queries are
-                         capped at ``min(1.0, timeout)`` so a slow or broken
-                         nameserver falls through to the next quickly
+                         configured nameserver; when more than one
+                         nameserver is configured, per-nameserver queries
+                         are capped at ``min(1.0, timeout)`` so a slow or
+                         broken nameserver falls through to the next quickly
         retries (int): Number of times to retry the whole query after a
                        timeout or other transient error (``LifetimeTimeout``,
                        ``NoNameservers``, ``OSError``). Failover between
@@ -184,15 +186,18 @@ def query_dns(
     if not resolver:
         resolver = dns.resolver.Resolver()
         timeout = float(timeout)
-        if nameservers is None:
-            nameservers = DEFAULT_DNS_NAMESERVERS
-        resolver.nameservers = list(nameservers)
-        # Cap the per-nameserver query at 1s so a slow or broken nameserver
-        # falls through to the next one quickly instead of hanging. The
-        # `timeout` argument governs the overall lifetime budget for the
-        # whole resolve() call across all configured nameservers.
-        resolver.timeout = min(1.0, timeout)
-        resolver.lifetime = timeout * max(len(resolver.nameservers), 1)
+        if nameservers is not None:
+            resolver.nameservers = list(nameservers)
+        # When multiple nameservers are configured, cap the per-nameserver
+        # query at 1s so a slow or broken one falls through to the next
+        # quickly. With a single nameserver (or the system default list),
+        # keep the per-query timeout equal to the overall budget.
+        if len(resolver.nameservers) > 1:
+            resolver.timeout = min(1.0, timeout)
+            resolver.lifetime = timeout * len(resolver.nameservers)
+        else:
+            resolver.timeout = timeout
+            resolver.lifetime = timeout
     if record_type == "TXT":
         try:
             answers = resolver.resolve(domain, record_type, lifetime=resolver.lifetime)
