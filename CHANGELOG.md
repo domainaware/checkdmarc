@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.15.1
+
+### Changes
+
+- Revert the 5.15.0 default of auto-configuring public nameservers
+  (`1.1.1.1`, `8.8.8.8`) when no `nameservers` are passed. When `nameservers`
+  is `None`, `checkdmarc` now falls back to the system-configured resolvers
+  again (`/etc/resolv.conf` on Linux/macOS, the OS resolver on Windows),
+  matching the 5.14.x and earlier behavior. The auto-configured default would
+  surprise users running split-horizon or internal DNS and broke workflows
+  that previously relied on the system resolver.
+- Rename the exposed constant from `DEFAULT_DNS_NAMESERVERS` to
+  `RECOMMENDED_DNS_NAMESERVERS` to reflect that it is an opt-in
+  recommendation, not an automatic default. It is re-exported from the
+  package root as `checkdmarc.RECOMMENDED_DNS_NAMESERVERS` so callers can
+  easily opt in with
+  `check_domains(..., nameservers=RECOMMENDED_DNS_NAMESERVERS)`.
+- Documentation now calls out mixing public resolvers from different
+  providers as a best practice for public-internet checks.
+
 ## 5.15.0
 
 ### Changes (breaking)

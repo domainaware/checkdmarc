@@ -16,7 +16,11 @@ import dns.resolver
 from dns.nameserver import Nameserver
 
 import checkdmarc._constants
-from checkdmarc._constants import DEFAULT_DNS_TIMEOUT, DEFAULT_DNS_MAX_RETRIES
+from checkdmarc._constants import (
+    DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_DNS_TIMEOUT,
+    RECOMMENDED_DNS_NAMESERVERS as RECOMMENDED_DNS_NAMESERVERS,
+)
 from checkdmarc.bimi import check_bimi, BIMICheckResult
 from checkdmarc.dmarc import check_dmarc, DMARCResults, DMARCErrorResults
 from checkdmarc.dnssec import test_dnssec
