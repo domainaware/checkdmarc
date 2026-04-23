@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.15.2
+
+### Changes
+
+- Cap the per-query UDP timeout at `min(1.0, timeout)` for single-nameserver
+  configurations as well as multi-nameserver ones. Previously, when only one
+  nameserver was configured (or the system default list had a single entry),
+  `resolver.timeout` and `resolver.lifetime` were both set to the full
+  `timeout` budget, which collapses dnspython's UDP retry loop to a single
+  attempt — a single dropped UDP datagram then consumed the whole lifetime
+  and raised `LifetimeTimeout`, while `dig` (which defaults to `+tries=3`)
+  would mask the same blip by retrying. dnspython now retries UDP within
+  the lifetime window (~2 attempts at the default 2s budget), matching
+  `dig`'s behavior in spirit and eliminating spurious single-NS timeouts
+  on paths with occasional packet loss.
+
 ## 5.15.1
 
 ### Changes
