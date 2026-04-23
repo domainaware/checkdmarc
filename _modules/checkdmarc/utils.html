@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.utils &mdash; checkdmarc 5.15.0 documentation</title>
+  <title>checkdmarc.utils &mdash; checkdmarc 5.15.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=604c8c0e"></script>
+      <script src="../../_static/documentation_options.js?v=c4340817"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -92,7 +92,6 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DEFAULT_DNS_MAX_RETRIES</span><span class="p">,</span>
-    <span class="n">DEFAULT_DNS_NAMESERVERS</span><span class="p">,</span>
     <span class="n">DEFAULT_DNS_TIMEOUT</span><span class="p">,</span>
     <span class="n">DNS_CACHE_MAX_LEN</span><span class="p">,</span>
     <span class="n">DNSSEC_CACHE_MAX_AGE_SECONDS</span><span class="p">,</span>
@@ -250,16 +249,19 @@
 <span class="sd">        record_type (str): The record type to query for</span>
 <span class="sd">        quoted_txt_segments (bool): Preserve quotes in TXT records</span>
 <span class="sd">        nameservers (list): A list of one or more nameservers to use.</span>
-<span class="sd">                            Defaults to ``DEFAULT_DNS_NAMESERVERS`` (a mix of</span>
-<span class="sd">                            Cloudflare and Google public resolvers) so that</span>
-<span class="sd">                            failover happens out of the box when one</span>
+<span class="sd">                            Defaults to the system-configured resolvers</span>
+<span class="sd">                            (``/etc/resolv.conf`` on Linux/macOS, the OS</span>
+<span class="sd">                            resolver on Windows). For reliability, pass</span>
+<span class="sd">                            ``RECOMMENDED_DNS_NAMESERVERS`` or your own mix</span>
+<span class="sd">                            of public resolvers so failover happens when one</span>
 <span class="sd">                            provider&#39;s path is slow or broken.</span>
 <span class="sd">        resolver (dns.resolver.Resolver): A resolver object to use for DNS</span>
 <span class="sd">                                          requests</span>
 <span class="sd">        timeout (float): Overall DNS lifetime budget in seconds per</span>
-<span class="sd">                         configured nameserver; per-nameserver queries are</span>
-<span class="sd">                         capped at ``min(1.0, timeout)`` so a slow or broken</span>
-<span class="sd">                         nameserver falls through to the next quickly</span>
+<span class="sd">                         configured nameserver; when more than one</span>
+<span class="sd">                         nameserver is configured, per-nameserver queries</span>
+<span class="sd">                         are capped at ``min(1.0, timeout)`` so a slow or</span>
+<span class="sd">                         broken nameserver falls through to the next quickly</span>
 <span class="sd">        retries (int): Number of times to retry the whole query after a</span>
 <span class="sd">                       timeout or other transient error (``LifetimeTimeout``,</span>
 <span class="sd">                       ``NoNameservers``, ``OSError``). Failover between</span>
@@ -281,15 +283,18 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">resolver</span><span class="p">:</span>
         <span class="n">resolver</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">Resolver</span><span class="p">()</span>
         <span class="n">timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">nameservers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">nameservers</span> <span class="o">=</span> <span class="n">DEFAULT_DNS_NAMESERVERS</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nameservers</span><span class="p">)</span>
-        <span class="c1"># Cap the per-nameserver query at 1s so a slow or broken nameserver</span>
-        <span class="c1"># falls through to the next one quickly instead of hanging. The</span>
-        <span class="c1"># `timeout` argument governs the overall lifetime budget for the</span>
-        <span class="c1"># whole resolve() call across all configured nameservers.</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span>
-        <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nameservers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nameservers</span><span class="p">)</span>
+        <span class="c1"># When multiple nameservers are configured, cap the per-nameserver</span>
+        <span class="c1"># query at 1s so a slow or broken one falls through to the next</span>
+        <span class="c1"># quickly. With a single nameserver (or the system default list),</span>
+        <span class="c1"># keep the per-query timeout equal to the overall budget.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">resolver</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span>
+            <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">nameservers</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">resolver</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+            <span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">timeout</span>
     <span class="k">if</span> <span class="n">record_type</span> <span class="o">==</span> <span class="s2">&quot;TXT&quot;</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">answers</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span><span class="p">)</span>

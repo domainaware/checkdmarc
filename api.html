@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; checkdmarc 5.15.0 documentation</title>
+  <title>API &mdash; checkdmarc 5.15.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=604c8c0e"></script>
+      <script src="_static/documentation_options.js?v=c4340817"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -2889,16 +2889,19 @@ requests</p></li>
 <li><p><strong>record_type</strong> (<em>str</em>) – The record type to query for</p></li>
 <li><p><strong>quoted_txt_segments</strong> (<em>bool</em>) – Preserve quotes in TXT records</p></li>
 <li><p><strong>nameservers</strong> (<em>list</em>) – A list of one or more nameservers to use.
-Defaults to <code class="docutils literal notranslate"><span class="pre">DEFAULT_DNS_NAMESERVERS</span></code> (a mix of
-Cloudflare and Google public resolvers) so that
-failover happens out of the box when one
+Defaults to the system-configured resolvers
+(<code class="docutils literal notranslate"><span class="pre">/etc/resolv.conf</span></code> on Linux/macOS, the OS
+resolver on Windows). For reliability, pass
+<code class="docutils literal notranslate"><span class="pre">RECOMMENDED_DNS_NAMESERVERS</span></code> or your own mix
+of public resolvers so failover happens when one
 provider’s path is slow or broken.</p></li>
 <li><p><strong>resolver</strong> (<em>dns.resolver.Resolver</em>) – A resolver object to use for DNS
 requests</p></li>
 <li><p><strong>timeout</strong> (<em>float</em>) – Overall DNS lifetime budget in seconds per
-configured nameserver; per-nameserver queries are
-capped at <code class="docutils literal notranslate"><span class="pre">min(1.0,</span> <span class="pre">timeout)</span></code> so a slow or broken
-nameserver falls through to the next quickly</p></li>
+configured nameserver; when more than one
+nameserver is configured, per-nameserver queries
+are capped at <code class="docutils literal notranslate"><span class="pre">min(1.0,</span> <span class="pre">timeout)</span></code> so a slow or
+broken nameserver falls through to the next quickly</p></li>
 <li><p><strong>retries</strong> (<em>int</em>) – Number of times to retry the whole query after a
 timeout or other transient error (<code class="docutils literal notranslate"><span class="pre">LifetimeTimeout</span></code>,
 <code class="docutils literal notranslate"><span class="pre">NoNameservers</span></code>, <code class="docutils literal notranslate"><span class="pre">OSError</span></code>). Failover between
