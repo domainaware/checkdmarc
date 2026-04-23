@@ -161,10 +161,13 @@ def query_dns(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): Overall DNS lifetime budget in seconds per
-                         configured nameserver; when more than one
-                         nameserver is configured, per-nameserver queries
-                         are capped at ``min(1.0, timeout)`` so a slow or
-                         broken nameserver falls through to the next quickly
+                         configured nameserver. Per-query UDP attempts are
+                         capped at ``min(1.0, timeout)`` so dnspython retries
+                         within the lifetime on transient UDP packet loss
+                         (mirroring ``dig``'s default ``+tries=3`` behavior);
+                         with multiple nameservers configured this same cap
+                         also makes a slow or broken nameserver fall through
+                         to the next quickly
         retries (int): Number of times to retry the whole query after a
                        timeout or other transient error (``LifetimeTimeout``,
                        ``NoNameservers``, ``OSError``). Failover between
@@ -188,15 +191,16 @@ def query_dns(
         timeout = float(timeout)
         if nameservers is not None:
             resolver.nameservers = list(nameservers)
-        # When multiple nameservers are configured, cap the per-nameserver
-        # query at 1s so a slow or broken one falls through to the next
-        # quickly. With a single nameserver (or the system default list),
-        # keep the per-query timeout equal to the overall budget.
+        # Cap per-query UDP timeout at 1s so dnspython retries within the
+        # lifetime window on transient packet loss — otherwise with a single
+        # nameserver and timeout == lifetime, one dropped UDP datagram
+        # consumes the whole budget and raises LifetimeTimeout without a
+        # retry (dig's default +tries=3 masks this case). With multiple
+        # nameservers the same cap lets a slow/broken one fall through.
+        resolver.timeout = min(1.0, timeout)
         if len(resolver.nameservers) > 1:
-            resolver.timeout = min(1.0, timeout)
             resolver.lifetime = timeout * len(resolver.nameservers)
         else:
-            resolver.timeout = timeout
             resolver.lifetime = timeout
     if record_type == "TXT":
         try:
