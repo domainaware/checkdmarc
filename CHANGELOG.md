@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.15.3
+
+### Fixes
+
+- Display a warning is a BIMI image is provided without a VMC/CMC
+
 ## 5.15.2
 
 ### Changes
