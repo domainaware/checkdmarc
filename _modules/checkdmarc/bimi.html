@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.bimi &mdash; checkdmarc 5.15.3 documentation</title>
+  <title>checkdmarc.bimi &mdash; checkdmarc 5.15.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=57b40664"></script>
+      <script src="../../_static/documentation_options.js?v=9c3d96a9"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -247,6 +247,14 @@
 <span class="p">)</span>
 <span class="n">BIMI_TAG_VALUE_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">BIMI_TAG_VALUE_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
 
+<span class="c1"># Heuristic for SVG &lt;title&gt; elements that look like generator/template</span>
+<span class="c1"># placeholders rather than a brand-descriptive title (e.g. the SVG Tiny PS</span>
+<span class="c1"># profile name leaked into the title, or a literal &quot;untitled&quot;).</span>
+<span class="n">GENERIC_SVG_TITLE_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">&quot;^\s*(bimi[\s\-_]*svg[\s\-_]*tiny[\w\s\-_]*|untitled|title|no\s+title|svg)\s*$&quot;</span><span class="p">,</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">,</span>
+<span class="p">)</span>
+
 <span class="c1"># VMC OIDs</span>
 <span class="n">OID_LOGOTYPE</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.5.5.7.1.12&quot;</span><span class="p">)</span>
 <span class="n">OID_MARK_TYPE</span> <span class="o">=</span> <span class="n">ObjectIdentifier</span><span class="p">(</span><span class="s2">&quot;1.3.6.1.4.1.53087.1.13&quot;</span><span class="p">)</span>
@@ -370,16 +378,27 @@
 <span class="p">}</span>
 
 
-<span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span> <span class="o">=</span> <span class="p">{</span>
+<span class="c1"># Pairs where at least one of the two subject fields must be present.</span>
+<span class="c1"># Per VMC Requirements §7.1.4.2.2(d, e): localityName is required if</span>
+<span class="c1"># stateOrProvinceName is absent (and vice versa).</span>
+<span class="n">EITHER_OR_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;All&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;localityName&quot;</span><span class="p">,</span> <span class="s2">&quot;stateOrProvinceName&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
+<span class="p">}</span>
+
+<span class="c1"># If the trigger field is present, the required field must also be present.</span>
+<span class="c1"># Per VMC Requirements §7.1.4.2.2(j, s): jurisdiction (and statute) fields</span>
+<span class="c1"># describe the level of the Incorporating/Registration Agency (or the</span>
+<span class="c1"># Government Entity that established a Government Mark). A locality-level</span>
+<span class="c1"># value implies a state/province-level value must also be present; a</span>
+<span class="c1"># country-level entity legitimately has neither locality nor state/province.</span>
+<span class="n">FIELD_REQUIRED_IF_FIELD_IS_PRESENT_BY_MARK_TYPE</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;All&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;localityName&quot;</span><span class="p">:</span> <span class="s2">&quot;stateOrProvinceName&quot;</span><span class="p">,</span>
         <span class="s2">&quot;jurisdictionOfIncorporationLocalityName&quot;</span><span class="p">:</span> <span class="s2">&quot;jurisdictionOfIncorporationStateOrProvinceName&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;stateOrProvinceName&quot;</span><span class="p">:</span> <span class="s2">&quot;localityName&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;jurisdictionOfIncorporationStateOrProvinceName&quot;</span><span class="p">:</span> <span class="s2">&quot;jurisdictionOfIncorporationLocalityName&quot;</span><span class="p">,</span>
     <span class="p">},</span>
     <span class="s2">&quot;Government Mark&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">&quot;statuteLocalityName&quot;</span><span class="p">:</span> <span class="s2">&quot;statuteStateOrProvinceName&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;statuteStateOrProvinceName&quot;</span><span class="p">:</span> <span class="s2">&quot;statuteLocalityName&quot;</span><span class="p">,</span>
     <span class="p">},</span>
 <span class="p">}</span>
 
@@ -824,21 +843,31 @@
                         <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                             <span class="sa">f</span><span class="s2">&quot;The the certificate&#39;s subject is missing the required field </span><span class="si">{</span><span class="n">required_field</span><span class="si">}</span><span class="s2">.&quot;</span>
                         <span class="p">)</span>
-                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;All&quot;</span><span class="p">,</span> <span class="n">mark_type</span><span class="p">]:</span>
-                        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">:</span>
-                            <span class="k">for</span> <span class="n">required_field</span> <span class="ow">in</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">[</span>
-                                <span class="n">key</span>
-                            <span class="p">]:</span>
-                                <span class="k">if</span> <span class="n">required_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
-                                    <span class="n">alt_field</span> <span class="o">=</span> <span class="n">FIELD_REQUIRED_IF_FIELD_IS_MISSING</span><span class="p">[</span><span class="n">key</span><span class="p">][</span>
-                                        <span class="n">required_field</span>
-                                    <span class="p">]</span>
-                                    <span class="k">if</span> <span class="n">alt_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
-                                        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">alt_field</span><span class="si">}</span><span class="s2"> is required in the certificate subject if </span><span class="si">{</span><span class="n">required_field</span><span class="si">}</span><span class="s2"> is not used in the certificate subject.&quot;</span>
-                                        <span class="p">)</span>
-                                        <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">either_or_pairs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                    <span class="n">EITHER_OR_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;All&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">EITHER_OR_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mark_type</span><span class="p">,</span> <span class="p">[]))</span>
+                <span class="k">for</span> <span class="n">field_a</span><span class="p">,</span> <span class="n">field_b</span> <span class="ow">in</span> <span class="n">either_or_pairs</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">field_a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span> <span class="ow">and</span> <span class="n">field_b</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span><span class="p">:</span>
+                        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;At least one of </span><span class="si">{</span><span class="n">field_a</span><span class="si">}</span><span class="s2"> or </span><span class="si">{</span><span class="n">field_b</span><span class="si">}</span><span class="s2"> is required in the certificate subject.&quot;</span>
+                        <span class="p">)</span>
+                        <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">implies_rules</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">implies_rules</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">FIELD_REQUIRED_IF_FIELD_IS_PRESENT_BY_MARK_TYPE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;All&quot;</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="p">)</span>
+                <span class="n">implies_rules</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">FIELD_REQUIRED_IF_FIELD_IS_PRESENT_BY_MARK_TYPE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mark_type</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">trigger_field</span><span class="p">,</span> <span class="n">required_field</span> <span class="ow">in</span> <span class="n">implies_rules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">trigger_field</span> <span class="ow">in</span> <span class="n">cert_subject</span>
+                        <span class="ow">and</span> <span class="n">required_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cert_subject</span>
+                    <span class="p">):</span>
+                        <span class="n">validation_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">required_field</span><span class="si">}</span><span class="s2"> is required in the certificate subject when </span><span class="si">{</span><span class="n">trigger_field</span><span class="si">}</span><span class="s2"> is present.&quot;</span>
+                        <span class="p">)</span>
+                        <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
                 <span class="n">mark_type_fields</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="n">REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="n">mark_type</span><span class="p">]</span>
                     <span class="o">+</span> <span class="n">OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE</span><span class="p">[</span><span class="n">mark_type</span><span class="p">]</span>
@@ -1192,6 +1221,15 @@
                     <span class="k">if</span> <span class="n">svg_metadata</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">svg_metadata</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]:</span>
                         <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                             <span class="sa">f</span><span class="s2">&quot;It is recommended for BIMI SVG dimensions to be square, not </span><span class="si">{</span><span class="n">svg_metadata</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">svg_metadata</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="n">title</span> <span class="o">=</span> <span class="n">svg_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                        <span class="n">title_text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">title</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;#text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">title_text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">title</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">title_text</span> <span class="ow">and</span> <span class="n">GENERIC_SVG_TITLE_REGEX</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">title_text</span><span class="p">):</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;The SVG title &#39;</span><span class="si">{</span><span class="n">title_text</span><span class="si">}</span><span class="s2">&#39; looks like a generator/template placeholder. The &lt;title&gt; should be a short, human-readable name for the brand or mark — typically the organization name (e.g. the value of the certificate subject&#39;s organizationName field).&quot;</span>
                         <span class="p">)</span>
                     <span class="n">svg_validation_errors</span> <span class="o">=</span> <span class="n">check_svg_requirements</span><span class="p">(</span><span class="n">svg_metadata</span><span class="p">)</span>
                     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">svg_validation_errors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
