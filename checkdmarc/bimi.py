@@ -1099,7 +1099,7 @@ def parse_bimi_record(
                         title_text = str(title or "")
                     if title_text and GENERIC_SVG_TITLE_REGEX.match(title_text):
                         warnings.append(
-                            f"The SVG title '{title_text}' looks like a generator/template placeholder. The title element should be a descriptive name for the brand or mark."
+                            f"The SVG title '{title_text}' looks like a generator/template placeholder. The <title> should be a short, human-readable name for the brand or mark — typically the organization name (e.g. the value of the certificate subject's organizationName field)."
                         )
                     svg_validation_errors = check_svg_requirements(svg_metadata)
                     if len(svg_validation_errors) > 0:
