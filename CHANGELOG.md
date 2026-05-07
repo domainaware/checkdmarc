@@ -1,5 +1,32 @@
 # Changelog
 
+## 5.15.4
+
+### Fixes
+
+- Stop reporting `jurisdictionOfIncorporationStateOrProvinceName` /
+  `jurisdictionOfIncorporationLocalityName` as required when both are absent.
+  Per VMC Requirements §7.1.4.2.2(j), entities incorporated at the country
+  level (e.g. `bbc.co.uk`) MUST include only `jurisdictionCountryName` —
+  state/province and locality MUST NOT be present. The same correction
+  applies to the parallel `statute*` fields for Government Marks
+  (§7.1.4.2.2(s)). The locality-level form is still validated:
+  `jurisdictionOfIncorporationLocalityName` (and `statuteLocalityName`)
+  now imply that their state/province counterpart must also be present
+  (#242).
+- Deduplicate the bidirectional "either A or B" error so the
+  `localityName` / `stateOrProvinceName` rule is reported once instead
+  of twice when both fields are absent.
+
+### Changes
+
+- Warn when a BIMI SVG `<title>` element is a generator/template
+  placeholder (e.g. `bimi-svg-tiny-12-ps`, `Untitled`). The title should
+  be a descriptive name for the brand or mark.
+- Document that BIMI mark certificates are validated against the
+  AuthIndicators Working Group's
+  [Minimum Security Requirements for Issuance of Mark Certificates](https://bimigroup.org/resources/VMC_Requirements_latest.pdf).
+
 ## 5.15.3
 
 ### Fixes
