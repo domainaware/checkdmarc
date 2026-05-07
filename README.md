@@ -26,7 +26,7 @@ Please consider [sponsoring my work](https://github.com/sponsors/seanthegeek) if
   - Shows warnings when the DMARC record is made ineffective by `pct` or `sp` values
   - Checks for authorization records on reporting email addresses
 - BIMI
-  - Validation of the mark format and certificate
+  - Validation of the mark format and certificate against the [Minimum Security Requirements for Issuance of Mark Certificates](https://bimigroup.org/resources/VMC_Requirements_latest.pdf)
   - Parsing of the mark certificate
 - MX records
   - Preference

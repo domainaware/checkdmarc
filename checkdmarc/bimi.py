@@ -155,6 +155,14 @@ BIMI_TAG_VALUE_REGEX_STRING = (
 )
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
+# Heuristic for SVG <title> elements that look like generator/template
+# placeholders rather than a brand-descriptive title (e.g. the SVG Tiny PS
+# profile name leaked into the title, or a literal "untitled").
+GENERIC_SVG_TITLE_REGEX = re.compile(
+    r"^\s*(bimi[\s\-_]*svg[\s\-_]*tiny[\w\s\-_]*|untitled|title|no\s+title|svg)\s*$",
+    re.IGNORECASE,
+)
+
 # VMC OIDs
 OID_LOGOTYPE = ObjectIdentifier("1.3.6.1.5.5.7.1.12")
 OID_MARK_TYPE = ObjectIdentifier("1.3.6.1.4.1.53087.1.13")
@@ -278,16 +286,27 @@ OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE = {
 }
 
 
-FIELD_REQUIRED_IF_FIELD_IS_MISSING = {
+# Pairs where at least one of the two subject fields must be present.
+# Per VMC Requirements §7.1.4.2.2(d, e): localityName is required if
+# stateOrProvinceName is absent (and vice versa).
+EITHER_OR_SUBJECT_FIELDS_BY_MARK_TYPE: dict[str, list[tuple[str, str]]] = {
+    "All": [
+        ("localityName", "stateOrProvinceName"),
+    ],
+}
+
+# If the trigger field is present, the required field must also be present.
+# Per VMC Requirements §7.1.4.2.2(j, s): jurisdiction (and statute) fields
+# describe the level of the Incorporating/Registration Agency (or the
+# Government Entity that established a Government Mark). A locality-level
+# value implies a state/province-level value must also be present; a
+# country-level entity legitimately has neither locality nor state/province.
+FIELD_REQUIRED_IF_FIELD_IS_PRESENT_BY_MARK_TYPE: dict[str, dict[str, str]] = {
     "All": {
-        "localityName": "stateOrProvinceName",
         "jurisdictionOfIncorporationLocalityName": "jurisdictionOfIncorporationStateOrProvinceName",
-        "stateOrProvinceName": "localityName",
-        "jurisdictionOfIncorporationStateOrProvinceName": "jurisdictionOfIncorporationLocalityName",
     },
     "Government Mark": {
         "statuteLocalityName": "statuteStateOrProvinceName",
-        "statuteStateOrProvinceName": "statuteLocalityName",
     },
 }
 
@@ -700,21 +719,31 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
                         validation_errors.append(
                             f"The the certificate's subject is missing the required field {required_field}."
                         )
-                for key in FIELD_REQUIRED_IF_FIELD_IS_MISSING:
-                    if key in ["All", mark_type]:
-                        if key in FIELD_REQUIRED_IF_FIELD_IS_MISSING:
-                            for required_field in FIELD_REQUIRED_IF_FIELD_IS_MISSING[
-                                key
-                            ]:
-                                if required_field not in cert_subject:
-                                    alt_field = FIELD_REQUIRED_IF_FIELD_IS_MISSING[key][
-                                        required_field
-                                    ]
-                                    if alt_field not in cert_subject:
-                                        validation_errors.append(
-                                            f"{alt_field} is required in the certificate subject if {required_field} is not used in the certificate subject."
-                                        )
-                                        valid = False
+                either_or_pairs = list(
+                    EITHER_OR_SUBJECT_FIELDS_BY_MARK_TYPE.get("All", [])
+                ) + list(EITHER_OR_SUBJECT_FIELDS_BY_MARK_TYPE.get(mark_type, []))
+                for field_a, field_b in either_or_pairs:
+                    if field_a not in cert_subject and field_b not in cert_subject:
+                        validation_errors.append(
+                            f"At least one of {field_a} or {field_b} is required in the certificate subject."
+                        )
+                        valid = False
+                implies_rules: dict[str, str] = {}
+                implies_rules.update(
+                    FIELD_REQUIRED_IF_FIELD_IS_PRESENT_BY_MARK_TYPE.get("All", {})
+                )
+                implies_rules.update(
+                    FIELD_REQUIRED_IF_FIELD_IS_PRESENT_BY_MARK_TYPE.get(mark_type, {})
+                )
+                for trigger_field, required_field in implies_rules.items():
+                    if (
+                        trigger_field in cert_subject
+                        and required_field not in cert_subject
+                    ):
+                        validation_errors.append(
+                            f"{required_field} is required in the certificate subject when {trigger_field} is present."
+                        )
+                        valid = False
                 mark_type_fields = (
                     REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE[mark_type]
                     + OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE[mark_type]
@@ -1062,6 +1091,15 @@ def parse_bimi_record(
                     if svg_metadata["width"] != svg_metadata["height"]:
                         warnings.append(
                             f"It is recommended for BIMI SVG dimensions to be square, not {svg_metadata['width']}x{svg_metadata['height']}."
+                        )
+                    title = svg_metadata.get("title")
+                    if isinstance(title, dict):
+                        title_text = str(title.get("#text", "") or "")
+                    else:
+                        title_text = str(title or "")
+                    if title_text and GENERIC_SVG_TITLE_REGEX.match(title_text):
+                        warnings.append(
+                            f"The SVG title '{title_text}' looks like a generator/template placeholder. The title element should be a descriptive name for the brand or mark."
                         )
                     svg_validation_errors = check_svg_requirements(svg_metadata)
                     if len(svg_validation_errors) > 0:
