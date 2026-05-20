@@ -273,18 +273,6 @@ checkdmarc --skip-tls proton.me
         "value": "s",
         "explicit": true
       },
-      "pct": {
-        "value": 100,
-        "explicit": false
-      },
-      "rf": {
-        "value": "afrf",
-        "explicit": false
-      },
-      "ri": {
-        "value": 86400,
-        "explicit": false
-      },
       "sp": {
         "value": "quarantine",
         "explicit": false

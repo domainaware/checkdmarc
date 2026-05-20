@@ -5,17 +5,17 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TypedDict, Optional, Union, overload, Literal
 from collections.abc import Sequence
+from typing import Literal, Optional, TypedDict, Union, overload
 
-import dns.resolver
 import dns.exception
-from dns.nameserver import Nameserver
+import dns.resolver
 import pyleri
+from dns.nameserver import Nameserver
 
 from checkdmarc._constants import (
-    DEFAULT_DNS_TIMEOUT,
     DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_DNS_TIMEOUT,
     SYNTAX_ERROR_MARKER,
 )
 from checkdmarc.utils import (
@@ -127,7 +127,7 @@ class UnverifiedDMARCURIDestination(_DMARCWarning):
 
 class MultipleDMARCRecords(DMARCError):
     """Raised when multiple DMARC records are found, in violation of
-    RFC 7486, § 6.6.3"""
+    RFC 9989 § 5.6.1 (and previously RFC 7489 § 6.6.3)"""
 
 
 class _DMARCGrammar(pyleri.Grammar):
@@ -168,10 +168,7 @@ class DMARCTagMap(TypedDict):
     fo: DMARCTagMapItemWithDefaultAndValues
     np: DMARCTagMapItemWithValues
     p: DMARCTagMapItemWithValues
-    pct: DMARCTagMapItemWithDefault
     psd: DMARCTagMapItemWithDefaultAndValues
-    rf: DMARCTagMapItemWithDefaultAndValues
-    ri: DMARCTagMapItemWithDefault
     rua: DMARCTagMapItem
     ruf: DMARCTagMapItem
     sp: DMARCTagMapItemWithValues
@@ -438,7 +435,7 @@ dmarc_tags: DMARCTagMap = {
     },
     "p": {
         "name": "Requested Mail Receiver Policy",
-        "required": True,
+        "required": False,
         "description": (
             "Specifies the policy to "
             "be enacted by the "
@@ -485,32 +482,6 @@ dmarc_tags: DMARCTagMap = {
             ),
         },
     },
-    "pct": {
-        "name": "Percentage",
-        "required": False,
-        "default": 100,
-        "description": (
-            "Integer percentage of "
-            "messages from the "
-            "Domain Owner's "
-            "mail stream to which "
-            "the DMARC policy is to "
-            "be applied. "
-            "However, this "
-            "MUST NOT be applied to "
-            "the DMARC-generated "
-            "reports, all of which "
-            "must be sent and "
-            "received unhindered. "
-            "The purpose of the "
-            '"pct" tag is to allow '
-            "Domain Owners to enact "
-            "a slow rollout of "
-            "enforcement of the "
-            "DMARC mechanism. "
-            "Removed in DMARCbis."
-        ),
-    },
     "psd": {
         "name": "PSD Flag",
         "required": False,
@@ -545,62 +516,6 @@ dmarc_tags: DMARCTagMap = {
                 "its subdomains."
             ),
         },
-    },
-    "rf": {
-        "name": "Report Format",
-        "required": False,
-        "default": "afrf",
-        "description": (
-            "A list separated by "
-            "colons of one or more "
-            "report formats as "
-            "requested by the "
-            "Domain Owner to be "
-            "used when a message "
-            "fails both SPF and DKIM "
-            "tests to report details "
-            "of the individual "
-            'failure. Only "afrf" '
-            "(the auth-failure report "
-            "type) is currently "
-            "supported in the "
-            "DMARC standard. "
-            "Removed in DMARCbis."
-        ),
-        "values": {
-            "afrf": (
-                '"Authentication Failure '
-                "Reporting Using the "
-                'Abuse Reporting Format", '
-                "RFC 6591, April 2012, "
-                "<https://www.rfc-editor.org/info/rfc6591>"
-            ),
-        },
-    },
-    "ri": {
-        "name": "Report Interval",
-        "required": False,
-        "default": 86400,
-        "description": (
-            "Indicates a request to "
-            "Receivers to generate "
-            "aggregate reports "
-            "separated by no more "
-            "than the requested "
-            "number of seconds. "
-            "DMARC implementations "
-            "MUST be able to provide "
-            "daily reports and "
-            "SHOULD be able to "
-            "provide hourly reports "
-            "when requested. "
-            "However, anything other "
-            "than a daily report is "
-            "understood to be "
-            "accommodated on a "
-            "best-effort basis. "
-            "Removed in DMARCbis."
-        ),
     },
     "rua": {
         "name": "Aggregate Feedback Addresses",
@@ -743,6 +658,7 @@ def _query_dmarc_record(
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
     ignore_unrelated_records: bool = False,
+    apex_fallback: bool = True,
 ) -> Union[str, None]:
     """
     Queries DNS for a DMARC record
@@ -755,6 +671,12 @@ def _query_dmarc_record(
         timeout (float): number of seconds to wait for a record from DNS
         retries (int): The number of times to retry on timeout or other transient errors
         ignore_unrelated_records (bool): Do not raise a warning if unrelated records are found
+        apex_fallback (bool): When ``_dmarc.{domain}`` has no answer, also
+            query the apex of ``{domain}`` and raise
+            ``DMARCRecordInWrongLocation`` if a ``v=DMARC1`` record is found
+            there. Disabled during the RFC 9989 tree walk: misplaced apex
+            records at parent domains are not the operator's concern when
+            looking up the policy for a subdomain.
 
     Returns:
         str: A record string or None
@@ -790,7 +712,7 @@ def _query_dmarc_record(
         if len(dmarc_records) > 1:
             raise MultipleDMARCRecords(
                 "Multiple DMARC policy records are not permitted - "
-                "https://tools.ietf.org/html/rfc7489#section-6.6.3"
+                "https://www.rfc-editor.org/rfc/rfc9989.html#section-5.6.1"
             )
         if len(unrelated_records) > 0:
             if not ignore_unrelated_records:
@@ -805,6 +727,8 @@ def _query_dmarc_record(
             dmarc_record = dmarc_records[0]
 
     except dns.resolver.NoAnswer:
+        if not apex_fallback:
+            return None
         try:
             records = query_dns(
                 domain,
@@ -916,7 +840,7 @@ def query_dmarc_record(
     except dns.exception.DNSException:
         pass
 
-    # DMARCbis DNS tree walk for DMARC policy discovery
+    # RFC 9989 DNS tree walk for DMARC policy discovery
     if record is None:
         labels = domain.split(".")
         num_labels = len(labels)
@@ -926,14 +850,13 @@ def query_dmarc_record(
                 # Start from the parent domain (remove leftmost label)
                 start = 1
             else:
-                # Skip to 7 labels
+                # Skip to 7 labels remaining so that initial query + walk
+                # stays within the RFC 9989 8-query budget.
                 start = num_labels - 7
-            # Walk up the tree
+            # Walk up the tree, including single-label parents: a PSO may
+            # publish ``_dmarc.<tld>`` with ``psd=y`` (RFC 9989 §4.10).
             for i in range(start, num_labels):
                 parent = ".".join(labels[i:])
-                if "." not in parent:
-                    # Don't query TLDs
-                    break
                 try:
                     record = _query_dmarc_record(
                         parent,
@@ -942,6 +865,7 @@ def query_dmarc_record(
                         timeout=timeout,
                         retries=retries,
                         ignore_unrelated_records=ignore_unrelated_records,
+                        apex_fallback=False,
                     )
                     if record is not None:
                         location = parent
@@ -1130,7 +1054,8 @@ def verify_dmarc_report_destination(
 ) -> None:
     """
     Checks if the report destination accepts reports for the source domain
-    per RFC 7489, § 7.1. Raises
+    per RFC 9990, § 3.2.3 (the authorization-record check, previously in
+    RFC 7489 § 7.1). Raises
     `checkdmarc.dmarc.UnverifiedDMARCURIDestination` if it doesn't accept.
 
     Args:
@@ -1325,13 +1250,23 @@ def parse_dmarc_record(
     pairs: list[tuple[str, str]] = DMARC_TAG_VALUE_REGEX.findall(record)
     tags = {}
 
+    # Tags defined in RFC 7489 but removed in RFC 9989. We still recognize
+    # them for backward compatibility (pre-9989 readers may parse them) but
+    # warn on use and skip strict value validation.
+    removed_tags = ("pct", "rf", "ri")
+
     seen_tags: list[str] = []
     duplicate_tags: list[str] = []
     for pair in pairs:
         tag = pair[0].lower()
-        # Check for invalid tags
-        if tag not in dmarc_tags:
-            raise InvalidDMARCTag(f"{tag} is not a valid DMARC tag.")
+        # RFC 9989: Unknown tags MUST be ignored. Removed-in-9989 tags
+        # (pct/rf/ri) get their own warning below.
+        if tag not in dmarc_tags and tag not in removed_tags:
+            warnings.append(
+                f"Unknown DMARC tag '{tag}' was ignored "
+                "(RFC 9989 requires unknown tags to be ignored)."
+            )
+            continue
         # Check for duplicate tags
         if tag in seen_tags:
             if tag not in duplicate_tags:
@@ -1343,6 +1278,13 @@ def parse_dmarc_record(
             raise InvalidDMARCTag(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
+        if tag in removed_tags:
+            warnings.append(
+                f"Support for the {tag} tag was removed in RFC 9989; "
+                "the value is preserved for older DMARC readers but is "
+                "not validated."
+            )
+            continue
         value = pair[1].lower().strip()
         tags[tag] = {"value": value, "explicit": True}
 
@@ -1351,12 +1293,11 @@ def parse_dmarc_record(
         if tag not in tags and "default" in dmarc_tags[tag]:
             tags[tag] = {"value": dmarc_tags[tag]["default"], "explicit": False}
     if "p" not in tags:
-        raise DMARCSyntaxError('The record is missing the required policy ("p") tag.')
-    # tags["p"] = {"value": "none", "explicit": False}
-    # warnings.append(
-    #  "A missing p tag is equivalent to p=none in DMARCbis, "
-    # "but a p tag is required in older versions of DMARC."
-    # )
+        tags["p"] = {"value": "none", "explicit": False}
+        warnings.append(
+            "A missing p tag is equivalent to p=none in RFC 9989, "
+            "but a p tag is required in older versions of DMARC."
+        )
     tags["p"]["value"] = tags["p"]["value"].lower()
     if "sp" not in tags:
         tags["sp"] = {"value": tags["p"]["value"], "explicit": False}
@@ -1368,17 +1309,17 @@ def parse_dmarc_record(
         else:
             tags["np"] = {"value": tags["p"]["value"], "explicit": False}
     tags["np"]["value"] = tags["np"]["value"].lower()
-    # The p tag must immediately follow v if it is explicit
+    # RFC 9989 only requires that the v tag come first; the p tag may appear
+    # in any position. Older readers (pre-9989 implementations of RFC 7489)
+    # may still expect p immediately after v, so warn when it isn't there.
     if tags["p"]["explicit"]:
         if list(tags.keys())[1] != "p":
-            raise DMARCSyntaxError("the p tag must immediately follow the v tag.")
+            warnings.append(
+                "The p tag does not immediately follow the v tag. "
+                "RFC 9989 permits any ordering, but some older DMARC "
+                "implementations may require p to be the second tag."
+            )
     tags["v"]["value"] = tags["v"]["value"].upper()
-
-    # Warn about tags removed in DMARCbis
-    removed_tags = ("pct", "rf", "ri")
-    for tag in removed_tags:
-        if tag in tags and tags[tag]["explicit"]:
-            warnings.append(f"Support for the {tag} tag was removed in DMARCbis.")
 
     # Validate tag values
     for tag in tags:
@@ -1406,30 +1347,12 @@ def parse_dmarc_record(
                     raise InvalidDMARCTagValue(
                         f"{value} is not a valid option for the DMARC fo tag."
                     )
-        elif tag == "rf":
-            tag_value = tag_value.lower().split(":")
-            for value in tag_value:
-                if value not in allowed_values:
-                    raise InvalidDMARCTagValue(
-                        f"{value} is not a valid option for the DMARC rf tag."
-                    )
-
         elif allowed_values and tag_value not in allowed_values:
             allowed_values_str = ",".join(allowed_values)
             raise InvalidDMARCTagValue(
                 f"Tag {tag} must have one of the following values: "
                 f"{allowed_values_str} - not {tags[tag]['value']}"
             )
-
-    try:
-        tags["pct"]["value"] = int(tags["pct"]["value"])
-    except ValueError:
-        raise InvalidDMARCTagValue("The value of the pct tag must be an integer.")
-
-    try:
-        tags["ri"]["value"] = int(tags["ri"]["value"])
-    except ValueError:
-        raise InvalidDMARCTagValue("The value of the ri tag must be an integer.")
 
     if "rua" in tags:
         parsed_uris = []
@@ -1441,7 +1364,10 @@ def parse_dmarc_record(
                 email_address = uri["address"]
                 if uri["size_limit"]:
                     warnings.append(
-                        f"Setting a size limit on rua reports sent to {email_address} could cause incomplete reporting."
+                        "The size limit (`!size`) on rua URI for "
+                        f"{email_address} is obsolete in RFC 9989 "
+                        "(reporters MUST ignore it); pre-9989 readers may "
+                        "still honor it and produce incomplete reports."
                     )
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
@@ -1504,7 +1430,10 @@ def parse_dmarc_record(
                 email_address = uri["address"]
                 if uri["size_limit"]:
                     warnings.append(
-                        f"Setting a size limit on ruf reports sent to {email_address} could cause incomplete reporting."
+                        "The size limit (`!size`) on ruf URI for "
+                        f"{email_address} is obsolete in RFC 9989 "
+                        "(reporters MUST ignore it); pre-9989 readers may "
+                        "still honor it and produce incomplete reports."
                     )
                 email_domain = email_address.split("@")[-1]
                 if email_domain.lower() != domain:
@@ -1550,18 +1479,6 @@ def parse_dmarc_record(
                 )
             )
 
-    if tags["pct"]["value"] < 0 or tags["pct"]["value"] > 100:
-        raise DMARCSyntaxError("pct value must be an integer between 0 and 100.")
-    elif tags["pct"]["value"] == 0:
-        warnings.append("A pct value of 0 disables DMARC enforcement.")
-    elif tags["pct"]["value"] < 100:
-        warning_msg = (
-            "pct value is less than 100. This leads to "
-            "inconsistent and unpredictable policy "
-            "enforcement. Consider using p=none to "
-            "monitor results instead."
-        )
-        warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))
     if parked and tags["p"]["value"] != "reject":
         warning_msg = "Policy (p=) should be reject for parked domains."
         warnings.append(str(_DMARCBestPracticeWarning(warning_msg)))

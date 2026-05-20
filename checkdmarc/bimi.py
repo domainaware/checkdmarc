@@ -1178,9 +1178,13 @@ def parse_bimi_record(
                 warnings.append(
                     "The DMARC subdomain policy (sp tag) must be set to quarantine or reject if it is used."
                 )
-            if parsed_dmarc_record["tags"]["pct"]["value"] != 100:
+            # The pct tag was removed in RFC 9989; pre-9989 BIMI guidance
+            # required pct=100, so flag any leftover pct that isn't 100.
+            pct_tag = parsed_dmarc_record["tags"].get("pct")
+            if pct_tag is not None and pct_tag["value"] != 100:
                 warnings.append(
-                    "The DMARC pct tag must be set to 100 (the implicit default) if it is used."
+                    "The DMARC pct tag was removed in RFC 9989; pre-9989 "
+                    "BIMI guidance required pct=100 when it was present."
                 )
     if cert_metadata:
         valid_cert = hash_match and cert_metadata["valid"]

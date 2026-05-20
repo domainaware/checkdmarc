@@ -430,9 +430,6 @@ def results_to_csv_rows(
             row["dmarc_aspf"] = _dmarc["tags"]["aspf"]["value"]
             row["dmarc_fo"] = ":".join(_dmarc["tags"]["fo"]["value"])
             row["dmarc_p"] = _dmarc["tags"]["p"]["value"]
-            row["dmarc_pct"] = _dmarc["tags"]["pct"]["value"]
-            row["dmarc_rf"] = ":".join(_dmarc["tags"]["rf"]["value"])
-            row["dmarc_ri"] = _dmarc["tags"]["ri"]["value"]
             row["dmarc_sp"] = _dmarc["tags"]["sp"]["value"]
             if "rua" in _dmarc["tags"]:
                 addresses = _dmarc["tags"]["rua"]["value"]
@@ -482,9 +479,6 @@ def results_to_csv(
         "dmarc_aspf",
         "dmarc_fo",
         "dmarc_p",
-        "dmarc_pct",
-        "dmarc_rf",
-        "dmarc_ri",
         "dmarc_rua",
         "dmarc_ruf",
         "dmarc_sp",

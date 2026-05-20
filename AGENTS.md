@@ -44,7 +44,7 @@ Some tests require network access and are skipped when `GITHUB_ACTIONS` env var 
 **Modules** (each has a primary `check_*()` function):
 
 - `spf.py` — SPF record parsing, DNS lookup counting
-- `dmarc.py` — DMARC/DMARCbis record parsing with DNS tree walk algorithm
+- `dmarc.py` — DMARC/RFC 9989 record parsing with DNS tree walk algorithm
 - `bimi.py` — BIMI record and certificate validation
 - `mta_sts.py` — MTA-STS policy fetching and validation
 - `smtp_tls_reporting.py` — TLSRPT record validation
