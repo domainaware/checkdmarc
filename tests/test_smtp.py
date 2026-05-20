@@ -52,11 +52,15 @@ class TestTestTLS(unittest.TestCase):
         mock_ssl.assert_not_called()
 
     def testDNSResolutionFailed(self):
-        """socket.gaierror surfaces as SMTPError 'DNS resolution failed'"""
+        """socket.gaierror surfaces as SMTPError 'DNS resolution failed' and is cached"""
+        cache = ExpiringDict(max_len=10, max_age_seconds=60)
         with patch("smtplib.SMTP_SSL", side_effect=socket.gaierror):
             with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_tls("mail.example.com")
+                checkdmarc.smtp.test_tls("mail.example.com", cache=cache)
         self.assertIn("DNS resolution failed", str(ctx.exception))
+        # First-write into an empty ExpiringDict must succeed — see the
+        # `if cache is not None:` checks in smtp.py (an empty dict is falsy).
+        self.assertEqual(cache["mail.example.com"]["error"], "DNS resolution failed")
 
     def testConnectionRefused(self):
         """ConnectionRefusedError surfaces as SMTPError 'Connection refused'"""
@@ -145,14 +149,18 @@ class TestTestSTARTTLS(unittest.TestCase):
     """Coverage for checkdmarc.smtp.test_starttls (port 25 / STARTTLS)"""
 
     def testSuccessWithSTARTTLS(self):
-        """STARTTLS extension is offered and used"""
+        """STARTTLS extension is offered, used, and the success is cached"""
+        cache = ExpiringDict(max_len=10, max_age_seconds=60)
         fake_server = MagicMock()
         fake_server.__enter__.return_value = fake_server
         fake_server.has_extn.return_value = True
         with patch("smtplib.SMTP", return_value=fake_server):
-            result = checkdmarc.smtp.test_starttls("mail.example.com")
+            result = checkdmarc.smtp.test_starttls("mail.example.com", cache=cache)
         self.assertTrue(result)
         fake_server.starttls.assert_called_once()
+        # First-write into an empty ExpiringDict must succeed — see the
+        # `if cache is not None:` check in smtp.py (an empty dict is falsy).
+        self.assertEqual(cache["mail.example.com"], {"starttls": True, "error": None})
 
     def testNoSTARTTLSExtension(self):
         """Server reachable but no STARTTLS extension returns False"""

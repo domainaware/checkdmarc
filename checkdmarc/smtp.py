@@ -115,37 +115,37 @@ def test_tls(
 
     except socket.gaierror:
         error = "DNS resolution failed"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except ConnectionRefusedError:
         error = "Connection refused"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except ConnectionResetError:
         error = "Connection reset"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except ConnectionAbortedError:
         error = "Connection aborted"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except TimeoutError:
         error = "Connection timed out"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except BlockingIOError as e:
         error = e.__str__()
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except ssl.SSLError as e:
         error = f"SSL error: {e}"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPConnectError as e:
@@ -156,12 +156,12 @@ def test_tls(
         else:
             message = f" SMTP error code {error_code}"
         error = f"Could not connect: {message}"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPHeloError as e:
         error = f"HELO error: {e}"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPException as e:
@@ -171,17 +171,17 @@ def test_tls(
             error = f"SMTP error code {error_code}"
         except ValueError:
             pass
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except OSError as e:
         error = e.__str__()
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
     except Exception as e:
         error = e.__str__()
-        if cache:
+        if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
 
@@ -224,43 +224,43 @@ def test_starttls(
                 server.starttls(context=ssl_context)
                 server.ehlo()
                 starttls = True
-                if cache:
+                if cache is not None:
                     cache[hostname] = {"starttls": starttls, "error": None}
             return starttls
 
     except socket.gaierror:
         error = "DNS resolution failed"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except ConnectionRefusedError:
         error = "Connection refused"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except ConnectionResetError:
         error = "Connection reset"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except ConnectionAbortedError:
         error = "Connection aborted"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except TimeoutError:
         error = "Connection timed out"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except BlockingIOError as e:
         error = e.__str__()
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except ssl.SSLError as e:
         error = f"SSL error: {e}"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPConnectError as e:
@@ -271,12 +271,12 @@ def test_starttls(
         else:
             message = f" SMTP error code {error_code}"
         error = f"Could not connect: {message}"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPHeloError as e:
         error = f"HELO error: {e}"
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except smtplib.SMTPException as e:
@@ -286,17 +286,17 @@ def test_starttls(
             error = f"SMTP error code {error_code}"
         except ValueError:
             pass
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except OSError as e:
         error = e.__str__()
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
     except Exception as e:
         error = e.__str__()
-        if cache:
+        if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
 
