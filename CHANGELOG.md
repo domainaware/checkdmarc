@@ -1,5 +1,35 @@
 # Changelog
 
+## 5.16.0
+
+### Changes
+
+- Rename DMARCbis references to RFC 9989
+- In compliance with RFC 9989, treat a DMARC `p` tag as `p=none`, instead of requiring it
+  - Instead, a warning is raised that older versions of DMARC require it
+- DMARC: the `pct`, `rf`, and `ri` tags are removed in RFC 9989. They are no
+  longer implicitly added to parsed results, are no longer strictly validated
+  (invalid values that previously raised now just warn), and explicit use
+  emits a "removed in RFC 9989" warning. Pre-9989 readers may still honor
+  them, so the value is left intact for those consumers.
+- DMARC: unknown tags are now ignored with a warning instead of raising
+  `InvalidDMARCTag`, per RFC 9989 ("Unknown tags MUST be ignored").
+- DMARC: the order constraint that `p` must immediately follow `v` is now a
+  warning rather than a hard syntax error. RFC 9989 permits any tag ordering
+  after `v`; older RFC 7489 readers may still expect `p` second.
+- DMARC: the `!size` suffix on `rua`/`ruf` URIs is now flagged as obsolete
+  syntax (RFC 9989 says reporters MUST ignore it). The warning still fires
+  because pre-9989 readers may still honor it.
+- DMARC: the RFC 9989 tree walk now continues all the way to single-label
+  parents (TLDs). PSD operators publish their policy at e.g. `_dmarc.gov`
+  with `psd=y`, and the previous "don't query TLDs" short-circuit prevented
+  PSD discovery (the main reason RFC 9989 added the tree walk).
+- DMARC: during the tree walk, parent queries no longer trigger the
+  apex-fallback "wrong-location" check. A stray `v=DMARC1` at a parent
+  domain's apex used to spuriously abort the walk with
+  `DMARCRecordInWrongLocation`; that check is now only applied to the
+  originally requested name.
+
 ## 5.15.5
 
 ### Fixes
