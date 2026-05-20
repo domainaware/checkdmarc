@@ -5,9 +5,7 @@
 ### Changes
 
 - Simplify the warning emitted for `pct`/`rf`/`ri` to just "Support for
-  the {tag} tag was removed in RFC 9989". The previous wording added a
-  clause about the value being "preserved for older DMARC readers but
-  not validated" that wasn't actionable for the user.
+  the {tag} tag was removed in RFC 9989".
 
 ## 5.16.0
 
