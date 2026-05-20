@@ -48,6 +48,7 @@ build = [
     "hatch>=1.14.0",
     "myst-parser[linkify]",
     "nose",
+    "pyright",
     "pytest",
     "pytest-cov",
     "ruff",

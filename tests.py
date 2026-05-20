@@ -1264,56 +1264,65 @@ class Test(unittest.TestCase):
 
     def testResultsToJson(self):
         """results_to_json produces valid JSON"""
-        results = {"domain": "example.com", "valid": True}
+        results = cast(
+            checkdmarc.DomainCheckResult,
+            {"domain": "example.com", "valid": True},
+        )
         json_str = checkdmarc.results_to_json(results)
         parsed = json.loads(json_str)
         self.assertEqual(parsed["domain"], "example.com")
 
     def testResultsToJsonList(self):
         """results_to_json handles list of results"""
-        results = [
-            {"domain": "example.com"},
-            {"domain": "example.org"},
-        ]
+        results = cast(
+            list[checkdmarc.DomainCheckResult],
+            [
+                {"domain": "example.com"},
+                {"domain": "example.org"},
+            ],
+        )
         json_str = checkdmarc.results_to_json(results)
         parsed = json.loads(json_str)
         self.assertEqual(len(parsed), 2)
 
     def testResultsToCsvRows(self):
         """results_to_csv_rows converts results to CSV row dicts"""
-        results = {
-            "domain": "example.com",
-            "base_domain": "example.com",
-            "dnssec": False,
-            "ns": {"hostnames": ["ns1.example.com"], "warnings": []},
-            "mx": {"hosts": [], "warnings": []},
-            "mta_sts": {"valid": False, "error": "not found"},
-            "spf": {
-                "record": "v=spf1 -all",
-                "valid": True,
-                "warnings": [],
-            },
-            "dmarc": {
-                "record": "v=DMARC1; p=reject",
-                "location": "example.com",
-                "valid": True,
-                "tags": {
-                    "adkim": {"value": "r"},
-                    "aspf": {"value": "r"},
-                    "fo": {"value": ["0"]},
-                    "p": {"value": "reject"},
-                    "pct": {"value": 100},
-                    "rf": {"value": ["afrf"]},
-                    "ri": {"value": 86400},
-                    "sp": {"value": "reject"},
+        results = cast(
+            checkdmarc.DomainCheckResult,
+            {
+                "domain": "example.com",
+                "base_domain": "example.com",
+                "dnssec": False,
+                "ns": {"hostnames": ["ns1.example.com"], "warnings": []},
+                "mx": {"hosts": [], "warnings": []},
+                "mta_sts": {"valid": False, "error": "not found"},
+                "spf": {
+                    "record": "v=spf1 -all",
+                    "valid": True,
+                    "warnings": [],
                 },
-                "warnings": [],
+                "dmarc": {
+                    "record": "v=DMARC1; p=reject",
+                    "location": "example.com",
+                    "valid": True,
+                    "tags": {
+                        "adkim": {"value": "r"},
+                        "aspf": {"value": "r"},
+                        "fo": {"value": ["0"]},
+                        "p": {"value": "reject"},
+                        "pct": {"value": 100},
+                        "rf": {"value": ["afrf"]},
+                        "ri": {"value": 86400},
+                        "sp": {"value": "reject"},
+                    },
+                    "warnings": [],
+                },
+                "smtp_tls_reporting": {
+                    "valid": False,
+                    "error": "not found",
+                },
             },
-            "smtp_tls_reporting": {
-                "valid": False,
-                "error": "not found",
-            },
-        }
+        )
         rows = checkdmarc.results_to_csv_rows(results)
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["domain"], "example.com")
