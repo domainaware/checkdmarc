@@ -173,6 +173,32 @@ class TestTestDnssec(unittest.TestCase):
                 )
         self.assertFalse(result)
 
+    def testInvalidSignatureReturnsFalse(self):
+        """A bad signature (ValidationFailure) at every rdatatype reports
+        DNSSEC as not validated, rather than propagating the exception."""
+        import dns.dnssec
+        import dns.rdatatype
+
+        rrset = MagicMock()
+        rrset.rdtype = dns.rdatatype.A
+        rrsig = MagicMock()
+        rrsig.rdtype = dns.rdatatype.RRSIG
+        response = MagicMock()
+        response.answer = [rrset, rrsig]
+
+        with patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()):
+            with patch("dns.query.tcp", return_value=response):
+                with patch(
+                    "dns.dnssec.validate",
+                    side_effect=dns.dnssec.ValidationFailure("bad signature"),
+                ):
+                    result = checkdmarc.dnssec.test_dnssec(
+                        "example.com",
+                        nameservers=["1.1.1.1"],
+                        cache=self._fresh_cache(),
+                    )
+        self.assertFalse(result)
+
 
 class TestGetTlsaRecords(unittest.TestCase):
     @staticmethod
