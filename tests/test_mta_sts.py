@@ -1,7 +1,10 @@
 """Tests for checkdmarc.mta_sts"""
 
 import unittest
-from unittest.mock import patch
+from typing import Any, Optional, cast
+from unittest.mock import MagicMock, patch
+
+import dns.resolver
 
 import checkdmarc.mta_sts
 
@@ -182,6 +185,125 @@ class Test(unittest.TestCase):
             )
             result = checkdmarc.mta_sts.check_mta_sts("example.com")
             self.assertFalse(result["valid"])
+
+
+class TestQueryMtaStsRecord(unittest.TestCase):
+    def testRecordFound(self):
+        with patch(
+            "checkdmarc.mta_sts.query_dns",
+            return_value=["v=STSv1; id=20240101T010101"],
+        ):
+            result = checkdmarc.mta_sts.query_mta_sts_record("example.com")
+        self.assertEqual(result["record"], "v=STSv1; id=20240101T010101")
+
+    def testNoRecordAnywhereRaisesNotFound(self):
+        """No record at _mta-sts and no record at apex raises MTASTSRecordNotFound"""
+        with patch("checkdmarc.mta_sts.query_dns", side_effect=dns.resolver.NoAnswer()):
+            self.assertRaises(
+                checkdmarc.mta_sts.MTASTSRecordNotFound,
+                checkdmarc.mta_sts.query_mta_sts_record,
+                "example.com",
+            )
+
+    def testApexFallbackNXDOMAIN(self):
+        """If both _mta-sts and apex return NXDOMAIN, raise MTASTSRecordNotFound"""
+
+        def fake_dns(target, rdtype, **kwargs):
+            raise dns.resolver.NXDOMAIN()
+
+        with patch("checkdmarc.mta_sts.query_dns", side_effect=fake_dns):
+            self.assertRaises(
+                checkdmarc.mta_sts.MTASTSRecordNotFound,
+                checkdmarc.mta_sts.query_mta_sts_record,
+                "example.com",
+            )
+
+
+class TestDownloadMtaStsPolicy(unittest.TestCase):
+    @staticmethod
+    def _make_session(
+        *,
+        content_type: Optional[str] = "text/plain",
+        text: str = "version: STSv1",
+        raise_exc: Optional[BaseException] = None,
+    ):
+        fake_session = MagicMock()
+        response = MagicMock()
+        response.text = text
+        response.headers = (
+            {"Content-Type": content_type} if content_type is not None else {}
+        )
+        if raise_exc is None:
+            response.raise_for_status = MagicMock(return_value=None)
+        else:
+            response.raise_for_status = MagicMock(side_effect=raise_exc)
+        fake_session.get.return_value = response
+        return fake_session
+
+    def testSuccess(self):
+        with patch(
+            "checkdmarc.mta_sts.requests.Session",
+            return_value=self._make_session(),
+        ):
+            result = checkdmarc.mta_sts.download_mta_sts_policy("example.com")
+        self.assertEqual(result["policy"], "version: STSv1")
+        self.assertEqual(result["warnings"], [])
+
+    def testWrongContentTypeWarns(self):
+        with patch(
+            "checkdmarc.mta_sts.requests.Session",
+            return_value=self._make_session(content_type="text/html"),
+        ):
+            result = checkdmarc.mta_sts.download_mta_sts_policy("example.com")
+        self.assertTrue(any("Content-Type" in w for w in result["warnings"]))
+
+    def testMissingContentTypeWarns(self):
+        with patch(
+            "checkdmarc.mta_sts.requests.Session",
+            return_value=self._make_session(content_type=None),
+        ):
+            result = checkdmarc.mta_sts.download_mta_sts_policy("example.com")
+        self.assertTrue(
+            any("Content-Type" in w and "missing" in w for w in result["warnings"])
+        )
+
+    def testHttpFailureRaises(self):
+        with patch(
+            "checkdmarc.mta_sts.requests.Session",
+            return_value=self._make_session(raise_exc=Exception("HTTP 404")),
+        ):
+            self.assertRaises(
+                checkdmarc.mta_sts.MTASTSPolicyDownloadError,
+                checkdmarc.mta_sts.download_mta_sts_policy,
+                "example.com",
+            )
+
+
+class TestCheckMtaStsSuccess(unittest.TestCase):
+    def testFullSuccess(self):
+        """check_mta_sts end-to-end with valid record and policy returns valid=True"""
+        valid_policy = (
+            "version: STSv1\r\n"
+            "mode: enforce\r\n"
+            "max_age: 86400\r\n"
+            "mx: mail.example.com\r\n"
+        )
+        with patch(
+            "checkdmarc.mta_sts.query_mta_sts_record",
+            return_value={
+                "record": "v=STSv1; id=20240101T010101",
+                "warnings": [],
+            },
+        ):
+            with patch(
+                "checkdmarc.mta_sts.download_mta_sts_policy",
+                return_value={"policy": valid_policy, "warnings": []},
+            ):
+                result = checkdmarc.mta_sts.check_mta_sts("example.com")
+        self.assertTrue(result["valid"])
+        # narrow the MTASTSCheckSuccess | MTASTSCheckFailure union for pyright
+        success = cast(Any, result)
+        self.assertEqual(success["policy"]["mode"], "enforce")
 
 
 if __name__ == "__main__":
