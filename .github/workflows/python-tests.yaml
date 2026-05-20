@@ -37,7 +37,7 @@ jobs:
       run: pyright
     - name: Run unit tests
       run: |
-        coverage run tests.py
+        coverage run -m pytest tests/
         coverage json
     - name: Test building packages
       run: hatch build

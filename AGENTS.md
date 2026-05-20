@@ -10,7 +10,7 @@ checkdmarc is a Python library and CLI tool for validating email security DNS re
 
 ```bash
 # Run tests with coverage
-coverage run tests.py
+coverage run -m pytest tests/
 
 # Lint and format
 ruff check --show-fixes
@@ -26,11 +26,14 @@ cd docs && make html
 ./build.sh
 ```
 
-Tests use `unittest.TestCase` in a single `tests.py` file. Run a single test with:
+Tests use `unittest.TestCase` and are organized under `tests/` with one file per
+module (e.g. `tests/test_spf.py`, `tests/test_dmarc.py`). Run a single test with:
 
 ```bash
-python -m pytest tests.py -k "test_name"
+python -m pytest tests/ -k "test_name"
 ```
+
+Run tests for one module with e.g. `python -m pytest tests/test_spf.py`.
 
 Some tests require network access and are skipped when `GITHUB_ACTIONS` env var is set.
 
