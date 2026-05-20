@@ -1,5 +1,18 @@
 # Changelog
 
+## 5.16.2
+
+### Changes
+
+- BIMI: forbidden `x`/`y` attributes on the root `<svg>` element are now
+  actually rejected. `get_svg_metadata` was reading the wrong xmltodict
+  keys, so the existing rejection in `check_svg_requirements` never fired
+  on real SVGs. The metadata also lost the `y` value to a typo that
+  clobbered `metadata["x"]`.
+- DNSSEC: narrowed three broad `except Exception` clauses to specific
+  exception types (`dns.exception.DNSException`, `OSError`, `EOFError`)
+  so programming errors propagate instead of being silently swallowed.
+
 ## 5.16.1
 
 ### Changes
