@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.bimi &mdash; checkdmarc 5.15.4 documentation</title>
+  <title>checkdmarc.bimi &mdash; checkdmarc 5.15.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=9c3d96a9"></script>
+      <script src="../../_static/documentation_options.js?v=384512b0"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -242,8 +242,19 @@
 
 
 <span class="n">BIMI_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;v</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*BIMI1</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;&quot;</span>
+<span class="c1"># lps= tag value, per draft-brand-indicators-for-message-identification-14</span>
+<span class="c1"># section 4.3.14:</span>
+<span class="c1">#     local-part-prefix-list = local-part-prefix *[ *WSP &quot;,&quot; *WSP local-part-prefix ]</span>
+<span class="c1">#     local-part-prefix      = 1*63local-part-text</span>
+<span class="c1">#     local-part-text        = ALPHA / DIGIT / &quot;-&quot;</span>
+<span class="n">BIMI_LPS_LOCAL_PART_REGEX</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;[A-Za-z0-9\-]{1,63}&quot;</span>
+<span class="n">BIMI_LPS_VALUE_REGEX</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="sa">rf</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">BIMI_LPS_LOCAL_PART_REGEX</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="sa">rf</span><span class="s2">&quot;(?:</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*,</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*</span><span class="si">{</span><span class="n">BIMI_LPS_LOCAL_PART_REGEX</span><span class="si">}</span><span class="s2">)*&quot;</span>
+<span class="p">)</span>
 <span class="n">BIMI_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="sa">rf</span><span class="s2">&quot;([a-z]</span><span class="se">{{</span><span class="s2">1,3</span><span class="se">}}</span><span class="s2">)</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*(bimi1|</span><span class="si">{</span><span class="n">HTTPS_REGEX</span><span class="si">}</span><span class="s2">|personal|brand)?&quot;</span>
+    <span class="sa">rf</span><span class="s2">&quot;([a-z]</span><span class="se">{{</span><span class="s2">1,3</span><span class="se">}}</span><span class="s2">)</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*&quot;</span>
+    <span class="sa">rf</span><span class="s2">&quot;(bimi1|</span><span class="si">{</span><span class="n">HTTPS_REGEX</span><span class="si">}</span><span class="s2">|personal|brand|</span><span class="si">{</span><span class="n">BIMI_LPS_VALUE_REGEX</span><span class="si">}</span><span class="s2">)?&quot;</span>
 <span class="p">)</span>
 <span class="n">BIMI_TAG_VALUE_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">BIMI_TAG_VALUE_REGEX_STRING</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
 
@@ -995,11 +1006,21 @@
             <span class="k">pass</span>
         <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BIMIRecordNotFound</span><span class="p">(</span><span class="s2">&quot;The domain does not exist.&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">BIMIError</span><span class="p">:</span>
+            <span class="c1"># Let BIMI-specific exceptions (BIMIRecordInWrongLocation) propagate</span>
+            <span class="c1"># — they were being silently swallowed because `raise` was missing.</span>
+            <span class="k">raise</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-            <span class="n">BIMIRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">BIMIRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
-    <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">):</span>
+    <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
         <span class="k">pass</span>
+    <span class="k">except</span> <span class="n">BIMIError</span><span class="p">:</span>
+        <span class="c1"># MultipleBIMIRecords and UnrelatedTXTRecordFoundAtBIMI are raised in</span>
+        <span class="c1"># the try-body above; propagate them so callers can act on the specific</span>
+        <span class="c1"># type instead of catching the broad BIMIRecordNotFound this clause</span>
+        <span class="c1"># used to convert everything to.</span>
+        <span class="k">raise</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">BIMIRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
@@ -1148,7 +1169,7 @@
     <span class="n">valid_cert</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Parsing the BIMI record&quot;</span><span class="p">)</span>
     <span class="n">session</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
-    <span class="n">session</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;User-Agent&quot;</span><span class="p">:</span> <span class="n">USER_AGENT</span><span class="p">}</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;User-Agent&quot;</span><span class="p">:</span> <span class="n">USER_AGENT</span><span class="p">})</span>
     <span class="n">spf_in_dmarc_error_msg</span> <span class="o">=</span> <span class="p">(</span>
         <span class="s2">&quot;Found a SPF record where a BIMI record &quot;</span>
         <span class="s2">&quot;should be; most likely, the _bimi &quot;</span>
@@ -1262,9 +1283,10 @@
                     <span class="sa">f</span><span class="s2">&quot;Acceptable avp tag values are personal or brand, not </span><span class="si">{</span><span class="n">tag_value</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
         <span class="k">elif</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;lps&quot;</span><span class="p">:</span>
-            <span class="n">tag_value</span> <span class="o">=</span> <span class="n">tag_value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tag_value</span><span class="p">)):</span>
-                <span class="n">tag_value</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tag_value</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="c1"># Comma-separated local-parts; strip whitespace and lowercase</span>
+            <span class="c1"># for case-insensitive matching at delivery time.</span>
+            <span class="n">selectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">tag_value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span>
+            <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">selectors</span>
 
     <span class="k">if</span> <span class="n">parsed_dmarc_record</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;l&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">parsed_dmarc_record</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>

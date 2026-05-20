@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.15.4 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.15.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=9c3d96a9"></script>
+      <script src="../../_static/documentation_options.js?v=384512b0"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -1114,10 +1114,14 @@
                     <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;redirect&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">redirect</span>
 
                     <span class="n">warnings</span> <span class="o">+=</span> <span class="n">redirected_spf</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">]</span>
-                <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">DNSExceptionNXDOMAIN</span><span class="p">):</span>
+                <span class="k">except</span> <span class="n">DNSException</span> <span class="k">as</span> <span class="n">redirect_err</span><span class="p">:</span>
+                    <span class="c1"># Local name distinct from the outer ``error`` accumulator;</span>
+                    <span class="c1"># ``except ... as &lt;name&gt;`` deletes the name when the block</span>
+                    <span class="c1"># exits, which would shadow and unset the function-level</span>
+                    <span class="c1"># ``error`` set at the top of parse_spf_record.</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">redirect_err</span><span class="p">,</span> <span class="n">DNSExceptionNXDOMAIN</span><span class="p">):</span>
                         <span class="n">total_void_dns_lookups</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="k">raise</span> <span class="n">_SPFWarning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+                    <span class="k">raise</span> <span class="n">_SPFWarning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">redirect_err</span><span class="p">))</span>
 
             <span class="k">elif</span> <span class="n">mechanism</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">all_seen</span><span class="p">:</span>
