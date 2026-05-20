@@ -975,10 +975,14 @@ def parse_spf_record(
                     parsed["redirect"] = redirect
 
                     warnings += redirected_spf["warnings"]
-                except DNSException as error:
-                    if isinstance(error, DNSExceptionNXDOMAIN):
+                except DNSException as redirect_err:
+                    # Local name distinct from the outer ``error`` accumulator;
+                    # ``except ... as <name>`` deletes the name when the block
+                    # exits, which would shadow and unset the function-level
+                    # ``error`` set at the top of parse_spf_record.
+                    if isinstance(redirect_err, DNSExceptionNXDOMAIN):
                         total_void_dns_lookups += 1
-                    raise _SPFWarning(str(error))
+                    raise _SPFWarning(str(redirect_err))
 
             elif mechanism == "all":
                 if all_seen:
