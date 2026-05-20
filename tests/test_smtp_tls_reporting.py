@@ -1,7 +1,10 @@
 """Tests for checkdmarc.smtp_tls_reporting"""
 
 import unittest
+from typing import Any, cast
 from unittest.mock import patch
+
+import dns.resolver
 
 import checkdmarc.smtp_tls_reporting
 
@@ -87,6 +90,60 @@ class Test(unittest.TestCase):
                 "example.com"
             )
             self.assertFalse(result["valid"])
+
+
+class TestQuerySmtpTlsReportingRecord(unittest.TestCase):
+    def testRecordFound(self):
+        with patch(
+            "checkdmarc.smtp_tls_reporting.query_dns",
+            return_value=["v=TLSRPTv1; rua=mailto:rua@example.com"],
+        ):
+            result = checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record(
+                "example.com"
+            )
+        self.assertEqual(result["record"], "v=TLSRPTv1; rua=mailto:rua@example.com")
+
+    def testRecordNotFound(self):
+        """NoAnswer at both _smtp._tls and apex raises SMTPTLSReportingRecordNotFound"""
+        with patch(
+            "checkdmarc.smtp_tls_reporting.query_dns",
+            side_effect=dns.resolver.NoAnswer(),
+        ):
+            self.assertRaises(
+                checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordNotFound,
+                checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record,
+                "example.com",
+            )
+
+    def testNXDOMAIN(self):
+        with patch(
+            "checkdmarc.smtp_tls_reporting.query_dns",
+            side_effect=dns.resolver.NXDOMAIN(),
+        ):
+            self.assertRaises(
+                checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordNotFound,
+                checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record,
+                "example.com",
+            )
+
+
+class TestCheckSmtpTlsReportingSuccess(unittest.TestCase):
+    def testFullSuccess(self):
+        """check_smtp_tls_reporting end-to-end with valid record returns valid=True"""
+        with patch(
+            "checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record",
+            return_value={
+                "record": "v=TLSRPTv1; rua=mailto:rua@example.com",
+                "warnings": [],
+            },
+        ):
+            result = checkdmarc.smtp_tls_reporting.check_smtp_tls_reporting(
+                "example.com"
+            )
+        self.assertTrue(result["valid"])
+        # narrow the SMTPTLSReportingSuccess | SMTPTLSReportingFailure union
+        success = cast(Any, result)
+        self.assertIn("rua", success["tags"])
 
 
 if __name__ == "__main__":
