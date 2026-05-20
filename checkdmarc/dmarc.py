@@ -823,6 +823,11 @@ def _query_dmarc_record(
             pass
         except dns.resolver.NXDOMAIN:
             raise DMARCRecordNotFound(f"The domain {domain} does not exist.")
+        except DMARCError:
+            # DMARCRecordInWrongLocation is a DMARCError raised on purpose
+            # above — propagate it instead of letting the broad ``except``
+            # below convert it to DMARCRecordNotFound.
+            raise
         except Exception as error:
             raise DMARCRecordNotFound(error)
 

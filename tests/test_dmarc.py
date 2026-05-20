@@ -1,6 +1,7 @@
 """Tests for checkdmarc.dmarc"""
 
 import unittest
+from typing import Any, cast
 from unittest.mock import patch
 
 import dns.resolver
@@ -606,6 +607,428 @@ class Test(unittest.TestCase):
                 mock_dns.return_value = ["v=DMARC1; p=reject"]
                 result = checkdmarc.dmarc.query_dmarc_record("example.com")
                 self.assertTrue(any("no effect" in w for w in result["warnings"]))
+
+
+class TestQueryDmarcRecordEdges(unittest.TestCase):
+    """_query_dmarc_record apex fallback and exception branches"""
+
+    def testApexFallbackWrongLocation(self):
+        """A v=DMARC1 record at the apex (no record at _dmarc) raises DMARCRecordInWrongLocation"""
+
+        def fake_query_dns(target, rdtype, **kwargs):
+            if target.startswith("_dmarc."):
+                raise dns.resolver.NoAnswer()
+            return ["v=DMARC1; p=reject"]
+
+        with patch("checkdmarc.dmarc.query_dns", side_effect=fake_query_dns):
+            self.assertRaises(
+                checkdmarc.dmarc.DMARCRecordInWrongLocation,
+                checkdmarc.dmarc._query_dmarc_record,
+                "example.com",
+            )
+
+    def testApexFallbackNoAnswer(self):
+        """NoAnswer at both _dmarc and apex returns None (record not found)"""
+
+        with patch("checkdmarc.dmarc.query_dns", side_effect=dns.resolver.NoAnswer()):
+            result = checkdmarc.dmarc._query_dmarc_record("example.com")
+        self.assertIsNone(result)
+
+    def testApexFallbackNXDOMAIN(self):
+        """NoAnswer at _dmarc, then NXDOMAIN at apex raises DMARCRecordNotFound"""
+
+        def fake_query_dns(target, rdtype, **kwargs):
+            if target.startswith("_dmarc."):
+                raise dns.resolver.NoAnswer()
+            raise dns.resolver.NXDOMAIN()
+
+        with patch("checkdmarc.dmarc.query_dns", side_effect=fake_query_dns):
+            self.assertRaises(
+                checkdmarc.dmarc.DMARCRecordNotFound,
+                checkdmarc.dmarc._query_dmarc_record,
+                "example.com",
+            )
+
+    def testApexFallbackGenericException(self):
+        """NoAnswer at _dmarc, then a generic Exception at apex raises DMARCRecordNotFound"""
+
+        def fake_query_dns(target, rdtype, **kwargs):
+            if target.startswith("_dmarc."):
+                raise dns.resolver.NoAnswer()
+            raise RuntimeError("oops")
+
+        with patch("checkdmarc.dmarc.query_dns", side_effect=fake_query_dns):
+            self.assertRaises(
+                checkdmarc.dmarc.DMARCRecordNotFound,
+                checkdmarc.dmarc._query_dmarc_record,
+                "example.com",
+            )
+
+    def testGenericExceptionAtSelectorWraps(self):
+        """A non-DNS, non-DMARC exception at the selector wraps as DMARCError"""
+
+        with patch("checkdmarc.dmarc.query_dns", side_effect=RuntimeError("oops")):
+            self.assertRaises(
+                checkdmarc.dmarc.DMARCError,
+                checkdmarc.dmarc._query_dmarc_record,
+                "example.com",
+            )
+
+
+class TestQueryDmarcRecordTreeWalk(unittest.TestCase):
+    """query_dmarc_record DNS tree walk branches"""
+
+    def testWalkSucceedsAtParent(self):
+        """If the subdomain has no record, the walk finds one at the parent"""
+        with patch("checkdmarc.dmarc._query_dmarc_record") as mock_query:
+            with patch("checkdmarc.dmarc.query_dns", return_value=[]):
+                mock_query.side_effect = [
+                    None,  # sub.example.com
+                    "v=DMARC1; p=reject",  # example.com
+                ]
+                result = checkdmarc.dmarc.query_dmarc_record("sub.example.com")
+        self.assertEqual(result["location"], "example.com")
+
+    def testWalkContinuesPastDMARCRecordNotFound(self):
+        """A DMARCRecordNotFound at one parent doesn't stop the walk."""
+        with patch("checkdmarc.dmarc._query_dmarc_record") as mock_query:
+            with patch("checkdmarc.dmarc.query_dns", return_value=[]):
+                mock_query.side_effect = [
+                    None,  # original
+                    checkdmarc.dmarc.DMARCRecordNotFound("nope"),  # first parent
+                    "v=DMARC1; p=reject",  # second parent
+                ]
+                result = checkdmarc.dmarc.query_dmarc_record("a.b.example.com")
+        self.assertIsNotNone(result["record"])
+
+    def testWalkReraisesDMARCError(self):
+        """A non-NotFound DMARCError during tree walk propagates"""
+        with patch("checkdmarc.dmarc._query_dmarc_record") as mock_query:
+            with patch("checkdmarc.dmarc.query_dns", return_value=[]):
+                mock_query.side_effect = [
+                    None,  # original
+                    checkdmarc.dmarc.MultipleDMARCRecords("multiple at parent"),
+                ]
+                self.assertRaises(
+                    checkdmarc.dmarc.MultipleDMARCRecords,
+                    checkdmarc.dmarc.query_dmarc_record,
+                    "sub.example.com",
+                )
+
+    def testRootRecordsNXDOMAINRaises(self):
+        """An NXDOMAIN looking up the apex TXT records raises DMARCRecordNotFound"""
+
+        def fake_query_dns(target, rdtype, **kwargs):
+            raise dns.resolver.NXDOMAIN()
+
+        with patch("checkdmarc.dmarc._query_dmarc_record", return_value=None):
+            with patch("checkdmarc.dmarc.query_dns", side_effect=fake_query_dns):
+                self.assertRaises(
+                    checkdmarc.dmarc.DMARCRecordNotFound,
+                    checkdmarc.dmarc.query_dmarc_record,
+                    "example.com",
+                )
+
+    def testShortDomainNotFoundErrorString(self):
+        """A 2-label not-found error has the short message"""
+        with patch("checkdmarc.dmarc._query_dmarc_record", return_value=None):
+            with patch("checkdmarc.dmarc.query_dns", return_value=[]):
+                with self.assertRaises(checkdmarc.dmarc.DMARCRecordNotFound) as ctx:
+                    checkdmarc.dmarc.query_dmarc_record("example.com")
+        # Short domain: message ends with "exist."
+        self.assertTrue(str(ctx.exception).endswith("exist."))
+
+    def testLongDomainNotFoundErrorString(self):
+        """A multi-label not-found error has the parent-walk message"""
+        with patch("checkdmarc.dmarc._query_dmarc_record", return_value=None):
+            with patch("checkdmarc.dmarc.query_dns", return_value=[]):
+                with self.assertRaises(checkdmarc.dmarc.DMARCRecordNotFound) as ctx:
+                    checkdmarc.dmarc.query_dmarc_record("sub.example.com")
+        self.assertIn("parent domains", str(ctx.exception))
+
+
+class TestCheckWildcardDmarcReportAuthorization(unittest.TestCase):
+    def testWildcardFound(self):
+        with patch("checkdmarc.dmarc.query_dns", return_value=["v=DMARC1"]):
+            self.assertTrue(
+                checkdmarc.dmarc.check_wildcard_dmarc_report_authorization(
+                    "example.com"
+                )
+            )
+
+    def testNoWildcardReturnsFalse(self):
+        with patch("checkdmarc.dmarc.query_dns", return_value=[]):
+            self.assertFalse(
+                checkdmarc.dmarc.check_wildcard_dmarc_report_authorization(
+                    "example.com"
+                )
+            )
+
+    def testUnrelatedRecordRaises(self):
+        with patch(
+            "checkdmarc.dmarc.query_dns",
+            return_value=["v=DMARC1", "some other txt"],
+        ):
+            self.assertRaises(
+                checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC,
+                checkdmarc.dmarc.check_wildcard_dmarc_report_authorization,
+                "example.com",
+            )
+
+    def testUnrelatedRecordIgnored(self):
+        with patch(
+            "checkdmarc.dmarc.query_dns",
+            return_value=["v=DMARC1", "some other txt"],
+        ):
+            self.assertTrue(
+                checkdmarc.dmarc.check_wildcard_dmarc_report_authorization(
+                    "example.com", ignore_unrelated_records=True
+                )
+            )
+
+    def testDnsExceptionReturnsFalse(self):
+        with patch("checkdmarc.dmarc.query_dns", side_effect=dns.resolver.NoAnswer()):
+            self.assertFalse(
+                checkdmarc.dmarc.check_wildcard_dmarc_report_authorization(
+                    "example.com"
+                )
+            )
+
+
+class TestVerifyDmarcReportDestination(unittest.TestCase):
+    def testSameBaseDomainReturnsSilently(self):
+        """If source and destination share a base domain, no verification needed"""
+        with patch("checkdmarc.dmarc.query_dns") as mock_dns:
+            checkdmarc.dmarc.verify_dmarc_report_destination(
+                "example.com", "example.com"
+            )
+        mock_dns.assert_not_called()
+
+    def testWildcardAuthorizationShortCircuits(self):
+        """A wildcard at the destination satisfies the check without per-source lookup"""
+        with patch(
+            "checkdmarc.dmarc.check_wildcard_dmarc_report_authorization",
+            return_value=True,
+        ):
+            checkdmarc.dmarc.verify_dmarc_report_destination(
+                "example.com", "other.example.org"
+            )
+
+    def testSpecificAuthorizationRecordFound(self):
+        """A specific source._report._dmarc.dest record satisfies the check"""
+        with patch(
+            "checkdmarc.dmarc.check_wildcard_dmarc_report_authorization",
+            return_value=False,
+        ):
+            with patch("checkdmarc.dmarc.query_dns", return_value=["v=DMARC1"]):
+                # No exception => verification passed
+                checkdmarc.dmarc.verify_dmarc_report_destination(
+                    "example.com", "other.example.org"
+                )
+
+    def testNoAuthorizationRecordRaises(self):
+        """Missing authorization record raises UnverifiedDMARCURIDestination"""
+        with patch(
+            "checkdmarc.dmarc.check_wildcard_dmarc_report_authorization",
+            return_value=False,
+        ):
+            with patch("checkdmarc.dmarc.query_dns", return_value=[]):
+                self.assertRaises(
+                    checkdmarc.dmarc.UnverifiedDMARCURIDestination,
+                    checkdmarc.dmarc.verify_dmarc_report_destination,
+                    "example.com",
+                    "other.example.org",
+                )
+
+    def testUnrelatedRecordsBecomeUnverifiedDestination(self):
+        """Unrelated TXT records at the authorization location are wrapped in the catch-all"""
+        with patch(
+            "checkdmarc.dmarc.check_wildcard_dmarc_report_authorization",
+            return_value=False,
+        ):
+            with patch(
+                "checkdmarc.dmarc.query_dns",
+                return_value=["v=DMARC1", "unrelated txt"],
+            ):
+                # The unrelated-records branch raises UnrelatedTXTRecordFoundAtDMARC,
+                # which is then caught by the broad `except Exception` and re-raised
+                # as UnverifiedDMARCURIDestination.
+                self.assertRaises(
+                    checkdmarc.dmarc.UnverifiedDMARCURIDestination,
+                    checkdmarc.dmarc.verify_dmarc_report_destination,
+                    "example.com",
+                    "other.example.org",
+                )
+
+
+class TestParseDmarcRecordReportBranches(unittest.TestCase):
+    """Branches in parse_dmarc_record's rua/ruf handling"""
+
+    def testRuaSizeLimitWarning(self):
+        with patch(
+            "checkdmarc.dmarc.verify_dmarc_report_destination", return_value=None
+        ):
+            with patch(
+                "checkdmarc.dmarc.get_mx_records",
+                return_value=[{"preference": 10, "hostname": "mx.example.com"}],
+            ):
+                result = checkdmarc.dmarc.parse_dmarc_record(
+                    "v=DMARC1; p=reject; rua=mailto:dmarc@example.com!10m",
+                    "example.com",
+                )
+        self.assertTrue(
+            any("size limit on rua reports" in w for w in result["warnings"])
+        )
+
+    def testRuaCrossDomainCallsVerify(self):
+        """A rua= URI whose domain differs from the policy domain triggers verify_dmarc_report_destination"""
+        with patch(
+            "checkdmarc.dmarc.verify_dmarc_report_destination", return_value=None
+        ) as mock_verify:
+            with patch(
+                "checkdmarc.dmarc.get_mx_records",
+                return_value=[{"preference": 10, "hostname": "mx.elsewhere.com"}],
+            ):
+                checkdmarc.dmarc.parse_dmarc_record(
+                    "v=DMARC1; p=reject; rua=mailto:dmarc@elsewhere.com",
+                    "example.com",
+                )
+        mock_verify.assert_called_once()
+
+    def testRuaMissingMxWarning(self):
+        """An rua= destination with no MX records produces a warning"""
+        with patch(
+            "checkdmarc.dmarc.verify_dmarc_report_destination", return_value=None
+        ):
+            with patch("checkdmarc.dmarc.get_mx_records", return_value=[]):
+                result = checkdmarc.dmarc.parse_dmarc_record(
+                    "v=DMARC1; p=reject; rua=mailto:dmarc@elsewhere.com",
+                    "example.com",
+                )
+        self.assertTrue(any("no MX records" in w for w in result["warnings"]))
+
+    def testRuaMxLookupExceptionWarning(self):
+        """A DNSException retrieving MX records becomes a warning"""
+        from checkdmarc.utils import DNSException
+
+        with patch(
+            "checkdmarc.dmarc.verify_dmarc_report_destination", return_value=None
+        ):
+            with patch(
+                "checkdmarc.dmarc.get_mx_records",
+                side_effect=DNSException("dns broken"),
+            ):
+                result = checkdmarc.dmarc.parse_dmarc_record(
+                    "v=DMARC1; p=reject; rua=mailto:dmarc@elsewhere.com",
+                    "example.com",
+                )
+        self.assertTrue(
+            any("Failed to retrieve MX records" in w for w in result["warnings"])
+        )
+
+    def testManyRuaUrisWarning(self):
+        """More than 2 rua URIs produce a best-practice warning"""
+        rua_list = ",".join(f"mailto:dmarc{i}@example.com" for i in range(3))
+        with patch(
+            "checkdmarc.dmarc.get_mx_records",
+            return_value=[{"preference": 10, "hostname": "mx.example.com"}],
+        ):
+            result = checkdmarc.dmarc.parse_dmarc_record(
+                f"v=DMARC1; p=reject; rua={rua_list}",
+                "example.com",
+            )
+        self.assertTrue(any("more than two rua URIs" in w for w in result["warnings"]))
+
+    def testRufBranchesCovered(self):
+        """ruf= triggers the same set of warnings as rua= when problematic"""
+        from checkdmarc.utils import DNSException
+
+        with patch(
+            "checkdmarc.dmarc.verify_dmarc_report_destination", return_value=None
+        ):
+            with patch(
+                "checkdmarc.dmarc.get_mx_records",
+                side_effect=DNSException("dns broken"),
+            ):
+                result = checkdmarc.dmarc.parse_dmarc_record(
+                    "v=DMARC1; p=reject; "
+                    "rua=mailto:dmarc@example.com; "
+                    "ruf=mailto:forensic@elsewhere.com!5m",
+                    "example.com",
+                )
+        # ruf produces both the size-limit warning and the missing-MX warning
+        self.assertTrue(
+            any("size limit on ruf reports" in w for w in result["warnings"])
+        )
+        self.assertTrue(any("ruf email address" in w for w in result["warnings"]))
+
+    def testManyRufUrisWarning(self):
+        """More than 2 ruf URIs produce a best-practice warning"""
+        ruf_list = ",".join(f"mailto:forensic{i}@example.com" for i in range(3))
+        with patch(
+            "checkdmarc.dmarc.get_mx_records",
+            return_value=[{"preference": 10, "hostname": "mx.example.com"}],
+        ):
+            result = checkdmarc.dmarc.parse_dmarc_record(
+                f"v=DMARC1; p=reject; rua=mailto:dmarc@example.com; ruf={ruf_list}",
+                "example.com",
+            )
+        self.assertTrue(any("more than two ruf URIs" in w for w in result["warnings"]))
+
+
+class TestGetDmarcRecord(unittest.TestCase):
+    """get_dmarc_record both descriptions branches"""
+
+    def testWithoutDescriptions(self):
+        with patch(
+            "checkdmarc.dmarc.query_dmarc_record",
+            return_value={
+                "record": "v=DMARC1; p=reject",
+                "location": "example.com",
+                "warnings": [],
+            },
+        ):
+            result = checkdmarc.dmarc.get_dmarc_record("example.com")
+        self.assertEqual(result["record"], "v=DMARC1; p=reject")
+        self.assertEqual(result["location"], "example.com")
+        self.assertIn("parsed", result)
+
+    def testWithDescriptions(self):
+        with patch(
+            "checkdmarc.dmarc.query_dmarc_record",
+            return_value={
+                "record": "v=DMARC1; p=reject",
+                "location": "example.com",
+                "warnings": [],
+            },
+        ):
+            result = checkdmarc.dmarc.get_dmarc_record(
+                "example.com", include_tag_descriptions=True
+            )
+        for tag in result["parsed"]["tags"]:
+            self.assertIn("description", result["parsed"]["tags"][tag])
+
+
+class TestCheckDmarcErrorWithTarget(unittest.TestCase):
+    def testErrorDataTargetFlattened(self):
+        """An UnrelatedTXTRecordFoundAtDMARC with data['target'] is flattened onto the result"""
+        with patch(
+            "checkdmarc.dmarc.query_dmarc_record",
+            return_value={
+                "record": "v=DMARC1; p=reject",
+                "location": "example.com",
+                "warnings": [],
+            },
+        ):
+            err = checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC(
+                "unrelated at apex",
+                data={"target": "_dmarc.example.com"},
+            )
+            with patch("checkdmarc.dmarc.parse_dmarc_record", side_effect=err):
+                result = checkdmarc.dmarc.check_dmarc("example.com")
+        self.assertFalse(result["valid"])
+        # target key flattened from error.data
+        self.assertEqual(cast(Any, result)["target"], "_dmarc.example.com")
 
 
 if __name__ == "__main__":
