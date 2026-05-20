@@ -9,6 +9,7 @@ import socket
 import ssl
 import smtplib
 import unittest
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from expiringdict import ExpiringDict
@@ -60,7 +61,8 @@ class TestTestTLS(unittest.TestCase):
         self.assertIn("DNS resolution failed", str(ctx.exception))
         # First-write into an empty ExpiringDict must succeed — see the
         # `if cache is not None:` checks in smtp.py (an empty dict is falsy).
-        self.assertEqual(cache["mail.example.com"]["error"], "DNS resolution failed")
+        entry = cast(dict, cache["mail.example.com"])
+        self.assertEqual(entry["error"], "DNS resolution failed")
 
     def testConnectionRefused(self):
         """ConnectionRefusedError surfaces as SMTPError 'Connection refused'"""
@@ -408,7 +410,7 @@ class TestGetMxHosts(unittest.TestCase):
         finally:
             for p in patches:
                 p.stop()
-        host = result["hosts"][0]
+        host = cast(Any, result["hosts"][0])
         self.assertTrue(host["starttls"])
         self.assertTrue(host["tls"])
 
@@ -427,7 +429,7 @@ class TestGetMxHosts(unittest.TestCase):
         finally:
             for p in patches:
                 p.stop()
-        host = result["hosts"][0]
+        host = cast(Any, result["hosts"][0])
         self.assertFalse(host["starttls"])
         self.assertTrue(host["tls"])
         self.assertTrue(
@@ -490,7 +492,8 @@ class TestGetMxHosts(unittest.TestCase):
         finally:
             for p in patches:
                 p.stop()
-        self.assertEqual(result["hosts"][0]["tlsa"], tlsa)
+        host = cast(Any, result["hosts"][0])
+        self.assertEqual(host["tlsa"], tlsa)
 
 
 class TestCheckMx(unittest.TestCase):

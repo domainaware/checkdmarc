@@ -39,11 +39,14 @@ class Test(unittest.TestCase):
         rrsig.rdtype = dns.rdatatype.RRSIG
         fake_response.answer = [rrset, rrsig]
 
+        from expiringdict import ExpiringDict
+
+        fresh_cache = ExpiringDict(max_len=10, max_age_seconds=60)
         with patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()):
             with patch("dns.query.tcp", return_value=fake_response):
                 with patch("dns.dnssec.validate", return_value=None):
                     result = checkdmarc.dnssec.test_dnssec(
-                        "example.com", cache={}, nameservers=["192.0.2.1"]
+                        "example.com", cache=fresh_cache, nameservers=["192.0.2.1"]
                     )
         self.assertTrue(result)
 
