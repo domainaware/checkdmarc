@@ -24,7 +24,7 @@ Please consider [sponsoring my work](https://github.com/sponsors/seanthegeek) if
   - Counting of lookups per mechanism
 - DMARC
   - Validation and parsing of DMARC records
-  - Shows warnings when the DMARC record is made ineffective by `pct` or `sp` values
+  - Shows warnings when the DMARC record is made ineffective by `sp` values, or by use of the `pct`/`rf`/`ri` tags that were removed in RFC 9989
   - Checks for authorization records on reporting email addresses
 - BIMI
   - Validation of the mark format and certificate against the [Minimum Security Requirements for Issuance of Mark Certificates](https://bimigroup.org/resources/VMC_Requirements_latest.pdf)
