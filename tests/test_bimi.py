@@ -463,66 +463,24 @@ class TestCheckBimi(unittest.TestCase):
         self.assertIn("error", cast(Any, result))
 
 
-class TestSvgMetadataExtraAttributes(unittest.TestCase):
-    """Cover the optional-attribute branches of get_svg_metadata.
+class TestSvgMetadataForbiddenAttributes(unittest.TestCase):
+    """SVG x/y attributes on the root <svg> are forbidden by BIMI; they
+    should be captured in metadata so check_svg_requirements can flag them."""
 
-    Note: the source checks ``"x" in svg.keys()`` (etc.) — xmltodict puts
-    attributes under ``@x``, so these branches only fire when the SVG has
-    *child elements* literally named x / y / overflow. That's contrived
-    but the tests below construct such SVGs to exercise the branches.
-    """
-
-    def testXChildElementPopulatesMetadata(self):
+    def testRootXYAttributesCaptured(self):
         svg = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             '<svg xmlns="http://www.w3.org/2000/svg" version="1.2" '
-            'baseProfile="tiny-ps" viewBox="0 0 64 64">'
-            "<x>10</x>"
+            'baseProfile="tiny-ps" viewBox="0 0 64 64" x="0" y="0">'
             "<title>Brand</title>"
             "</svg>"
         )
         metadata = checkdmarc.bimi.get_svg_metadata(svg)
-        self.assertEqual(metadata["x"], "10")
-
-    def testYChildElementPopulatesMetadata(self):
-        """bimi.py:509 writes the y value to metadata["x"] (source bug);
-        we exercise the branch only."""
-        svg = (
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            '<svg xmlns="http://www.w3.org/2000/svg" version="1.2" '
-            'baseProfile="tiny-ps" viewBox="0 0 64 64">'
-            "<y>5</y>"
-            "<title>Brand</title>"
-            "</svg>"
-        )
-        metadata = checkdmarc.bimi.get_svg_metadata(svg)
-        # The branch wrote to metadata["x"] (not metadata["y"]) per the
-        # source bug — the goal here is line coverage, not correctness.
-        self.assertEqual(metadata["x"], "5")
-
-    def testDescriptionChildElement(self):
-        svg = (
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            '<svg xmlns="http://www.w3.org/2000/svg" version="1.2" '
-            'baseProfile="tiny-ps" viewBox="0 0 64 64">'
-            "<title>Brand</title>"
-            "<description>A brand logo</description>"
-            "</svg>"
-        )
-        metadata = checkdmarc.bimi.get_svg_metadata(svg)
-        self.assertEqual(metadata["description"], "A brand logo")
-
-    def testOverflowChildElement(self):
-        svg = (
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            '<svg xmlns="http://www.w3.org/2000/svg" version="1.2" '
-            'baseProfile="tiny-ps" viewBox="0 0 64 64">'
-            "<overflow>hidden</overflow>"
-            "<title>Brand</title>"
-            "</svg>"
-        )
-        metadata = checkdmarc.bimi.get_svg_metadata(svg)
-        self.assertEqual(metadata["overflow"], "hidden")
+        self.assertEqual(metadata["x"], "0")
+        self.assertEqual(metadata["y"], "0")
+        errors = checkdmarc.bimi.check_svg_requirements(metadata)
+        self.assertTrue(any("cannot include x" in e for e in errors))
+        self.assertTrue(any("cannot include y" in e for e in errors))
 
 
 class TestExtractLogoFromPemBytes(unittest.TestCase):

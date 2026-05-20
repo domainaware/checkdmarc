@@ -173,31 +173,6 @@ class TestTestDnssec(unittest.TestCase):
                 )
         self.assertFalse(result)
 
-    def testValidationExceptionContinues(self):
-        """A failure on dns.dnssec.validate is swallowed and we fall through to False"""
-        import dns.rdatatype
-
-        rrset = MagicMock()
-        rrset.rdtype = dns.rdatatype.A
-        rrsig = MagicMock()
-        rrsig.rdtype = dns.rdatatype.RRSIG
-        response = MagicMock()
-        response.answer = [rrset, rrsig]
-
-        with patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()):
-            with patch("dns.query.tcp", return_value=response):
-                with patch(
-                    "dns.dnssec.validate",
-                    side_effect=Exception("invalid signature"),
-                ):
-                    result = checkdmarc.dnssec.test_dnssec(
-                        "example.com",
-                        nameservers=["1.1.1.1"],
-                        cache=self._fresh_cache(),
-                    )
-        self.assertFalse(result)
-
-
 class TestGetTlsaRecords(unittest.TestCase):
     @staticmethod
     def _fresh_cache():

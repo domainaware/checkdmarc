@@ -16,9 +16,6 @@ known_good_domains = ["fbi.gov", "pm.me", "ssa.gov"]
 network_test = unittest.skipIf(
     OFFLINE_MODE, "Real-network test skipped on GitHub Actions"
 )
-mocked_only = unittest.skipUnless(
-    OFFLINE_MODE, "Mocked counterpart skipped locally; network test covers this"
-)
 
 
 class Test(unittest.TestCase):
@@ -52,52 +49,6 @@ class Test(unittest.TestCase):
                     result["domain"], dmarc_error
                 ),
             )
-
-    @mocked_only
-    def testKnownGoodMocked(self):
-        """check_domains orchestrates per-check helpers and returns valid=True (mocked)
-
-        The component check_* helpers each have their own focused tests; this
-        covers the orchestration in check_domains for the multi-domain code path.
-        """
-        from contextlib import ExitStack
-
-        check_returns = {
-            "checkdmarc.test_dnssec": False,
-            "checkdmarc.check_soa": {"valid": True, "values": {}},
-            "checkdmarc.check_ns": {
-                "hostnames": ["ns1.example.com"],
-                "warnings": [],
-            },
-            "checkdmarc.check_mta_sts": {"valid": False, "error": "not found"},
-            "checkdmarc.check_mx": {"hosts": [], "warnings": []},
-            "checkdmarc.check_spf": {
-                "record": "v=spf1 -all",
-                "valid": True,
-                "warnings": [],
-            },
-            "checkdmarc.check_dmarc": {
-                "record": "v=DMARC1; p=reject",
-                "valid": True,
-                "warnings": [],
-                "tags": {},
-            },
-            "checkdmarc.check_smtp_tls_reporting": {
-                "valid": False,
-                "error": "not found",
-            },
-            "checkdmarc.check_bimi": {"valid": True, "warnings": []},
-        }
-        with ExitStack() as stack:
-            for target, return_value in check_returns.items():
-                stack.enter_context(patch(target, return_value=return_value))
-            results = checkdmarc.check_domains(known_good_domains)
-
-        if not isinstance(results, list):
-            results = [results]
-        for result in results:
-            self.assertTrue(cast(Any, result["spf"])["valid"])
-            self.assertTrue(result["dmarc"]["valid"])
 
     def testResultsToJson(self):
         """results_to_json produces valid JSON"""

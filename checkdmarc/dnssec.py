@@ -8,6 +8,7 @@ from typing import Optional
 from collections.abc import Sequence
 
 import dns.dnssec
+import dns.exception
 import dns.message
 import dns.query
 import dns.resolver
@@ -105,7 +106,7 @@ def get_dnskey(
                 key = {name: rrset}
                 cache[domain] = key
                 return key
-        except Exception as e:
+        except (dns.exception.DNSException, OSError, EOFError) as e:
             cache[domain] = None
             logging.debug(f"DNSKEY query error: {e}")
 
@@ -169,7 +170,7 @@ def test_dnssec(
                     logging.debug(f"Found a signed {rdatatype.name} record")
                     cache[domain] = True
                     return True
-            except Exception as e:
+            except (dns.exception.DNSException, OSError, EOFError) as e:
                 logging.debug(f"DNSSEC query error: {e}")
 
     cache[domain] = False
@@ -246,7 +247,7 @@ def get_tlsa_records(
                     tlsa_records = list(map(lambda x: str(x), list(rrset.items.keys())))
                     cache[query_hostname] = tlsa_records
                 return tlsa_records
-        except Exception as e:
+        except (dns.exception.DNSException, OSError, EOFError) as e:
             logging.debug(f"TLSA query error: {e}")
             return tlsa_records
     return tlsa_records
