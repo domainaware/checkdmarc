@@ -10,6 +10,16 @@ from checkdmarc.spf import ParsedSPFMXMechanism, SPFAMechanism
 
 OFFLINE_MODE = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
+# Test decorators for paired tests:
+#   - network_test: real DNS lookup; skipped in CI (GitHub Actions)
+#   - mocked_only:  patched stand-in; skipped locally where the network test runs
+network_test = unittest.skipIf(
+    OFFLINE_MODE, "Real-network test skipped on GitHub Actions"
+)
+mocked_only = unittest.skipUnless(
+    OFFLINE_MODE, "Mocked counterpart skipped locally; network test covers this"
+)
+
 
 class Test(unittest.TestCase):
     def testUppercaseSPFMechanism(self):
@@ -22,7 +32,7 @@ class Test(unittest.TestCase):
         self.assertEqual(len(results["warnings"]), 0)
         self.assertEqual(results["dns_lookups"], 0)
 
-    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    @network_test
     def testSplitSPFRecord(self):
         """Split SPF records are parsed properly"""
 
@@ -32,7 +42,7 @@ class Test(unittest.TestCase):
 
         self.assertEqual(parsed_record["parsed"]["all"], "fail")
 
-    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    @network_test
     def testJunkAfterAll(self):
         """Ignore any mechanisms after the all mechanism, but warn about it"""
         rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"
@@ -44,7 +54,7 @@ class Test(unittest.TestCase):
         parsed_record = checkdmarc.spf.parse_spf_record(rec, domain)
         self.assertIn(warning, parsed_record["warnings"])
 
-    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    @network_test
     def testIncludeMissingSPF(self):
         """A warning is included for SPF records that include domains that are missing SPF records"""
 
@@ -56,7 +66,7 @@ class Test(unittest.TestCase):
         )
         self.assertEqual(results["dns_lookups"], 1)
 
-    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    @network_test
     def testTooManySPFDNSLookups(self):
         """SPF records with > 10 SPF mechanisms that cause DNS lookups raise
         SPFTooManyDNSLookups"""
@@ -79,7 +89,7 @@ class Test(unittest.TestCase):
             domain,
         )
 
-    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    @network_test
     def testTooManySPFVoidDNSLookups(self):
         """SPF records with > 2 void DNS lookups"""
 
@@ -205,7 +215,7 @@ class Test(unittest.TestCase):
             domain,
         )
 
-    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    @network_test
     def testSPFMissingMXRecord(self):
         """A warning is issued if an SPF record contains a mx mechanism
         pointing to a domain that has no MX records"""
@@ -221,7 +231,7 @@ class Test(unittest.TestCase):
         )
         self.assertEqual(results["dns_lookups"], 1)
 
-    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    @network_test
     def testSPFMissingARecord(self):
         """A warning is issued if an SPF record contains an a mechanism
         pointing to a domain that has no A records"""
@@ -233,7 +243,7 @@ class Test(unittest.TestCase):
         self.assertTrue(any(snipit in s for s in results["warnings"]))
         self.assertEqual(results["dns_lookups"], 1)
 
-    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    @network_test
     def testSPFMXMechanism(self):
         """Addresses are included in the output for SPF records with an mx lookup"""
         spf_record = "v=spf1 mx:proton.me ~all"
@@ -543,6 +553,159 @@ class Test(unittest.TestCase):
         spf_record = "v=spf1 exists:%{i}._spf.example.com -all"
         domain = "example.com"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertEqual(results["dns_lookups"], 1)
+
+    # ================================================================
+    # Mocked counterparts to the @network_test cases above.
+    # These run only when GITHUB_ACTIONS=true so coverage stays the same
+    # whether or not real DNS is available.
+    # ================================================================
+
+    @mocked_only
+    def testSplitSPFRecordMocked(self):
+        """Split SPF records are parsed properly (mocked)"""
+        rec = '"v=spf1 ip4:147.75.8.208 " "include:_spf.salesforce.com -all"'
+
+        def fake_query_dns(domain, rdtype, *args, **kwargs):
+            if domain == "_spf.salesforce.com" and rdtype == "TXT":
+                return ['"v=spf1 -all"']
+            return []
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            parsed_record = checkdmarc.spf.parse_spf_record(rec, "example.com")
+
+        self.assertEqual(parsed_record["parsed"]["all"], "fail")
+
+    @mocked_only
+    def testJunkAfterAllMocked(self):
+        """Warn about text after the all mechanism (mocked; ip4 + -all needs no DNS)"""
+        rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"
+        domain = "avd.dk"
+        warning = (
+            "Any text after the all mechanism other than an exp modifier is ignored."
+        )
+
+        with patch("checkdmarc.spf.query_dns", return_value=[]):
+            parsed_record = checkdmarc.spf.parse_spf_record(rec, domain)
+        self.assertIn(warning, parsed_record["warnings"])
+
+    @mocked_only
+    def testIncludeMissingSPFMocked(self):
+        """Warn when an include target's domain does not exist (mocked NXDOMAIN)"""
+        import dns.resolver
+
+        spf_record = "v=spf1 include:example.doesnotexist ~all"
+        domain = "example.com"
+
+        with patch("checkdmarc.spf.query_dns") as mock_dns:
+            mock_dns.side_effect = dns.resolver.NXDOMAIN()
+            results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+
+        self.assertTrue(
+            "example.doesnotexist: The domain does not exist." in results["warnings"]
+        )
+        self.assertEqual(results["dns_lookups"], 1)
+
+    @mocked_only
+    def testTooManySPFDNSLookupsMocked(self):
+        """SPF records that exceed 10 DNS lookups raise SPFTooManyDNSLookups (mocked)"""
+        spf_record = (
+            "v=spf1 a include:_spf.salesforce.com "
+            "include:spf.protection.outlook.com "
+            "include:spf.constantcontact.com "
+            "include:_spf.elasticemail.com "
+            "include:servers.mcsv.net "
+            "include:_spf.google.com "
+            "include:service-now.com "
+            "~all"
+        )
+        domain = "example.com"
+
+        # Every include resolves to "v=spf1 a a a ~all" (3 additional lookups
+        # each). One a mechanism in the root + 7 includes * (1 + 3) lookups
+        # easily exceeds the 10-lookup ceiling.
+        def fake_query_dns(_domain, rdtype, *args, **kwargs):
+            if rdtype == "TXT":
+                return ['"v=spf1 a a a ~all"']
+            return []
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
+                self.assertRaises(
+                    checkdmarc.spf.SPFTooManyDNSLookups,
+                    checkdmarc.spf.parse_spf_record,
+                    spf_record,
+                    domain,
+                )
+
+    @mocked_only
+    def testTooManySPFVoidDNSLookupsMocked(self):
+        """SPF records with > 2 void DNS lookups raise SPFTooManyVoidDNSLookups (mocked)"""
+        spf_record = (
+            "v=spf1 a:13Mk4olS9VWhQqXRl90fKJrD.example.com "
+            "mx:SfGiqBnQfRbOMapQJhozxo2B.example.com "
+            "a:VAFeyU9N2KJX518aGsN3w6VS.example.com "
+            "~all"
+        )
+        domain = "example.com"
+
+        with patch("checkdmarc.spf.get_a_records", return_value=[]):
+            with patch("checkdmarc.spf.get_mx_records", return_value=[]):
+                self.assertRaises(
+                    checkdmarc.spf.SPFTooManyVoidDNSLookups,
+                    checkdmarc.spf.parse_spf_record,
+                    spf_record,
+                    domain,
+                )
+
+    @mocked_only
+    def testSPFMissingMXRecordMocked(self):
+        """Warn when an mx mechanism targets a domain with no MX records (mocked)"""
+        spf_record = '"v=spf1 mx ~all"'
+        domain = "seanthegeek.net"
+
+        with patch("checkdmarc.spf.get_mx_records", return_value=[]):
+            results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertIn(
+            "{0}: An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
+                domain
+            ),
+            results["warnings"],
+        )
+        self.assertEqual(results["dns_lookups"], 1)
+
+    @mocked_only
+    def testSPFMissingARecordMocked(self):
+        """Warn when an a mechanism targets a domain with no A/AAAA records (mocked)"""
+        spf_record = '"v=spf1 a ~all"'
+        domain = "cardinalhealth.net"
+
+        with patch("checkdmarc.spf.get_a_records", return_value=[]):
+            results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        snipit = "that domain/subdomain does not have any A/AAAA records."
+        self.assertTrue(any(snipit in s for s in results["warnings"]))
+        self.assertEqual(results["dns_lookups"], 1)
+
+    @mocked_only
+    def testSPFMXMechanismMocked(self):
+        """Hostname addresses are populated for mx: mechanism (mocked)"""
+        spf_record = "v=spf1 mx:proton.me ~all"
+        domain = "example.com"
+
+        mx_hosts = [
+            {"preference": 10, "hostname": "mail.protonmail.ch"},
+            {"preference": 20, "hostname": "mailsec.protonmail.ch"},
+        ]
+        with patch("checkdmarc.spf.get_mx_records", return_value=mx_hosts):
+            with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
+                results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+
+        for mechanism in results["parsed"]["mechanisms"]:
+            if mechanism["mechanism"] == "mx":
+                mx_mechanism = cast(ParsedSPFMXMechanism, mechanism)
+                self.assertTrue(len(mx_mechanism["hosts"]) > 0)
+                for host in mx_mechanism["hosts"]:
+                    self.assertTrue(len(host) > 0)
         self.assertEqual(results["dns_lookups"], 1)
 
 

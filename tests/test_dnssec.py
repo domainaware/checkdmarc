@@ -2,18 +2,50 @@
 
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import checkdmarc.dnssec
 
 OFFLINE_MODE = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
+network_test = unittest.skipIf(
+    OFFLINE_MODE, "Real-network test skipped on GitHub Actions"
+)
+mocked_only = unittest.skipUnless(
+    OFFLINE_MODE, "Mocked counterpart skipped locally; network test covers this"
+)
+
 
 class Test(unittest.TestCase):
-    @unittest.skipIf(OFFLINE_MODE, "No network access in GitHub Actions")
+    @network_test
     def testDNSSEC(self):
         """Test known good DNSSEC"""
         self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
+
+    @mocked_only
+    def testDNSSECMocked(self):
+        """test_dnssec returns True when a record/RRSIG pair validates (mocked)
+
+        The full DNSSEC chain (DNSKEY -> RRSIG -> validated RRset) is
+        synthesised here; we are exercising the success branch of
+        test_dnssec, not the cryptographic validator itself.
+        """
+        import dns.rdatatype
+
+        fake_response = MagicMock()
+        rrset = MagicMock()
+        rrset.rdtype = dns.rdatatype.A
+        rrsig = MagicMock()
+        rrsig.rdtype = dns.rdatatype.RRSIG
+        fake_response.answer = [rrset, rrsig]
+
+        with patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()):
+            with patch("dns.query.tcp", return_value=fake_response):
+                with patch("dns.dnssec.validate", return_value=None):
+                    result = checkdmarc.dnssec.test_dnssec(
+                        "example.com", cache={}, nameservers=["192.0.2.1"]
+                    )
+        self.assertTrue(result)
 
     def testDnssecFalseWhenNoKey(self):
         """test_dnssec returns False when no DNSKEY found"""
