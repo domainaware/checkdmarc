@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.bimi &mdash; checkdmarc 5.15.5 documentation</title>
+  <title>checkdmarc.bimi &mdash; checkdmarc 5.16.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=384512b0"></script>
+      <script src="../../_static/documentation_options.js?v=f23352e5"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -1308,9 +1308,13 @@
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="s2">&quot;The DMARC subdomain policy (sp tag) must be set to quarantine or reject if it is used.&quot;</span>
                 <span class="p">)</span>
-            <span class="k">if</span> <span class="n">parsed_dmarc_record</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;pct&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="c1"># The pct tag was removed in RFC 9989; pre-9989 BIMI guidance</span>
+            <span class="c1"># required pct=100, so flag any leftover pct that isn&#39;t 100.</span>
+            <span class="n">pct_tag</span> <span class="o">=</span> <span class="n">parsed_dmarc_record</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pct&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pct_tag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pct_tag</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">100</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="s2">&quot;The DMARC pct tag must be set to 100 (the implicit default) if it is used.&quot;</span>
+                    <span class="s2">&quot;The DMARC pct tag was removed in RFC 9989; pre-9989 &quot;</span>
+                    <span class="s2">&quot;BIMI guidance required pct=100 when it was present.&quot;</span>
                 <span class="p">)</span>
     <span class="k">if</span> <span class="n">cert_metadata</span><span class="p">:</span>
         <span class="n">valid_cert</span> <span class="o">=</span> <span class="n">hash_match</span> <span class="ow">and</span> <span class="n">cert_metadata</span><span class="p">[</span><span class="s2">&quot;valid&quot;</span><span class="p">]</span>
