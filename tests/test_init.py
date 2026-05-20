@@ -399,5 +399,186 @@ class TestCheckDomainsBranches(unittest.TestCase):
         self.assertEqual(mock_sleep.call_count, 2)
 
 
+class TestCheckDomainsInputFiltering(unittest.TestCase):
+    """Edge cases in check_domains' input list normalization"""
+
+    @staticmethod
+    def _patch_all_checks(stack):
+        from contextlib import ExitStack  # noqa: F401
+
+        check_returns = {
+            "checkdmarc.test_dnssec": False,
+            "checkdmarc.check_soa": {"valid": True, "values": {}},
+            "checkdmarc.check_ns": {
+                "hostnames": ["ns1.example.com"],
+                "warnings": [],
+            },
+            "checkdmarc.check_mta_sts": {"valid": False, "error": "not found"},
+            "checkdmarc.check_mx": {"hosts": [], "warnings": []},
+            "checkdmarc.check_spf": {
+                "record": "v=spf1 -all",
+                "valid": True,
+                "warnings": [],
+            },
+            "checkdmarc.check_dmarc": {
+                "record": "v=DMARC1; p=reject",
+                "valid": True,
+                "warnings": [],
+                "tags": {},
+            },
+            "checkdmarc.check_smtp_tls_reporting": {
+                "valid": False,
+                "error": "not found",
+            },
+            "checkdmarc.check_bimi": {"valid": True, "warnings": []},
+        }
+        for target, return_value in check_returns.items():
+            stack.enter_context(patch(target, return_value=return_value))
+
+    def testEmptyStringsStripped(self):
+        """Empty-string domains are filtered out before any checks"""
+        from contextlib import ExitStack
+
+        with ExitStack() as stack:
+            self._patch_all_checks(stack)
+            result = checkdmarc.check_domains(["", "example.com", ""])
+        # Result is the single example.com (unwrapped)
+        self.assertEqual(cast(Any, result)["domain"], "example.com")
+
+    def testMtaStsValidPolicyPropagatesMxPatterns(self):
+        """A valid MTA-STS policy's mx patterns are forwarded to check_mx"""
+        from contextlib import ExitStack
+
+        check_returns = {
+            "checkdmarc.test_dnssec": False,
+            "checkdmarc.check_soa": {"valid": True, "values": {}},
+            "checkdmarc.check_ns": {
+                "hostnames": ["ns1.example.com"],
+                "warnings": [],
+            },
+            "checkdmarc.check_mta_sts": {
+                "valid": True,
+                "id": "20240101T010101",
+                "policy": {
+                    "mode": "enforce",
+                    "max_age": 86400,
+                    "mx": ["mail.example.com"],
+                },
+                "warnings": [],
+            },
+            "checkdmarc.check_spf": {
+                "record": "v=spf1 -all",
+                "valid": True,
+                "warnings": [],
+            },
+            "checkdmarc.check_dmarc": {
+                "record": "v=DMARC1; p=reject",
+                "valid": True,
+                "warnings": [],
+                "tags": {},
+            },
+            "checkdmarc.check_smtp_tls_reporting": {
+                "valid": False,
+                "error": "not found",
+            },
+            "checkdmarc.check_bimi": {"valid": True, "warnings": []},
+        }
+        with ExitStack() as stack:
+            for target, return_value in check_returns.items():
+                stack.enter_context(patch(target, return_value=return_value))
+            check_mx_mock = stack.enter_context(
+                patch(
+                    "checkdmarc.check_mx",
+                    return_value={"hosts": [], "warnings": []},
+                )
+            )
+            checkdmarc.check_domains(["example.com"])
+        # check_mx was called with the patterns extracted from the MTA-STS policy
+        self.assertEqual(
+            check_mx_mock.call_args.kwargs["mta_sts_mx_patterns"],
+            ["mail.example.com"],
+        )
+
+
+class TestResultsToCsvRowsExtraBranches(unittest.TestCase):
+    """Branches in results_to_csv_rows not covered by the existing tests"""
+
+    @staticmethod
+    def _base_result_with_bimi(error=False):
+        result = {
+            "domain": "example.com",
+            "base_domain": "example.com",
+            "dnssec": True,
+            "ns": {"hostnames": [], "warnings": []},
+            "mx": {"hosts": [], "warnings": []},
+            "mta_sts": {"valid": False, "error": "not found"},
+            "spf": {"record": "v=spf1 -all", "valid": True, "warnings": []},
+            "dmarc": {
+                "record": "v=DMARC1; p=reject",
+                "location": "example.com",
+                "valid": True,
+                "tags": {
+                    "adkim": {"value": "r"},
+                    "aspf": {"value": "r"},
+                    "fo": {"value": ["0"]},
+                    "p": {"value": "reject"},
+                    "pct": {"value": 100},
+                    "rf": {"value": ["afrf"]},
+                    "ri": {"value": 86400},
+                    "sp": {"value": "reject"},
+                },
+                "warnings": [],
+            },
+            "smtp_tls_reporting": {"valid": False, "error": "not found"},
+            "bimi": {
+                "valid": False if error else True,
+                "selector": "default",
+                "warnings": [],
+                "tags": {
+                    "l": {"value": "https://example.com/logo.svg"},
+                    "a": {"value": "https://example.com/cert.pem"},
+                },
+            },
+        }
+        if error:
+            result["bimi"]["error"] = "fetch failed"
+        return result
+
+    def testBimiErrorFlattensTagValues(self):
+        """When the BIMI result is in error and tags are present, l/a tag
+        values land as bimi_l / bimi_a columns"""
+        rows = checkdmarc.results_to_csv_rows(
+            cast(checkdmarc.DomainCheckResult, self._base_result_with_bimi(error=True))
+        )
+        row = rows[0]
+        self.assertEqual(row["bimi_error"], "fetch failed")
+        self.assertEqual(row["bimi_l"], "https://example.com/logo.svg")
+        self.assertEqual(row["bimi_a"], "https://example.com/cert.pem")
+
+    def testTlsKeyErrorPath(self):
+        """When MX hosts lack 'starttls'/'tls' keys (e.g., skip_tls=True),
+        the KeyError handler leaves tls/starttls as None"""
+        result = self._base_result_with_bimi(error=False)
+        del result["bimi"]
+        # Add an MX host without starttls/tls keys
+        result["mx"] = {
+            "hosts": [
+                {
+                    "preference": 10,
+                    "hostname": "mail.example.com",
+                    "addresses": ["192.0.2.1"],
+                }
+            ],
+            "warnings": [],
+        }
+        rows = checkdmarc.results_to_csv_rows(
+            cast(checkdmarc.DomainCheckResult, result)
+        )
+        row = rows[0]
+        # KeyError on starttls -> tls and starttls remain None
+        self.assertIsNone(row["tls"])
+        self.assertIsNone(row["starttls"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

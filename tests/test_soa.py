@@ -72,6 +72,42 @@ class Test(unittest.TestCase):
             result = checkdmarc.soa.check_soa("example.com")
             self.assertIn("error", result)
 
+    def testRnameEmptyLocalPart(self):
+        """A leading dot in the RNAME (empty local part) raises ValueError"""
+        self.assertRaises(
+            ValueError,
+            checkdmarc.soa.soa_rname_to_email,
+            ".example.com.",
+        )
+
+    def testParseSoaStringNonIntegerField(self):
+        """A non-integer in a numeric field raises ValueError"""
+        self.assertRaises(
+            ValueError,
+            checkdmarc.soa.parse_soa_string,
+            "ns1.example.com. admin.example.com. notanumber 3600 900 604800 86400",
+        )
+
+    def testParseSoaStringNegativeField(self):
+        """A negative integer (outside the u32 range) raises ValueError"""
+        self.assertRaises(
+            ValueError,
+            checkdmarc.soa.parse_soa_string,
+            "ns1.example.com. admin.example.com. -1 3600 900 604800 86400",
+        )
+
+    def testCheckSoaParseError(self):
+        """get_soa_record succeeds but parse_soa_string fails — error result with the record"""
+        # 7 fields but one is unparseable, so parse_soa_string raises
+        bad_record = (
+            "ns1.example.com. admin.example.com. notanumber 3600 900 604800 86400"
+        )
+        with patch("checkdmarc.soa.get_soa_record", return_value=bad_record):
+            result = checkdmarc.soa.check_soa("example.com")
+        self.assertIn("error", result)
+        # The original record is preserved on the failure result
+        self.assertEqual(result["record"], bad_record)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
