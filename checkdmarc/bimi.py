@@ -1018,7 +1018,7 @@ def parse_bimi_record(
     valid_cert = False
     logging.debug("Parsing the BIMI record")
     session = requests.Session()
-    session.headers = {"User-Agent": USER_AGENT}
+    session.headers.update({"User-Agent": USER_AGENT})
     spf_in_dmarc_error_msg = (
         "Found a SPF record where a BIMI record "
         "should be; most likely, the _bimi "
