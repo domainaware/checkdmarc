@@ -150,8 +150,19 @@ class BIMICheckResult(TypedDict, total=False):
 
 
 BIMI_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*BIMI1{WSP_REGEX}*;"
+# lps= tag value, per draft-brand-indicators-for-message-identification-14
+# section 4.3.14:
+#     local-part-prefix-list = local-part-prefix *[ *WSP "," *WSP local-part-prefix ]
+#     local-part-prefix      = 1*63local-part-text
+#     local-part-text        = ALPHA / DIGIT / "-"
+BIMI_LPS_LOCAL_PART_REGEX = r"[A-Za-z0-9\-]{1,63}"
+BIMI_LPS_VALUE_REGEX = (
+    rf"{BIMI_LPS_LOCAL_PART_REGEX}"
+    rf"(?:{WSP_REGEX}*,{WSP_REGEX}*{BIMI_LPS_LOCAL_PART_REGEX})*"
+)
 BIMI_TAG_VALUE_REGEX_STRING = (
-    rf"([a-z]{{1,3}}){WSP_REGEX}*={WSP_REGEX}*(bimi1|{HTTPS_REGEX}|personal|brand)?"
+    rf"([a-z]{{1,3}}){WSP_REGEX}*={WSP_REGEX}*"
+    rf"(bimi1|{HTTPS_REGEX}|personal|brand|{BIMI_LPS_VALUE_REGEX})?"
 )
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
@@ -870,11 +881,21 @@ def _query_bimi_record(
             pass
         except dns.resolver.NXDOMAIN:
             raise BIMIRecordNotFound("The domain does not exist.")
+        except BIMIError:
+            # Let BIMI-specific exceptions (BIMIRecordInWrongLocation) propagate
+            # — they were being silently swallowed because `raise` was missing.
+            raise
         except Exception as error:
-            BIMIRecordNotFound(error)
+            raise BIMIRecordNotFound(error)
 
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+    except dns.resolver.NXDOMAIN:
         pass
+    except BIMIError:
+        # MultipleBIMIRecords and UnrelatedTXTRecordFoundAtBIMI are raised in
+        # the try-body above; propagate them so callers can act on the specific
+        # type instead of catching the broad BIMIRecordNotFound this clause
+        # used to convert everything to.
+        raise
     except Exception as error:
         raise BIMIRecordNotFound(error)
 
@@ -1132,9 +1153,10 @@ def parse_bimi_record(
                     f"Acceptable avp tag values are personal or brand, not {tag_value}"
                 )
         elif tag == "lps":
-            tag_value = tag_value.split(",")
-            for i in range(len(tag_value)):
-                tag_value[i] = tag_value[i].lower()
+            # Comma-separated local-parts; strip whitespace and lowercase
+            # for case-insensitive matching at delivery time.
+            selectors = [s.strip().lower() for s in tag_value.split(",")]
+            tags[tag]["value"] = selectors
 
     if parsed_dmarc_record and not tags["l"] == "":
         if parsed_dmarc_record["valid"] is False:
