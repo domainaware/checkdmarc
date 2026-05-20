@@ -173,6 +173,7 @@ class TestTestDnssec(unittest.TestCase):
                 )
         self.assertFalse(result)
 
+
 class TestGetTlsaRecords(unittest.TestCase):
     @staticmethod
     def _fresh_cache():
