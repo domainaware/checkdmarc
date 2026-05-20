@@ -1279,11 +1279,7 @@ def parse_dmarc_record(
                 f"Duplicate {duplicate_tags_str} tags are not permitted"
             )
         if tag in removed_tags:
-            warnings.append(
-                f"Support for the {tag} tag was removed in RFC 9989; "
-                "the value is preserved for older DMARC readers but is "
-                "not validated."
-            )
+            warnings.append(f"Support for the {tag} tag was removed in RFC 9989")
             continue
         value = pair[1].lower().strip()
         tags[tag] = {"value": value, "explicit": True}

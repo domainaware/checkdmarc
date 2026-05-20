@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.16.1
+
+### Changes
+
+- Simplify the warning emitted for `pct`/`rf`/`ri` to just "Support for
+  the {tag} tag was removed in RFC 9989".
+
 ## 5.16.0
 
 ### Changes
