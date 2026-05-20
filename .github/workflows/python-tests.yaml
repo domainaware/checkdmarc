@@ -24,7 +24,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install pyright
+        # Force the latest ruff and pyright so lint/typecheck rules
+        # track upstream and surface new issues promptly. AGENTS.md
+        # requires the latest pyright in particular.
+        pip install --upgrade ruff pyright
     - name: Test building documentation
       run: |
         cd docs
@@ -34,10 +37,31 @@ jobs:
     - name: Check formatting with ruff
       run: ruff format --check .
     - name: Type-check with pyright
+      env:
+        # Override the pyright Python wrapper's pinned bundle so it
+        # downloads whatever upstream tagged as ``latest`` at run time,
+        # not just whatever was current when the wheel was published.
+        PYRIGHT_PYTHON_FORCE_VERSION: latest
       run: pyright
     - name: Run unit tests
+      # ``python -m pytest`` (not bare ``pytest``) so cwd lands on
+      # sys.path[0] — checkdmarc isn't pip-installed in CI, so the
+      # tests need to import the in-repo package directly.
       run: |
-        coverage run -m pytest tests/
-        coverage json
+        python -m pytest --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy tests/
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+    - name: Upload test results to Codecov
+      # Feeds Codecov Test Analytics (flaky-test detection, per-test
+      # history). Runs even on test failure so failed cases still get
+      # reported. Uses the same CODECOV_TOKEN as the coverage upload.
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./junit.xml
     - name: Test building packages
       run: hatch build
