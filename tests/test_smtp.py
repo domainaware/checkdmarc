@@ -517,5 +517,353 @@ class TestCheckMx(unittest.TestCase):
         self.assertIn("error", result)
 
 
+class TestTLSCacheWritesOnError(unittest.TestCase):
+    """test_tls writes to the cache on every exception branch when a cache is supplied"""
+
+    def _make_cache(self):
+        return ExpiringDict(max_len=10, max_age_seconds=60)
+
+    def _run_and_check_cache(self, exc):
+        cache = self._make_cache()
+        with patch("smtplib.SMTP_SSL", side_effect=exc):
+            with self.assertRaises(checkdmarc.smtp.SMTPError):
+                checkdmarc.smtp.test_tls("mail.example.com", cache=cache)
+        entry = cast(dict, cache["mail.example.com"])
+        self.assertFalse(entry["tls"])
+        self.assertIsNotNone(entry["error"])
+
+    def testConnectionRefusedCached(self):
+        self._run_and_check_cache(ConnectionRefusedError())
+
+    def testConnectionResetCached(self):
+        self._run_and_check_cache(ConnectionResetError())
+
+    def testConnectionAbortedCached(self):
+        self._run_and_check_cache(ConnectionAbortedError())
+
+    def testTimeoutCached(self):
+        self._run_and_check_cache(TimeoutError())
+
+    def testBlockingIOErrorCached(self):
+        self._run_and_check_cache(BlockingIOError("would block"))
+
+    def testSSLErrorCached(self):
+        self._run_and_check_cache(ssl.SSLError("bad handshake"))
+
+    def testSMTPConnectErrorCached(self):
+        self._run_and_check_cache(smtplib.SMTPConnectError(421, "Try later"))
+
+    def testSMTPHeloErrorCached(self):
+        self._run_and_check_cache(smtplib.SMTPHeloError(500, "Bad HELO"))
+
+    def testSMTPExceptionCached(self):
+        """SMTPException (the base class) hits a distinct handler"""
+        self._run_and_check_cache(smtplib.SMTPException("(550, b'denied')"))
+
+    def testSMTPExceptionWithBareMessage(self):
+        """An SMTPException whose message isn't a tuple-formatted string falls
+        through the inner try/except ValueError branch"""
+        cache = self._make_cache()
+        with patch("smtplib.SMTP_SSL", side_effect=smtplib.SMTPException("denied")):
+            with self.assertRaises(checkdmarc.smtp.SMTPError):
+                checkdmarc.smtp.test_tls("mail.example.com", cache=cache)
+        entry = cast(dict, cache["mail.example.com"])
+        # Even when the inner int() ValueError fires, the message is cached.
+        self.assertIsNotNone(entry["error"])
+
+    def testOSErrorCached(self):
+        self._run_and_check_cache(OSError("Network unreachable"))
+
+    def testGenericExceptionCached(self):
+        self._run_and_check_cache(RuntimeError("oops"))
+
+
+class TestSTARTTLSCacheAndExtraBranches(unittest.TestCase):
+    """test_starttls cache-on-error coverage and remaining exception handlers"""
+
+    def _make_cache(self):
+        return ExpiringDict(max_len=10, max_age_seconds=60)
+
+    def _run_and_check_cache(self, exc):
+        cache = self._make_cache()
+        with patch("smtplib.SMTP", side_effect=exc):
+            with self.assertRaises(checkdmarc.smtp.SMTPError):
+                checkdmarc.smtp.test_starttls("mail.example.com", cache=cache)
+        entry = cast(dict, cache["mail.example.com"])
+        self.assertFalse(entry["starttls"])
+        self.assertIsNotNone(entry["error"])
+
+    def testDNSResolutionCached(self):
+        self._run_and_check_cache(socket.gaierror())
+
+    def testConnectionRefusedCached(self):
+        self._run_and_check_cache(ConnectionRefusedError())
+
+    def testConnectionResetCached(self):
+        self._run_and_check_cache(ConnectionResetError())
+
+    def testConnectionAbortedCached(self):
+        self._run_and_check_cache(ConnectionAbortedError())
+
+    def testTimeoutCached(self):
+        self._run_and_check_cache(TimeoutError())
+
+    def testBlockingIOErrorCached(self):
+        self._run_and_check_cache(BlockingIOError("would block"))
+
+    def testSSLErrorCached(self):
+        self._run_and_check_cache(ssl.SSLError("bad handshake"))
+
+    def testSMTPConnectErrorCached(self):
+        self._run_and_check_cache(smtplib.SMTPConnectError(421, "Try later"))
+
+    def testSMTPHeloErrorCached(self):
+        self._run_and_check_cache(smtplib.SMTPHeloError(500, "Bad HELO"))
+
+    def testSMTPExceptionCached(self):
+        self._run_and_check_cache(smtplib.SMTPException("(550, b'denied')"))
+
+    def testOSErrorCached(self):
+        self._run_and_check_cache(OSError("Network unreachable"))
+
+    def testGenericExceptionCached(self):
+        self._run_and_check_cache(RuntimeError("oops"))
+
+
+class TestGetMxHostsEdgeCases(unittest.TestCase):
+    """Branches of get_mx_hosts not covered by TestGetMxHosts"""
+
+    @staticmethod
+    def _mx(hostname, preference=10):
+        return {"preference": preference, "hostname": hostname}
+
+    def testDnssecExceptionLogged(self):
+        """A DNSSEC test that raises is swallowed (logged) and dnssec stays False"""
+        from contextlib import ExitStack
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_mx_records",
+                    return_value=[self._mx("mail.example.com")],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.test_dnssec", side_effect=RuntimeError("oops"))
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_a_records", return_value=["192.0.2.1"])
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_reverse_dns",
+                    return_value=["mail.example.com"],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+        host = cast(Any, result["hosts"][0])
+        self.assertFalse(host["dnssec"])
+
+    def testMsv1InvalidHostnameWarningHasHint(self):
+        """A hostname ending in .msv1.invalid gets the Office 365 TXT-record hint"""
+        from contextlib import ExitStack
+        from checkdmarc.utils import DNSException
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_mx_records",
+                    return_value=[self._mx("mail.msv1.invalid")],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_a_records",
+                    side_effect=DNSException("no records"),
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+        self.assertTrue(any("Office 365" in w for w in result["warnings"]))
+
+    def testReverseDnsMismatchWarning(self):
+        """Reverse DNS resolves to a hostname whose A records don't include the MX address"""
+        from contextlib import ExitStack
+
+        # A->192.0.2.1, PTR->ptr.example.com, ptr.example.com->A->203.0.113.1 (mismatch)
+        a_record_results = [["192.0.2.1"], ["203.0.113.1"]]
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_mx_records",
+                    return_value=[self._mx("mail.example.com")],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_a_records", side_effect=a_record_results)
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_reverse_dns",
+                    return_value=["ptr.example.com"],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+        self.assertTrue(any("do not resolve to" in w for w in result["warnings"]))
+
+    def testReverseDnsAResolutionFails(self):
+        """A DNSException when re-resolving the PTR hostname becomes a warning"""
+        from contextlib import ExitStack
+        from checkdmarc.utils import DNSException
+
+        # First get_a_records (the MX) succeeds; second (the PTR) raises
+        a_record_results = [["192.0.2.1"], DNSException("re-resolution failed")]
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_mx_records",
+                    return_value=[self._mx("mail.example.com")],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_a_records", side_effect=a_record_results)
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_reverse_dns",
+                    return_value=["ptr.example.com"],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+        self.assertTrue(any("re-resolution failed" in w for w in result["warnings"]))
+
+    def testReverseDnsLookupRaises(self):
+        """A DNSException from get_reverse_dns is swallowed; the PTR list becomes empty"""
+        from contextlib import ExitStack
+        from checkdmarc.utils import DNSException
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_mx_records",
+                    return_value=[self._mx("mail.example.com")],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_a_records", return_value=["192.0.2.1"])
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_reverse_dns",
+                    side_effect=DNSException("ptr lookup failed"),
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+        # An empty PTR list produces the "no reverse DNS records" warning
+        self.assertTrue(
+            any("reverse DNS" in w and "PTR" in w for w in result["warnings"])
+        )
+
+    def testStarttlsRaisesDnsException(self):
+        """test_starttls raising DNSException becomes a warning and tls/starttls=False"""
+        from contextlib import ExitStack
+        from checkdmarc.utils import DNSException
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_mx_records",
+                    return_value=[self._mx("mail.example.com")],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_a_records", return_value=["192.0.2.1"])
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_reverse_dns",
+                    return_value=["mail.example.com"],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.test_starttls",
+                    side_effect=DNSException("dns broken"),
+                )
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        host = cast(Any, result["hosts"][0])
+        self.assertFalse(host["starttls"])
+        self.assertFalse(host["tls"])
+
+    def testWindowsSkipsTls(self):
+        """On Windows, test_tls is skipped and a warning logged via stdlib logging"""
+        from contextlib import ExitStack
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_mx_records",
+                    return_value=[self._mx("mail.example.com")],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_a_records", return_value=["192.0.2.1"])
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_reverse_dns",
+                    return_value=["mail.example.com"],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
+            )
+            stack.enter_context(patch("platform.system", return_value="Windows"))
+            stack.enter_context(patch("checkdmarc.smtp.test_starttls"))
+            stack.enter_context(patch("checkdmarc.smtp.test_tls"))
+            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=False)
+        # When skip_tls flips to True via the Windows branch, no tls/starttls keys
+        # are added to the host dict.
+        host = cast(Any, result["hosts"][0])
+        self.assertNotIn("tls", host)
+        self.assertNotIn("starttls", host)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

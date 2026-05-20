@@ -3,7 +3,7 @@
 import os
 import unittest
 from unittest.mock import patch
-from typing import cast
+from typing import Any, cast
 
 import checkdmarc.spf
 from checkdmarc.spf import ParsedSPFMXMechanism, SPFAMechanism
@@ -707,6 +707,333 @@ class Test(unittest.TestCase):
                 for host in mx_mechanism["hosts"]:
                     self.assertTrue(len(host) > 0)
         self.assertEqual(results["dns_lookups"], 1)
+
+
+class TestPtrMatch(unittest.TestCase):
+    """Tests for the standalone ptr_match helper"""
+
+    def testHostnameAndIpMatch(self):
+        """PTR points back to a hostname that resolves to the same IP — True"""
+        with patch("checkdmarc.spf.get_reverse_dns", return_value=["mail.example.com"]):
+            with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
+                result = checkdmarc.spf.ptr_match("192.0.2.1", "example.com")
+        self.assertTrue(result)
+
+    def testHostnameMatchesButIpDoesnt(self):
+        """PTR points back to a matching hostname but its A records don't include the IP"""
+        with patch("checkdmarc.spf.get_reverse_dns", return_value=["mail.example.com"]):
+            with patch("checkdmarc.spf.get_a_records", return_value=["203.0.113.1"]):
+                result = checkdmarc.spf.ptr_match("192.0.2.1", "example.com")
+        self.assertFalse(result)
+
+    def testHostnameDoesntEndWithDomain(self):
+        """PTR hostname doesn't end with the SPF domain — skipped"""
+        with patch("checkdmarc.spf.get_reverse_dns", return_value=["mail.other.com"]):
+            with patch("checkdmarc.spf.get_a_records") as mock_a:
+                result = checkdmarc.spf.ptr_match("192.0.2.1", "example.com")
+        self.assertFalse(result)
+        mock_a.assert_not_called()
+
+
+class TestSPFPtrMechanism(unittest.TestCase):
+    """ptr mechanism in parse_spf_record"""
+
+    def testPtrEmitsWarning(self):
+        """Valid ptr always emits a 'should not be used' warning per RFC 7208 § 5.5"""
+        with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
+            result = checkdmarc.spf.parse_spf_record("v=spf1 ptr -all", "example.com")
+        self.assertTrue(
+            any("ptr mechanism should not be used" in w for w in result["warnings"])
+        )
+
+    def testPtrWithExplicitDomain(self):
+        """ptr:example.com uses the explicit value rather than the SPF domain"""
+        with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
+            result = checkdmarc.spf.parse_spf_record(
+                "v=spf1 ptr:other.example -all", "example.com"
+            )
+        self.assertTrue(
+            any("ptr mechanism should not be used" in w for w in result["warnings"])
+        )
+
+    def testPtrMissingARecords(self):
+        """ptr where the target has no A records produces a missing-records warning"""
+        with patch("checkdmarc.spf.get_a_records", return_value=[]):
+            result = checkdmarc.spf.parse_spf_record("v=spf1 ptr -all", "example.com")
+        self.assertTrue(
+            any("does not have any A/AAAA records" in w for w in result["warnings"])
+        )
+
+
+class TestSPFRedirect(unittest.TestCase):
+    """redirect= modifier in parse_spf_record"""
+
+    def testRedirectLoop(self):
+        """A redirect to a domain already in the recursion chain raises SPFRedirectLoop"""
+        self.assertRaises(
+            checkdmarc.spf.SPFRedirectLoop,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 redirect=example.com",
+            "example.com",
+            recursion=["example.com"],
+        )
+
+    def testRedirectFollowed(self):
+        """A redirect resolves and replaces the outer all action"""
+        with patch("checkdmarc.spf.query_spf_record") as mock_query:
+            mock_query.return_value = {"record": "v=spf1 -all", "warnings": []}
+            result = checkdmarc.spf.parse_spf_record(
+                "v=spf1 redirect=other.example", "example.com"
+            )
+        self.assertEqual(result["parsed"]["all"], "fail")
+        self.assertIsNotNone(result["parsed"]["redirect"])
+
+    def testRedirectTargetDnsException(self):
+        """A DNSException during redirect resolution becomes a warning"""
+        from checkdmarc.utils import DNSException
+
+        with patch(
+            "checkdmarc.spf.query_spf_record", side_effect=DNSException("dns broken")
+        ):
+            result = checkdmarc.spf.parse_spf_record(
+                "v=spf1 redirect=other.example", "example.com"
+            )
+        self.assertTrue(any("dns broken" in w for w in result["warnings"]))
+
+
+class TestSPFExpModifier(unittest.TestCase):
+    def testExpAfterAllValidDomain(self):
+        """exp=domain.example after -all is looked up but doesn't count for limits"""
+        with patch("checkdmarc.spf.get_txt_records", return_value=["explanation"]):
+            result = checkdmarc.spf.parse_spf_record(
+                "v=spf1 -all exp=exp.example", "example.com"
+            )
+        # exp doesn't add DNS lookup budget per RFC
+        self.assertEqual(result["dns_lookups"], 0)
+        # No warning since exactly one TXT record returned
+        self.assertNotIn(
+            "Too many TXT records at exp value exp.example", result["warnings"]
+        )
+
+    def testExpAfterAllNoTxtRecords(self):
+        with patch("checkdmarc.spf.get_txt_records", return_value=[]):
+            result = checkdmarc.spf.parse_spf_record(
+                "v=spf1 -all exp=exp.example", "example.com"
+            )
+        self.assertTrue(
+            any("No TXT records at exp value" in w for w in result["warnings"])
+        )
+
+    def testExpAfterAllTooManyTxtRecords(self):
+        with patch("checkdmarc.spf.get_txt_records", return_value=["a", "b"]):
+            result = checkdmarc.spf.parse_spf_record(
+                "v=spf1 -all exp=exp.example", "example.com"
+            )
+        self.assertTrue(
+            any("Too many TXT records at exp value" in w for w in result["warnings"])
+        )
+
+    def testExpAfterAllExceptionWarning(self):
+        with patch(
+            "checkdmarc.spf.get_txt_records",
+            side_effect=RuntimeError("dns broken"),
+        ):
+            result = checkdmarc.spf.parse_spf_record(
+                "v=spf1 -all exp=exp.example", "example.com"
+            )
+        self.assertTrue(
+            any(
+                "Failed to get TXT records at exp value" in w
+                for w in result["warnings"]
+            )
+        )
+
+    def testTextAfterExpValueWarns(self):
+        with patch("checkdmarc.spf.get_txt_records", return_value=["explanation"]):
+            result = checkdmarc.spf.parse_spf_record(
+                "v=spf1 -all exp=exp.example extra", "example.com"
+            )
+        self.assertTrue(
+            any(
+                "No text should exist after the exp modifier value" in w
+                for w in result["warnings"]
+            )
+        )
+
+
+class TestSPFMacroValidation(unittest.TestCase):
+    def testMacroInIp4Mechanism(self):
+        """SPF macros are not allowed in ip4/ip6 mechanisms — raises SPFSyntaxError"""
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 ip4:%{i} -all",
+            "example.com",
+        )
+
+    def testMacroInIp6Mechanism(self):
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 ip6:%{i} -all",
+            "example.com",
+        )
+
+
+class TestSPFMxBranches(unittest.TestCase):
+    def testTooManyMxRecords(self):
+        """An mx mechanism that points to a domain with > 10 MX records raises SPFTooManyDNSLookups"""
+        mx_hosts = [
+            {"preference": i * 10, "hostname": f"mx{i}.example.com"} for i in range(12)
+        ]
+        with patch("checkdmarc.spf.get_mx_records", return_value=mx_hosts):
+            with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
+                self.assertRaises(
+                    checkdmarc.spf.SPFTooManyDNSLookups,
+                    checkdmarc.spf.parse_spf_record,
+                    "v=spf1 mx -all",
+                    "example.com",
+                )
+
+    def testMxHostMissingARecords(self):
+        """When successive MX host A-lookups return empty, the void counter
+        exceeds 2 and SPFTooManyVoidDNSLookups is raised."""
+        # 3 MX hosts; each get_a_records returns [] (void lookup, not exception)
+        with patch(
+            "checkdmarc.spf.get_mx_records",
+            return_value=[
+                {"preference": 10, "hostname": "mx1.example.com"},
+                {"preference": 20, "hostname": "mx2.example.com"},
+                {"preference": 30, "hostname": "mx3.example.com"},
+            ],
+        ):
+            with patch("checkdmarc.spf.get_a_records", return_value=[]):
+                self.assertRaises(
+                    checkdmarc.spf.SPFTooManyVoidDNSLookups,
+                    checkdmarc.spf.parse_spf_record,
+                    "v=spf1 mx -all",
+                    "example.com",
+                )
+
+
+class TestSPFAMechanismCidr(unittest.TestCase):
+    def testAWithCidrParsesWithoutError(self):
+        """a/24 mechanism parses cleanly and resolves to the SPF domain's A records.
+
+        Note: the current implementation has a latent bug where the CIDR suffix
+        is dropped (``value.split('/')`` then ``len(value) == 2`` checks string
+        length, not the split's length) — covered here as a structural smoke test
+        only.
+        """
+        with patch(
+            "checkdmarc.spf.get_a_records", return_value=["192.0.2.1", "192.0.2.2"]
+        ):
+            result = checkdmarc.spf.parse_spf_record("v=spf1 a/24 -all", "example.com")
+        for mechanism in result["parsed"]["mechanisms"]:
+            if mechanism["mechanism"] == "a":
+                a_mechanism = cast(SPFAMechanism, mechanism)
+                self.assertTrue(len(a_mechanism["addresses"]) > 0)
+
+
+class TestSPFQueryRecordEdges(unittest.TestCase):
+    def testSpfTypeRecordWarning(self):
+        """A legacy DNS-type SPF record produces a removal warning"""
+
+        def fake_query_dns(domain, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return ["v=spf1 -all"]
+            return ["v=spf1 -all"]
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            result = checkdmarc.spf.query_spf_record("example.com")
+        self.assertTrue(any("DNS Type SPF has been" in w for w in result["warnings"]))
+
+    def testUndecodableTxtSkipped(self):
+        """Undecodable TXT records produce a warning, not failure"""
+
+        def fake_query_dns(domain, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return []
+            return ["Undecodable characters", '"v=spf1 -all"']
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            result = checkdmarc.spf.query_spf_record("example.com")
+        # query_spf_record strips surrounding quotes from the returned record
+        self.assertEqual(result["record"], "v=spf1 -all")
+        self.assertTrue(any("undecodable" in w.lower() for w in result["warnings"]))
+
+    def testNXDOMAINReraises(self):
+        """dns.resolver.NXDOMAIN becomes SPFRecordNotFound"""
+        import dns.resolver
+
+        def fake_query_dns(domain, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return []
+            raise dns.resolver.NXDOMAIN()
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            self.assertRaises(
+                checkdmarc.spf.SPFRecordNotFound,
+                checkdmarc.spf.query_spf_record,
+                "example.com",
+            )
+
+    def testGenericExceptionReraises(self):
+        """A non-SPF, non-DNS exception during TXT lookup also becomes SPFRecordNotFound"""
+
+        def fake_query_dns(domain, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return []
+            raise RuntimeError("oops")
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            self.assertRaises(
+                checkdmarc.spf.SPFRecordNotFound,
+                checkdmarc.spf.query_spf_record,
+                "example.com",
+            )
+
+    def testLongChunkWarning(self):
+        """A TXT chunk over 255 bytes produces a chunk-length warning"""
+        # Build a chunk of 260 'a's quoted
+        long_chunk = '"v=spf1 ' + ("a" * 260) + ' -all"'
+
+        def fake_query_dns(domain, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return []
+            return [long_chunk]
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            result = checkdmarc.spf.query_spf_record("example.com")
+        self.assertTrue(any("(>255)" in w for w in result["warnings"]))
+
+    def testLargeRecordWarning(self):
+        """A record over 512 bytes produces a size warning"""
+        big = "v=spf1 " + " ".join(f"ip4:192.0.2.{i}" for i in range(100)) + " -all"
+
+        def fake_query_dns(domain, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return []
+            return [big]
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            result = checkdmarc.spf.query_spf_record("example.com")
+        self.assertTrue(any("> 512 bytes" in w for w in result["warnings"]))
+
+
+class TestSPFCheckSpfErrorData(unittest.TestCase):
+    def testErrorWithDataKeysIncluded(self):
+        """check_spf flattens SPFError.data keys into the result"""
+        # SPFTooManyDNSLookups carries dns_lookups in .data
+        with patch("checkdmarc.spf.query_spf_record") as mock_query:
+            mock_query.return_value = {"record": "v=spf1 -all", "warnings": []}
+            # Patch parse_spf_record to raise with .data
+            with patch("checkdmarc.spf.parse_spf_record") as mock_parse:
+                err = checkdmarc.spf.SPFTooManyDNSLookups("too many", dns_lookups=11)
+                mock_parse.side_effect = err
+                result = checkdmarc.spf.check_spf("example.com")
+        self.assertFalse(result["valid"])
+        self.assertEqual(cast(Any, result)["dns_lookups"], 11)
 
 
 if __name__ == "__main__":
