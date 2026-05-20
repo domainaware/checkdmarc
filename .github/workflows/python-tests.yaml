@@ -44,8 +44,11 @@ jobs:
         PYRIGHT_PYTHON_FORCE_VERSION: latest
       run: pyright
     - name: Run unit tests
+      # ``python -m pytest`` (not bare ``pytest``) so cwd lands on
+      # sys.path[0] — checkdmarc isn't pip-installed in CI, so the
+      # tests need to import the in-repo package directly.
       run: |
-        pytest --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy tests/
+        python -m pytest --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy tests/
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       with:
