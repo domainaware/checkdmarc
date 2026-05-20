@@ -1,6 +1,7 @@
 # checkdmarc
 
 [![Python tests](https://github.com/domainaware/checkdmarc/actions/workflows/python-tests.yaml/badge.svg)](https://github.com/domainaware/checkdmarc/actions/workflows/python-tests.yaml)
+[![Code Coverage](https://codecov.io/gh/domainaware/checkdmarc/branch/main/graph/badge.svg)](https://codecov.io/gh/domainaware/checkdmarc)
 [![PyPI](https://img.shields.io/pypi/v/checkdmarc)](https://pypi.org/project/checkdmarc/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/checkdmarc?color=blue)](https://pypistats.org/packages/checkdmarc)
 

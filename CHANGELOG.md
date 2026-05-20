@@ -1,5 +1,39 @@
 # Changelog
 
+## 5.15.5
+
+### Fixes
+
+- BIMI: stop masking `MultipleBIMIRecords`, `UnrelatedTXTRecordFoundAtBIMI`,
+  and `BIMIRecordInWrongLocation` behind `BIMIRecordNotFound`. The
+  apex-fallback handler also had a missing `raise`, so a record placed at
+  the apex (instead of the `_bimi` selector) was silently treated as
+  "not found" (#246).
+- BIMI: properly support the `lps=` tag (per
+  [draft-bimi-14 § 4.3.14](https://www.ietf.org/archive/id/draft-brand-indicators-for-message-identification-14.html)).
+  The grammar previously rejected any `lps=` value, and the parser branch
+  for it never wrote the parsed selectors back to the tag value (#246).
+- DMARC: stop masking `DMARCRecordInWrongLocation` behind
+  `DMARCRecordNotFound` in `_query_dmarc_record`'s apex-fallback path (#248).
+- SMTP: the cache-write paths in `test_tls` and `test_starttls` used
+  `if cache:`, which is falsy for an empty `ExpiringDict`. The first
+  cache entry was silently dropped, so subsequent SMTP probes kept
+  hitting the network (#244).
+- SPF: `parse_spf_record`'s redirect handler used `except DNSException as
+  error:`, shadowing the function-level `error` accumulator. Python
+  deletes the name on except-block exit, so the trailing `if error:`
+  raised `UnboundLocalError` (#247).
+
+### Changes
+
+- Test suite reorganized from a single `tests.py` into per-module
+  files under `tests/`. Network-dependent tests are paired with
+  fully-mocked counterparts; CI runs the mocked branch, local runs
+  the real-network branch.
+- Project test coverage raised from 67% to 96%; every module is now
+  at ≥ 90%. Coverage and test results are uploaded to Codecov on
+  each CI run.
+
 ## 5.15.4
 
 ### Fixes
