@@ -9,10 +9,13 @@
   apex-fallback handler also had a missing `raise`, so a record placed at
   the apex (instead of the `_bimi` selector) was silently treated as
   "not found" (#246).
-- BIMI: properly support the `lps=` tag (per
-  [draft-bimi-14 § 4.3.14](https://www.ietf.org/archive/id/draft-brand-indicators-for-message-identification-14.html)).
-  The grammar previously rejected any `lps=` value, and the parser branch
-  for it never wrote the parsed selectors back to the tag value (#246).
+- BIMI: extend the grammar to accept the canonical `lps=` value
+  format — a comma-separated list of local-part selectors per
+  [draft-bimi-14 § 4.3.14](https://www.ietf.org/archive/id/draft-brand-indicators-for-message-identification-14.html).
+  The grammar previously only accepted values matching one of
+  `bimi1`, an HTTPS URL, `personal`, or `brand`, so the canonical
+  comma-separated form raised `BIMISyntaxError`. Also fix the parser
+  to write the parsed selector list back to the tag value (#246).
 - DMARC: stop masking `DMARCRecordInWrongLocation` behind
   `DMARCRecordNotFound` in `_query_dmarc_record`'s apex-fallback path (#248).
 - SMTP: the cache-write paths in `test_tls` and `test_starttls` used
