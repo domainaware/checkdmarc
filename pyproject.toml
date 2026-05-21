@@ -76,3 +76,7 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["checkdmarc"]
+
+[tool.coverage.run]
+# Coverage measures shipped code only.
+source = ["checkdmarc"]
