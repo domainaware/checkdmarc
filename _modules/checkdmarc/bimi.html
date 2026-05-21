@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.bimi &mdash; checkdmarc 5.16.1 documentation</title>
+  <title>checkdmarc.bimi &mdash; checkdmarc 5.16.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=564bd6fc"></script>
+      <script src="../../_static/documentation_options.js?v=61b35c96"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -625,10 +625,10 @@
         <span class="n">view_box</span> <span class="o">=</span> <span class="n">view_box</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
         <span class="n">width</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">view_box</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
         <span class="n">height</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">view_box</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="k">if</span> <span class="s2">&quot;x&quot;</span> <span class="ow">in</span> <span class="n">svg</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">svg</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="s2">&quot;y&quot;</span> <span class="ow">in</span> <span class="n">svg</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">svg</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;@x&quot;</span> <span class="ow">in</span> <span class="n">svg</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">svg</span><span class="p">[</span><span class="s2">&quot;@x&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;@y&quot;</span> <span class="ow">in</span> <span class="n">svg</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">svg</span><span class="p">[</span><span class="s2">&quot;@y&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="s2">&quot;title&quot;</span> <span class="ow">in</span> <span class="n">svg</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">svg</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span>
         <span class="n">description</span> <span class="o">=</span> <span class="kc">None</span>
