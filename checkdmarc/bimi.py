@@ -503,10 +503,10 @@ def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict[str, Any]:
         view_box = view_box.split(" ")
         width = float(view_box[-2])
         height = float(view_box[-1])
-        if "x" in svg.keys():
-            metadata["x"] = svg["x"]
-        if "y" in svg.keys():
-            metadata["x"] = svg["y"]
+        if "@x" in svg.keys():
+            metadata["x"] = svg["@x"]
+        if "@y" in svg.keys():
+            metadata["y"] = svg["@y"]
         if "title" in svg.keys():
             metadata["title"] = svg["title"]
         description = None
