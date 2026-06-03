@@ -577,6 +577,60 @@ class Test(unittest.TestCase):
         self.assertEqual(parsed_record["parsed"]["all"], "fail")
 
     @mocked_only
+    def testSenderIDRecordsWarnMocked(self):
+        """Deprecated Sender ID TXT records produce SPF warnings"""
+        sender_id_records = [
+            "v=spf2.0/pra ip4:192.0.2.0/24 ~all",
+            "v=spf2.0/mfrom ip4:192.0.2.0/24 ~all",
+            "v=spf2.0/mfrom,pra ip4:192.0.2.0/24 ~all",
+            "v=spf2.0/pra,mfrom ip4:192.0.2.0/24 ~all",
+        ]
+
+        for sender_id_record in sender_id_records:
+            with self.subTest(sender_id_record=sender_id_record):
+                records = ["v=spf1 -all", sender_id_record]
+                with patch("checkdmarc.spf.query_dns", return_value=records):
+                    result = checkdmarc.spf.query_spf_record("example.com")
+
+                self.assertEqual(result["record"], "v=spf1 -all")
+                self.assertTrue(
+                    any(
+                        "deprecated Sender ID record" in warning
+                        for warning in result["warnings"]
+                    )
+                )
+
+    @mocked_only
+    def testInvalidSPFVersionTagsRejectedMocked(self):
+        """Invalid SPF version-like TXT records are rejected"""
+        invalid_records = [
+            "v=spf10 -all",
+            "v=spf1foo -all",
+        ]
+
+        for record in invalid_records:
+            with self.subTest(record=record):
+                with patch("checkdmarc.spf.query_dns", return_value=[record]):
+                    with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
+                        checkdmarc.spf.query_spf_record("example.com")
+
+    @mocked_only
+    def testSPFVersionMatchingIsCaseInsensitiveMocked(self):
+        """Uppercase SPF version tags are accepted"""
+        with patch("checkdmarc.spf.query_dns", return_value=["V=SPF1 -all"]):
+            result = checkdmarc.spf.query_spf_record("example.com")
+
+        self.assertEqual(result["record"], "V=SPF1 -all")
+
+    @mocked_only
+    def testSPFVersionMatchingAllowsSurroundingWhitespaceMocked(self):
+        """SPF records with surrounding whitespace are accepted"""
+        with patch("checkdmarc.spf.query_dns", return_value=["  v=spf1 -all  "]):
+            result = checkdmarc.spf.query_spf_record("example.com")
+
+        self.assertEqual(result["record"], "  v=spf1 -all  ")
+
+    @mocked_only
     def testJunkAfterAllMocked(self):
         """Warn about text after the all mechanism (mocked; ip4 + -all needs no DNS)"""
         rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"

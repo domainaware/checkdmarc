@@ -58,7 +58,7 @@ AFTER_ALL_REGEX_STRING = r"(?:^|\s)[+\-~?]?all\s+(.+)"
 SPF_MECHANISM_REGEX = re.compile(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re.IGNORECASE)
 SENDER_ID_VERSION_TAG_REGEX = re.compile(
-    r'^"?v=spf2\.0/(?:pra|mfrom|mfrom,pra|pra,mfrom)(?:\s|$)',
+    r"^v=spf2\.0/(?:pra|mfrom)(?:,(?:pra|mfrom))?(?:\s|$)",
     re.IGNORECASE,
 )
 
@@ -471,9 +471,8 @@ def query_spf_record(
                 )
                 continue
 
-            if (
-                cleaned_record_lower == txt_prefix
-                or cleaned_record_lower.startswith(f"{txt_prefix} ")
+            if cleaned_record_lower == txt_prefix or cleaned_record_lower.startswith(
+                f"{txt_prefix} "
             ):
                 spf_txt_records.append(record)
             elif cleaned_record_lower.startswith(txt_prefix):
