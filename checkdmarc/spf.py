@@ -57,6 +57,10 @@ AFTER_ALL_REGEX_STRING = r"(?:^|\s)[+\-~?]?all\s+(.+)"
 
 SPF_MECHANISM_REGEX = re.compile(SPF_MECHANISM_REGEX_STRING, re.IGNORECASE)
 AFTER_ALL_REGEX = re.compile(AFTER_ALL_REGEX_STRING, re.IGNORECASE)
+SENDER_ID_VERSION_TAG_REGEX = re.compile(
+    r"^v=spf2\.0/(?:pra|mfrom)(?:,(?:pra|mfrom))?(?:\s|$)",
+    re.IGNORECASE,
+)
 
 # Detect an 'all' mechanism glued to the previous term without required
 # whitespace, e.g., "ip4:203.0.113.7~all". This should be rejected as a
@@ -455,9 +459,23 @@ def query_spf_record(
                 warnings.append("A TXT record with undecodable characters was skipped.")
                 continue
 
-            if record.strip('"').startswith(txt_prefix):
+            cleaned_record = record.strip().strip('"')
+            cleaned_record_lower = cleaned_record.lower()
+
+            if SENDER_ID_VERSION_TAG_REGEX.match(cleaned_record):
+                warnings.append(
+                    "A deprecated Sender ID record was found. Sender ID "
+                    "using spf2.0/pra or spf2.0/mfrom was deprecated and "
+                    "should be removed: "
+                    f"{record}"
+                )
+                continue
+
+            if cleaned_record_lower == txt_prefix or cleaned_record_lower.startswith(
+                f"{txt_prefix} "
+            ):
                 spf_txt_records.append(record)
-            elif record.startswith(txt_prefix):
+            elif cleaned_record_lower.startswith(txt_prefix):
                 raise SPFRecordNotFound(
                     "According to RFC 7208 section 4.5, an SPF record should be"
                     f" equal to {txt_prefix} or begin with {txt_prefix} "
