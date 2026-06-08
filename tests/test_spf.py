@@ -224,7 +224,7 @@ class Test(unittest.TestCase):
         domain = "seanthegeek.net"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "{0}: An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
+            "Error when processing {0}: An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
                 domain
             ),
             results["warnings"],
@@ -601,8 +601,9 @@ class Test(unittest.TestCase):
             mock_dns.side_effect = dns.resolver.NXDOMAIN()
             results = checkdmarc.spf.parse_spf_record(spf_record, domain)
 
-        self.assertTrue(
-            "example.doesnotexist: The domain does not exist." in results["warnings"]
+        self.assertIn(
+            "Error when processing example.doesnotexist: The domain does not exist.",
+            results["warnings"],
         )
         self.assertEqual(results["dns_lookups"], 1)
 
@@ -667,7 +668,7 @@ class Test(unittest.TestCase):
         with patch("checkdmarc.spf.get_mx_records", return_value=[]):
             results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "{0}: An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
+            "Error when processing {0}: An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
                 domain
             ),
             results["warnings"],
