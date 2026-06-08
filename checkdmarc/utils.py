@@ -311,7 +311,7 @@ def get_a_records(
                 retries=retries,
             )
         except dns.resolver.NXDOMAIN:
-            raise DNSExceptionNXDOMAIN("The domain does not exist.")
+            raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
         except dns.resolver.NoAnswer:
             # Sometimes a domain will only have A or AAAA records, but not both
             pass
@@ -406,7 +406,7 @@ def get_txt_records(
             retries=retries,
         )
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN("The domain does not exist.")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         raise DNSException(f"The domain {domain} does not have any TXT records.")
     except Exception as error:
@@ -452,7 +452,7 @@ def get_soa_record(
             retries=retries,
         )[0]
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN("The domain does not exist.")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         raise DNSException(f"The domain {domain} does not have an SOA record.")
     except Exception as error:
@@ -501,7 +501,7 @@ def get_nameservers(
             retries=retries,
         )
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN("The domain does not exist.")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
@@ -571,7 +571,7 @@ def get_mx_records(
             hosts.append({"preference": preference, "hostname": hostname})
         hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN("The domain does not exist.")
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         pass
     except Exception as error:
