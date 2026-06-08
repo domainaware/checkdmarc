@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.17.0
+
+### Added
+
+- Warnings for deprecated Sender ID TXT records ([PR #255](https://github.com/domainaware/checkdmarc/pull/255))
+
+### Changed
+
+- `NXDOMAIN` errors are more detailed ([PR #256](https://github.com/domainaware/checkdmarc/pull/256))
+
 ## 5.16.2
 
 ### Changes
