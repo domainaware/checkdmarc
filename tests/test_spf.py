@@ -427,6 +427,30 @@ class Test(unittest.TestCase):
             domain,
         )
 
+    def testSPFUppercaseMacroLetterAccepted(self):
+        """Uppercase macro letters are valid (RFC 7208 §7.1)
+
+        Per RFC 7208 §7.1, uppercase macro letters expand exactly as their
+        lowercase equivalents and are then URL-encoded, so a value like
+        ``%{S}`` must not be rejected as a syntax error.
+        """
+        spf_record = "v=spf1 -all exp=%{S}.explain.example.com"
+        domain = "example.com"
+        results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        self.assertEqual(results["parsed"]["exp"], "%{S}.explain.example.com")
+        self.assertEqual(results["dns_lookups"], 0)
+
+    def testSPFUnknownMacroLetterStillRejected(self):
+        """Macro letters outside the RFC 7208 set still raise SPFSyntaxError"""
+        spf_record = "v=spf1 -all exp=%{z}"
+        domain = "example.com"
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            spf_record,
+            domain,
+        )
+
     def testUndecodableCharactersInNonSPFRecord(self):
         """Non-SPF TXT records with undecodable characters should be ignored with a warning"""
         domain = "example.com"
