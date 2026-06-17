@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.17.0 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.17.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=83e618bc"></script>
+      <script src="../../_static/documentation_options.js?v=279e9ca5"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -475,9 +475,13 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">body</span><span class="p">:</span>
             <span class="n">_raise_macro_syntax_error</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">syntax_error_marker</span><span class="p">)</span>
 
-        <span class="c1"># First char: macro-letter</span>
+        <span class="c1"># First char: macro-letter. The macro-letter grammar in RFC 7208 §7.1</span>
+        <span class="c1"># uses ABNF quoted strings, which match case-insensitively (RFC 5234</span>
+        <span class="c1"># §2.3), so uppercase letters (e.g. %{S}) are valid. Per RFC 7208 §7.3,</span>
+        <span class="c1"># an uppercase macro expands exactly as its lowercase equivalent and the</span>
+        <span class="c1"># result is then URL-encoded. Accept either case.</span>
         <span class="n">letter</span> <span class="o">=</span> <span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">letter</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">MACRO_LETTERS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">letter</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">MACRO_LETTERS</span><span class="p">:</span>
             <span class="n">_raise_macro_syntax_error</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">syntax_error_marker</span><span class="p">)</span>
 
         <span class="n">rest</span> <span class="o">=</span> <span class="n">body</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
