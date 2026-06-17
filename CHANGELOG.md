@@ -1,10 +1,10 @@
 # Changelog
 
-## Unreleased
+## 5.17.1
 
 ### Fixed
 
-- Accept uppercase SPF macro letters (e.g. `%{S}`), which are valid per RFC 7208 §7.1 ([PR #257](https://github.com/domainaware/checkdmarc/pull/257))
+- Accept uppercase SPF macro letters (e.g. `%{S}`), which are valid per RFC 7208 section 7.3 ([PR #257](https://github.com/domainaware/checkdmarc/pull/257))
 
 ## 5.17.0
 
