@@ -647,12 +647,36 @@ class Test(unittest.TestCase):
         self.assertEqual(result["record"], "V=SPF1 -all")
 
     @mocked_only
-    def testSPFVersionMatchingAllowsSurroundingWhitespaceMocked(self):
-        """SPF records with surrounding whitespace are accepted"""
-        with patch("checkdmarc.spf.query_dns", return_value=["  v=spf1 -all  "]):
+    def testSPFVersionMatchingRejectsLeadingWhitespaceMocked(self):
+        """Records with leading whitespace are discarded (RFC 7208 § 4.5)"""
+        # The record does not *begin* with the "v=spf1" version section, so it
+        # is not a valid SPF record and no SPF record is found.
+        with patch("checkdmarc.spf.query_dns", return_value=["  v=spf1 -all"]):
+            with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
+                checkdmarc.spf.query_spf_record("example.com")
+
+    @mocked_only
+    def testSPFVersionMatchingAllowsTrailingWhitespaceMocked(self):
+        """Records that begin with v=spf1 but have trailing whitespace are accepted"""
+        with patch("checkdmarc.spf.query_dns", return_value=["v=spf1 -all  "]):
             result = checkdmarc.spf.query_spf_record("example.com")
 
-        self.assertEqual(result["record"], "  v=spf1 -all  ")
+        self.assertEqual(result["record"], "v=spf1 -all  ")
+
+    @mocked_only
+    def testLeadingWhitespaceSPFRegressionMocked(self):
+        """Regression for issue #258: a record starting with whitespace is invalid
+
+        https://github.com/domainaware/checkdmarc/issues/258 — after PR #255
+        added whitespace stripping, a record such as " v=spf1" was wrongly
+        accepted. RFC 7208 § 4.5 requires a record to *begin* with the exact
+        "v=spf1" version section, so leading whitespace makes it invalid.
+        """
+        for record in (" v=spf1", " v=spf1 -all", "\tv=spf1 -all"):
+            with self.subTest(record=record):
+                with patch("checkdmarc.spf.query_dns", return_value=[record]):
+                    with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
+                        checkdmarc.spf.query_spf_record("example.com")
 
     @mocked_only
     def testJunkAfterAllMocked(self):

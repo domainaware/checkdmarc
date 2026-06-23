@@ -463,7 +463,14 @@ def query_spf_record(
                 warnings.append("A TXT record with undecodable characters was skipped.")
                 continue
 
-            cleaned_record = record.strip().strip('"')
+            # Strip only the surrounding quotes, not whitespace. Per RFC 7208
+            # section 4.5, "discard records that do not begin with a version
+            # section of exactly 'v=spf1'", and the ABNF (section 12) defines
+            # "record = version terms *SP" — the record begins with the version
+            # and only *trailing* spaces are allowed. So a record with leading
+            # whitespace (e.g. " v=spf1 ...") does not begin with the version
+            # section and is discarded rather than treated as valid SPF.
+            cleaned_record = record.strip('"')
             cleaned_record_lower = cleaned_record.lower()
 
             if SENDER_ID_VERSION_TAG_REGEX.match(cleaned_record):
