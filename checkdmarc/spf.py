@@ -542,9 +542,12 @@ def query_spf_record(
                 f"The SPF record for {domain} is {total_bytes} bytes. "
                 "RFC 7208 § 3.4 recommends keeping answers under ~450 bytes so the whole DNS message fits in 512 bytes."
             )
-    except Exception:
-        # Never let the size check impact normal operation
-        pass
+    except UnicodeError as size_check_error:
+        # The size check is advisory only. A record with characters that
+        # can't be encoded to UTF-8 (e.g. a lone surrogate) shouldn't break
+        # the lookup, so skip the byte-size warnings for it. Any other error
+        # here is unexpected and should surface rather than be swallowed.
+        logging.debug(f"Skipped SPF size check for {domain}: {size_check_error}")
 
     spf_record = spf_record.replace('"', "")
     results: SPFQueryResults = {"record": spf_record, "warnings": warnings}
