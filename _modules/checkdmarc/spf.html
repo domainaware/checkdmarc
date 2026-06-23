@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.17.1 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.17.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=279e9ca5"></script>
+      <script src="../../_static/documentation_options.js?v=106616cf"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -599,7 +599,14 @@
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;A TXT record with undecodable characters was skipped.&quot;</span><span class="p">)</span>
                 <span class="k">continue</span>
 
-            <span class="n">cleaned_record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+            <span class="c1"># Strip only the surrounding quotes, not whitespace. Per RFC 7208</span>
+            <span class="c1"># section 4.5, &quot;discard records that do not begin with a version</span>
+            <span class="c1"># section of exactly &#39;v=spf1&#39;&quot;, and the ABNF (section 12) defines</span>
+            <span class="c1"># &quot;record = version terms *SP&quot; — the record begins with the version</span>
+            <span class="c1"># and only *trailing* spaces are allowed. So a record with leading</span>
+            <span class="c1"># whitespace (e.g. &quot; v=spf1 ...&quot;) does not begin with the version</span>
+            <span class="c1"># section and is discarded rather than treated as valid SPF.</span>
+            <span class="n">cleaned_record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
             <span class="n">cleaned_record_lower</span> <span class="o">=</span> <span class="n">cleaned_record</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 
             <span class="k">if</span> <span class="n">SENDER_ID_VERSION_TAG_REGEX</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">cleaned_record</span><span class="p">):</span>
