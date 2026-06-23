@@ -8,7 +8,7 @@ import dns.resolver
 from dns.nameserver import Nameserver
 
 from checkdmarc._constants import DEFAULT_DNS_TIMEOUT, DEFAULT_DNS_MAX_RETRIES
-from checkdmarc.utils import get_soa_record
+from checkdmarc.utils import DNSException, get_soa_record
 
 """Functions for parsing DNS Start of Authority records"""
 
@@ -130,7 +130,7 @@ def check_soa(
             retries=retries,
         )
 
-    except Exception as e:
+    except DNSException as e:
         failure_results: SOARecordError = {"record": None, "error": str(e)}
         return failure_results
     try:
@@ -139,6 +139,6 @@ def check_soa(
             "values": parse_soa_string(record),
         }
         return results
-    except Exception as e:
+    except ValueError as e:
         failure_results: SOARecordError = {"record": record, "error": str(e)}
         return failure_results

@@ -505,7 +505,7 @@ def query_spf_record(
         raise SPFRecordNotFound("The domain does not exist.", domain)
     except SPFRecordNotFound as error:
         raise error
-    except Exception as error:
+    except dns.exception.DNSException as error:
         raise SPFRecordNotFound(error, domain)
 
     # Per RFC 7208 § 3.3: any single TXT "character-string" should be ≤255 characters.
@@ -710,7 +710,7 @@ def parse_spf_record(
                         warnings.append(f"No TXT records at exp value {exp}.")
                     if len(exp_txt_records) > 1:
                         warnings.append(f"Too many TXT records at exp value {exp}.")
-                except Exception as e:
+                except DNSException as e:
                     warnings.append(
                         f"Failed to get TXT records at exp value {exp}: {e}"
                     )
@@ -1040,7 +1040,7 @@ def parse_spf_record(
                             warnings.append(f"No TXT records at exp value {exp}.")
                         if len(exp_txt_records) > 1:
                             warnings.append(f"Too many TXT records at exp value {exp}.")
-                    except Exception as e:
+                    except DNSException as e:
                         warnings.append(
                             f"Failed to get TXT records at exp value {exp}: {e}"
                         )

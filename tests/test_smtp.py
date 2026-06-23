@@ -12,6 +12,7 @@ import unittest
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
+import dns.exception
 from expiringdict import ExpiringDict
 
 import checkdmarc.smtp
@@ -137,11 +138,13 @@ class TestTestTLS(unittest.TestCase):
                 "mail.example.com",
             )
 
-    def testGenericException(self):
-        """Unanticipated exceptions still surface as SMTPError"""
+    def testUnexpectedExceptionPropagates(self):
+        """An unexpected (non-network) exception is not masked as SMTPError"""
+        # Connection/SMTP failures are handled and surfaced as SMTPError; a
+        # programming-error type should propagate so the bug stays visible.
         with patch("smtplib.SMTP_SSL", side_effect=RuntimeError("oops")):
             self.assertRaises(
-                checkdmarc.smtp.SMTPError,
+                RuntimeError,
                 checkdmarc.smtp.test_tls,
                 "mail.example.com",
             )
@@ -574,9 +577,6 @@ class TestTLSCacheWritesOnError(unittest.TestCase):
     def testOSErrorCached(self):
         self._run_and_check_cache(OSError("Network unreachable"))
 
-    def testGenericExceptionCached(self):
-        self._run_and_check_cache(RuntimeError("oops"))
-
 
 class TestSTARTTLSCacheAndExtraBranches(unittest.TestCase):
     """test_starttls cache-on-error coverage and remaining exception handlers"""
@@ -626,9 +626,6 @@ class TestSTARTTLSCacheAndExtraBranches(unittest.TestCase):
     def testOSErrorCached(self):
         self._run_and_check_cache(OSError("Network unreachable"))
 
-    def testGenericExceptionCached(self):
-        self._run_and_check_cache(RuntimeError("oops"))
-
 
 class TestGetMxHostsEdgeCases(unittest.TestCase):
     """Branches of get_mx_hosts not covered by TestGetMxHosts"""
@@ -649,7 +646,10 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
                 )
             )
             stack.enter_context(
-                patch("checkdmarc.smtp.test_dnssec", side_effect=RuntimeError("oops"))
+                patch(
+                    "checkdmarc.smtp.test_dnssec",
+                    side_effect=dns.exception.DNSException("dnssec failed"),
+                )
             )
             stack.enter_context(
                 patch("checkdmarc.smtp.get_a_records", return_value=["192.0.2.1"])
