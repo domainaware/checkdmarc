@@ -1123,6 +1123,23 @@ class TestSPFQueryRecordEdges(unittest.TestCase):
             result = checkdmarc.spf.query_spf_record("example.com")
         self.assertTrue(any("> 512 bytes" in w for w in result["warnings"]))
 
+    def testSizeCheckSkippedOnUndecodableRecord(self):
+        """A record that can't be UTF-8 encoded skips the advisory size check"""
+        # A lone surrogate cannot be encoded to UTF-8, so the byte-size check
+        # raises UnicodeError. That must be swallowed (the check is advisory)
+        # without breaking the overall lookup or emitting a size warning.
+        record = "v=spf1 \ud800 -all"
+
+        def fake_query_dns(domain, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return []
+            return [record]
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            result = checkdmarc.spf.query_spf_record("example.com")
+        self.assertEqual(result["record"], record)
+        self.assertFalse(any("bytes" in w for w in result["warnings"]))
+
 
 class TestSPFCheckSpfErrorData(unittest.TestCase):
     def testErrorWithDataKeysIncluded(self):

@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.17.3
+
+### Changed
+
+- Narrow the advisory SPF record size check to catch only `UnicodeError` (raised when a record can't be encoded to UTF-8) instead of swallowing every exception, and log the skip at debug level
+
 ## 5.17.2
 
 ### Fixed
