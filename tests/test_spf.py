@@ -647,12 +647,21 @@ class Test(unittest.TestCase):
         self.assertEqual(result["record"], "V=SPF1 -all")
 
     @mocked_only
-    def testSPFVersionMatchingAllowsSurroundingWhitespaceMocked(self):
-        """SPF records with surrounding whitespace are accepted"""
-        with patch("checkdmarc.spf.query_dns", return_value=["  v=spf1 -all  "]):
+    def testSPFVersionMatchingRejectsLeadingWhitespaceMocked(self):
+        """Records with leading whitespace are discarded (RFC 7208 § 4.5)"""
+        # The record does not *begin* with the "v=spf1" version section, so it
+        # is not a valid SPF record and no SPF record is found.
+        with patch("checkdmarc.spf.query_dns", return_value=["  v=spf1 -all"]):
+            with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
+                checkdmarc.spf.query_spf_record("example.com")
+
+    @mocked_only
+    def testSPFVersionMatchingAllowsTrailingWhitespaceMocked(self):
+        """Records that begin with v=spf1 but have trailing whitespace are accepted"""
+        with patch("checkdmarc.spf.query_dns", return_value=["v=spf1 -all  "]):
             result = checkdmarc.spf.query_spf_record("example.com")
 
-        self.assertEqual(result["record"], "  v=spf1 -all  ")
+        self.assertEqual(result["record"], "v=spf1 -all  ")
 
     @mocked_only
     def testJunkAfterAllMocked(self):

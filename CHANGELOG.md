@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.17.2
+
+### Fixed
+
+- Discard TXT records with leading whitespace instead of treating them as valid SPF records, since RFC 7208 section 4.5 requires a record to begin with exactly `v=spf1` ([issue #258](https://github.com/domainaware/checkdmarc/issues/258))
+
 ## 5.17.1
 
 ### Fixed
