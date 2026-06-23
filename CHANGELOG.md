@@ -6,6 +6,10 @@
 
 - Discard TXT records with leading whitespace instead of treating them as valid SPF records, since RFC 7208 section 4.5 requires a record to begin with exactly `v=spf1` ([issue #258](https://github.com/domainaware/checkdmarc/issues/258))
 
+### Security
+
+- Require `cryptography>=48.0.1` to avoid the vulnerable OpenSSL bundled in earlier `cryptography` wheels ([GHSA-537c-gmf6-5ccf](https://github.com/advisories/GHSA-537c-gmf6-5ccf))
+
 ## 5.17.1
 
 ### Fixed
