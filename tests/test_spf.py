@@ -664,6 +664,21 @@ class Test(unittest.TestCase):
         self.assertEqual(result["record"], "v=spf1 -all  ")
 
     @mocked_only
+    def testLeadingWhitespaceSPFRegressionMocked(self):
+        """Regression for issue #258: a record starting with whitespace is invalid
+
+        https://github.com/domainaware/checkdmarc/issues/258 — after PR #255
+        added whitespace stripping, a record such as " v=spf1" was wrongly
+        accepted. RFC 7208 § 4.5 requires a record to *begin* with the exact
+        "v=spf1" version section, so leading whitespace makes it invalid.
+        """
+        for record in (" v=spf1", " v=spf1 -all", "\tv=spf1 -all"):
+            with self.subTest(record=record):
+                with patch("checkdmarc.spf.query_dns", return_value=[record]):
+                    with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
+                        checkdmarc.spf.query_spf_record("example.com")
+
+    @mocked_only
     def testJunkAfterAllMocked(self):
         """Warn about text after the all mechanism (mocked; ip4 + -all needs no DNS)"""
         rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"
