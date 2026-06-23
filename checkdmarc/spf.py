@@ -6,7 +6,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import re
-from typing import Optional, TypedDict, Union
+from typing import TypedDict
 from collections.abc import Sequence
 
 import dns
@@ -77,7 +77,7 @@ MACRO_DELIMS = set(".-+,/_=")
 class SPFError(Exception):
     """Raised when a fatal SPF error occurs"""
 
-    def __init__(self, msg: str, data: Optional[dict] = None):
+    def __init__(self, msg: str, data: dict | None = None):
         """
         Args:
             msg (str): The error message
@@ -102,7 +102,7 @@ class _SPFDuplicateInclude(_SPFWarning):
 class SPFRecordNotFound(SPFError):
     """Raised when an SPF record could not be found"""
 
-    def __init__(self, error: Union[Exception, str], domain: str):
+    def __init__(self, error: Exception | str, domain: str):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
         self.error = error
@@ -185,37 +185,35 @@ class ParsedSPFMXMechanism(SPFDNSLookupMechanism):
 
 
 class SPFIncludeMechanism(SPFDNSLookupMechanism):
-    record: Union[str, None]
-    parsed: Union[ParsedSPFRecord, None]
+    record: str | None
+    parsed: ParsedSPFRecord | None
     warnings: list[str]
 
 
 class SPFRedirect(TypedDict):
     domain: str
-    record: Union[str, None]
+    record: str | None
     dns_lookups: int
     void_dns_lookups: int
-    parsed: Union[ParsedSPFRecord, None]
+    parsed: ParsedSPFRecord | None
     warnings: list[str]
 
 
 class ParsedSPFRecord(TypedDict):
     mechanisms: list[
-        Union[
-            SPFMechanism,
-            SPFDNSLookupMechanism,
-            SPFIncludeMechanism,
-            SPFAMechanism,
-            ParsedSPFMXMechanism,
-        ]
+        SPFMechanism
+        | SPFDNSLookupMechanism
+        | SPFIncludeMechanism
+        | SPFAMechanism
+        | ParsedSPFMXMechanism
     ]
-    redirect: Union[SPFRedirect, None]
-    exp: Union[str, None]
+    redirect: SPFRedirect | None
+    exp: str | None
     all: str
 
 
 class ParsedSPFRecordSuccess(TypedDict):
-    record: Union[None, str]
+    record: None | str
     dns_lookups: int
     void_dns_lookups: int
     parsed: ParsedSPFRecord
@@ -223,10 +221,10 @@ class ParsedSPFRecordSuccess(TypedDict):
 
 
 class ParsedSPFRecordError(ParsedSPFRecordSuccess):
-    error: Union[str, DNSException]
+    error: str | DNSException
 
 
-SPFRecordResults = Union[ParsedSPFRecordSuccess, ParsedSPFRecordError]
+SPFRecordResults = ParsedSPFRecordSuccess | ParsedSPFRecordError
 
 spf_qualifiers: dict[str, str] = {
     "": "pass",
@@ -241,8 +239,8 @@ def ptr_match(
     ip_address: str,
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> bool:
@@ -385,9 +383,9 @@ def _validate_spf_macros(
 def query_spf_record(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
     quoted_txt_segments: bool = False,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SPFQueryResults:
@@ -561,10 +559,10 @@ def parse_spf_record(
     *,
     ignore_too_many_lookups: bool = False,
     parked: bool = False,
-    seen: Optional[list] = None,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
-    recursion: Optional[list[str]] = None,
+    seen: list | None = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
+    recursion: list[str] | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
@@ -1255,8 +1253,8 @@ def parse_spf_record(
 def get_spf_record(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SPFRecordResults:
@@ -1312,8 +1310,8 @@ def check_spf(
     domain: str,
     *,
     parked: bool = False,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> dict:

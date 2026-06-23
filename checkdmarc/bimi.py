@@ -11,7 +11,7 @@ import re
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from sys import getsizeof
-from typing import Optional, Union, TypedDict, Any
+from typing import TypedDict, Any
 from xml.parsers.expat import ExpatError
 
 try:
@@ -105,8 +105,8 @@ class CertificateMetadata(TypedDict):
     not_valid_after: str
     expired: bool
     valid: bool
-    domains: Optional[list[str]]
-    logotype_sha256: Optional[str]
+    domains: list[str] | None
+    logotype_sha256: str | None
     warnings: list[str]
     validation_errors: list[str]
 
@@ -131,21 +131,21 @@ class BIMIParseResult(TypedDict):
     """Result from parsing a BIMI record"""
 
     tags: dict[str, BIMITagValue]
-    image: Union[SVGMetadata, dict[str, str]]
-    certificate: Union[CertificateMetadata, dict[str, str]]
+    image: SVGMetadata | dict[str, str]
+    certificate: CertificateMetadata | dict[str, str]
     warnings: list[str]
 
 
 class BIMICheckResult(TypedDict, total=False):
     """Result from checking BIMI for a domain"""
 
-    record: Optional[str]
+    record: str | None
     valid: bool
     selector: str
     location: str
     tags: dict[str, BIMITagValue]
-    image: Union[SVGMetadata, dict[str, str]]
-    certificate: Union[CertificateMetadata, dict[str, str]]
+    image: SVGMetadata | dict[str, str]
+    certificate: CertificateMetadata | dict[str, str]
     warnings: list[str]
     error: str
 
@@ -424,7 +424,7 @@ _verifier = _builder.build_client_verifier()
 class BIMIError(Exception):
     """Raised when a fatal BIMI error occurs"""
 
-    def __init__(self, msg: str, data: Optional[dict] = None):
+    def __init__(self, msg: str, data: dict | None = None):
         """
         Args:
             msg (str): The error message
@@ -490,7 +490,7 @@ class _BIMIGrammar(pyleri.Grammar):
     )
 
 
-def get_svg_metadata(raw_xml: Union[str, bytes]) -> dict[str, Any]:
+def get_svg_metadata(raw_xml: str | bytes) -> dict[str, Any]:
     metadata = {}
     if isinstance(raw_xml, bytes):
         raw_xml = raw_xml.decode(errors="ignore")
@@ -556,8 +556,8 @@ def check_svg_requirements(svg_metadata: dict) -> list[str]:
 
 
 def extract_logo_from_certificate(
-    cert: Union[x509.Certificate, bytes],
-) -> Optional[bytes]:
+    cert: x509.Certificate | bytes,
+) -> bytes | None:
     try:
         if not isinstance(cert, x509.Certificate):
             cert = load_pem_x509_certificates(cert)[1]
@@ -809,9 +809,9 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
 def _query_bimi_record(
     domain: str,
     *,
-    selector: Optional[str] = "default",
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    selector: str | None = "default",
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ):
@@ -906,9 +906,9 @@ def _query_bimi_record(
 def query_bimi_record(
     domain: str,
     *,
-    selector: Optional[str] = "default",
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    selector: str | None = "default",
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> BIMIQueryResult:
@@ -992,8 +992,8 @@ def query_bimi_record(
 def parse_bimi_record(
     record: str,
     *,
-    domain: Optional[str] = None,
-    parsed_dmarc_record: Optional[Union[DMARCResults, DMARCErrorResults]] = None,
+    domain: str | None = None,
+    parsed_dmarc_record: DMARCResults | DMARCErrorResults | None = None,
     include_tag_descriptions: bool = False,
     syntax_error_marker: str = SYNTAX_ERROR_MARKER,
     http_timeout: float = DEFAULT_HTTP_TIMEOUT,
@@ -1208,10 +1208,10 @@ def check_bimi(
     domain: str,
     *,
     selector: str = "default",
-    parsed_dmarc_record: Optional[Union[DMARCResults, DMARCErrorResults]] = None,
+    parsed_dmarc_record: DMARCResults | DMARCErrorResults | None = None,
     include_tag_descriptions: bool = False,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> BIMICheckResult:

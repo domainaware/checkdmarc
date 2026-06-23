@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, Union, TypedDict, Literal
+from typing import TypedDict, Literal
 from collections.abc import Sequence
 
 import dns.resolver
@@ -49,7 +49,7 @@ MTA_STS_MX_REGEX = re.compile(MTA_STS_MX_REGEX_STRING, re.IGNORECASE)
 class MTASTSError(Exception):
     """Raised when a fatal MTA-STS error occurs"""
 
-    def __init__(self, msg: str, data: Optional[dict] = None):
+    def __init__(self, msg: str, data: dict | None = None):
         """
         Args:
             msg (str): The error message
@@ -123,7 +123,7 @@ MTASTSTagsWithDescription = dict[
 
 
 class ParsedMTASTSRecord(TypedDict):
-    tags: Union[MTASTSTags, MTASTSTagsWithDescription]
+    tags: MTASTSTags | MTASTSTagsWithDescription
     warnings: list[str]
 
 
@@ -134,11 +134,11 @@ class MTASTSFailure(TypedDict):
 
 class MTASTSSuccess(TypedDict):
     valid: bool
-    tags: Union[MTASTSTags, MTASTSTagsWithDescription]
+    tags: MTASTSTags | MTASTSTagsWithDescription
     warnings: list[str]
 
 
-MTASTSResults = Union[MTASTSSuccess, MTASTSFailure]
+MTASTSResults = MTASTSSuccess | MTASTSFailure
 
 
 class DownloadedMTASTSPolicy(TypedDict):
@@ -148,7 +148,7 @@ class DownloadedMTASTSPolicy(TypedDict):
 
 class ParsedMTASTSPolicy(TypedDict):
     version: Literal["STSv1"]
-    mode: Union[Literal["enforce"], Literal["testing"], Literal["none"]]
+    mode: Literal["enforce"] | Literal["testing"] | Literal["none"]
     max_age: int
     mx: list[str]
 
@@ -170,7 +170,7 @@ class MTASTSCheckFailure(TypedDict):
     error: str
 
 
-MTASTSCheckResults = Union[MTASTSCheckSuccess, MTASTSCheckFailure]
+MTASTSCheckResults = MTASTSCheckSuccess | MTASTSCheckFailure
 
 
 class _STSGrammar(pyleri.Grammar):
@@ -211,8 +211,8 @@ STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 def query_mta_sts_record(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> MTASTSQueryResults:
@@ -537,8 +537,8 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
 def check_mta_sts(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> MTASTSCheckResults:
