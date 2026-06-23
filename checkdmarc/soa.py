@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Optional, TypedDict, Union
+from typing import TypedDict
 from collections.abc import Sequence
 
 import dns.resolver
@@ -31,11 +31,11 @@ class SOARecordSuccessful(TypedDict):
 
 
 class SOARecordError(TypedDict):
-    record: Union[str, None]
+    record: str | None
     error: str
 
 
-SOARecordResults = Union[SOARecordSuccessful, SOARecordError]
+SOARecordResults = SOARecordSuccessful | SOARecordError
 
 
 def soa_rname_to_email(rname: str) -> str:
@@ -93,8 +93,8 @@ def parse_soa_string(rr: str) -> ParsedSOARecord:
 def check_soa(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SOARecordResults:

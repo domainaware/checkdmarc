@@ -9,7 +9,7 @@ name = "checkdmarc"
 dynamic = [
     "version",
 ]
-python_requires = ">=3.10"
+requires-python = ">=3.10"
 description = "A Python module and command line parser for SPF and DMARC records"
 readme = "README.md"
 license = "Apache-2.0"
@@ -25,6 +25,11 @@ keywords = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
     "License :: OSI Approved :: Apache Software License",
     "Topic :: Security",

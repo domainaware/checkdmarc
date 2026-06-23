@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, TypedDict, Union, Literal
+from typing import TypedDict, Literal
 from collections.abc import Sequence
 
 import dns.exception
@@ -61,7 +61,7 @@ SMTPTLSREPORTING_URI_REGEX = re.compile(
 class SMTPTLSReportingError(Exception):
     """Raised when a fatal SMTP TLS Reporting error occurs"""
 
-    def __init__(self, msg: str, data: Optional[dict] = None):
+    def __init__(self, msg: str, data: dict | None = None):
         """
         Args:
             msg (str): The error message
@@ -131,7 +131,7 @@ class SMTPTLSReportingQueryResults(TypedDict):
 
 
 class SMTPTLSReportingTagValue(TypedDict):
-    value: Union[str, list[str]]
+    value: str | list[str]
 
 
 class _SMTPTLSReportingTagValueOptional(TypedDict, total=False):
@@ -150,7 +150,7 @@ SMTPTLSReportingTagsWithDescription = dict[str, SMTPTLSReportingTagValueWithDesc
 
 
 class ParsedSMTPTLSReportingRecord(TypedDict):
-    tags: Union[SMTPTLSReportingTags, SMTPTLSReportingTagsWithDescription]
+    tags: SMTPTLSReportingTags | SMTPTLSReportingTagsWithDescription
     warnings: list[str]
 
 
@@ -161,11 +161,11 @@ class SMTPTLSReportingFailure(TypedDict):
 
 class SMTPTLSReportingSuccess(TypedDict):
     valid: Literal[True]
-    tags: Union[SMTPTLSReportingTags, SMTPTLSReportingTagsWithDescription]
+    tags: SMTPTLSReportingTags | SMTPTLSReportingTagsWithDescription
     warnings: list[str]
 
 
-SMTPTLSReportingResults = Union[SMTPTLSReportingSuccess, SMTPTLSReportingFailure]
+SMTPTLSReportingResults = SMTPTLSReportingSuccess | SMTPTLSReportingFailure
 
 smtp_rpt_tags = {
     "v": {"name": "Version", "description": "Must be TLSRPTv1", "required": True},
@@ -184,8 +184,8 @@ smtp_rpt_tags = {
 def query_smtp_tls_reporting_record(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SMTPTLSReportingQueryResults:
@@ -391,8 +391,8 @@ def parse_smtp_tls_reporting_record(
 def check_smtp_tls_reporting(
     domain: str,
     *,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SMTPTLSReportingResults:

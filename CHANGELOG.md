@@ -6,6 +6,11 @@
 
 - Narrow the advisory SPF record size check to catch only `UnicodeError` (raised when a record can't be encoded to UTF-8) instead of swallowing every exception, and log the skip at debug level
 - Replace the remaining broad `except Exception` handlers across the package with the specific exception types each block can recover from, so unexpected programming errors surface instead of being masked. As a result, intentional record-validation errors (e.g. `MultipleSPFRTXTRecords`, `MTASTSRecordInWrongLocation`) now propagate as their own types rather than being converted to a generic "record not found" error
+- Modernize type annotations to PEP 604 syntax (`X | None` and `X | Y` instead of `Optional[X]` and `Union[X, Y]`) throughout the package
+
+### Fixed
+
+- Declare the supported Python floor with the correct `requires-python` key (the previous `python_requires` key is not recognized in a PEP 621 `[project]` table, so the published metadata advertised no minimum and pip would install on end-of-life Python versions where the modern type-alias syntax fails). Also add per-version Python classifiers for 3.10–3.14
 
 ## 5.17.2
 

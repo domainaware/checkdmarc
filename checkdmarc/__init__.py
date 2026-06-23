@@ -9,7 +9,7 @@ import logging
 from csv import DictWriter
 from io import StringIO
 from time import sleep
-from typing import Optional, TypedDict, Union
+from typing import TypedDict
 from collections.abc import Sequence
 
 import dns.resolver
@@ -76,7 +76,7 @@ class DomainCheckResult(_DomainCheckResultOptional):
     ns: NameserverResult
     mx: MXResults
     spf: SPFRecordResults
-    dmarc: Union[DMARCResults, DMARCErrorResults]
+    dmarc: DMARCResults | DMARCErrorResults
     smtp_tls_reporting: SMTPTLSReportingResults
     mta_sts: MTASTSCheckResults
 
@@ -85,17 +85,17 @@ def check_domains(
     domains: list[str],
     *,
     parked: bool = False,
-    approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
-    approved_mx_hostnames: Optional[list[str]] = None,
+    approved_nameservers: Sequence[str | Nameserver] | None = None,
+    approved_mx_hostnames: list[str] | None = None,
     skip_tls: bool = False,
     bimi_selector: str = "default",
     include_tag_descriptions: bool = False,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
     wait: float = 0.0,
-) -> Union[DomainCheckResult, list[DomainCheckResult]]:
+) -> DomainCheckResult | list[DomainCheckResult]:
     """
     Check the given domains for SPF and DMARC records, parse them, and return
     them
@@ -256,9 +256,9 @@ def check_domains(
 def check_ns(
     domain: str,
     *,
-    approved_nameservers: Optional[Sequence[str | Nameserver]] = None,
-    nameservers: Optional[Sequence[str | Nameserver]] = None,
-    resolver: Optional[dns.resolver.Resolver] = None,
+    approved_nameservers: Sequence[str | Nameserver] | None = None,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> NameserverResult:
@@ -304,7 +304,7 @@ def check_ns(
 
 
 def results_to_json(
-    results: Union[DomainCheckResult, list[DomainCheckResult]],
+    results: DomainCheckResult | list[DomainCheckResult],
 ) -> str:
     """
     Converts a dictionary of results or list of results to a JSON string
@@ -319,7 +319,7 @@ def results_to_json(
 
 
 def results_to_csv_rows(
-    results: Union[DomainCheckResult, list[DomainCheckResult]],
+    results: DomainCheckResult | list[DomainCheckResult],
 ) -> list[dict]:
     """
     Converts a results dictionary or list of dictionaries and returns a
@@ -458,7 +458,7 @@ def results_to_csv_rows(
 
 
 def results_to_csv(
-    results: Union[DomainCheckResult, list[DomainCheckResult]],
+    results: DomainCheckResult | list[DomainCheckResult],
 ) -> str:
     """
     Converts a dictionary of results to CSV
