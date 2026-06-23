@@ -752,7 +752,7 @@ def _query_dmarc_record(
             # above — propagate it instead of letting the broad ``except``
             # below convert it to DMARCRecordNotFound.
             raise
-        except Exception as error:
+        except dns.exception.DNSException as error:
             raise DMARCRecordNotFound(error)
 
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
@@ -763,7 +763,7 @@ def _query_dmarc_record(
         raise error
     except MultipleDMARCRecords as error:
         raise error
-    except Exception as error:
+    except dns.exception.DNSException as error:
         raise DMARCError(str(error))
 
     return dmarc_record
@@ -1125,7 +1125,9 @@ def verify_dmarc_report_destination(
 
             if dmarc_record_count < 1:
                 raise UnverifiedDMARCURIDestination(message)
-        except Exception:
+        except (dns.exception.DNSException, UnrelatedTXTRecordFoundAtDMARC):
+            # A DNS failure or unrelated TXT records at the authorization
+            # location both mean the destination can't be confirmed.
             raise UnverifiedDMARCURIDestination(message)
 
 

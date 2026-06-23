@@ -5,6 +5,7 @@
 ### Changed
 
 - Narrow the advisory SPF record size check to catch only `UnicodeError` (raised when a record can't be encoded to UTF-8) instead of swallowing every exception, and log the skip at debug level
+- Replace the remaining broad `except Exception` handlers across the package with the specific exception types each block can recover from, so unexpected programming errors surface instead of being masked. As a result, intentional record-validation errors (e.g. `MultipleSPFRTXTRecords`, `MTASTSRecordInWrongLocation`) now propagate as their own types rather than being converted to a generic "record not found" error
 
 ## 5.17.2
 

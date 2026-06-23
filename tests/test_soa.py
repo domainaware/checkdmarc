@@ -66,9 +66,9 @@ class Test(unittest.TestCase):
             )
 
     def testCheckSoaError(self):
-        """check_soa returns error on failure"""
+        """check_soa returns error on a DNS lookup failure"""
         with patch("checkdmarc.soa.get_soa_record") as mock_soa:
-            mock_soa.side_effect = Exception("DNS error")
+            mock_soa.side_effect = checkdmarc.soa.DNSException("DNS error")
             result = checkdmarc.soa.check_soa("example.com")
             self.assertIn("error", result)
 

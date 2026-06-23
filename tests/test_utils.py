@@ -3,6 +3,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+import dns.exception
 import dns.resolver
 from expiringdict import ExpiringDict
 
@@ -245,8 +246,11 @@ class TestGetReverseDns(unittest.TestCase):
         self.assertEqual(result, [])
 
     def testReverseOtherErrorRaises(self):
-        """A generic exception is wrapped in DNSException"""
-        with patch("checkdmarc.utils.query_dns", side_effect=RuntimeError("boom")):
+        """A DNS-layer error is wrapped in DNSException"""
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=dns.exception.DNSException("DNS lookup failed"),
+        ):
             self.assertRaises(
                 checkdmarc.utils.DNSException,
                 checkdmarc.utils.get_reverse_dns,
@@ -277,9 +281,23 @@ class TestGetTxtRecords(unittest.TestCase):
             )
 
     def testGenericError(self):
-        with patch("checkdmarc.utils.query_dns", side_effect=RuntimeError("boom")):
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=dns.exception.DNSException("DNS lookup failed"),
+        ):
             self.assertRaises(
                 checkdmarc.utils.DNSException,
+                checkdmarc.utils.get_txt_records,
+                "example.com",
+            )
+
+    def testNonDNSErrorPropagates(self):
+        """A non-DNS error (e.g. a programming bug) is not swallowed as DNSException"""
+        # The DNS wrappers normalize DNS-layer failures to DNSException, but an
+        # unexpected error type must surface instead of being hidden.
+        with patch("checkdmarc.utils.query_dns", side_effect=KeyError("bug")):
+            self.assertRaises(
+                KeyError,
                 checkdmarc.utils.get_txt_records,
                 "example.com",
             )
@@ -313,7 +331,10 @@ class TestGetSoaRecord(unittest.TestCase):
             )
 
     def testGenericError(self):
-        with patch("checkdmarc.utils.query_dns", side_effect=RuntimeError("boom")):
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=dns.exception.DNSException("DNS lookup failed"),
+        ):
             self.assertRaises(
                 checkdmarc.utils.DNSException,
                 checkdmarc.utils.get_soa_record,
@@ -357,7 +378,10 @@ class TestGetNameservers(unittest.TestCase):
         self.assertEqual(result["hostnames"], [])
 
     def testGenericError(self):
-        with patch("checkdmarc.utils.query_dns", side_effect=RuntimeError("boom")):
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=dns.exception.DNSException("DNS lookup failed"),
+        ):
             self.assertRaises(
                 checkdmarc.utils.DNSException,
                 checkdmarc.utils.get_nameservers,
@@ -393,7 +417,10 @@ class TestGetARecords(unittest.TestCase):
         self.assertEqual(result, ["2001:db8::1"])
 
     def testGenericError(self):
-        with patch("checkdmarc.utils.query_dns", side_effect=RuntimeError("boom")):
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=dns.exception.DNSException("DNS lookup failed"),
+        ):
             self.assertRaises(
                 checkdmarc.utils.DNSException,
                 checkdmarc.utils.get_a_records,
@@ -433,7 +460,10 @@ class TestGetMxRecords(unittest.TestCase):
         self.assertEqual(result, [])
 
     def testGenericError(self):
-        with patch("checkdmarc.utils.query_dns", side_effect=RuntimeError("boom")):
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=dns.exception.DNSException("DNS lookup failed"),
+        ):
             self.assertRaises(
                 checkdmarc.utils.DNSException,
                 checkdmarc.utils.get_mx_records,

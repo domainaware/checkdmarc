@@ -5,6 +5,7 @@ from typing import Any, Optional, cast
 from unittest.mock import MagicMock, patch
 
 import dns.resolver
+import requests
 
 import checkdmarc.mta_sts
 
@@ -270,7 +271,9 @@ class TestDownloadMtaStsPolicy(unittest.TestCase):
     def testHttpFailureRaises(self):
         with patch(
             "checkdmarc.mta_sts.requests.Session",
-            return_value=self._make_session(raise_exc=Exception("HTTP 404")),
+            return_value=self._make_session(
+                raise_exc=requests.exceptions.HTTPError("HTTP 404")
+            ),
         ):
             self.assertRaises(
                 checkdmarc.mta_sts.MTASTSPolicyDownloadError,

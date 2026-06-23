@@ -294,9 +294,9 @@ def query_mta_sts_record(
             pass
         except dns.resolver.NXDOMAIN:
             raise MTASTSRecordNotFound("The domain does not exist.")
-        except Exception as error:
+        except dns.exception.DNSException as error:
             raise MTASTSRecordNotFound(error)
-    except Exception as error:
+    except dns.exception.DNSException as error:
         raise MTASTSRecordNotFound(error)
 
     if sts_record is None:
@@ -442,7 +442,7 @@ def download_mta_sts_policy(
                 f"be set to {expected_content_type}"
             )
 
-    except Exception as e:
+    except requests.RequestException as e:
         raise MTASTSPolicyDownloadError(str(e))
 
     results: DownloadedMTASTSPolicy = {"policy": response.text, "warnings": warnings}

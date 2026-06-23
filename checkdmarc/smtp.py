@@ -11,6 +11,7 @@ import ssl
 from typing import TypedDict, Optional, Union
 from collections.abc import Sequence
 
+import dns.exception
 import dns.resolver
 from dns.nameserver import Nameserver
 
@@ -179,11 +180,6 @@ def test_tls(
         if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
         raise SMTPError(error)
-    except Exception as e:
-        error = e.__str__()
-        if cache is not None:
-            cache[hostname] = {"tls": False, "error": error}
-        raise SMTPError(error)
 
 
 def test_starttls(
@@ -294,11 +290,6 @@ def test_starttls(
         if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
         raise SMTPError(error)
-    except Exception as e:
-        error = e.__str__()
-        if cache is not None:
-            cache[hostname] = {"starttls": False, "error": error}
-        raise SMTPError(error)
 
 
 def get_mx_hosts(
@@ -392,7 +383,7 @@ def get_mx_hosts(
                     nameservers=nameservers,
                     timeout=timeout,
                 )
-            except Exception as e:
+            except (dns.exception.DNSException, OSError, EOFError) as e:
                 logging.debug(e)
             host["dnssec"] = dnssec
             host["addresses"] = []
@@ -413,7 +404,7 @@ def get_mx_hosts(
                 host["tlsa"] = tlsa_records
             if len(host["addresses"]) == 0:
                 warnings.append(f"{hostname} does not have any A or AAAA DNS records.")
-        except Exception as e:
+        except (DNSException, ValueError) as e:
             if hostname.lower().endswith(".msv1.invalid"):
                 warnings.append(
                     f"{e}. Consider using a TXT record to "

@@ -4,6 +4,7 @@ import unittest
 from typing import Any, cast
 from unittest.mock import patch
 
+import dns.exception
 import dns.resolver
 
 import checkdmarc.dmarc
@@ -614,13 +615,13 @@ class TestQueryDmarcRecordEdges(unittest.TestCase):
                 "example.com",
             )
 
-    def testApexFallbackGenericException(self):
-        """NoAnswer at _dmarc, then a generic Exception at apex raises DMARCRecordNotFound"""
+    def testApexFallbackDNSException(self):
+        """NoAnswer at _dmarc, then a DNS error at apex raises DMARCRecordNotFound"""
 
         def fake_query_dns(target, rdtype, **kwargs):
             if target.startswith("_dmarc."):
                 raise dns.resolver.NoAnswer()
-            raise RuntimeError("oops")
+            raise dns.exception.DNSException("dns down")
 
         with patch("checkdmarc.dmarc.query_dns", side_effect=fake_query_dns):
             self.assertRaises(
@@ -629,12 +630,25 @@ class TestQueryDmarcRecordEdges(unittest.TestCase):
                 "example.com",
             )
 
-    def testGenericExceptionAtSelectorWraps(self):
-        """A non-DNS, non-DMARC exception at the selector wraps as DMARCError"""
+    def testDNSExceptionAtSelectorWraps(self):
+        """A DNS error at the selector wraps as DMARCError"""
+
+        with patch(
+            "checkdmarc.dmarc.query_dns",
+            side_effect=dns.exception.DNSException("dns down"),
+        ):
+            self.assertRaises(
+                checkdmarc.dmarc.DMARCError,
+                checkdmarc.dmarc._query_dmarc_record,
+                "example.com",
+            )
+
+    def testNonDNSExceptionAtSelectorPropagates(self):
+        """A non-DNS error (e.g. a programming bug) at the selector is not masked"""
 
         with patch("checkdmarc.dmarc.query_dns", side_effect=RuntimeError("oops")):
             self.assertRaises(
-                checkdmarc.dmarc.DMARCError,
+                RuntimeError,
                 checkdmarc.dmarc._query_dmarc_record,
                 "example.com",
             )

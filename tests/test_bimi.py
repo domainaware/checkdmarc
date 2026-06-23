@@ -7,6 +7,7 @@ from typing import Any, cast
 
 import dns.exception
 import dns.resolver
+import requests
 
 import checkdmarc.bimi
 
@@ -166,13 +167,25 @@ class TestQueryBimiRecordPropagatesSpecificErrors(unittest.TestCase):
                 "example.com",
             )
 
-    def testGenericExceptionStillConvertsToNotFound(self):
-        """Non-BIMI exceptions are still wrapped as BIMIRecordNotFound"""
+    def testDNSExceptionConvertsToNotFound(self):
+        """A DNS-layer error is wrapped as BIMIRecordNotFound"""
+        with patch(
+            "checkdmarc.bimi.query_dns",
+            side_effect=dns.exception.DNSException("network down"),
+        ):
+            self.assertRaises(
+                checkdmarc.bimi.BIMIRecordNotFound,
+                checkdmarc.bimi._query_bimi_record,
+                "example.com",
+            )
+
+    def testNonDNSExceptionPropagates(self):
+        """A non-DNS error (e.g. a programming bug) is not masked as BIMIRecordNotFound"""
         with patch(
             "checkdmarc.bimi.query_dns", side_effect=RuntimeError("network down")
         ):
             self.assertRaises(
-                checkdmarc.bimi.BIMIRecordNotFound,
+                RuntimeError,
                 checkdmarc.bimi._query_bimi_record,
                 "example.com",
             )
@@ -187,7 +200,7 @@ class TestQueryBimiRecordPropagatesSpecificErrors(unittest.TestCase):
         def fake_query_dns(target, rdtype, **kwargs):
             if target == "default._bimi.example.com":
                 raise dns.resolver.NoAnswer()
-            raise RuntimeError("network down")
+            raise dns.exception.DNSException("network down")
 
         with patch("checkdmarc.bimi.query_dns", side_effect=fake_query_dns):
             self.assertRaises(
@@ -332,7 +345,7 @@ class TestParseBimiRecord(unittest.TestCase):
         """A failed l= fetch produces an image error entry, not a raised exception"""
         fake_session = MagicMock()
         fake_session.get.return_value = _fake_response(
-            b"", raise_for_status_exc=Exception("404 Not Found")
+            b"", raise_for_status_exc=requests.exceptions.HTTPError("404 Not Found")
         )
         with patch("checkdmarc.bimi.requests.Session", return_value=fake_session):
             result = checkdmarc.bimi.parse_bimi_record(
@@ -344,7 +357,8 @@ class TestParseBimiRecord(unittest.TestCase):
         """A failed a= fetch produces a certificate error entry"""
         fake_session = MagicMock()
         fake_session.get.return_value = _fake_response(
-            b"", raise_for_status_exc=Exception("connection refused")
+            b"",
+            raise_for_status_exc=requests.exceptions.HTTPError("connection refused"),
         )
         with patch("checkdmarc.bimi.requests.Session", return_value=fake_session):
             result = checkdmarc.bimi.parse_bimi_record(

@@ -315,7 +315,7 @@ def get_a_records(
         except dns.resolver.NoAnswer:
             # Sometimes a domain will only have A or AAAA records, but not both
             pass
-        except Exception as error:
+        except dns.exception.DNSException as error:
             raise DNSException(error)
 
     addresses = sorted(addresses)
@@ -361,7 +361,7 @@ def get_reverse_dns(
         )
     except dns.resolver.NXDOMAIN:
         return []
-    except Exception as error:
+    except dns.exception.DNSException as error:
         raise DNSException(error)
 
     return hostnames
@@ -409,7 +409,7 @@ def get_txt_records(
         raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         raise DNSException(f"The domain {domain} does not have any TXT records.")
-    except Exception as error:
+    except dns.exception.DNSException as error:
         raise DNSException(error)
 
     return records
@@ -455,7 +455,7 @@ def get_soa_record(
         raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         raise DNSException(f"The domain {domain} does not have an SOA record.")
-    except Exception as error:
+    except dns.exception.DNSException as error:
         raise DNSException(error)
 
     return record
@@ -504,7 +504,7 @@ def get_nameservers(
         raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         pass
-    except Exception as error:
+    except dns.exception.DNSException as error:
         raise DNSException(error)
 
     if approved_nameservers:
@@ -574,6 +574,6 @@ def get_mx_records(
         raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
     except dns.resolver.NoAnswer:
         pass
-    except Exception as error:
+    except dns.exception.DNSException as error:
         raise DNSException(error)
     return hosts

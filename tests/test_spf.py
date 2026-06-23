@@ -5,6 +5,8 @@ import unittest
 from unittest.mock import patch
 from typing import Any, cast
 
+import dns.exception
+
 import checkdmarc.spf
 from checkdmarc.spf import ParsedSPFMXMechanism, SPFAMechanism
 
@@ -458,17 +460,20 @@ class Test(unittest.TestCase):
         # Mock query_dns to return:
         # 1. An undecodable non-SPF TXT record
         # 2. A valid SPF record
-        with patch("checkdmarc.spf.query_dns") as mock_query_dns:
-            # First call for SPF type records (returns empty)
-            # Second call for TXT records (returns undecodable + valid SPF)
-            mock_query_dns.side_effect = [
-                [],  # No SPF type records
-                [
+        def fake_query_dns(name, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return []  # No SPF type records
+            if name == domain:
+                return [
                     "Undecodable characters",  # TXT record with undecodable chars
                     '"v=spf1 include:spf.smtp2go.com -all"',  # Valid SPF record
-                ],
-            ]
+                ]
+            # The valid record includes spf.smtp2go.com; return no record for it
+            # so include resolution produces a warning rather than exhausting the
+            # mock. The behavior under test is the undecodable-record handling.
+            return []
 
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
             # This should succeed and return the valid SPF record
             result = checkdmarc.spf.get_spf_record(domain)
 
@@ -939,7 +944,7 @@ class TestSPFExpModifier(unittest.TestCase):
     def testExpAfterAllExceptionWarning(self):
         with patch(
             "checkdmarc.spf.get_txt_records",
-            side_effect=RuntimeError("dns broken"),
+            side_effect=checkdmarc.spf.DNSException("dns broken"),
         ):
             result = checkdmarc.spf.parse_spf_record(
                 "v=spf1 -all exp=exp.example", "example.com"
@@ -1081,8 +1086,23 @@ class TestSPFQueryRecordEdges(unittest.TestCase):
                 "example.com",
             )
 
-    def testGenericExceptionReraises(self):
-        """A non-SPF, non-DNS exception during TXT lookup also becomes SPFRecordNotFound"""
+    def testDNSExceptionBecomesSPFRecordNotFound(self):
+        """A DNS-layer error during the TXT lookup is normalized to SPFRecordNotFound"""
+
+        def fake_query_dns(domain, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return []
+            raise dns.exception.DNSException("dns down")
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            self.assertRaises(
+                checkdmarc.spf.SPFRecordNotFound,
+                checkdmarc.spf.query_spf_record,
+                "example.com",
+            )
+
+    def testNonDNSExceptionPropagates(self):
+        """A non-DNS error (e.g. a programming bug) during the TXT lookup is not masked"""
 
         def fake_query_dns(domain, rdtype, **kwargs):
             if rdtype == "SPF":
@@ -1091,7 +1111,7 @@ class TestSPFQueryRecordEdges(unittest.TestCase):
 
         with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
             self.assertRaises(
-                checkdmarc.spf.SPFRecordNotFound,
+                RuntimeError,
                 checkdmarc.spf.query_spf_record,
                 "example.com",
             )

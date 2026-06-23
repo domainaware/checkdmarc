@@ -269,9 +269,9 @@ def query_smtp_tls_reporting_record(
             pass
         except dns.resolver.NXDOMAIN:
             raise SMTPTLSReportingRecordNotFound("The domain does not exist.")
-        except Exception as error:
+        except dns.exception.DNSException as error:
             raise SMTPTLSReportingRecordNotFound(error)
-    except Exception as error:
+    except dns.exception.DNSException as error:
         raise SMTPTLSReportingRecordNotFound(error)
 
     if sts_record is None:
