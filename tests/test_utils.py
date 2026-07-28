@@ -181,6 +181,25 @@ class TestQueryDns(unittest.TestCase):
             cache=ExpiringDict(10, 60),
         )
 
+    def testRetryTxtGivesUp(self):
+        """A persistent transient error on a TXT lookup is re-raised
+
+        TXT records take their own branch through query_dns, so exhausting
+        the retries there needs its own check.
+        """
+        fake_resolver = _fake_resolver()
+        fake_resolver.nameservers = []
+        fake_resolver.resolve.side_effect = dns.resolver.LifetimeTimeout()
+        self.assertRaises(
+            dns.resolver.LifetimeTimeout,
+            checkdmarc.utils.query_dns,
+            "example.com",
+            "TXT",
+            resolver=fake_resolver,
+            retries=0,
+            cache=ExpiringDict(10, 60),
+        )
+
     def testRetryTxtRecord(self):
         """Retry path also fires for TXT records"""
         fake_resolver = _fake_resolver()

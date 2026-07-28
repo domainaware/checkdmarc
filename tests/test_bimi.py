@@ -1089,6 +1089,53 @@ class TestGetCertificateMetadata(unittest.TestCase):
         result = checkdmarc.bimi.get_certificate_metadata(pem, domain="example.com")
         self.assertEqual(result["logotype_sha256"], hashlib.sha256(svg).hexdigest())
 
+    def testPriorUseMarkWithoutSourceURL(self):
+        """A recent Prior Use Mark must carry a priorUseMarkSourceURL
+
+        Certificates with this mark type issued on or after 2025-04-15 are
+        required to say where the prior use is evidenced.
+        """
+        from datetime import datetime, timezone
+
+        name_attrs, custom_attrs = _full_subject_attrs(mark_type="Prior Use Mark")
+        pem = _build_cert(
+            subject_attrs=name_attrs,
+            custom_oid_subject_attrs=custom_attrs,
+            san_dns=["example.com"],
+            not_valid_before=datetime(2025, 4, 15, tzinfo=timezone.utc),
+            extensions=[(_logotype_extension(VALID_SVG.encode("utf-8")), False)],
+        )
+        result = checkdmarc.bimi.get_certificate_metadata(pem)
+        self.assertTrue(
+            any("priorUseMarkSourceURL" in e for e in result["validation_errors"]),
+            f"Expected a priorUseMarkSourceURL error, got: "
+            f"{result['validation_errors']}",
+        )
+
+    def testPriorUseMarkWithSourceURLAccepted(self):
+        """The same certificate with the source URL present raises no such error"""
+        from datetime import datetime, timezone
+
+        name_attrs, custom_attrs = _full_subject_attrs(mark_type="Prior Use Mark")
+        custom_attrs = custom_attrs + [
+            (
+                checkdmarc.bimi.OID_PRIOR_USE_MARK_SOURCE_URL,
+                "https://example.com/prior-use",
+            )
+        ]
+        pem = _build_cert(
+            subject_attrs=name_attrs,
+            custom_oid_subject_attrs=custom_attrs,
+            san_dns=["example.com"],
+            not_valid_before=datetime(2025, 4, 15, tzinfo=timezone.utc),
+            extensions=[(_logotype_extension(VALID_SVG.encode("utf-8")), False)],
+        )
+        result = checkdmarc.bimi.get_certificate_metadata(pem)
+        self.assertFalse(
+            any("priorUseMarkSourceURL" in e for e in result["validation_errors"]),
+            f"Unexpected priorUseMarkSourceURL error: {result['validation_errors']}",
+        )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

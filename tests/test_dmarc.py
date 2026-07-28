@@ -232,6 +232,18 @@ class Test(unittest.TestCase):
             self.assertEqual(result["location"], "example.com")
             self.assertEqual(result["record"], "v=DMARC1; p=reject")
 
+    def testDMARCGrammarSyntaxError(self):
+        """A record the grammar cannot parse raises DMARCSyntaxError
+
+        The message points at the offending position so the user can see
+        where the record went wrong.
+        """
+        with self.assertRaises(checkdmarc.dmarc.DMARCSyntaxError) as ctx:
+            checkdmarc.dmarc.parse_dmarc_record("v=DMARC1; p", "example.com")
+        message = str(ctx.exception)
+        self.assertIn("Expected", message)
+        self.assertIn(checkdmarc.dmarc.SYNTAX_ERROR_MARKER, message)
+
     def testDMARCSyntaxError(self):
         """An invalid DMARC fo tag value raises InvalidDMARCTagValue"""
         dmarc_record = "v=DMARC1; p=reject; fo=invalid_value"
