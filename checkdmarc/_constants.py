@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """Constant values"""
 
 from __future__ import annotations
-import platform
+
 import os
+import platform
 
 """Copyright 2019-2023 Sean Whalen
 

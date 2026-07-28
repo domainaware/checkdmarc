@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
         )
         # Zero-width character removal
         self.assertEqual(
-            checkdmarc.utils.normalize_domain("exam​ple.com"),
+            checkdmarc.utils.normalize_domain("exam\u200bple.com"),
             "example.com",
         )
         # Unicode normalization
@@ -176,6 +176,25 @@ class TestQueryDns(unittest.TestCase):
             checkdmarc.utils.query_dns,
             "example.com",
             "NS",
+            resolver=fake_resolver,
+            retries=0,
+            cache=ExpiringDict(10, 60),
+        )
+
+    def testRetryTxtGivesUp(self):
+        """A persistent transient error on a TXT lookup is re-raised
+
+        TXT records take their own branch through query_dns, so exhausting
+        the retries there needs its own check.
+        """
+        fake_resolver = _fake_resolver()
+        fake_resolver.nameservers = []
+        fake_resolver.resolve.side_effect = dns.resolver.LifetimeTimeout()
+        self.assertRaises(
+            dns.resolver.LifetimeTimeout,
+            checkdmarc.utils.query_dns,
+            "example.com",
+            "TXT",
             resolver=fake_resolver,
             retries=0,
             cache=ExpiringDict(10, 60),

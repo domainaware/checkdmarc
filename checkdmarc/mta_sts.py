@@ -1,22 +1,21 @@
-# -*- coding: utf-8 -*-
 """SMTP MTA Strict Transport Security (MTA-STS) validation"""
 
 from __future__ import annotations
 
 import logging
 import re
-from typing import TypedDict, Literal
 from collections.abc import Sequence
+from typing import Literal, TypedDict
 
-import dns.resolver
 import dns.exception
-from dns.nameserver import Nameserver
-import requests
+import dns.resolver
 import pyleri
+import requests
+from dns.nameserver import Nameserver
 
 from checkdmarc._constants import (
-    DEFAULT_DNS_TIMEOUT,
     DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_DNS_TIMEOUT,
     DEFAULT_HTTP_TIMEOUT,
     SYNTAX_ERROR_MARKER,
     USER_AGENT,
@@ -36,6 +35,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 
 MTA_STS_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*STSv1{WSP_REGEX}*;"
@@ -148,7 +149,7 @@ class DownloadedMTASTSPolicy(TypedDict):
 
 class ParsedMTASTSPolicy(TypedDict):
     version: Literal["STSv1"]
-    mode: Literal["enforce"] | Literal["testing"] | Literal["none"]
+    mode: Literal["enforce", "testing", "none"]
     max_age: int
     mx: list[str]
 
@@ -240,7 +241,7 @@ def query_mta_sts_record(
 
     """
     domain = normalize_domain(domain)
-    logging.debug(f"Checking for an MTA-STS record on {domain}")
+    logger.debug(f"Checking for an MTA-STS record on {domain}")
     warnings = []
     target = f"_mta-sts.{domain}"
     txt_prefix = "v=STSv1"
@@ -341,7 +342,7 @@ def parse_mta_sts_record(
         :exc:`checkdmarc.mta_sts.SPFRecordFoundWhereMTASTSRecordShouldBe`
 
     """
-    logging.debug("Parsing the MTA-STS record")
+    logger.debug("Parsing the MTA-STS record")
     spf_in_dmarc_error_msg = (
         "Found a SPF record where a MTA-STS record "
         "should be; most likely, the _mta-sts "
@@ -356,9 +357,7 @@ def parse_mta_sts_record(
     sts_syntax_checker = _STSGrammar()
     parsed_record = sts_syntax_checker.parse(record)
     if not parsed_record.is_valid:
-        expecting = list(
-            map(lambda x: str(x).strip('"'), list(parsed_record.expecting))
-        )
+        expecting = [str(x).strip('"') for x in list(parsed_record.expecting)]
         marked_record = (
             record[: parsed_record.pos]
             + syntax_error_marker
@@ -424,7 +423,7 @@ def download_mta_sts_policy(
     session.headers = headers  # pyright: ignore[reportAttributeAccessIssue]
     expected_content_type = "text/plain"
     url = f"https://mta-sts.{domain}/.well-known/mta-sts.txt"
-    logging.debug(f"Attempting to download HTA-MTS policy from {url}")
+    logger.debug(f"Attempting to download MTA-STS policy from {url}")
     try:
         response = session.get(url, timeout=http_timeout)
         response.raise_for_status()

@@ -1,22 +1,20 @@
-# -*- coding: utf-8 -*-
-
 """SMTP TLS Reporting"""
 
 from __future__ import annotations
 
 import logging
 import re
-from typing import TypedDict, Literal
 from collections.abc import Sequence
+from typing import Literal, TypedDict
 
 import dns.exception
 import dns.resolver
-from dns.nameserver import Nameserver
 import pyleri
+from dns.nameserver import Nameserver
 
 from checkdmarc._constants import (
-    DEFAULT_DNS_TIMEOUT,
     DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_DNS_TIMEOUT,
     SYNTAX_ERROR_MARKER,
 )
 from checkdmarc.utils import (
@@ -40,6 +38,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 SMTPTLSREPORTING_VERSION_REGEX_STRING = (
     rf"v{WSP_REGEX}*=" rf"{WSP_REGEX}*TLSRPTv1{WSP_REGEX}*;"
@@ -212,7 +212,7 @@ def query_smtp_tls_reporting_record(
 
     """
     domain = normalize_domain(domain)
-    logging.debug(f"Checking for an SMTP TLS Reporting record on {domain}")
+    logger.debug(f"Checking for an SMTP TLS Reporting record on {domain}")
     warnings = []
     target = f"_smtp._tls.{domain}"
     txt_prefix = "v=TLSRPTv1"
@@ -317,7 +317,7 @@ def parse_smtp_tls_reporting_record(
         :exc:`checkdmarc.smtp_tls_reporting.InvalidSMTPTLSReportingTagValue`
         :exc:`checkdmarc.smtp_tls_reporting.SPFRecordFoundWhereTLSRPTShouldBe`
     """
-    logging.debug("Parsing the SMTP TLS Reporting record")
+    logger.debug("Parsing the SMTP TLS Reporting record")
     spf_in_smtp_error_msg = (
         "Found a SPF record where a SMTP TLS Reporting "
         "record should be; most likely, the _smtp._tls "
@@ -332,9 +332,7 @@ def parse_smtp_tls_reporting_record(
     smtp_tls_syntax_checker = _SMTPTLSReportingGrammar()
     parsed_record = smtp_tls_syntax_checker.parse(record)
     if not parsed_record.is_valid:
-        expecting = list(
-            map(lambda x: str(x).strip('"'), list(parsed_record.expecting))
-        )
+        expecting = [str(x).strip('"') for x in list(parsed_record.expecting)]
         marked_record = (
             record[: parsed_record.pos]
             + syntax_error_marker

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Sender Policy framework (SPF) record validation"""
 
 from __future__ import annotations
@@ -6,18 +5,18 @@ from __future__ import annotations
 import ipaddress
 import logging
 import re
-from typing import TypedDict
 from collections.abc import Sequence
+from typing import TypedDict
 
 import dns
 import dns.exception
 import dns.resolver
-from dns.nameserver import Nameserver
 import pyleri
+from dns.nameserver import Nameserver
 
 from checkdmarc._constants import (
-    DEFAULT_DNS_TIMEOUT,
     DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_DNS_TIMEOUT,
     SYNTAX_ERROR_MARKER,
 )
 from checkdmarc.utils import (
@@ -45,6 +44,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 SPF_VERSION_TAG_REGEX_STRING = "v=spf1"
 
@@ -409,7 +410,7 @@ def query_spf_record(
         :exc:`checkdmarc.SPFRecordNotFound`
     """
     domain = normalize_domain(domain)
-    logging.debug(f"Checking for a SPF record on {domain}")
+    logger.debug(f"Checking for a SPF record on {domain}")
     txt_prefix = "v=spf1"
     warnings = []
     spf_type_records = []
@@ -424,8 +425,11 @@ def query_spf_record(
             timeout=timeout,
             retries=retries,
         )
-    except (dns.resolver.NoAnswer, Exception):
-        pass
+    except (dns.exception.DNSException, OSError) as error:
+        # SPF type records were removed from the standards track in RFC 7208,
+        # so almost no domain publishes one and a failed lookup here is the
+        # normal case rather than something worth reporting to the caller.
+        logger.debug(f"SPF type record lookup failed for {domain}: {error}")
 
     if len(spf_type_records) > 0:
         message = (
@@ -501,8 +505,8 @@ def query_spf_record(
         raise SPFRecordNotFound("An SPF record does not exist.", domain)
     except dns.resolver.NXDOMAIN:
         raise SPFRecordNotFound("The domain does not exist.", domain)
-    except SPFRecordNotFound as error:
-        raise error
+    except SPFRecordNotFound:
+        raise
     except dns.exception.DNSException as error:
         raise SPFRecordNotFound(error, domain)
 
@@ -545,7 +549,7 @@ def query_spf_record(
         # can't be encoded to UTF-8 (e.g. a lone surrogate) shouldn't break
         # the lookup, so skip the byte-size warnings for it. Any other error
         # here is unexpected and should surface rather than be swallowed.
-        logging.debug(f"Skipped SPF size check for {domain}: {size_check_error}")
+        logger.debug(f"Skipped SPF size check for {domain}: {size_check_error}")
 
     spf_record = spf_record.replace('"', "")
     results: SPFQueryResults = {"record": spf_record, "warnings": warnings}
@@ -596,7 +600,7 @@ def parse_spf_record(
         :exc:`checkdmarc.spf.SPFSyntaxError`
         :exc:`checkdmarc.spf.SPFTooManyDNSLookups`
     """
-    logging.debug(f"Parsing the SPF record on {domain}")
+    logger.debug(f"Parsing the SPF record on {domain}")
     domain = normalize_domain(domain)
     record.replace('"', "")
 
@@ -655,9 +659,9 @@ def parse_spf_record(
 
     if not parsed_record.is_valid:
         pos = parsed_record.pos
-        expecting: list[str] = list(
-            map(lambda x: str(x).strip('"'), list(parsed_record.expecting))
-        )
+        expecting: list[str] = [
+            str(x).strip('"') for x in list(parsed_record.expecting)
+        ]
         expecting_str = " or ".join(expecting)
         marked_record = record[:pos] + syntax_error_marker + record[pos:]
         raise SPFSyntaxError(
@@ -730,12 +734,11 @@ def parse_spf_record(
         value = match[2]
         # Macro syntax validation: macros are allowed only in mechanisms
         # that take a domain-spec / macro-string, not ip4/ip6.
-        if "%" in value:
-            if mechanism in ("ip4", "ip6"):
-                raise SPFSyntaxError(
-                    f"{domain}: SPF macros are not allowed in {mechanism} "
-                    f"mechanisms: {value}"
-                )
+        if "%" in value and mechanism in ("ip4", "ip6"):
+            raise SPFSyntaxError(
+                f"{domain}: SPF macros are not allowed in {mechanism} "
+                f"mechanisms: {value}"
+            )
         _validate_spf_macros(
             value,
             domain=domain,
@@ -1205,7 +1208,7 @@ def parse_spf_record(
             if ignore_too_many_lookups:
                 error = str(e)
             else:
-                raise e
+                raise
 
         except (_SPFWarning, DNSException) as warning:
             if isinstance(warning, (_SPFMissingRecords, DNSExceptionNXDOMAIN)):
@@ -1227,7 +1230,7 @@ def parse_spf_record(
                         "lookups (RFC 7208 § 4.6.4)",
                         void_dns_lookups=total_void_dns_lookups,
                     )
-            warnings.append(f"Error when processing {value or domain}: {str(warning)}")
+            warnings.append(f"Error when processing {value or domain}: {warning!s}")
 
     if error:
         error_result: ParsedSPFRecordError = {

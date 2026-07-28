@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Brand Indicators for Message Identification (BIMI) record validation"""
 
 from __future__ import annotations
@@ -11,7 +10,7 @@ import re
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from sys import getsizeof
-from typing import TypedDict, Any
+from typing import Any, TypedDict
 from xml.parsers.expat import ExpatError
 
 try:
@@ -23,7 +22,7 @@ except ImportError:
 
 import dns.exception
 import dns.resolver
-from dns.nameserver import Nameserver
+import pyleri
 import requests
 import xmltodict
 from cryptography import x509
@@ -41,12 +40,12 @@ from cryptography.x509.verification import (
     Store,
     VerificationError,
 )
-import pyleri
+from dns.nameserver import Nameserver
 
 import checkdmarc.resources
 from checkdmarc._constants import (
-    DEFAULT_DNS_TIMEOUT,
     DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_DNS_TIMEOUT,
     DEFAULT_HTTP_TIMEOUT,
     SYNTAX_ERROR_MARKER,
     USER_AGENT,
@@ -73,6 +72,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 
 # TypedDict definitions for BIMI record structures
@@ -498,22 +499,22 @@ def get_svg_metadata(raw_xml: str | bytes) -> dict[str, Any]:
         xml = xmltodict.parse(raw_xml)
         svg = xml["svg"]
         metadata["svg_version"] = svg["@version"]
-        if "@baseProfile" in svg.keys():
+        if "@baseProfile" in svg:
             metadata["base_profile"] = svg["@baseProfile"]
         view_box = svg["@viewBox"]
         view_box = view_box.split(" ")
         width = float(view_box[-2])
         height = float(view_box[-1])
-        if "@x" in svg.keys():
+        if "@x" in svg:
             metadata["x"] = svg["@x"]
-        if "@y" in svg.keys():
+        if "@y" in svg:
             metadata["y"] = svg["@y"]
-        if "title" in svg.keys():
+        if "title" in svg:
             metadata["title"] = svg["title"]
         description = None
-        if "description" in svg.keys():
+        if "description" in svg:
             description = svg["description"]
-        if "overflow" in svg.keys():
+        if "overflow" in svg:
             metadata["overflow"] = svg["overflow"]
         if description is not None:
             metadata["description"] = description
@@ -525,7 +526,7 @@ def get_svg_metadata(raw_xml: str | bytes) -> dict[str, Any]:
         ).hexdigest()  # pyright: ignore[reportAttributeAccessIssue]
         return metadata
     except (ExpatError, KeyError, ValueError, IndexError, TypeError) as e:
-        raise ValueError(f"Not a SVG file: {str(e)}")
+        raise ValueError(f"Not a SVG file: {e!s}")
 
 
 def check_svg_requirements(svg_metadata: dict) -> list[str]:
@@ -534,7 +535,7 @@ def check_svg_requirements(svg_metadata: dict) -> list[str]:
         _errors.append(
             f"The SVG version must be 1.2, not {svg_metadata['svg_version']}"
         )
-    if "base_profile" not in svg_metadata.keys():
+    if "base_profile" not in svg_metadata:
         _errors.append(
             "The SVG is missing a base profile. It must have the "
             "base profile tiny-ps and conform to its standards. "
@@ -544,11 +545,11 @@ def check_svg_requirements(svg_metadata: dict) -> list[str]:
         base_profile = svg_metadata["base_profile"]
         if base_profile != "tiny-ps":
             _errors.append(f"The SVG base profile must be tiny-ps, not {base_profile}")
-    if "title" not in svg_metadata.keys():
+    if "title" not in svg_metadata:
         _errors.append("The SVG must have a title element")
     invalid_attributes = ["x", "y"]
     for attribute in invalid_attributes:
-        if attribute in svg_metadata.keys():
+        if attribute in svg_metadata:
             _errors.append(f"The SVG cannot include {attribute} in the svg element")
     if float(svg_metadata["filesize"].strip(" KB")) > 32:
         _errors.append("The SVG file exceeds the maximum size of 32 KB")
@@ -664,7 +665,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
     except VerificationError as e:
         e_str = str(e)
         metadata["valid"] = False
-        logging.debug(f"Certificate ValidationError exception: {e_str}")
+        logger.debug(f"Certificate ValidationError exception: {e_str}")
         if "all candidates exhausted with no interior errors" in e_str:
             e_str = "The certificate was not issued by a recognized Mark Verifying Authority (MVA)."
             validation_errors.append(e_str)
@@ -694,14 +695,17 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
         )
     if domain is not None:
         base_domain = get_base_domain(domain).encode("utf-8").decode("unicode_escape")
-        if cert_domains is not None:
-            if domain not in cert_domains and base_domain not in cert_domains:
-                plural = "domain" if len(cert_domains) == 1 else "domains"
-                cert_domains = ". ".join(cert_domains)
-                validation_errors.append(
-                    f"{base_domain} does not match the certificate {plural}: {cert_domains}"
-                )
-                valid = False
+        if (
+            cert_domains is not None
+            and domain not in cert_domains
+            and base_domain not in cert_domains
+        ):
+            plural = "domain" if len(cert_domains) == 1 else "domains"
+            cert_domains = ". ".join(cert_domains)
+            validation_errors.append(
+                f"{base_domain} does not match the certificate {plural}: {cert_domains}"
+            )
+            valid = False
     try:
         cert_issuer = get_cert_name_components(vmc.issuer)
         cert_subject = get_cert_name_components(vmc.subject)
@@ -716,11 +720,11 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
                     mark_type == "Prior Use Mark"
                     and vmc.not_valid_before_utc
                     >= datetime(year=2025, month=4, day=15, tzinfo=timezone.utc)
+                    and "priorUseMarkSourceURL" not in cert_subject
                 ):
-                    if "priorUseMarkSourceURL" not in cert_subject:
-                        validation_errors.append(
-                            "Certificates with a subject markType of Prior Use Mark issued on or after 2025-04-15 must have a priorUseMarkSourceURL subject field."
-                        )
+                    validation_errors.append(
+                        "Certificates with a subject markType of Prior Use Mark issued on or after 2025-04-15 must have a priorUseMarkSourceURL subject field."
+                    )
                 required_fields = (
                     REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE["All"]
                     + REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE[mark_type]
@@ -937,7 +941,7 @@ def query_bimi_record(
 
     """
     domain = normalize_domain(domain)
-    logging.debug(f"Checking for a BIMI record at {selector}._bimi.{domain}")
+    logger.debug(f"Checking for a BIMI record at {selector}._bimi.{domain}")
     warnings = []
     base_domain = get_base_domain(domain)
     location = domain
@@ -1038,7 +1042,7 @@ def parse_bimi_record(
     svg_metadata = None
     cert_metadata = None
     valid_cert = False
-    logging.debug("Parsing the BIMI record")
+    logger.debug("Parsing the BIMI record")
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT})
     spf_in_dmarc_error_msg = (
@@ -1055,9 +1059,7 @@ def parse_bimi_record(
     bimi_syntax_checker = _BIMIGrammar()
     parsed_record = bimi_syntax_checker.parse(record)
     if not parsed_record.is_valid:
-        expecting = list(
-            map(lambda x: str(x).strip('"'), list(parsed_record.expecting))
-        )
+        expecting = [str(x).strip('"') for x in list(parsed_record.expecting)]
         marked_record = (
             record[: parsed_record.pos]
             + syntax_error_marker
@@ -1105,7 +1107,7 @@ def parse_bimi_record(
                 raw_xml = response.content
             except requests.RequestException as e:
                 results["image"] = {
-                    "error": f"Failed to download BIMI image at {tag_value} - {str(e)}"
+                    "error": f"Failed to download BIMI image at {tag_value} - {e!s}"
                 }
             if raw_xml is not None:
                 try:
@@ -1128,7 +1130,7 @@ def parse_bimi_record(
                         svg_metadata["validation_errors"] = svg_validation_errors
                 except (ValueError, KeyError) as e:
                     results["image"] = {
-                        "error": f"Failed to process BIMI image at {tag_value} - {str(e)}"
+                        "error": f"Failed to process BIMI image at {tag_value} - {e!s}"
                     }
         elif tag == "a" and tag_value != "":
             cert_metadata = None
@@ -1146,7 +1148,7 @@ def parse_bimi_record(
                         )
             except (requests.RequestException, ValueError, KeyError) as e:
                 results["certificate"] = {
-                    "error": f"Failed to download the mark certificate at {tag_value} - {str(e)}"
+                    "error": f"Failed to download the mark certificate at {tag_value} - {e!s}"
                 }
         elif tag == "avp":
             if tag_value not in ["brand", "personal"]:
@@ -1159,7 +1161,7 @@ def parse_bimi_record(
             selectors = [s.strip().lower() for s in tag_value.split(",")]
             tags[tag]["value"] = selectors
 
-    if parsed_dmarc_record and not tags["l"] == "":
+    if parsed_dmarc_record and tags["l"] != "":
         if parsed_dmarc_record["valid"] is False:
             warnings.append(
                 "The domain does not have a valid DMARC record. A DMARC policy of quarantine or reject must be in place."
@@ -1271,9 +1273,9 @@ def check_bimi(
             http_timeout=DEFAULT_HTTP_TIMEOUT,
         )
         bimi_results["tags"] = parsed_bimi["tags"]
-        if "image" in parsed_bimi.keys():
+        if "image" in parsed_bimi:
             bimi_results["image"] = parsed_bimi["image"]
-        if "certificate" in parsed_bimi.keys():
+        if "certificate" in parsed_bimi:
             bimi_results["certificate"] = parsed_bimi["certificate"]
         bimi_results["warnings"] = parsed_bimi["warnings"]
     except BIMIError as error:

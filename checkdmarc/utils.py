@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """DNS utility functions"""
 
 from __future__ import annotations
@@ -6,14 +5,14 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
-from typing import TypedDict
 from collections.abc import Sequence
+from typing import TypedDict
 
 import dns.exception
 import dns.resolver
 import dns.reversename
-from dns.nameserver import Nameserver
 import publicsuffixlist
+from dns.nameserver import Nameserver
 from expiringdict import ExpiringDict
 
 from checkdmarc._constants import (
@@ -36,6 +35,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 DNS_CACHE = ExpiringDict(
     max_len=DNS_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
@@ -202,10 +203,10 @@ def query_dns(
     if record_type == "TXT":
         try:
             answers = resolver.resolve(domain, record_type, lifetime=resolver.lifetime)
-        except _RETRYABLE_DNS_ERRORS as e:
+        except _RETRYABLE_DNS_ERRORS:
             _attempt += 1
             if _attempt > retries:
-                raise e
+                raise
             return query_dns(
                 domain,
                 record_type,
@@ -215,12 +216,7 @@ def query_dns(
                 retries=retries,
                 _attempt=_attempt,
             )
-        resource_records = list(
-            map(
-                lambda r: r.strings,
-                answers,
-            )
-        )
+        resource_records = [r.strings for r in answers]
         if quoted_txt_segments:
             # Join each sequence of byte chunks, adding quotes around each
             _resource_record = [
@@ -245,10 +241,10 @@ def query_dns(
     else:
         try:
             answers = resolver.resolve(domain, record_type, lifetime=resolver.lifetime)
-        except _RETRYABLE_DNS_ERRORS as e:
+        except _RETRYABLE_DNS_ERRORS:
             _attempt += 1
             if _attempt > retries:
-                raise e
+                raise
             return query_dns(
                 domain,
                 record_type,
@@ -258,12 +254,7 @@ def query_dns(
                 retries=retries,
                 _attempt=_attempt,
             )
-        records = list(
-            map(
-                lambda r: r.to_text().rstrip("."),
-                answers,
-            )
-        )
+        records = [r.to_text().rstrip(".") for r in answers]
     if type(cache) is ExpiringDict:
         cache[cache_key] = records
 
@@ -298,7 +289,7 @@ def get_a_records(
     addresses = []
     for qt in qtypes:
         try:
-            logging.debug(f"Getting {qt} records for {domain}")
+            logger.debug(f"Getting {qt} records for {domain}")
             addresses += query_dns(
                 domain,
                 qt,
@@ -347,7 +338,7 @@ def get_reverse_dns(
     """
     try:
         name = str(dns.reversename.from_address(ip_address))
-        logging.debug(f"Getting PTR records for {ip_address}")
+        logger.debug(f"Getting PTR records for {ip_address}")
         hostnames = query_dns(
             name,
             "PTR",
@@ -484,7 +475,7 @@ def get_nameservers(
                      - ``hostnames`` - A list of nameserver hostnames
                      - ``warnings``  - A list of warnings
     """
-    logging.debug(f"Getting NS records on {domain}")
+    logger.debug(f"Getting NS records on {domain}")
     warnings = []
 
     ns_records = []
@@ -505,7 +496,7 @@ def get_nameservers(
         raise DNSException(error)
 
     if approved_nameservers:
-        approved_nameservers = list(map(lambda h: str(h).lower(), approved_nameservers))
+        approved_nameservers = [str(h).lower() for h in approved_nameservers]
     for nameserver in ns_records:
         if approved_nameservers:
             approved = False
@@ -549,7 +540,7 @@ def get_mx_records(
     """
     hosts = []
     try:
-        logging.debug(f"Checking for MX records on {domain}")
+        logger.debug(f"Checking for MX records on {domain}")
         answers = query_dns(
             domain,
             "MX",
@@ -559,7 +550,7 @@ def get_mx_records(
             retries=retries,
         )
         if answers == ["0 "]:
-            logging.debug('"No Service" MX record found')
+            logger.debug('"No Service" MX record found')
             return []
         for record in answers:
             record = record.split(" ")

@@ -5,9 +5,9 @@ outbound port 25, so these tests stub out smtplib and the lower-level
 DNS helpers entirely.
 """
 
+import smtplib
 import socket
 import ssl
-import smtplib
 import unittest
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
@@ -56,9 +56,11 @@ class TestTestTLS(unittest.TestCase):
     def testDNSResolutionFailed(self):
         """socket.gaierror surfaces as SMTPError 'DNS resolution failed' and is cached"""
         cache = ExpiringDict(max_len=10, max_age_seconds=60)
-        with patch("smtplib.SMTP_SSL", side_effect=socket.gaierror):
-            with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_tls("mail.example.com", cache=cache)
+        with (
+            patch("smtplib.SMTP_SSL", side_effect=socket.gaierror),
+            self.assertRaises(checkdmarc.smtp.SMTPError) as ctx,
+        ):
+            checkdmarc.smtp.test_tls("mail.example.com", cache=cache)
         self.assertIn("DNS resolution failed", str(ctx.exception))
         # First-write into an empty ExpiringDict must succeed — see the
         # `if cache is not None:` checks in smtp.py (an empty dict is falsy).
@@ -67,9 +69,11 @@ class TestTestTLS(unittest.TestCase):
 
     def testConnectionRefused(self):
         """ConnectionRefusedError surfaces as SMTPError 'Connection refused'"""
-        with patch("smtplib.SMTP_SSL", side_effect=ConnectionRefusedError):
-            with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_tls("mail.example.com")
+        with (
+            patch("smtplib.SMTP_SSL", side_effect=ConnectionRefusedError),
+            self.assertRaises(checkdmarc.smtp.SMTPError) as ctx,
+        ):
+            checkdmarc.smtp.test_tls("mail.example.com")
         self.assertEqual(str(ctx.exception), "Connection refused")
 
     def testConnectionReset(self):
@@ -92,41 +96,51 @@ class TestTestTLS(unittest.TestCase):
 
     def testTimeout(self):
         """TimeoutError surfaces as SMTPError 'Connection timed out'"""
-        with patch("smtplib.SMTP_SSL", side_effect=TimeoutError):
-            with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_tls("mail.example.com")
+        with (
+            patch("smtplib.SMTP_SSL", side_effect=TimeoutError),
+            self.assertRaises(checkdmarc.smtp.SMTPError) as ctx,
+        ):
+            checkdmarc.smtp.test_tls("mail.example.com")
         self.assertEqual(str(ctx.exception), "Connection timed out")
 
     def testSSLError(self):
         """ssl.SSLError surfaces as SMTPError 'SSL error: ...'"""
-        with patch("smtplib.SMTP_SSL", side_effect=ssl.SSLError("bad handshake")):
-            with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_tls("mail.example.com")
+        with (
+            patch("smtplib.SMTP_SSL", side_effect=ssl.SSLError("bad handshake")),
+            self.assertRaises(checkdmarc.smtp.SMTPError) as ctx,
+        ):
+            checkdmarc.smtp.test_tls("mail.example.com")
         self.assertIn("SSL error", str(ctx.exception))
 
     def testSMTPConnectError554(self):
         """SMTPConnectError 554 surfaces with 'Not allowed' message"""
         err = smtplib.SMTPConnectError(554, "Not allowed")
-        with patch("smtplib.SMTP_SSL", side_effect=err):
-            with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_tls("mail.example.com")
+        with (
+            patch("smtplib.SMTP_SSL", side_effect=err),
+            self.assertRaises(checkdmarc.smtp.SMTPError) as ctx,
+        ):
+            checkdmarc.smtp.test_tls("mail.example.com")
         self.assertIn("554", str(ctx.exception))
         self.assertIn("Not allowed", str(ctx.exception))
 
     def testSMTPConnectErrorOther(self):
         """SMTPConnectError with non-554 code surfaces with the error code"""
         err = smtplib.SMTPConnectError(421, "Service not available")
-        with patch("smtplib.SMTP_SSL", side_effect=err):
-            with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_tls("mail.example.com")
+        with (
+            patch("smtplib.SMTP_SSL", side_effect=err),
+            self.assertRaises(checkdmarc.smtp.SMTPError) as ctx,
+        ):
+            checkdmarc.smtp.test_tls("mail.example.com")
         self.assertIn("421", str(ctx.exception))
 
     def testSMTPHeloError(self):
         """SMTPHeloError surfaces with 'HELO error: ...'"""
         err = smtplib.SMTPHeloError(500, "Bad HELO")
-        with patch("smtplib.SMTP_SSL", side_effect=err):
-            with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_tls("mail.example.com")
+        with (
+            patch("smtplib.SMTP_SSL", side_effect=err),
+            self.assertRaises(checkdmarc.smtp.SMTPError) as ctx,
+        ):
+            checkdmarc.smtp.test_tls("mail.example.com")
         self.assertIn("HELO error", str(ctx.exception))
 
     def testOSError(self):
@@ -199,9 +213,11 @@ class TestTestSTARTTLS(unittest.TestCase):
 
     def testDNSResolutionFailed(self):
         """socket.gaierror surfaces as 'DNS resolution failed'"""
-        with patch("smtplib.SMTP", side_effect=socket.gaierror):
-            with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_starttls("mail.example.com")
+        with (
+            patch("smtplib.SMTP", side_effect=socket.gaierror),
+            self.assertRaises(checkdmarc.smtp.SMTPError) as ctx,
+        ):
+            checkdmarc.smtp.test_starttls("mail.example.com")
         self.assertIn("DNS resolution failed", str(ctx.exception))
 
     def testConnectionRefused(self):
@@ -225,9 +241,11 @@ class TestTestSTARTTLS(unittest.TestCase):
     def testSMTPConnectError554(self):
         """SMTPConnectError 554 surfaces with 'Not allowed' message"""
         err = smtplib.SMTPConnectError(554, "Not allowed")
-        with patch("smtplib.SMTP", side_effect=err):
-            with self.assertRaises(checkdmarc.smtp.SMTPError) as ctx:
-                checkdmarc.smtp.test_starttls("mail.example.com")
+        with (
+            patch("smtplib.SMTP", side_effect=err),
+            self.assertRaises(checkdmarc.smtp.SMTPError) as ctx,
+        ):
+            checkdmarc.smtp.test_starttls("mail.example.com")
         self.assertIn("554", str(ctx.exception))
 
 
@@ -426,9 +444,11 @@ class TestGetMxHosts(unittest.TestCase):
         for p in patches:
             p.start()
         try:
-            with patch("checkdmarc.smtp.test_starttls", return_value=False):
-                with patch("checkdmarc.smtp.test_tls", return_value=True):
-                    result = checkdmarc.smtp.get_mx_hosts("example.com")
+            with (
+                patch("checkdmarc.smtp.test_starttls", return_value=False),
+                patch("checkdmarc.smtp.test_tls", return_value=True),
+            ):
+                result = checkdmarc.smtp.get_mx_hosts("example.com")
         finally:
             for p in patches:
                 p.stop()
@@ -448,9 +468,11 @@ class TestGetMxHosts(unittest.TestCase):
         for p in patches:
             p.start()
         try:
-            with patch("checkdmarc.smtp.test_starttls", return_value=False):
-                with patch("checkdmarc.smtp.test_tls", return_value=False):
-                    result = checkdmarc.smtp.get_mx_hosts("example.com")
+            with (
+                patch("checkdmarc.smtp.test_starttls", return_value=False),
+                patch("checkdmarc.smtp.test_tls", return_value=False),
+            ):
+                result = checkdmarc.smtp.get_mx_hosts("example.com")
         finally:
             for p in patches:
                 p.stop()
@@ -528,9 +550,11 @@ class TestTLSCacheWritesOnError(unittest.TestCase):
 
     def _run_and_check_cache(self, exc):
         cache = self._make_cache()
-        with patch("smtplib.SMTP_SSL", side_effect=exc):
-            with self.assertRaises(checkdmarc.smtp.SMTPError):
-                checkdmarc.smtp.test_tls("mail.example.com", cache=cache)
+        with (
+            patch("smtplib.SMTP_SSL", side_effect=exc),
+            self.assertRaises(checkdmarc.smtp.SMTPError),
+        ):
+            checkdmarc.smtp.test_tls("mail.example.com", cache=cache)
         entry = cast(dict, cache["mail.example.com"])
         self.assertFalse(entry["tls"])
         self.assertIsNotNone(entry["error"])
@@ -567,9 +591,11 @@ class TestTLSCacheWritesOnError(unittest.TestCase):
         """An SMTPException whose message isn't a tuple-formatted string falls
         through the inner try/except ValueError branch"""
         cache = self._make_cache()
-        with patch("smtplib.SMTP_SSL", side_effect=smtplib.SMTPException("denied")):
-            with self.assertRaises(checkdmarc.smtp.SMTPError):
-                checkdmarc.smtp.test_tls("mail.example.com", cache=cache)
+        with (
+            patch("smtplib.SMTP_SSL", side_effect=smtplib.SMTPException("denied")),
+            self.assertRaises(checkdmarc.smtp.SMTPError),
+        ):
+            checkdmarc.smtp.test_tls("mail.example.com", cache=cache)
         entry = cast(dict, cache["mail.example.com"])
         # Even when the inner int() ValueError fires, the message is cached.
         self.assertIsNotNone(entry["error"])
@@ -586,9 +612,11 @@ class TestSTARTTLSCacheAndExtraBranches(unittest.TestCase):
 
     def _run_and_check_cache(self, exc):
         cache = self._make_cache()
-        with patch("smtplib.SMTP", side_effect=exc):
-            with self.assertRaises(checkdmarc.smtp.SMTPError):
-                checkdmarc.smtp.test_starttls("mail.example.com", cache=cache)
+        with (
+            patch("smtplib.SMTP", side_effect=exc),
+            self.assertRaises(checkdmarc.smtp.SMTPError),
+        ):
+            checkdmarc.smtp.test_starttls("mail.example.com", cache=cache)
         entry = cast(dict, cache["mail.example.com"])
         self.assertFalse(entry["starttls"])
         self.assertIsNotNone(entry["error"])
@@ -670,6 +698,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
     def testMsv1InvalidHostnameWarningHasHint(self):
         """A hostname ending in .msv1.invalid gets the Office 365 TXT-record hint"""
         from contextlib import ExitStack
+
         from checkdmarc.utils import DNSException
 
         with ExitStack() as stack:
@@ -728,6 +757,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
     def testReverseDnsAResolutionFails(self):
         """A DNSException when re-resolving the PTR hostname becomes a warning"""
         from contextlib import ExitStack
+
         from checkdmarc.utils import DNSException
 
         # First get_a_records (the MX) succeeds; second (the PTR) raises
@@ -760,6 +790,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
     def testReverseDnsLookupRaises(self):
         """A DNSException from get_reverse_dns is swallowed; the PTR list becomes empty"""
         from contextlib import ExitStack
+
         from checkdmarc.utils import DNSException
 
         with ExitStack() as stack:
@@ -793,6 +824,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
     def testStarttlsRaisesDnsException(self):
         """test_starttls raising DNSException becomes a warning and tls/starttls=False"""
         from contextlib import ExitStack
+
         from checkdmarc.utils import DNSException
 
         with ExitStack() as stack:

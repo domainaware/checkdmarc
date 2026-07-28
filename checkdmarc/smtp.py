@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """SMTP tests"""
 
 from __future__ import annotations
@@ -8,18 +7,17 @@ import platform
 import smtplib
 import socket
 import ssl
-from typing import TypedDict
 from collections.abc import Sequence
+from typing import TypedDict
 
 import dns.exception
 import dns.resolver
 from dns.nameserver import Nameserver
-
 from expiringdict import ExpiringDict
 
 from checkdmarc._constants import (
-    DEFAULT_DNS_TIMEOUT,
     DEFAULT_DNS_MAX_RETRIES,
+    DEFAULT_DNS_TIMEOUT,
     DEFAULT_SMTP_TIMEOUT,
     SMTP_CACHE_MAX_AGE_SECONDS,
     SMTP_CACHE_MAX_LEN,
@@ -48,6 +46,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 
 TLS_CACHE = ExpiringDict(
@@ -105,7 +105,7 @@ def test_tls(
             return cached_result["tls"]
     if ssl_context is None:
         ssl_context = ssl.create_default_context()
-    logging.debug(f"Testing TLS/SSL on {hostname}")
+    logger.debug(f"Testing TLS/SSL on {hostname}")
     try:
         with smtplib.SMTP_SSL(hostname, context=ssl_context, timeout=timeout) as server:
             server.ehlo_or_helo_if_needed()
@@ -212,7 +212,7 @@ def test_starttls(
             return cached_result["starttls"]
     if ssl_context is None:
         ssl_context = ssl.create_default_context()
-    logging.debug(f"Testing STARTTLS on {hostname}")
+    logger.debug(f"Testing STARTTLS on {hostname}")
     try:
         with smtplib.SMTP(hostname, timeout=timeout) as server:
             server.ehlo_or_helo_if_needed()
@@ -334,7 +334,7 @@ def get_mx_hosts(
     warnings = []
     hostnames = set()
     dupe_hostnames = set()
-    logging.debug(f"Getting MX records for {domain}")
+    logger.debug(f"Getting MX records for {domain}")
     mx_records = get_mx_records(
         domain,
         nameservers=nameservers,
@@ -354,7 +354,7 @@ def get_mx_hosts(
         warnings.append("MX records found on parked domains")
 
     if approved_hostnames:
-        approved_hostnames = list(map(lambda h: h.lower(), approved_hostnames))
+        approved_hostnames = [h.lower() for h in approved_hostnames]
     for host in hosts:
         hostname = host["hostname"]
         if hostname in hostnames:
@@ -371,9 +371,10 @@ def get_mx_hosts(
                     break
             if not approved:
                 warnings.append(f"Unapproved MX hostname: {hostname}")
-        if mta_sts_mx_patterns:
-            if not mx_in_mta_sts_patterns(hostname, mta_sts_mx_patterns):
-                warnings.append(f"{hostname} is not included in the MTA-STS policy")
+        if mta_sts_mx_patterns and not mx_in_mta_sts_patterns(
+            hostname, mta_sts_mx_patterns
+        ):
+            warnings.append(f"{hostname} is not included in the MTA-STS policy")
 
         try:
             dnssec = False
@@ -384,7 +385,7 @@ def get_mx_hosts(
                     timeout=timeout,
                 )
             except (dns.exception.DNSException, OSError, EOFError) as e:
-                logging.debug(e)
+                logger.debug(e)
             host["dnssec"] = dnssec
             host["addresses"] = []
             host["addresses"] = get_a_records(
@@ -449,10 +450,10 @@ def get_mx_hosts(
                         f"{address}"
                     )
         if not skip_tls and platform.system() == "Windows":
-            logging.warning("Testing TLS is not supported on Windows")
+            logger.warning("Testing TLS is not supported on Windows")
             skip_tls = True
         if skip_tls:
-            logging.debug(f"Skipping TLS/SSL tests on {hostname}")
+            logger.debug(f"Skipping TLS/SSL tests on {hostname}")
         else:
             try:
                 starttls = test_starttls(hostname, cache=STARTTLS_CACHE)
