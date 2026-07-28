@@ -10,6 +10,8 @@
 - Honor a caller-supplied `cache` in `get_dnskey()` when it falls back to the base domain; the fallback previously wrote to the module-level cache instead, leaving the caller's cache empty and leaking results between callers
 - Read TLSA results from the caller-supplied `cache` in `get_tlsa_records()`, which previously wrote to that cache but always read from the module-level one, so a caller's own cached entries were never used
 
+## 5.17.3
+
 ### Changed
 
 - Narrow the advisory SPF record size check to catch only `UnicodeError` (raised when a record can't be encoded to UTF-8) instead of swallowing every exception, and log the skip at debug level
