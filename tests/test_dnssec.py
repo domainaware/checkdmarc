@@ -4,6 +4,12 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
+import dns.exception
+import dns.name
+import dns.rdatatype
+import dns.rrset
+from expiringdict import ExpiringDict
+
 import checkdmarc.dnssec
 
 OFFLINE_MODE = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
@@ -15,6 +21,97 @@ mocked_only = unittest.skipUnless(
     OFFLINE_MODE, "Mocked counterpart skipped locally; network test covers this"
 )
 
+# A syntactically valid DNSKEY and RRSIG. Nothing here has to verify
+# cryptographically; these exist so the code under test sorts real record sets
+# by name and type instead of by their position in the answer.
+DNSKEY_RDATA = "257 3 13 mdsswUyr3DPW132mOi8V9xESWE8jTo0dxCjjnopKl+GqJxpVXckHAeF+KkxLbxILfDLUT0rAK9iUzy1L53eKGQ=="
+TLSA_RDATA = "3 1 1 " + "ab" * 32
+
+
+def _rrsig(
+    name: str, covered_type: str, signer: str = "example.com."
+) -> dns.rrset.RRset:
+    """Build an RRSIG record set covering the given record type"""
+    return dns.rrset.from_text(
+        name,
+        300,
+        "IN",
+        "RRSIG",
+        f"{covered_type} 13 2 300 20990101000000 20200101000000 1234 {signer} ab==",
+    )
+
+
+def _response(*rrsets: dns.rrset.RRset) -> MagicMock:
+    """A stand-in DNS response; only its answer section is read"""
+    response = MagicMock()
+    response.answer = list(rrsets)
+    return response
+
+
+def _cname_chain() -> tuple[dns.rrset.RRset, dns.rrset.RRset]:
+    """The answer shape from issue #265: a name pointing at another name
+
+    Two record sets, neither of them a signature. Code that assumes a
+    two-record answer is always "one record plus its signature" pairs the
+    second link of the chain with a missing signature.
+    """
+    return (
+        dns.rrset.from_text(
+            "aws.amazon.com.", 60, "IN", "CNAME", "tp.frontier.amazon.com."
+        ),
+        dns.rrset.from_text(
+            "tp.frontier.amazon.com.", 60, "IN", "CNAME", "d123.cloudfront.net."
+        ),
+    )
+
+
+def _fresh_cache() -> ExpiringDict:
+    return ExpiringDict(max_len=10, max_age_seconds=60)
+
+
+class TestFindRecordAndSignature(unittest.TestCase):
+    def testPairsRecordWithItsSignature(self):
+        """A record and the signature covering it are returned together"""
+        a = dns.rrset.from_text("example.com.", 300, "IN", "A", "192.0.2.1")
+        sig = _rrsig("example.com.", "A")
+        rrset, rrsig = checkdmarc.dnssec._find_record_and_signature(
+            [a, sig], dns.name.from_text("example.com"), dns.rdatatype.A
+        )
+        self.assertIs(rrset, a)
+        self.assertIs(rrsig, sig)
+
+    def testIgnoresRecordsForOtherNames(self):
+        """Records further along a chain belong to another name and are skipped"""
+        first, second = _cname_chain()
+        rrset, rrsig = checkdmarc.dnssec._find_record_and_signature(
+            [first, second], dns.name.from_text("aws.amazon.com"), dns.rdatatype.CNAME
+        )
+        self.assertIs(rrset, first)
+        self.assertIsNone(rrsig)
+
+    def testIgnoresSignatureCoveringAnotherType(self):
+        """An RRSIG over a different record type is not treated as a match"""
+        mx = dns.rrset.from_text(
+            "example.com.", 300, "IN", "MX", "10 mail.example.com."
+        )
+        rrset, rrsig = checkdmarc.dnssec._find_record_and_signature(
+            [mx, _rrsig("example.com.", "A")],
+            dns.name.from_text("example.com"),
+            dns.rdatatype.MX,
+        )
+        self.assertIs(rrset, mx)
+        self.assertIsNone(rrsig)
+
+    def testNameMatchIsCaseInsensitive(self):
+        """DNS names are case-insensitive, so casing must not defeat the match"""
+        a = dns.rrset.from_text("Example.COM.", 300, "IN", "A", "192.0.2.1")
+        rrset, _ = checkdmarc.dnssec._find_record_and_signature(
+            [a, _rrsig("example.com.", "A")],
+            dns.name.from_text("example.com"),
+            dns.rdatatype.A,
+        )
+        self.assertIs(rrset, a)
+
 
 class Test(unittest.TestCase):
     @network_test
@@ -22,32 +119,37 @@ class Test(unittest.TestCase):
         """Test known good DNSSEC"""
         self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
 
+    @network_test
+    def testDNSSECNameChainDoesNotRaise(self):
+        """A name that points at an unsigned name reports no DNSSEC
+
+        Regression test for issue #265: aws.amazon.com answers with a chain of
+        names rather than with records of its own.
+        """
+        self.assertEqual(
+            checkdmarc.dnssec.test_dnssec("aws.amazon.com", nameservers=["1.1.1.1"]),
+            False,
+        )
+
     @mocked_only
     def testDNSSECMocked(self):
         """test_dnssec returns True when a record/RRSIG pair validates (mocked)
 
-        The full DNSSEC chain (DNSKEY -> RRSIG -> validated RRset) is
-        synthesised here; we are exercising the success branch of
-        test_dnssec, not the cryptographic validator itself.
+        The signature check itself is stubbed out; what is under test is that
+        test_dnssec finds the record and its signature and reports success.
         """
-        import dns.rdatatype
-
-        fake_response = MagicMock()
-        rrset = MagicMock()
-        rrset.rdtype = dns.rdatatype.A
-        rrsig = MagicMock()
-        rrsig.rdtype = dns.rdatatype.RRSIG
-        fake_response.answer = [rrset, rrsig]
-
-        from expiringdict import ExpiringDict
-
-        fresh_cache = ExpiringDict(max_len=10, max_age_seconds=60)
-        with patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()):
-            with patch("dns.query.tcp", return_value=fake_response):
-                with patch("dns.dnssec.validate", return_value=None):
-                    result = checkdmarc.dnssec.test_dnssec(
-                        "example.com", cache=fresh_cache, nameservers=["192.0.2.1"]
-                    )
+        response = _response(
+            dns.rrset.from_text("example.com.", 300, "IN", "A", "192.0.2.1"),
+            _rrsig("example.com.", "A"),
+        )
+        with (
+            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
+            patch("dns.query.tcp", return_value=response),
+            patch("dns.dnssec.validate", return_value=None),
+        ):
+            result = checkdmarc.dnssec.test_dnssec(
+                "example.com", cache=_fresh_cache(), nameservers=["192.0.2.1"]
+            )
         self.assertTrue(result)
 
     def testDnssecFalseWhenNoKey(self):
@@ -59,9 +161,7 @@ class Test(unittest.TestCase):
 
     def testGetDnskeyCache(self):
         """get_dnskey uses cache"""
-        from expiringdict import ExpiringDict
-
-        cache = ExpiringDict(max_len=100, max_age_seconds=60)
+        cache = _fresh_cache()
         mock_key = {"test": "data"}
         cache["example.com"] = mock_key
         result = checkdmarc.dnssec.get_dnskey("example.com", cache=cache)
@@ -69,66 +169,79 @@ class Test(unittest.TestCase):
 
 
 class TestGetDnskey(unittest.TestCase):
-    @staticmethod
-    def _fresh_cache():
-        from expiringdict import ExpiringDict
-
-        return ExpiringDict(max_len=10, max_age_seconds=60)
-
     def testFound(self):
         """A DNSKEY answer at the apex is returned as a dict keyed by dns.name"""
-        import dns.rdatatype
-
-        rrset = MagicMock()
-        rrset.rdtype = dns.rdatatype.DNSKEY
-        response = MagicMock()
-        response.answer = [rrset]
+        rrset = dns.rrset.from_text("example.com.", 300, "IN", "DNSKEY", DNSKEY_RDATA)
+        response = _response(rrset, _rrsig("example.com.", "DNSKEY"))
 
         with patch("dns.query.tcp", return_value=response):
             result = checkdmarc.dnssec.get_dnskey(
-                "example.com",
-                nameservers=["1.1.1.1"],
-                cache=self._fresh_cache(),
+                "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         assert result is not None  # narrow Optional for pyright
-        # The single entry should map to the rrset we returned
-        self.assertIn(rrset, result.values())
+        self.assertEqual(result, {dns.name.from_text("example.com."): rrset})
 
     def testEmptyAnswerAtApexReturnsNone(self):
         """If the apex has no DNSKEY answer, get_dnskey returns None"""
-        response = MagicMock()
-        response.answer = []
-
-        with patch("dns.query.tcp", return_value=response):
+        with patch("dns.query.tcp", return_value=_response()):
             result = checkdmarc.dnssec.get_dnskey(
-                "example.com",
-                nameservers=["1.1.1.1"],
-                cache=self._fresh_cache(),
+                "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertIsNone(result)
 
+    def testNameChainAnswerIsNotMistakenForAKey(self):
+        """A chain of names in a DNSKEY answer must not be returned as a key
+
+        The apex here is the queried name, so there is nowhere left to fall
+        back to and the answer holds no key.
+        """
+        with patch("dns.query.tcp", return_value=_response(*_cname_chain())):
+            result = checkdmarc.dnssec.get_dnskey(
+                "amazon.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+            )
+        self.assertIsNone(result)
+
+    def testNameChainAtSubdomainRecursesToBase(self):
+        """A subdomain answering with a chain of names falls back to the base domain"""
+        key = dns.rrset.from_text("amazon.com.", 300, "IN", "DNSKEY", DNSKEY_RDATA)
+        with patch(
+            "dns.query.tcp",
+            side_effect=[_response(*_cname_chain()), _response(key)],
+        ):
+            result = checkdmarc.dnssec.get_dnskey(
+                "aws.amazon.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+            )
+        self.assertEqual(result, {dns.name.from_text("amazon.com."): key})
+
     def testEmptyAnswerAtSubdomainRecursesToBase(self):
         """A subdomain with no DNSKEY records recurses up to the base domain"""
-        import dns.rdatatype
-
-        empty_response = MagicMock()
-        empty_response.answer = []
-        rrset = MagicMock()
-        rrset.rdtype = dns.rdatatype.DNSKEY
-        valid_response = MagicMock()
-        valid_response.answer = [rrset]
-
-        with patch("dns.query.tcp", side_effect=[empty_response, valid_response]):
+        key = dns.rrset.from_text("example.com.", 300, "IN", "DNSKEY", DNSKEY_RDATA)
+        with patch("dns.query.tcp", side_effect=[_response(), _response(key)]):
             result = checkdmarc.dnssec.get_dnskey(
-                "sub.example.com",
-                nameservers=["1.1.1.1"],
-                cache=self._fresh_cache(),
+                "sub.example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
-        self.assertIsNotNone(result)
+        self.assertEqual(result, {dns.name.from_text("example.com."): key})
+
+    def testRecursionUsesTheCallersCache(self):
+        """The base domain result is stored in the cache the caller passed in
+
+        Without this the recursive lookup falls back to the module-level cache,
+        so the caller's cache stays empty and results leak between callers.
+        """
+        cache = _fresh_cache()
+        key = dns.rrset.from_text("example.com.", 300, "IN", "DNSKEY", DNSKEY_RDATA)
+        with patch("dns.query.tcp", side_effect=[_response(), _response(key)]):
+            checkdmarc.dnssec.get_dnskey(
+                "sub.example.com", nameservers=["1.1.1.1"], cache=cache
+            )
+        self.assertEqual(
+            cache["example.com"], {dns.name.from_text("example.com."): key}
+        )
+        self.assertNotIn("example.com", checkdmarc.dnssec.DNSKEY_CACHE)
 
     def testQueryExceptionCachedAsNone(self):
         """Network exceptions cache None and let the function return None"""
-        cache = self._fresh_cache()
+        cache = _fresh_cache()
         with patch("dns.query.tcp", side_effect=OSError("boom")):
             result = checkdmarc.dnssec.get_dnskey(
                 "example.com", nameservers=["1.1.1.1"], cache=cache
@@ -138,14 +251,8 @@ class TestGetDnskey(unittest.TestCase):
 
 
 class TestTestDnssec(unittest.TestCase):
-    @staticmethod
-    def _fresh_cache():
-        from expiringdict import ExpiringDict
-
-        return ExpiringDict(max_len=10, max_age_seconds=60)
-
     def testCacheHitTrue(self):
-        cache = self._fresh_cache()
+        cache = _fresh_cache()
         cache["example.com"] = True
         with patch("checkdmarc.dnssec.get_dnskey") as mock_key:
             result = checkdmarc.dnssec.test_dnssec("example.com", cache=cache)
@@ -153,60 +260,74 @@ class TestTestDnssec(unittest.TestCase):
         mock_key.assert_not_called()
 
     def testCacheHitFalse(self):
-        cache = self._fresh_cache()
+        cache = _fresh_cache()
         cache["example.com"] = False
         result = checkdmarc.dnssec.test_dnssec("example.com", cache=cache)
         self.assertFalse(result)
 
     def testNoSignedRecordsReturnsFalse(self):
         """If no signed records validate across all rdatatypes, return False"""
-        # Each per-rdatatype query returns an answer of length != 2,
-        # which fails the rrset/rrsig pairing check and continues.
-        response = MagicMock()
-        response.answer = []
-        with patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()):
-            with patch("dns.query.tcp", return_value=response):
-                result = checkdmarc.dnssec.test_dnssec(
-                    "example.com",
-                    nameservers=["1.1.1.1"],
-                    cache=self._fresh_cache(),
-                )
+        with (
+            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
+            patch("dns.query.tcp", return_value=_response()),
+        ):
+            result = checkdmarc.dnssec.test_dnssec(
+                "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+            )
+        self.assertFalse(result)
+
+    def testNameChainReturnsFalseInsteadOfRaising(self):
+        """A chain of names is reported as unsigned rather than crashing
+
+        Regression test for issue #265. The signature check is deliberately
+        left unpatched: passing it a missing signature is exactly the bug, and
+        would surface here as an AttributeError.
+        """
+        with (
+            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
+            patch("dns.query.tcp", return_value=_response(*_cname_chain())),
+        ):
+            result = checkdmarc.dnssec.test_dnssec(
+                "aws.amazon.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+            )
+        self.assertFalse(result)
+
+    def testUnsignedRecordReturnsFalse(self):
+        """A record with no signature alongside it is reported as unsigned"""
+        response = _response(
+            dns.rrset.from_text("example.com.", 300, "IN", "A", "192.0.2.1")
+        )
+        with (
+            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
+            patch("dns.query.tcp", return_value=response),
+        ):
+            result = checkdmarc.dnssec.test_dnssec(
+                "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+            )
         self.assertFalse(result)
 
     def testInvalidSignatureReturnsFalse(self):
         """A bad signature (ValidationFailure) at every rdatatype reports
         DNSSEC as not validated, rather than propagating the exception."""
-        import dns.exception
-        import dns.rdatatype
-
-        rrset = MagicMock()
-        rrset.rdtype = dns.rdatatype.A
-        rrsig = MagicMock()
-        rrsig.rdtype = dns.rdatatype.RRSIG
-        response = MagicMock()
-        response.answer = [rrset, rrsig]
-
-        with patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()):
-            with patch("dns.query.tcp", return_value=response):
-                with patch(
-                    "dns.dnssec.validate",
-                    side_effect=dns.exception.ValidationFailure("bad signature"),
-                ):
-                    result = checkdmarc.dnssec.test_dnssec(
-                        "example.com",
-                        nameservers=["1.1.1.1"],
-                        cache=self._fresh_cache(),
-                    )
+        response = _response(
+            dns.rrset.from_text("example.com.", 300, "IN", "A", "192.0.2.1"),
+            _rrsig("example.com.", "A"),
+        )
+        with (
+            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
+            patch("dns.query.tcp", return_value=response),
+            patch(
+                "dns.dnssec.validate",
+                side_effect=dns.exception.ValidationFailure("bad signature"),
+            ),
+        ):
+            result = checkdmarc.dnssec.test_dnssec(
+                "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+            )
         self.assertFalse(result)
 
 
 class TestGetTlsaRecords(unittest.TestCase):
-    @staticmethod
-    def _fresh_cache():
-        from expiringdict import ExpiringDict
-
-        return ExpiringDict(max_len=10, max_age_seconds=60)
-
     def testNoNameserversRaises(self):
         """An empty nameservers list raises ValueError"""
         self.assertRaises(
@@ -214,87 +335,108 @@ class TestGetTlsaRecords(unittest.TestCase):
             checkdmarc.dnssec.get_tlsa_records,
             "mail.example.com",
             nameservers=[],
-            cache=self._fresh_cache(),
+            cache=_fresh_cache(),
         )
 
     def testCacheHit(self):
-        cache = self._fresh_cache()
-        checkdmarc.dnssec.TLSA_CACHE["_25._tcp.mail.example.com"] = ["cached"]
-        try:
+        """A cached result is returned from the cache the caller passed in
+
+        The lookup must read the caller's cache, not the module-level one, and
+        must not reach the network to do it.
+        """
+        cache = _fresh_cache()
+        cache["_25._tcp.mail.example.com"] = ["cached"]
+        with patch("dns.query.tcp") as query:
             result = checkdmarc.dnssec.get_tlsa_records(
-                "mail.example.com",
-                nameservers=["1.1.1.1"],
-                cache=cache,
+                "mail.example.com", nameservers=["1.1.1.1"], cache=cache
             )
-            self.assertEqual(result, ["cached"])
+        self.assertEqual(result, ["cached"])
+        self.assertFalse(query.called)
+
+    def testModuleCacheNotConsultedWhenCallerPassesOne(self):
+        """A stale module-level entry must not leak into a caller's own cache"""
+        checkdmarc.dnssec.TLSA_CACHE["_25._tcp.mail.example.com"] = ["stale"]
+        try:
+            with patch("dns.query.tcp", return_value=_response()):
+                result = checkdmarc.dnssec.get_tlsa_records(
+                    "mail.example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+                )
+            self.assertEqual(result, [])
         finally:
             checkdmarc.dnssec.TLSA_CACHE.pop("_25._tcp.mail.example.com", None)
 
-    def testFewerThanTwoAnswersReturnsEmpty(self):
-        """An answer of length != 2 returns an empty list"""
-        response = MagicMock()
-        response.answer = []
-        with patch("dns.query.tcp", return_value=response):
+    def testNoRecordsReturnsEmpty(self):
+        """An answer with no TLSA records returns an empty list"""
+        with patch("dns.query.tcp", return_value=_response()):
             result = checkdmarc.dnssec.get_tlsa_records(
-                "mail.example.com",
-                nameservers=["1.1.1.1"],
-                cache=self._fresh_cache(),
+                "mail.example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+            )
+        self.assertEqual(result, [])
+
+    def testNameChainReturnsEmptyInsteadOfRaising(self):
+        """A chain of names returns no TLSA records rather than crashing
+
+        The same missing-signature bug as issue #265, on the TLSA path. The
+        signature check is left unpatched so the bug would surface here.
+        """
+        with patch("dns.query.tcp", return_value=_response(*_cname_chain())):
+            result = checkdmarc.dnssec.get_tlsa_records(
+                "mail.example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+            )
+        self.assertEqual(result, [])
+
+    def testUnsignedTlsaRecordsReturnsEmpty(self):
+        """TLSA records with no signature are not reported"""
+        rrset = dns.rrset.from_text(
+            "_25._tcp.mail.example.com.", 300, "IN", "TLSA", TLSA_RDATA
+        )
+        with patch("dns.query.tcp", return_value=_response(rrset)):
+            result = checkdmarc.dnssec.get_tlsa_records(
+                "mail.example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertEqual(result, [])
 
     def testNoDnskeyReturnsEmpty(self):
         """TLSA records present but no DNSKEY to verify them returns an empty list"""
-        import dns.rdatatype
-
-        rrset = MagicMock()
-        rrset.rdtype = dns.rdatatype.TLSA
-        rrsig = MagicMock()
-        rrsig.rdtype = dns.rdatatype.RRSIG
-        response = MagicMock()
-        response.answer = [rrset, rrsig]
-        with patch("dns.query.tcp", return_value=response):
-            with patch("checkdmarc.dnssec.get_dnskey", return_value=None):
-                result = checkdmarc.dnssec.get_tlsa_records(
-                    "mail.example.com",
-                    nameservers=["1.1.1.1"],
-                    cache=self._fresh_cache(),
-                )
+        response = _response(
+            dns.rrset.from_text(
+                "_25._tcp.mail.example.com.", 300, "IN", "TLSA", TLSA_RDATA
+            ),
+            _rrsig("_25._tcp.mail.example.com.", "TLSA"),
+        )
+        with (
+            patch("dns.query.tcp", return_value=response),
+            patch("checkdmarc.dnssec.get_dnskey", return_value=None),
+        ):
+            result = checkdmarc.dnssec.get_tlsa_records(
+                "mail.example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+            )
         self.assertEqual(result, [])
 
     def testTlsaRecordsExtracted(self):
         """A signed TLSA RRset is decoded and cached"""
-        import dns.rdatatype
-
-        rrset = MagicMock()
-        rrset.rdtype = dns.rdatatype.TLSA
-
-        # Simple stand-in for a TLSA RR whose str() is the parsed record text.
-        class _StubRr:
-            def __str__(self) -> str:
-                return "3 1 1 abc123"
-
-        rr_item = _StubRr()
-        rrset.items = {rr_item: None}
-        rrsig = MagicMock()
-        rrsig.rdtype = dns.rdatatype.RRSIG
-        response = MagicMock()
-        response.answer = [rrset, rrsig]
-        with patch("dns.query.tcp", return_value=response):
-            with patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()):
-                with patch("dns.dnssec.validate", return_value=None):
-                    result = checkdmarc.dnssec.get_tlsa_records(
-                        "mail.example.com",
-                        nameservers=["1.1.1.1"],
-                        cache=self._fresh_cache(),
-                    )
-        self.assertEqual(result, ["3 1 1 abc123"])
+        cache = _fresh_cache()
+        response = _response(
+            dns.rrset.from_text(
+                "_25._tcp.mail.example.com.", 300, "IN", "TLSA", TLSA_RDATA
+            ),
+            _rrsig("_25._tcp.mail.example.com.", "TLSA"),
+        )
+        with (
+            patch("dns.query.tcp", return_value=response),
+            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
+            patch("dns.dnssec.validate", return_value=None),
+        ):
+            result = checkdmarc.dnssec.get_tlsa_records(
+                "mail.example.com", nameservers=["1.1.1.1"], cache=cache
+            )
+        self.assertEqual(result, [TLSA_RDATA])
+        self.assertEqual(cache["_25._tcp.mail.example.com"], [TLSA_RDATA])
 
     def testQueryExceptionReturnsEmpty(self):
         with patch("dns.query.tcp", side_effect=OSError("boom")):
             result = checkdmarc.dnssec.get_tlsa_records(
-                "mail.example.com",
-                nameservers=["1.1.1.1"],
-                cache=self._fresh_cache(),
+                "mail.example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertEqual(result, [])
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.17.4
+
+### Fixed
+
+- Stop crashing with `AttributeError: 'NoneType' object has no attribute 'name'` when checking a domain whose DNS answer contains a chain of names, such as `aws.amazon.com`. The DNSSEC check assumed a two-record answer was always a record plus its signature, so it passed a missing signature to the validator; it now selects the record and signature by name and type ([issue #265](https://github.com/domainaware/checkdmarc/issues/265))
+- Stop treating the first record in a DNSKEY answer as a key regardless of its type, which made a domain that answers with a chain of names appear to have a key it does not have. The base domain is now checked instead, as it already was for an empty answer
+- Apply the same record selection to the TLSA lookup, which could crash the same way for a mail host whose name points at another name
+- Honor a caller-supplied `cache` in `get_dnskey()` when it falls back to the base domain; the fallback previously wrote to the module-level cache instead, leaving the caller's cache empty and leaking results between callers
+- Read TLSA results from the caller-supplied `cache` in `get_tlsa_records()`, which previously wrote to that cache but always read from the module-level one, so a caller's own cached entries were never used
+
 ## 5.17.3
 
 ### Changed
