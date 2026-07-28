@@ -10,6 +10,7 @@
 - Honor a caller-supplied `cache` in `get_dnskey()` when it falls back to the base domain; the fallback previously wrote to the module-level cache instead, leaving the caller's cache empty and leaking results between callers
 - Read TLSA results from the caller-supplied `cache` in `get_tlsa_records()`, which previously wrote to that cache but always read from the module-level one, so a caller's own cached entries were never used
 - Remove an unreachable `dns.resolver.NoAnswer` handler in the DMARC lookup; an earlier handler in the same `try` block already caught it
+- Report the CSV `tls` column from each MX host's `tls` field instead of its `starttls` field, and make both columns fail when any host lacks support. Both columns were built by formatting `starttls` into a string, so the "one host failed" check compared a string to `False`, never matched, and left each column holding whichever value the last host happened to have. `results_to_csv_rows()` now returns real booleans for these columns; the text written to a CSV file is unchanged
 
 ### Changed
 

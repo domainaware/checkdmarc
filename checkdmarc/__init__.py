@@ -379,32 +379,18 @@ def results_to_csv_rows(
         row["mx"] = "|".join(
             [f"{r['preference']}, {r['hostname']}" for r in mx["hosts"]]
         )
-        tls = None
-        try:
-            tls_results = [f"{r['starttls']}" for r in mx["hosts"]]
-            for tls_result in tls_results:
-                tls = tls_result
-                if tls_result is False:
-                    tls = False
-                    break
-        except KeyError:
-            # The user might opt to skip the STARTTLS test
-            pass
-        finally:
-            row["tls"] = tls
-
-        starttls = None
-        try:
-            starttls_results = [f"{r['starttls']}" for r in mx["hosts"]]
-            for starttls_result in starttls_results:
-                starttls = starttls_result
-                if starttls_result is False:
-                    starttls = False
-        except KeyError:
-            # The user might opt to skip the STARTTLS test
-            pass
-        finally:
-            row["starttls"] = starttls
+        # Each column reports whether every MX host supports that protocol,
+        # because a single host without it weakens delivery for the whole
+        # domain. A missing key means the caller skipped the TLS tests, which
+        # is reported as an empty column rather than as a failure.
+        for column in ("tls", "starttls"):
+            try:
+                supported = [host[column] for host in mx["hosts"]]
+            except KeyError:
+                # The user might opt to skip the STARTTLS test
+                row[column] = None
+                continue
+            row[column] = all(supported) if supported else None
 
         if "error" in mx:
             row["mx_error"] = mx["error"]

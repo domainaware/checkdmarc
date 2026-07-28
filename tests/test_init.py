@@ -238,8 +238,8 @@ class TestResultsToCsvRowsBranches(unittest.TestCase):
         self.assertEqual(row["dmarc_rua"], "mailto:rua@example.com")
         self.assertEqual(row["dmarc_ruf"], "mailto:ruf@example.com")
         # TLS / STARTTLS extracted from mx hosts
-        self.assertEqual(row["tls"], "True")
-        self.assertEqual(row["starttls"], "True")
+        self.assertEqual(row["tls"], True)
+        self.assertEqual(row["starttls"], True)
         self.assertEqual(row["smtp_tls_reporting_valid"], True)
 
     def testFullSuccessRowWithBimi(self):
@@ -527,6 +527,86 @@ class TestResultsToCsvRowsExtraBranches(unittest.TestCase):
         )
         row = rows[0]
         # KeyError on starttls -> tls and starttls remain None
+        self.assertIsNone(row["tls"])
+        self.assertIsNone(row["starttls"])
+
+    def _row_for_hosts(self, hosts: list[dict]) -> dict:
+        result = self._base_result_with_bimi(error=False)
+        del result["bimi"]
+        result["mx"] = {"hosts": hosts, "warnings": []}
+        return checkdmarc.results_to_csv_rows(
+            cast(checkdmarc.DomainCheckResult, result)
+        )[0]
+
+    def testTlsColumnsReportTheirOwnField(self):
+        """The tls column reports tls and the starttls column reports starttls
+
+        The two are independent: a host can support implicit TLS without
+        supporting STARTTLS, and the columns must not be read off the same
+        field.
+        """
+        row = self._row_for_hosts(
+            [
+                {
+                    "preference": 10,
+                    "hostname": "mail.example.com",
+                    "tls": True,
+                    "starttls": False,
+                }
+            ]
+        )
+        self.assertEqual(row["tls"], True)
+        self.assertEqual(row["starttls"], False)
+
+    def testOneUnsupportedHostFailsTheColumn(self):
+        """A single host without support decides the column for the domain
+
+        The failing host is deliberately first, so a rewrite that keeps only
+        the last host's value would not pass.
+        """
+        row = self._row_for_hosts(
+            [
+                {
+                    "preference": 10,
+                    "hostname": "a.example.com",
+                    "tls": False,
+                    "starttls": False,
+                },
+                {
+                    "preference": 20,
+                    "hostname": "b.example.com",
+                    "tls": True,
+                    "starttls": True,
+                },
+            ]
+        )
+        self.assertEqual(row["tls"], False)
+        self.assertEqual(row["starttls"], False)
+
+    def testAllSupportedHostsPassTheColumn(self):
+        """Every host supporting a protocol reports it as supported"""
+        row = self._row_for_hosts(
+            [
+                {
+                    "preference": 10,
+                    "hostname": "a.example.com",
+                    "tls": True,
+                    "starttls": True,
+                },
+                {
+                    "preference": 20,
+                    "hostname": "b.example.com",
+                    "tls": True,
+                    "starttls": True,
+                },
+            ]
+        )
+        self.assertEqual(row["tls"], True)
+        self.assertEqual(row["starttls"], True)
+
+    def testNoMxHostsLeavesTlsColumnsEmpty(self):
+        """With no MX hosts there is nothing to report, rather than success"""
+        row = self._row_for_hosts([])
         self.assertIsNone(row["tls"])
         self.assertIsNone(row["starttls"])
 
