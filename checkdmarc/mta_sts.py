@@ -423,7 +423,7 @@ def download_mta_sts_policy(
     session.headers = headers  # pyright: ignore[reportAttributeAccessIssue]
     expected_content_type = "text/plain"
     url = f"https://mta-sts.{domain}/.well-known/mta-sts.txt"
-    logger.debug(f"Attempting to download HTA-MTS policy from {url}")
+    logger.debug(f"Attempting to download MTA-STS policy from {url}")
     try:
         response = session.get(url, timeout=http_timeout)
         response.raise_for_status()
