@@ -9,6 +9,13 @@
 - Apply the same record selection to the TLSA lookup, which could crash the same way for a mail host whose name points at another name
 - Honor a caller-supplied `cache` in `get_dnskey()` when it falls back to the base domain; the fallback previously wrote to the module-level cache instead, leaving the caller's cache empty and leaking results between callers
 - Read TLSA results from the caller-supplied `cache` in `get_tlsa_records()`, which previously wrote to that cache but always read from the module-level one, so a caller's own cached entries were never used
+- Remove an unreachable `dns.resolver.NoAnswer` handler in the DMARC lookup; an earlier handler in the same `try` block already caught it
+
+### Changed
+
+- Log through a per-module logger (`checkdmarc.spf`, `checkdmarc.dnssec`, and so on) rather than the root logger, so an application embedding this library can filter or re-level its output separately from its own. The CLI's `--debug` output is unchanged
+- Narrow the handler around the obsolete SPF type record lookup to DNS and socket errors instead of catching every exception, so unexpected errors surface instead of being silently discarded, and record the skipped lookup at debug level
+- Apply the current ruff rule set across the package and tests — import order, comprehensions in place of `map()` with a lambda, combined `with` statements, and bare `raise` when re-raising a caught exception. These are all behavior-preserving
 
 ## 5.17.3
 

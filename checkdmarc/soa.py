@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import re
-from typing import TypedDict
 from collections.abc import Sequence
+from typing import TypedDict
 
 import dns.resolver
 from dns.nameserver import Nameserver
 
-from checkdmarc._constants import DEFAULT_DNS_TIMEOUT, DEFAULT_DNS_MAX_RETRIES
+from checkdmarc._constants import DEFAULT_DNS_MAX_RETRIES, DEFAULT_DNS_TIMEOUT
 from checkdmarc.utils import DNSException, get_soa_record
 
 """Functions for parsing DNS Start of Authority records"""

@@ -12,7 +12,6 @@ from unittest.mock import patch
 
 import checkdmarc._cli
 
-
 SAMPLE_RESULT = {
     "domain": "example.com",
     "base_domain": "example.com",
@@ -48,9 +47,11 @@ def _run_cli(argv, *, check_returns=None):
     """
     if check_returns is None:
         check_returns = SAMPLE_RESULT
-    with patch("checkdmarc._cli.check_domains", return_value=check_returns) as mock:
-        with patch("sys.argv", ["checkdmarc"] + argv):
-            checkdmarc._cli._main()
+    with (
+        patch("checkdmarc._cli.check_domains", return_value=check_returns) as mock,
+        patch("sys.argv", ["checkdmarc"] + argv),
+    ):
+        checkdmarc._cli._main()
     return mock
 
 
@@ -195,9 +196,12 @@ class TestCLI(unittest.TestCase):
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".txt") as out_file:
             out_path = out_file.name
         try:
-            with patch("checkdmarc._cli.logging") as mock_logging:
+            with self.assertLogs("checkdmarc._cli", level="ERROR") as logs:
                 _run_cli(["--output", out_path, "--", "example.com"])
-            mock_logging.error.assert_called()
+            self.assertTrue(
+                any("must end in .json or .csv" in line for line in logs.output),
+                f"Expected an error about the output extension, got: {logs.output}",
+            )
             # Nothing valid was written; the temp file is still its
             # original (empty) state.
             with open(out_path) as f:

@@ -1,16 +1,14 @@
-# -*- coding: utf-8 -*-
-
 """Validates and parses email-related DNS records"""
 
 from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Sequence
 from csv import DictWriter
 from io import StringIO
 from time import sleep
 from typing import TypedDict
-from collections.abc import Sequence
 
 import dns.resolver
 from dns.nameserver import Nameserver
@@ -19,27 +17,31 @@ import checkdmarc._constants
 from checkdmarc._constants import (
     DEFAULT_DNS_MAX_RETRIES,
     DEFAULT_DNS_TIMEOUT,
+)
+from checkdmarc._constants import (
     RECOMMENDED_DNS_NAMESERVERS as RECOMMENDED_DNS_NAMESERVERS,
 )
-from checkdmarc.bimi import check_bimi, BIMICheckResult
-from checkdmarc.dmarc import check_dmarc, DMARCResults, DMARCErrorResults
+from checkdmarc.bimi import BIMICheckResult, check_bimi
+from checkdmarc.dmarc import DMARCErrorResults, DMARCResults, check_dmarc
 from checkdmarc.dnssec import test_dnssec
-from checkdmarc.mta_sts import check_mta_sts, MTASTSCheckResults
-from checkdmarc.smtp import check_mx, MXResults
+from checkdmarc.mta_sts import MTASTSCheckResults, check_mta_sts
+from checkdmarc.smtp import MXResults, check_mx
 from checkdmarc.smtp_tls_reporting import (
-    check_smtp_tls_reporting,
     SMTPTLSReportingResults,
+    check_smtp_tls_reporting,
 )
-from checkdmarc.soa import check_soa, SOARecordResults
-from checkdmarc.spf import check_spf, SPFRecordResults
+from checkdmarc.soa import SOARecordResults, check_soa
+from checkdmarc.spf import SPFRecordResults, check_spf
 from checkdmarc.utils import (
     DNSException,
-    MXHost as MXHost,
     NameserverResult,
     NameserverResultError,
     get_base_domain,
     get_nameservers,
     normalize_domain,
+)
+from checkdmarc.utils import (
+    MXHost as MXHost,
 )
 
 """Copyright 2019-2023 Sean Whalen
@@ -55,6 +57,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 
 __version__ = checkdmarc._constants.__version__
@@ -136,14 +140,7 @@ def check_domains(
        - ``bimi`` - BIMI record validation results (optional, only if bimi_selector is not None)
     """
     domains = sorted(
-        list(
-            set(
-                map(
-                    lambda d: normalize_domain(d.rstrip(".\r\n").strip().split(",")[0]),
-                    domains,
-                )
-            )
-        )
+        {normalize_domain(d.rstrip(".\r\n").strip().split(",")[0]) for d in domains}
     )
     not_domains = []
     for domain in domains:
@@ -156,7 +153,7 @@ def check_domains(
     results = []
     for domain in domains:
         domain = normalize_domain(domain)
-        logging.debug(f"Checking: {domain}")
+        logger.debug(f"Checking: {domain}")
 
         domain_results = {
             "domain": domain,
@@ -245,7 +242,7 @@ def check_domains(
 
         results.append(domain_results)
         if wait > 0.0:
-            logging.debug(f"Sleeping for {wait} seconds")
+            logger.debug(f"Sleeping for {wait} seconds")
             sleep(wait)
     if len(results) == 1:
         results = results[0]
@@ -380,11 +377,11 @@ def results_to_csv_rows(
                     if "a" in _bimi["tags"]:
                         row["bimi_a"] = _bimi["tags"]["a"]["value"]
         row["mx"] = "|".join(
-            list(map(lambda r: f"{r['preference']}, {r['hostname']}", mx["hosts"]))
+            [f"{r['preference']}, {r['hostname']}" for r in mx["hosts"]]
         )
         tls = None
         try:
-            tls_results = list(map(lambda r: f"{r['starttls']}", mx["hosts"]))
+            tls_results = [f"{r['starttls']}" for r in mx["hosts"]]
             for tls_result in tls_results:
                 tls = tls_result
                 if tls_result is False:
@@ -398,7 +395,7 @@ def results_to_csv_rows(
 
         starttls = None
         try:
-            starttls_results = list(map(lambda r: f"{r['starttls']}", mx["hosts"]))
+            starttls_results = [f"{r['starttls']}" for r in mx["hosts"]]
             for starttls_result in starttls_results:
                 starttls = starttls_result
                 if starttls_result is False:
@@ -433,15 +430,15 @@ def results_to_csv_rows(
             row["dmarc_sp"] = _dmarc["tags"]["sp"]["value"]
             if "rua" in _dmarc["tags"]:
                 addresses = _dmarc["tags"]["rua"]["value"]
-                addresses = list(
-                    map(lambda u: "{}:{}".format(u["scheme"], u["address"]), addresses)
-                )
+                addresses = [
+                    "{}:{}".format(u["scheme"], u["address"]) for u in addresses
+                ]
                 row["dmarc_rua"] = "|".join(addresses)
             if "ruf" in _dmarc["tags"]:
                 addresses = _dmarc["tags"]["ruf"]["value"]
-                addresses = list(
-                    map(lambda u: "{}:{}".format(u["scheme"], u["address"]), addresses)
-                )
+                addresses = [
+                    "{}:{}".format(u["scheme"], u["address"]) for u in addresses
+                ]
                 row["dmarc_ruf"] = "|".join(addresses)
             row["dmarc_warnings"] = "|".join(_dmarc["warnings"])
         if "error" in _smtp_tls_reporting:

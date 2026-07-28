@@ -1,25 +1,22 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Validates and parses email-related DNS records"""
 
 from __future__ import annotations
 
+import logging
 import os
 from argparse import ArgumentParser
 
-import logging
-
+from checkdmarc import (
+    __version__,
+    check_domains,
+    output_to_file,
+    results_to_csv,
+    results_to_json,
+)
 from checkdmarc._constants import (
     DEFAULT_DNS_MAX_RETRIES,
     DEFAULT_DNS_TIMEOUT,
     RECOMMENDED_DNS_NAMESERVERS,
-)
-from checkdmarc import (
-    __version__,
-    check_domains,
-    results_to_json,
-    results_to_csv,
-    output_to_file,
 )
 
 """Copyright 2019-2023 Sean Whalen
@@ -35,6 +32,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 
 def _main():
@@ -130,19 +129,12 @@ def _main():
 
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
-        logging.debug("Debug output enabled")
+        logger.debug("Debug output enabled")
     domains = args.domain
     if len(domains) == 1 and os.path.exists(domains[0]):
         with open(domains[0]) as domains_file:
             domains = sorted(
-                list(
-                    set(
-                        map(
-                            lambda d: d.rstrip(".\r\n").strip().lower().split(",")[0],
-                            domains_file.readlines(),
-                        )
-                    )
-                )
+                {d.rstrip(".\r\n").strip().lower().split(",")[0] for d in domains_file}
             )
             not_domains = []
             for domain in domains:
@@ -177,7 +169,7 @@ def _main():
             csv_path = path.lower().endswith(".csv")
 
             if not json_path and not csv_path:
-                logging.error(f"Output path {path} must end in .json or .csv")
+                logger.error(f"Output path {path} must end in .json or .csv")
             else:
                 if path.lower().endswith(".json"):
                     output_to_file(path, results_to_json(results))

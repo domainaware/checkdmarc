@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
         )
         # Zero-width character removal
         self.assertEqual(
-            checkdmarc.utils.normalize_domain("exam​ple.com"),
+            checkdmarc.utils.normalize_domain("exam\u200bple.com"),
             "example.com",
         )
         # Unicode normalization

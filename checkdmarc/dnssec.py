@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """DNSSEC tests"""
 
 from __future__ import annotations
@@ -9,10 +8,10 @@ from collections.abc import Sequence
 import dns.dnssec
 import dns.exception
 import dns.message
-import dns.query
-import dns.resolver
-import dns.rdatatype
 import dns.name
+import dns.query
+import dns.rdatatype
+import dns.resolver
 import dns.rrset
 from dns.nameserver import Nameserver
 from dns.rdatatype import RdataType
@@ -38,6 +37,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 DNSSEC_CACHE = ExpiringDict(
     max_len=DNSSEC_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
@@ -119,7 +120,7 @@ def get_dnskey(
         if isinstance(cached_result, dict):
             return cached_result
 
-    logging.debug(f"Checking for DNSKEY records at {domain}")
+    logger.debug(f"Checking for DNSKEY records at {domain}")
     request = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec=True)
     for nameserver in nameservers:
         try:
@@ -134,7 +135,7 @@ def get_dnskey(
                 # signed zone. A name that points at another name answers with
                 # that chain rather than with a key, so check the base domain.
                 if rrset is None:
-                    logging.debug(f"No DNSKEY records found at {domain}")
+                    logger.debug(f"No DNSKEY records found at {domain}")
                     base_domain = get_base_domain(domain)
                     if domain != base_domain:
                         return get_dnskey(
@@ -150,7 +151,7 @@ def get_dnskey(
                 return key
         except (dns.exception.DNSException, OSError, EOFError) as e:
             cache[domain] = None
-            logging.debug(f"DNSKEY query error: {e}")
+            logger.debug(f"DNSKEY query error: {e}")
 
 
 def test_dnssec(
@@ -205,11 +206,11 @@ def test_dnssec(
                     if rrset is None or rrsig is None:
                         continue
                     dns.dnssec.validate(rrset, rrsig, key)
-                    logging.debug(f"Found a signed {rdatatype.name} record")
+                    logger.debug(f"Found a signed {rdatatype.name} record")
                     cache[domain] = True
                     return True
             except (dns.exception.DNSException, OSError, EOFError) as e:
-                logging.debug(f"DNSSEC query error: {e}")
+                logger.debug(f"DNSSEC query error: {e}")
 
     cache[domain] = False
     return False
@@ -250,7 +251,7 @@ def get_tlsa_records(
         if isinstance(cached_results, list):
             return cached_results
     tlsa_records: list[str] = []
-    logging.debug(f"Checking for TLSA records at {query_hostname}")
+    logger.debug(f"Checking for TLSA records at {query_hostname}")
     request = dns.message.make_query(
         query_hostname, dns.rdatatype.TLSA, want_dnssec=True
     )
@@ -271,16 +272,16 @@ def get_tlsa_records(
                     domain=hostname, nameservers=nameservers, timeout=timeout
                 )
                 if dnskey is None:
-                    logging.debug(
+                    logger.debug(
                         f"Found TLSA records at {hostname} but not "
                         f"a DNSKEY record to verify them"
                     )
                     return tlsa_records
                 dns.dnssec.validate(rrset, rrsig, dnskey)
-                tlsa_records = list(map(lambda x: str(x), list(rrset.items.keys())))
+                tlsa_records = [str(x) for x in list(rrset.items.keys())]
                 cache[query_hostname] = tlsa_records
                 return tlsa_records
         except (dns.exception.DNSException, OSError, EOFError) as e:
-            logging.debug(f"TLSA query error: {e}")
+            logger.debug(f"TLSA query error: {e}")
             return tlsa_records
     return tlsa_records

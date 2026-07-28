@@ -2,8 +2,8 @@
 
 import os
 import unittest
-from unittest.mock import patch
 from typing import Any, cast
+from unittest.mock import patch
 
 import dns.exception
 
@@ -226,9 +226,7 @@ class Test(unittest.TestCase):
         domain = "seanthegeek.net"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "Error when processing {0}: An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
-                domain
-            ),
+            f"Error when processing {domain}: An mx mechanism points to {domain}, but that domain/subdomain does not have any MX records.",
             results["warnings"],
         )
         self.assertEqual(results["dns_lookups"], 1)
@@ -638,10 +636,12 @@ class Test(unittest.TestCase):
         ]
 
         for record in invalid_records:
-            with self.subTest(record=record):
-                with patch("checkdmarc.spf.query_dns", return_value=[record]):
-                    with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
-                        checkdmarc.spf.query_spf_record("example.com")
+            with (
+                self.subTest(record=record),
+                patch("checkdmarc.spf.query_dns", return_value=[record]),
+                self.assertRaises(checkdmarc.spf.SPFRecordNotFound),
+            ):
+                checkdmarc.spf.query_spf_record("example.com")
 
     @mocked_only
     def testSPFVersionMatchingIsCaseInsensitiveMocked(self):
@@ -656,9 +656,11 @@ class Test(unittest.TestCase):
         """Records with leading whitespace are discarded (RFC 7208 § 4.5)"""
         # The record does not *begin* with the "v=spf1" version section, so it
         # is not a valid SPF record and no SPF record is found.
-        with patch("checkdmarc.spf.query_dns", return_value=["  v=spf1 -all"]):
-            with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
-                checkdmarc.spf.query_spf_record("example.com")
+        with (
+            patch("checkdmarc.spf.query_dns", return_value=["  v=spf1 -all"]),
+            self.assertRaises(checkdmarc.spf.SPFRecordNotFound),
+        ):
+            checkdmarc.spf.query_spf_record("example.com")
 
     @mocked_only
     def testSPFVersionMatchingAllowsTrailingWhitespaceMocked(self):
@@ -678,10 +680,12 @@ class Test(unittest.TestCase):
         "v=spf1" version section, so leading whitespace makes it invalid.
         """
         for record in (" v=spf1", " v=spf1 -all", "\tv=spf1 -all"):
-            with self.subTest(record=record):
-                with patch("checkdmarc.spf.query_dns", return_value=[record]):
-                    with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
-                        checkdmarc.spf.query_spf_record("example.com")
+            with (
+                self.subTest(record=record),
+                patch("checkdmarc.spf.query_dns", return_value=[record]),
+                self.assertRaises(checkdmarc.spf.SPFRecordNotFound),
+            ):
+                checkdmarc.spf.query_spf_record("example.com")
 
     @mocked_only
     def testJunkAfterAllMocked(self):
@@ -737,14 +741,16 @@ class Test(unittest.TestCase):
                 return ['"v=spf1 a a a ~all"']
             return []
 
-        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
-            with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
-                self.assertRaises(
-                    checkdmarc.spf.SPFTooManyDNSLookups,
-                    checkdmarc.spf.parse_spf_record,
-                    spf_record,
-                    domain,
-                )
+        with (
+            patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns),
+            patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]),
+        ):
+            self.assertRaises(
+                checkdmarc.spf.SPFTooManyDNSLookups,
+                checkdmarc.spf.parse_spf_record,
+                spf_record,
+                domain,
+            )
 
     @mocked_only
     def testTooManySPFVoidDNSLookupsMocked(self):
@@ -757,14 +763,16 @@ class Test(unittest.TestCase):
         )
         domain = "example.com"
 
-        with patch("checkdmarc.spf.get_a_records", return_value=[]):
-            with patch("checkdmarc.spf.get_mx_records", return_value=[]):
-                self.assertRaises(
-                    checkdmarc.spf.SPFTooManyVoidDNSLookups,
-                    checkdmarc.spf.parse_spf_record,
-                    spf_record,
-                    domain,
-                )
+        with (
+            patch("checkdmarc.spf.get_a_records", return_value=[]),
+            patch("checkdmarc.spf.get_mx_records", return_value=[]),
+        ):
+            self.assertRaises(
+                checkdmarc.spf.SPFTooManyVoidDNSLookups,
+                checkdmarc.spf.parse_spf_record,
+                spf_record,
+                domain,
+            )
 
     @mocked_only
     def testSPFMissingMXRecordMocked(self):
@@ -775,9 +783,7 @@ class Test(unittest.TestCase):
         with patch("checkdmarc.spf.get_mx_records", return_value=[]):
             results = checkdmarc.spf.parse_spf_record(spf_record, domain)
         self.assertIn(
-            "Error when processing {0}: An mx mechanism points to {0}, but that domain/subdomain does not have any MX records.".format(
-                domain
-            ),
+            f"Error when processing {domain}: An mx mechanism points to {domain}, but that domain/subdomain does not have any MX records.",
             results["warnings"],
         )
         self.assertEqual(results["dns_lookups"], 1)
@@ -804,9 +810,11 @@ class Test(unittest.TestCase):
             {"preference": 10, "hostname": "mail.protonmail.ch"},
             {"preference": 20, "hostname": "mailsec.protonmail.ch"},
         ]
-        with patch("checkdmarc.spf.get_mx_records", return_value=mx_hosts):
-            with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
-                results = checkdmarc.spf.parse_spf_record(spf_record, domain)
+        with (
+            patch("checkdmarc.spf.get_mx_records", return_value=mx_hosts),
+            patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]),
+        ):
+            results = checkdmarc.spf.parse_spf_record(spf_record, domain)
 
         for mechanism in results["parsed"]["mechanisms"]:
             if mechanism["mechanism"] == "mx":
@@ -822,23 +830,29 @@ class TestPtrMatch(unittest.TestCase):
 
     def testHostnameAndIpMatch(self):
         """PTR points back to a hostname that resolves to the same IP — True"""
-        with patch("checkdmarc.spf.get_reverse_dns", return_value=["mail.example.com"]):
-            with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
-                result = checkdmarc.spf.ptr_match("192.0.2.1", "example.com")
+        with (
+            patch("checkdmarc.spf.get_reverse_dns", return_value=["mail.example.com"]),
+            patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]),
+        ):
+            result = checkdmarc.spf.ptr_match("192.0.2.1", "example.com")
         self.assertTrue(result)
 
     def testHostnameMatchesButIpDoesnt(self):
         """PTR points back to a matching hostname but its A records don't include the IP"""
-        with patch("checkdmarc.spf.get_reverse_dns", return_value=["mail.example.com"]):
-            with patch("checkdmarc.spf.get_a_records", return_value=["203.0.113.1"]):
-                result = checkdmarc.spf.ptr_match("192.0.2.1", "example.com")
+        with (
+            patch("checkdmarc.spf.get_reverse_dns", return_value=["mail.example.com"]),
+            patch("checkdmarc.spf.get_a_records", return_value=["203.0.113.1"]),
+        ):
+            result = checkdmarc.spf.ptr_match("192.0.2.1", "example.com")
         self.assertFalse(result)
 
     def testHostnameDoesntEndWithDomain(self):
         """PTR hostname doesn't end with the SPF domain — skipped"""
-        with patch("checkdmarc.spf.get_reverse_dns", return_value=["mail.other.com"]):
-            with patch("checkdmarc.spf.get_a_records") as mock_a:
-                result = checkdmarc.spf.ptr_match("192.0.2.1", "example.com")
+        with (
+            patch("checkdmarc.spf.get_reverse_dns", return_value=["mail.other.com"]),
+            patch("checkdmarc.spf.get_a_records") as mock_a,
+        ):
+            result = checkdmarc.spf.ptr_match("192.0.2.1", "example.com")
         self.assertFalse(result)
         mock_a.assert_not_called()
 
@@ -994,34 +1008,38 @@ class TestSPFMxBranches(unittest.TestCase):
         mx_hosts = [
             {"preference": i * 10, "hostname": f"mx{i}.example.com"} for i in range(12)
         ]
-        with patch("checkdmarc.spf.get_mx_records", return_value=mx_hosts):
-            with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
-                self.assertRaises(
-                    checkdmarc.spf.SPFTooManyDNSLookups,
-                    checkdmarc.spf.parse_spf_record,
-                    "v=spf1 mx -all",
-                    "example.com",
-                )
+        with (
+            patch("checkdmarc.spf.get_mx_records", return_value=mx_hosts),
+            patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]),
+        ):
+            self.assertRaises(
+                checkdmarc.spf.SPFTooManyDNSLookups,
+                checkdmarc.spf.parse_spf_record,
+                "v=spf1 mx -all",
+                "example.com",
+            )
 
     def testMxHostMissingARecords(self):
         """When successive MX host A-lookups return empty, the void counter
         exceeds 2 and SPFTooManyVoidDNSLookups is raised."""
         # 3 MX hosts; each get_a_records returns [] (void lookup, not exception)
-        with patch(
-            "checkdmarc.spf.get_mx_records",
-            return_value=[
-                {"preference": 10, "hostname": "mx1.example.com"},
-                {"preference": 20, "hostname": "mx2.example.com"},
-                {"preference": 30, "hostname": "mx3.example.com"},
-            ],
+        with (
+            patch(
+                "checkdmarc.spf.get_mx_records",
+                return_value=[
+                    {"preference": 10, "hostname": "mx1.example.com"},
+                    {"preference": 20, "hostname": "mx2.example.com"},
+                    {"preference": 30, "hostname": "mx3.example.com"},
+                ],
+            ),
+            patch("checkdmarc.spf.get_a_records", return_value=[]),
         ):
-            with patch("checkdmarc.spf.get_a_records", return_value=[]):
-                self.assertRaises(
-                    checkdmarc.spf.SPFTooManyVoidDNSLookups,
-                    checkdmarc.spf.parse_spf_record,
-                    "v=spf1 mx -all",
-                    "example.com",
-                )
+            self.assertRaises(
+                checkdmarc.spf.SPFTooManyVoidDNSLookups,
+                checkdmarc.spf.parse_spf_record,
+                "v=spf1 mx -all",
+                "example.com",
+            )
 
 
 class TestSPFAMechanismCidr(unittest.TestCase):

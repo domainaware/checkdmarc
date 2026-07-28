@@ -1,7 +1,7 @@
 """Tests for checkdmarc.mta_sts"""
 
 import unittest
-from typing import Any, Optional, cast
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import dns.resolver
@@ -224,9 +224,9 @@ class TestDownloadMtaStsPolicy(unittest.TestCase):
     @staticmethod
     def _make_session(
         *,
-        content_type: Optional[str] = "text/plain",
+        content_type: str | None = "text/plain",
         text: str = "version: STSv1",
-        raise_exc: Optional[BaseException] = None,
+        raise_exc: BaseException | None = None,
     ):
         fake_session = MagicMock()
         response = MagicMock()
@@ -291,18 +291,20 @@ class TestCheckMtaStsSuccess(unittest.TestCase):
             "max_age: 86400\r\n"
             "mx: mail.example.com\r\n"
         )
-        with patch(
-            "checkdmarc.mta_sts.query_mta_sts_record",
-            return_value={
-                "record": "v=STSv1; id=20240101T010101",
-                "warnings": [],
-            },
-        ):
-            with patch(
+        with (
+            patch(
+                "checkdmarc.mta_sts.query_mta_sts_record",
+                return_value={
+                    "record": "v=STSv1; id=20240101T010101",
+                    "warnings": [],
+                },
+            ),
+            patch(
                 "checkdmarc.mta_sts.download_mta_sts_policy",
                 return_value={"policy": valid_policy, "warnings": []},
-            ):
-                result = checkdmarc.mta_sts.check_mta_sts("example.com")
+            ),
+        ):
+            result = checkdmarc.mta_sts.check_mta_sts("example.com")
         self.assertTrue(result["valid"])
         # narrow the MTASTSCheckSuccess | MTASTSCheckFailure union for pyright
         success = cast(Any, result)

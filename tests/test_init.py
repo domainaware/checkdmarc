@@ -3,8 +3,8 @@
 import json
 import os
 import unittest
-from unittest.mock import patch
 from typing import Any, cast
+from unittest.mock import patch
 
 import checkdmarc
 import checkdmarc.utils
@@ -38,14 +38,14 @@ class Test(unittest.TestCase):
             self.assertEqual(
                 spf_result["valid"],
                 True,
-                "Known good domain {0} failed SPF check:\n\n{1}".format(
+                "Known good domain {} failed SPF check:\n\n{}".format(
                     result["domain"], spf_error
                 ),
             )
             self.assertEqual(
                 dmarc_result["valid"],
                 True,
-                "Known good domain {0} failed DMARC check:\n\n{1}".format(
+                "Known good domain {} failed DMARC check:\n\n{}".format(
                     result["domain"], dmarc_error
                 ),
             )
@@ -482,7 +482,7 @@ class TestResultsToCsvRowsExtraBranches(unittest.TestCase):
             },
             "smtp_tls_reporting": {"valid": False, "error": "not found"},
             "bimi": {
-                "valid": False if error else True,
+                "valid": not error,
                 "selector": "default",
                 "warnings": [],
                 "tags": {

@@ -2,8 +2,8 @@
 
 import os
 import unittest
-from unittest.mock import MagicMock, patch
 from typing import Any, cast
+from unittest.mock import MagicMock, patch
 
 import dns.exception
 import dns.resolver
@@ -58,11 +58,13 @@ class Test(unittest.TestCase):
         ``l=;`` is the BIMI declination form (issuer declares no logo),
         which exercises the parse path without triggering any HTTP fetches.
         """
-        with patch(
-            "checkdmarc.bimi._query_bimi_record", side_effect=["v=BIMI1; l=;", None]
+        with (
+            patch(
+                "checkdmarc.bimi._query_bimi_record", side_effect=["v=BIMI1; l=;", None]
+            ),
+            patch("checkdmarc.bimi.query_dns", return_value=[]),
         ):
-            with patch("checkdmarc.bimi.query_dns", return_value=[]):
-                results = checkdmarc.bimi.check_bimi("example.com")
+            results = checkdmarc.bimi.check_bimi("example.com")
 
         self.assertTrue(cast(Any, results)["valid"])
         self.assertEqual(len(cast(Any, results)["warnings"]), 0)
@@ -533,38 +535,44 @@ class TestQueryBimiRecordBaseDomainFallback(unittest.TestCase):
 
     def testFallbackToBaseDomain(self):
         """If the subdomain has no record, the function retries at the base domain"""
-        with patch("checkdmarc.bimi._query_bimi_record") as mock_query:
-            with patch("checkdmarc.bimi.query_dns", return_value=[]):
-                mock_query.side_effect = [
-                    None,  # sub.example.com (no record)
-                    "v=BIMI1; l=https://example.com/logo.svg",  # example.com
-                ]
-                result = checkdmarc.bimi.query_bimi_record("sub.example.com")
+        with (
+            patch("checkdmarc.bimi._query_bimi_record") as mock_query,
+            patch("checkdmarc.bimi.query_dns", return_value=[]),
+        ):
+            mock_query.side_effect = [
+                None,  # sub.example.com (no record)
+                "v=BIMI1; l=https://example.com/logo.svg",  # example.com
+            ]
+            result = checkdmarc.bimi.query_bimi_record("sub.example.com")
         self.assertEqual(result["location"], "example.com")
 
     def testApexNXDOMAINRaises(self):
         """NXDOMAIN on the apex TXT lookup raises BIMIRecordNotFound"""
-        with patch(
-            "checkdmarc.bimi._query_bimi_record",
-            return_value="v=BIMI1; l=",
-        ):
-            with patch(
+        with (
+            patch(
+                "checkdmarc.bimi._query_bimi_record",
+                return_value="v=BIMI1; l=",
+            ),
+            patch(
                 "checkdmarc.bimi.query_dns",
                 side_effect=dns.resolver.NXDOMAIN(),
-            ):
-                self.assertRaises(
-                    checkdmarc.bimi.BIMIRecordNotFound,
-                    checkdmarc.bimi.query_bimi_record,
-                    "example.com",
-                )
+            ),
+        ):
+            self.assertRaises(
+                checkdmarc.bimi.BIMIRecordNotFound,
+                checkdmarc.bimi.query_bimi_record,
+                "example.com",
+            )
 
     def testSubdomainWithoutBaseRecord(self):
         """A subdomain whose base domain also has no record yields a more
         descriptive BIMIRecordNotFound message."""
-        with patch("checkdmarc.bimi._query_bimi_record", return_value=None):
-            with patch("checkdmarc.bimi.query_dns", return_value=[]):
-                with self.assertRaises(checkdmarc.bimi.BIMIRecordNotFound) as ctx:
-                    checkdmarc.bimi.query_bimi_record("sub.example.com")
+        with (
+            patch("checkdmarc.bimi._query_bimi_record", return_value=None),
+            patch("checkdmarc.bimi.query_dns", return_value=[]),
+            self.assertRaises(checkdmarc.bimi.BIMIRecordNotFound) as ctx,
+        ):
+            checkdmarc.bimi.query_bimi_record("sub.example.com")
         self.assertIn("subdomain or its base domain", str(ctx.exception))
 
 
@@ -661,18 +669,20 @@ class TestParseBimiRecordExtraBranches(unittest.TestCase):
         import hashlib
 
         svg_sha = hashlib.sha256(svg_bytes).hexdigest()
-        with patch("checkdmarc.bimi.requests.Session", return_value=fake_session):
-            with patch(
+        with (
+            patch("checkdmarc.bimi.requests.Session", return_value=fake_session),
+            patch(
                 "checkdmarc.bimi.get_certificate_metadata",
                 return_value={
                     "valid": True,
                     "logotype_sha256": svg_sha,
                 },
-            ):
-                result = checkdmarc.bimi.parse_bimi_record(
-                    "v=BIMI1; l=https://example.com/logo.svg; "
-                    "a=https://example.com/cert.pem"
-                )
+            ),
+        ):
+            result = checkdmarc.bimi.parse_bimi_record(
+                "v=BIMI1; l=https://example.com/logo.svg; "
+                "a=https://example.com/cert.pem"
+            )
         # No mismatch warning because the hashes match
         self.assertFalse(any("does not match" in w for w in result["warnings"]))
 
@@ -681,18 +691,20 @@ class TestParseBimiRecordExtraBranches(unittest.TestCase):
         svg_bytes = VALID_SVG.encode("utf-8")
         fake_session = MagicMock()
         fake_session.get.return_value = _fake_response(svg_bytes)
-        with patch("checkdmarc.bimi.requests.Session", return_value=fake_session):
-            with patch(
+        with (
+            patch("checkdmarc.bimi.requests.Session", return_value=fake_session),
+            patch(
                 "checkdmarc.bimi.get_certificate_metadata",
                 return_value={
                     "valid": True,
                     "logotype_sha256": "0" * 64,
                 },
-            ):
-                result = checkdmarc.bimi.parse_bimi_record(
-                    "v=BIMI1; l=https://example.com/logo.svg; "
-                    "a=https://example.com/cert.pem"
-                )
+            ),
+        ):
+            result = checkdmarc.bimi.parse_bimi_record(
+                "v=BIMI1; l=https://example.com/logo.svg; "
+                "a=https://example.com/cert.pem"
+            )
         self.assertTrue(
             any(
                 "does not match the image embedded in the certificate" in w

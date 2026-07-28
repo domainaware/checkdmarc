@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """DMARC record validation"""
 
 from __future__ import annotations
@@ -41,6 +40,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+
+logger = logging.getLogger(__name__)
 
 DMARC_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*DMARC1{WSP_REGEX}*;"
 DMARC_TAG_VALUE_REGEX_STRING = (
@@ -714,15 +715,14 @@ def _query_dmarc_record(
                 "Multiple DMARC policy records are not permitted - "
                 "https://www.rfc-editor.org/rfc/rfc9989.html#section-5.6.1"
             )
-        if len(unrelated_records) > 0:
-            if not ignore_unrelated_records:
-                ur_str = "\n\n".join(unrelated_records)
-                raise UnrelatedTXTRecordFoundAtDMARC(
-                    "Unrelated TXT records were discovered. These should be "
-                    "removed, as some receivers may not expect to find "
-                    f"unrelated TXT records at {target}\n\n{ur_str}",
-                    data={"target": target},
-                )
+        if len(unrelated_records) > 0 and not ignore_unrelated_records:
+            ur_str = "\n\n".join(unrelated_records)
+            raise UnrelatedTXTRecordFoundAtDMARC(
+                "Unrelated TXT records were discovered. These should be "
+                "removed, as some receivers may not expect to find "
+                f"unrelated TXT records at {target}\n\n{ur_str}",
+                data={"target": target},
+            )
         if len(dmarc_records) == 1:
             dmarc_record = dmarc_records[0]
 
@@ -755,14 +755,14 @@ def _query_dmarc_record(
         except dns.exception.DNSException as error:
             raise DMARCRecordNotFound(error)
 
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+    except dns.resolver.NXDOMAIN:
         pass
-    except DMARCRecordStartsWithWhitespace as error:
-        raise error
-    except UnrelatedTXTRecordFoundAtDMARC as error:
-        raise error
-    except MultipleDMARCRecords as error:
-        raise error
+    except DMARCRecordStartsWithWhitespace:
+        raise
+    except UnrelatedTXTRecordFoundAtDMARC:
+        raise
+    except MultipleDMARCRecords:
+        raise
     except dns.exception.DNSException as error:
         raise DMARCError(str(error))
 
@@ -804,7 +804,7 @@ def query_dmarc_record(
 
     """
     domain = normalize_domain(domain).rstrip(".")
-    logging.debug(f"Checking for a DMARC record on {domain}")
+    logger.debug(f"Checking for a DMARC record on {domain}")
     warnings = []
     location = domain
 
@@ -953,15 +953,13 @@ def parse_dmarc_report_uri(uri: str) -> ParsedDMARCReportURI:
     mailto_matches = MAILTO_REGEX.findall(uri)
     if len(mailto_matches) != 1:
         raise InvalidDMARCReportURI(
-            (
-                f"{uri} is not a valid DMARC report URI"
-                + (
-                    ""
-                    if uri.startswith("mailto:")
-                    else (
-                        " - please make sure that the URI begins with "
-                        "a schema such as mailto:"
-                    )
+            f"{uri} is not a valid DMARC report URI"
+            + (
+                ""
+                if uri.startswith("mailto:")
+                else (
+                    " - please make sure that the URI begins with "
+                    "a schema such as mailto:"
                 )
             )
         )
@@ -1217,7 +1215,7 @@ def parse_dmarc_record(
         :exc:`checkdmarc.dmarc.DMARCReportEmailAddressMissingMXRecords`
 
     """
-    logging.debug(f"Parsing the DMARC record for {domain}")
+    logger.debug(f"Parsing the DMARC record for {domain}")
     spf_in_dmarc_error_msg = (
         "Found a SPF record where a DMARC record "
         "should be; most likely, the _dmarc "
@@ -1232,9 +1230,7 @@ def parse_dmarc_record(
     dmarc_syntax_checker = _DMARCGrammar()
     parsed_record = dmarc_syntax_checker.parse(record)
     if not parsed_record.is_valid:
-        expecting = list(
-            map(lambda x: str(x).strip('"'), list(parsed_record.expecting))
-        )
+        expecting = [str(x).strip('"') for x in list(parsed_record.expecting)]
         marked_record = (
             record[: parsed_record.pos]
             + syntax_error_marker
@@ -1287,7 +1283,7 @@ def parse_dmarc_record(
         tags[tag] = {"value": value, "explicit": True}
 
     # Include implicit tags and their defaults
-    for tag in dmarc_tags.keys():
+    for tag in dmarc_tags:
         if tag not in tags and "default" in dmarc_tags[tag]:
             tags[tag] = {"value": dmarc_tags[tag]["default"], "explicit": False}
     if "p" not in tags:
@@ -1310,13 +1306,12 @@ def parse_dmarc_record(
     # RFC 9989 only requires that the v tag come first; the p tag may appear
     # in any position. Older readers (pre-9989 implementations of RFC 7489)
     # may still expect p immediately after v, so warn when it isn't there.
-    if tags["p"]["explicit"]:
-        if list(tags.keys())[1] != "p":
-            warnings.append(
-                "The p tag does not immediately follow the v tag. "
-                "RFC 9989 permits any ordering, but some older DMARC "
-                "implementations may require p to be the second tag."
-            )
+    if tags["p"]["explicit"] and list(tags.keys())[1] != "p":
+        warnings.append(
+            "The p tag does not immediately follow the v tag. "
+            "RFC 9989 permits any ordering, but some older DMARC "
+            "implementations may require p to be the second tag."
+        )
     tags["v"]["value"] = tags["v"]["value"].upper()
 
     # Validate tag values
@@ -1418,7 +1413,7 @@ def parse_dmarc_record(
             )
         )
 
-    if "ruf" in tags.keys():
+    if "ruf" in tags:
         parsed_uris = []
         uris = tags["ruf"]["value"].split(",")
         for uri in uris:
@@ -1486,13 +1481,12 @@ def parse_dmarc_record(
 
     # Add descriptions if requested
     if include_tag_descriptions:
-        for tag in tags:
-            tag_value = tags[tag]["value"]
-            details = get_dmarc_tag_description(tag, tag_value)
-            tags[tag]["name"] = details["name"]
+        for tag, tag_details in tags.items():
+            details = get_dmarc_tag_description(tag, tag_details["value"])
+            tag_details["name"] = details["name"]
             if details["default"]:
-                tags[tag]["default"] = details["default"]
-            tags[tag]["description"] = details["description"]
+                tag_details["default"] = details["default"]
+            tag_details["description"] = details["description"]
 
     return {"tags": tags, "warnings": warnings}
 
@@ -1685,8 +1679,7 @@ def check_dmarc(
             "valid": False,
             "error": str(error),
         }
-        if hasattr(error, "data") and error.data:
-            # error.data only contains "target" key based on codebase analysis
-            if "target" in error.data:
-                error_results["target"] = error.data["target"]
+        # error.data only contains a "target" key based on codebase analysis
+        if hasattr(error, "data") and error.data and "target" in error.data:
+            error_results["target"] = error.data["target"]
         return error_results
