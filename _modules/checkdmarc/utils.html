@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.utils &mdash; checkdmarc 5.17.3 documentation</title>
+  <title>checkdmarc.utils &mdash; checkdmarc 5.17.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b41e92d6"></script>
+      <script src="../../_static/documentation_options.js?v=7f97021b"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -72,22 +72,21 @@
            <div itemprop="articleBody">
              
   <h1>Source code for checkdmarc.utils</h1><div class="highlight"><pre>
-<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="sd">&quot;&quot;&quot;DNS utility functions&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;DNS utility functions&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">unicodedata</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.exception</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.reversename</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">publicsuffixlist</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">expiringdict</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpiringDict</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -110,6 +109,8 @@
 <span class="sd">WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">DNS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span>
     <span class="n">max_len</span><span class="o">=</span><span class="n">DNS_CACHE_MAX_LEN</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="n">DNSSEC_CACHE_MAX_AGE_SECONDS</span>
@@ -299,10 +300,10 @@
     <span class="k">if</span> <span class="n">record_type</span> <span class="o">==</span> <span class="s2">&quot;TXT&quot;</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">answers</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">_RETRYABLE_DNS_ERRORS</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">except</span> <span class="n">_RETRYABLE_DNS_ERRORS</span><span class="p">:</span>
             <span class="n">_attempt</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">_attempt</span> <span class="o">&gt;</span> <span class="n">retries</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">e</span>
+                <span class="k">raise</span>
             <span class="k">return</span> <span class="n">query_dns</span><span class="p">(</span>
                 <span class="n">domain</span><span class="p">,</span>
                 <span class="n">record_type</span><span class="p">,</span>
@@ -312,12 +313,7 @@
                 <span class="n">retries</span><span class="o">=</span><span class="n">retries</span><span class="p">,</span>
                 <span class="n">_attempt</span><span class="o">=</span><span class="n">_attempt</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="n">resource_records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="nb">map</span><span class="p">(</span>
-                <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">strings</span><span class="p">,</span>
-                <span class="n">answers</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">resource_records</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">strings</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">answers</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">quoted_txt_segments</span><span class="p">:</span>
             <span class="c1"># Join each sequence of byte chunks, adding quotes around each</span>
             <span class="n">_resource_record</span> <span class="o">=</span> <span class="p">[</span>
@@ -342,10 +338,10 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">answers</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">record_type</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">resolver</span><span class="o">.</span><span class="n">lifetime</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">_RETRYABLE_DNS_ERRORS</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">except</span> <span class="n">_RETRYABLE_DNS_ERRORS</span><span class="p">:</span>
             <span class="n">_attempt</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">_attempt</span> <span class="o">&gt;</span> <span class="n">retries</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">e</span>
+                <span class="k">raise</span>
             <span class="k">return</span> <span class="n">query_dns</span><span class="p">(</span>
                 <span class="n">domain</span><span class="p">,</span>
                 <span class="n">record_type</span><span class="p">,</span>
@@ -355,12 +351,7 @@
                 <span class="n">retries</span><span class="o">=</span><span class="n">retries</span><span class="p">,</span>
                 <span class="n">_attempt</span><span class="o">=</span><span class="n">_attempt</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="nb">map</span><span class="p">(</span>
-                <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
-                <span class="n">answers</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">to_text</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">answers</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span> <span class="ow">is</span> <span class="n">ExpiringDict</span><span class="p">:</span>
         <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">records</span>
 
@@ -398,7 +389,7 @@
     <span class="n">addresses</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">qt</span> <span class="ow">in</span> <span class="n">qtypes</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Getting </span><span class="si">{</span><span class="n">qt</span><span class="si">}</span><span class="s2"> records for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Getting </span><span class="si">{</span><span class="n">qt</span><span class="si">}</span><span class="s2"> records for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">addresses</span> <span class="o">+=</span> <span class="n">query_dns</span><span class="p">(</span>
                 <span class="n">domain</span><span class="p">,</span>
                 <span class="n">qt</span><span class="p">,</span>
@@ -450,7 +441,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">reversename</span><span class="o">.</span><span class="n">from_address</span><span class="p">(</span><span class="n">ip_address</span><span class="p">))</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Getting PTR records for </span><span class="si">{</span><span class="n">ip_address</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Getting PTR records for </span><span class="si">{</span><span class="n">ip_address</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">hostnames</span> <span class="o">=</span> <span class="n">query_dns</span><span class="p">(</span>
             <span class="n">name</span><span class="p">,</span>
             <span class="s2">&quot;PTR&quot;</span><span class="p">,</span>
@@ -596,7 +587,7 @@
 <span class="sd">                     - ``hostnames`` - A list of nameserver hostnames</span>
 <span class="sd">                     - ``warnings``  - A list of warnings</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Getting NS records on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Getting NS records on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="n">ns_records</span> <span class="o">=</span> <span class="p">[]</span>
@@ -617,7 +608,7 @@
         <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">approved_nameservers</span><span class="p">:</span>
-        <span class="n">approved_nameservers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">approved_nameservers</span><span class="p">))</span>
+        <span class="n">approved_nameservers</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">approved_nameservers</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">nameserver</span> <span class="ow">in</span> <span class="n">ns_records</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">approved_nameservers</span><span class="p">:</span>
             <span class="n">approved</span> <span class="o">=</span> <span class="kc">False</span>
@@ -664,7 +655,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">hosts</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for MX records on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for MX records on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">answers</span> <span class="o">=</span> <span class="n">query_dns</span><span class="p">(</span>
             <span class="n">domain</span><span class="p">,</span>
             <span class="s2">&quot;MX&quot;</span><span class="p">,</span>
@@ -674,7 +665,7 @@
             <span class="n">retries</span><span class="o">=</span><span class="n">retries</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">answers</span> <span class="o">==</span> <span class="p">[</span><span class="s2">&quot;0 &quot;</span><span class="p">]:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;&quot;No Service&quot; MX record found&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;&quot;No Service&quot; MX record found&#39;</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">answers</span><span class="p">:</span>
             <span class="n">record</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>

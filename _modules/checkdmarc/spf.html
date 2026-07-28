@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.spf &mdash; checkdmarc 5.17.3 documentation</title>
+  <title>checkdmarc.spf &mdash; checkdmarc 5.17.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b41e92d6"></script>
+      <script src="../../_static/documentation_options.js?v=7f97021b"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -72,26 +72,25 @@
            <div itemprop="articleBody">
              
   <h1>Source code for checkdmarc.spf</h1><div class="highlight"><pre>
-<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="sd">&quot;&quot;&quot;Sender Policy framework (SPF) record validation&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;Sender Policy framework (SPF) record validation&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">ipaddress</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.exception</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pyleri</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">DEFAULT_DNS_TIMEOUT</span><span class="p">,</span>
     <span class="n">DEFAULT_DNS_MAX_RETRIES</span><span class="p">,</span>
+    <span class="n">DEFAULT_DNS_TIMEOUT</span><span class="p">,</span>
     <span class="n">SYNTAX_ERROR_MARKER</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -119,6 +118,8 @@
 <span class="sd">WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">SPF_VERSION_TAG_REGEX_STRING</span> <span class="o">=</span> <span class="s2">&quot;v=spf1&quot;</span>
 
@@ -545,7 +546,7 @@
 <span class="sd">        :exc:`checkdmarc.SPFRecordNotFound`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for a SPF record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for a SPF record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">txt_prefix</span> <span class="o">=</span> <span class="s2">&quot;v=spf1&quot;</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">spf_type_records</span> <span class="o">=</span> <span class="p">[]</span>
@@ -560,8 +561,11 @@
             <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
             <span class="n">retries</span><span class="o">=</span><span class="n">retries</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
-        <span class="k">pass</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="c1"># SPF type records were removed from the standards track in RFC 7208,</span>
+        <span class="c1"># so almost no domain publishes one and a failed lookup here is the</span>
+        <span class="c1"># normal case rather than something worth reporting to the caller.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SPF type record lookup failed for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spf_type_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
@@ -637,8 +641,8 @@
         <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="s2">&quot;An SPF record does not exist.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="s2">&quot;The domain does not exist.&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">SPFRecordNotFound</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">error</span>
+    <span class="k">except</span> <span class="n">SPFRecordNotFound</span><span class="p">:</span>
+        <span class="k">raise</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SPFRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 
@@ -681,7 +685,7 @@
         <span class="c1"># can&#39;t be encoded to UTF-8 (e.g. a lone surrogate) shouldn&#39;t break</span>
         <span class="c1"># the lookup, so skip the byte-size warnings for it. Any other error</span>
         <span class="c1"># here is unexpected and should surface rather than be swallowed.</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipped SPF size check for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">size_check_error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipped SPF size check for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">size_check_error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="n">spf_record</span> <span class="o">=</span> <span class="n">spf_record</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
     <span class="n">results</span><span class="p">:</span> <span class="n">SPFQueryResults</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;record&quot;</span><span class="p">:</span> <span class="n">spf_record</span><span class="p">,</span> <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">warnings</span><span class="p">}</span>
@@ -735,7 +739,7 @@
 <span class="sd">        :exc:`checkdmarc.spf.SPFSyntaxError`</span>
 <span class="sd">        :exc:`checkdmarc.spf.SPFTooManyDNSLookups`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing the SPF record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing the SPF record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
     <span class="n">record</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
 
@@ -794,9 +798,9 @@
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">parsed_record</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
         <span class="n">pos</span> <span class="o">=</span> <span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span>
-        <span class="n">expecting</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">expecting</span><span class="p">))</span>
-        <span class="p">)</span>
+        <span class="n">expecting</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">expecting</span><span class="p">)</span>
+        <span class="p">]</span>
         <span class="n">expecting_str</span> <span class="o">=</span> <span class="s2">&quot; or &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expecting</span><span class="p">)</span>
         <span class="n">marked_record</span> <span class="o">=</span> <span class="n">record</span><span class="p">[:</span><span class="n">pos</span><span class="p">]</span> <span class="o">+</span> <span class="n">syntax_error_marker</span> <span class="o">+</span> <span class="n">record</span><span class="p">[</span><span class="n">pos</span><span class="p">:]</span>
         <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span>
@@ -869,12 +873,11 @@
         <span class="n">value</span> <span class="o">=</span> <span class="n">match</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
         <span class="c1"># Macro syntax validation: macros are allowed only in mechanisms</span>
         <span class="c1"># that take a domain-spec / macro-string, not ip4/ip6.</span>
-        <span class="k">if</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">mechanism</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;ip4&quot;</span><span class="p">,</span> <span class="s2">&quot;ip6&quot;</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">: SPF macros are not allowed in </span><span class="si">{</span><span class="n">mechanism</span><span class="si">}</span><span class="s2"> &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;mechanisms: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="n">value</span> <span class="ow">and</span> <span class="n">mechanism</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;ip4&quot;</span><span class="p">,</span> <span class="s2">&quot;ip6&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">SPFSyntaxError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">: SPF macros are not allowed in </span><span class="si">{</span><span class="n">mechanism</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;mechanisms: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
         <span class="n">_validate_spf_macros</span><span class="p">(</span>
             <span class="n">value</span><span class="p">,</span>
             <span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span>
@@ -1344,7 +1347,7 @@
             <span class="k">if</span> <span class="n">ignore_too_many_lookups</span><span class="p">:</span>
                 <span class="n">error</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">e</span>
+                <span class="k">raise</span>
 
         <span class="k">except</span> <span class="p">(</span><span class="n">_SPFWarning</span><span class="p">,</span> <span class="n">DNSException</span><span class="p">)</span> <span class="k">as</span> <span class="n">warning</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">warning</span><span class="p">,</span> <span class="p">(</span><span class="n">_SPFMissingRecords</span><span class="p">,</span> <span class="n">DNSExceptionNXDOMAIN</span><span class="p">)):</span>
@@ -1366,7 +1369,7 @@
                         <span class="s2">&quot;lookups (RFC 7208 § 4.6.4)&quot;</span><span class="p">,</span>
                         <span class="n">void_dns_lookups</span><span class="o">=</span><span class="n">total_void_dns_lookups</span><span class="p">,</span>
                     <span class="p">)</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error when processing </span><span class="si">{</span><span class="n">value</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">domain</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error when processing </span><span class="si">{</span><span class="n">value</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">domain</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">warning</span><span class="si">!s}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
         <span class="n">error_result</span><span class="p">:</span> <span class="n">ParsedSPFRecordError</span> <span class="o">=</span> <span class="p">{</span>

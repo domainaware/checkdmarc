@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc &mdash; checkdmarc 5.17.3 documentation</title>
+  <title>checkdmarc &mdash; checkdmarc 5.17.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=b41e92d6"></script>
+      <script src="../_static/documentation_options.js?v=7f97021b"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -71,19 +71,17 @@
            <div itemprop="articleBody">
              
   <h1>Source code for checkdmarc</h1><div class="highlight"><pre>
-<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-
-<span class="sd">&quot;&quot;&quot;Validates and parses email-related DNS records&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;Validates and parses email-related DNS records&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">csv</span><span class="w"> </span><span class="kn">import</span> <span class="n">DictWriter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringIO</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
@@ -92,27 +90,31 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DEFAULT_DNS_MAX_RETRIES</span><span class="p">,</span>
     <span class="n">DEFAULT_DNS_TIMEOUT</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">RECOMMENDED_DNS_NAMESERVERS</span> <span class="k">as</span> <span class="n">RECOMMENDED_DNS_NAMESERVERS</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.bimi</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_bimi</span><span class="p">,</span> <span class="n">BIMICheckResult</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.dmarc</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_dmarc</span><span class="p">,</span> <span class="n">DMARCResults</span><span class="p">,</span> <span class="n">DMARCErrorResults</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.bimi</span><span class="w"> </span><span class="kn">import</span> <span class="n">BIMICheckResult</span><span class="p">,</span> <span class="n">check_bimi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.dmarc</span><span class="w"> </span><span class="kn">import</span> <span class="n">DMARCErrorResults</span><span class="p">,</span> <span class="n">DMARCResults</span><span class="p">,</span> <span class="n">check_dmarc</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.dnssec</span><span class="w"> </span><span class="kn">import</span> <span class="n">test_dnssec</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.mta_sts</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_mta_sts</span><span class="p">,</span> <span class="n">MTASTSCheckResults</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.smtp</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_mx</span><span class="p">,</span> <span class="n">MXResults</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.mta_sts</span><span class="w"> </span><span class="kn">import</span> <span class="n">MTASTSCheckResults</span><span class="p">,</span> <span class="n">check_mta_sts</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.smtp</span><span class="w"> </span><span class="kn">import</span> <span class="n">MXResults</span><span class="p">,</span> <span class="n">check_mx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.smtp_tls_reporting</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">check_smtp_tls_reporting</span><span class="p">,</span>
     <span class="n">SMTPTLSReportingResults</span><span class="p">,</span>
+    <span class="n">check_smtp_tls_reporting</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.soa</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_soa</span><span class="p">,</span> <span class="n">SOARecordResults</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.spf</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_spf</span><span class="p">,</span> <span class="n">SPFRecordResults</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.soa</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOARecordResults</span><span class="p">,</span> <span class="n">check_soa</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.spf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SPFRecordResults</span><span class="p">,</span> <span class="n">check_spf</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DNSException</span><span class="p">,</span>
-    <span class="n">MXHost</span> <span class="k">as</span> <span class="n">MXHost</span><span class="p">,</span>
     <span class="n">NameserverResult</span><span class="p">,</span>
     <span class="n">NameserverResultError</span><span class="p">,</span>
     <span class="n">get_base_domain</span><span class="p">,</span>
     <span class="n">get_nameservers</span><span class="p">,</span>
     <span class="n">normalize_domain</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MXHost</span> <span class="k">as</span> <span class="n">MXHost</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="sd">&quot;&quot;&quot;Copyright 2019-2023 Sean Whalen</span>
@@ -128,6 +130,8 @@
 <span class="sd">WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <span class="n">__version__</span> <span class="o">=</span> <span class="n">checkdmarc</span><span class="o">.</span><span class="n">_constants</span><span class="o">.</span><span class="n">__version__</span>
@@ -214,14 +218,7 @@
 <span class="sd">       - ``bimi`` - BIMI record validation results (optional, only if bimi_selector is not None)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">domains</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
-        <span class="nb">list</span><span class="p">(</span>
-            <span class="nb">set</span><span class="p">(</span>
-                <span class="nb">map</span><span class="p">(</span>
-                    <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]),</span>
-                    <span class="n">domains</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
+        <span class="p">{</span><span class="n">normalize_domain</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">}</span>
     <span class="p">)</span>
     <span class="n">not_domains</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
@@ -234,7 +231,7 @@
     <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">domain</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">:</span>
         <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking: </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking: </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="n">domain_results</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;domain&quot;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
@@ -323,7 +320,7 @@
 
         <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_results</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">wait</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sleeping for </span><span class="si">{</span><span class="n">wait</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sleeping for </span><span class="si">{</span><span class="n">wait</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">results</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -467,34 +464,20 @@
                     <span class="k">if</span> <span class="s2">&quot;a&quot;</span> <span class="ow">in</span> <span class="n">_bimi</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]:</span>
                         <span class="n">row</span><span class="p">[</span><span class="s2">&quot;bimi_a&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_bimi</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;a&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
         <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-            <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;preference&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">mx</span><span class="p">[</span><span class="s2">&quot;hosts&quot;</span><span class="p">]))</span>
+            <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;preference&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">mx</span><span class="p">[</span><span class="s2">&quot;hosts&quot;</span><span class="p">]]</span>
         <span class="p">)</span>
-        <span class="n">tls</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">tls_results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;starttls&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">mx</span><span class="p">[</span><span class="s2">&quot;hosts&quot;</span><span class="p">]))</span>
-            <span class="k">for</span> <span class="n">tls_result</span> <span class="ow">in</span> <span class="n">tls_results</span><span class="p">:</span>
-                <span class="n">tls</span> <span class="o">=</span> <span class="n">tls_result</span>
-                <span class="k">if</span> <span class="n">tls_result</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-                    <span class="n">tls</span> <span class="o">=</span> <span class="kc">False</span>
-                    <span class="k">break</span>
-        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="c1"># The user might opt to skip the STARTTLS test</span>
-            <span class="k">pass</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tls</span>
-
-        <span class="n">starttls</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">starttls_results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;starttls&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">mx</span><span class="p">[</span><span class="s2">&quot;hosts&quot;</span><span class="p">]))</span>
-            <span class="k">for</span> <span class="n">starttls_result</span> <span class="ow">in</span> <span class="n">starttls_results</span><span class="p">:</span>
-                <span class="n">starttls</span> <span class="o">=</span> <span class="n">starttls_result</span>
-                <span class="k">if</span> <span class="n">starttls_result</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-                    <span class="n">starttls</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="c1"># The user might opt to skip the STARTTLS test</span>
-            <span class="k">pass</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttls</span>
+        <span class="c1"># Each column reports whether every MX host supports that protocol,</span>
+        <span class="c1"># because a single host without it weakens delivery for the whole</span>
+        <span class="c1"># domain. A missing key means the caller skipped the TLS tests, which</span>
+        <span class="c1"># is reported as an empty column rather than as a failure.</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;tls&quot;</span><span class="p">,</span> <span class="s2">&quot;starttls&quot;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">supported</span> <span class="o">=</span> <span class="p">[</span><span class="n">host</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">mx</span><span class="p">[</span><span class="s2">&quot;hosts&quot;</span><span class="p">]]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="c1"># The user might opt to skip the STARTTLS test</span>
+                <span class="n">row</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">continue</span>
+            <span class="n">row</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">supported</span><span class="p">)</span> <span class="k">if</span> <span class="n">supported</span> <span class="k">else</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">mx</span><span class="p">:</span>
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;mx_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mx</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span>
@@ -520,15 +503,15 @@
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_sp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;sp&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="s2">&quot;rua&quot;</span> <span class="ow">in</span> <span class="n">_dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]:</span>
                 <span class="n">addresses</span> <span class="o">=</span> <span class="n">_dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;rua&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
-                <span class="n">addresses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-                    <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="s2">&quot;scheme&quot;</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]),</span> <span class="n">addresses</span><span class="p">)</span>
-                <span class="p">)</span>
+                <span class="n">addresses</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="s2">&quot;scheme&quot;</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">addresses</span>
+                <span class="p">]</span>
                 <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_rua&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>
             <span class="k">if</span> <span class="s2">&quot;ruf&quot;</span> <span class="ow">in</span> <span class="n">_dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]:</span>
                 <span class="n">addresses</span> <span class="o">=</span> <span class="n">_dmarc</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">][</span><span class="s2">&quot;ruf&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
-                <span class="n">addresses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-                    <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="s2">&quot;scheme&quot;</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">]),</span> <span class="n">addresses</span><span class="p">)</span>
-                <span class="p">)</span>
+                <span class="n">addresses</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="s2">&quot;scheme&quot;</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">addresses</span>
+                <span class="p">]</span>
                 <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_ruf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>
             <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dmarc_warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_dmarc</span><span class="p">[</span><span class="s2">&quot;warnings&quot;</span><span class="p">])</span>
         <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">_smtp_tls_reporting</span><span class="p">:</span>

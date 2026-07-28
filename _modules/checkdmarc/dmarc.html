@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.dmarc &mdash; checkdmarc 5.17.3 documentation</title>
+  <title>checkdmarc.dmarc &mdash; checkdmarc 5.17.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b41e92d6"></script>
+      <script src="../../_static/documentation_options.js?v=7f97021b"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -72,8 +72,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for checkdmarc.dmarc</h1><div class="highlight"><pre>
-<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="sd">&quot;&quot;&quot;DMARC record validation&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;DMARC record validation&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -115,6 +114,8 @@
 <span class="sd">WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">DMARC_VERSION_REGEX_STRING</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;v</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*=</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*DMARC1</span><span class="si">{</span><span class="n">WSP_REGEX</span><span class="si">}</span><span class="s2">*;&quot;</span>
 <span class="n">DMARC_TAG_VALUE_REGEX_STRING</span> <span class="o">=</span> <span class="p">(</span>
@@ -878,15 +879,14 @@
                 <span class="s2">&quot;Multiple DMARC policy records are not permitted - &quot;</span>
                 <span class="s2">&quot;https://www.rfc-editor.org/rfc/rfc9989.html#section-5.6.1&quot;</span>
             <span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unrelated_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">ignore_unrelated_records</span><span class="p">:</span>
-                <span class="n">ur_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unrelated_records</span><span class="p">)</span>
-                <span class="k">raise</span> <span class="n">UnrelatedTXTRecordFoundAtDMARC</span><span class="p">(</span>
-                    <span class="s2">&quot;Unrelated TXT records were discovered. These should be &quot;</span>
-                    <span class="s2">&quot;removed, as some receivers may not expect to find &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;unrelated TXT records at </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">ur_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="n">target</span><span class="p">},</span>
-                <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unrelated_records</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ignore_unrelated_records</span><span class="p">:</span>
+            <span class="n">ur_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unrelated_records</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">UnrelatedTXTRecordFoundAtDMARC</span><span class="p">(</span>
+                <span class="s2">&quot;Unrelated TXT records were discovered. These should be &quot;</span>
+                <span class="s2">&quot;removed, as some receivers may not expect to find &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;unrelated TXT records at </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">ur_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="n">target</span><span class="p">},</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dmarc_records</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">dmarc_record</span> <span class="o">=</span> <span class="n">dmarc_records</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -919,14 +919,14 @@
         <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">DMARCRecordNotFound</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
-    <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NoAnswer</span><span class="p">):</span>
+    <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">NXDOMAIN</span><span class="p">:</span>
         <span class="k">pass</span>
-    <span class="k">except</span> <span class="n">DMARCRecordStartsWithWhitespace</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">error</span>
-    <span class="k">except</span> <span class="n">UnrelatedTXTRecordFoundAtDMARC</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">error</span>
-    <span class="k">except</span> <span class="n">MultipleDMARCRecords</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">error</span>
+    <span class="k">except</span> <span class="n">DMARCRecordStartsWithWhitespace</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="n">UnrelatedTXTRecordFoundAtDMARC</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="n">MultipleDMARCRecords</span><span class="p">:</span>
+        <span class="k">raise</span>
     <span class="k">except</span> <span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DMARCError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
 
@@ -970,7 +970,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">domain</span> <span class="o">=</span> <span class="n">normalize_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for a DMARC record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for a DMARC record on </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">location</span> <span class="o">=</span> <span class="n">domain</span>
 
@@ -1125,15 +1125,13 @@
     <span class="n">mailto_matches</span> <span class="o">=</span> <span class="n">MAILTO_REGEX</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mailto_matches</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">InvalidDMARCReportURI</span><span class="p">(</span>
-            <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">uri</span><span class="si">}</span><span class="s2"> is not a valid DMARC report URI&quot;</span>
-                <span class="o">+</span> <span class="p">(</span>
-                    <span class="s2">&quot;&quot;</span>
-                    <span class="k">if</span> <span class="n">uri</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;mailto:&quot;</span><span class="p">)</span>
-                    <span class="k">else</span> <span class="p">(</span>
-                        <span class="s2">&quot; - please make sure that the URI begins with &quot;</span>
-                        <span class="s2">&quot;a schema such as mailto:&quot;</span>
-                    <span class="p">)</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">uri</span><span class="si">}</span><span class="s2"> is not a valid DMARC report URI&quot;</span>
+            <span class="o">+</span> <span class="p">(</span>
+                <span class="s2">&quot;&quot;</span>
+                <span class="k">if</span> <span class="n">uri</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;mailto:&quot;</span><span class="p">)</span>
+                <span class="k">else</span> <span class="p">(</span>
+                    <span class="s2">&quot; - please make sure that the URI begins with &quot;</span>
+                    <span class="s2">&quot;a schema such as mailto:&quot;</span>
                 <span class="p">)</span>
             <span class="p">)</span>
         <span class="p">)</span>
@@ -1398,7 +1396,7 @@
 <span class="sd">        :exc:`checkdmarc.dmarc.DMARCReportEmailAddressMissingMXRecords`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing the DMARC record for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing the DMARC record for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">spf_in_dmarc_error_msg</span> <span class="o">=</span> <span class="p">(</span>
         <span class="s2">&quot;Found a SPF record where a DMARC record &quot;</span>
         <span class="s2">&quot;should be; most likely, the _dmarc &quot;</span>
@@ -1413,9 +1411,7 @@
     <span class="n">dmarc_syntax_checker</span> <span class="o">=</span> <span class="n">_DMARCGrammar</span><span class="p">()</span>
     <span class="n">parsed_record</span> <span class="o">=</span> <span class="n">dmarc_syntax_checker</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">parsed_record</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
-        <span class="n">expecting</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">expecting</span><span class="p">))</span>
-        <span class="p">)</span>
+        <span class="n">expecting</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">parsed_record</span><span class="o">.</span><span class="n">expecting</span><span class="p">)]</span>
         <span class="n">marked_record</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">record</span><span class="p">[:</span> <span class="n">parsed_record</span><span class="o">.</span><span class="n">pos</span><span class="p">]</span>
             <span class="o">+</span> <span class="n">syntax_error_marker</span>
@@ -1468,7 +1464,7 @@
         <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
 
     <span class="c1"># Include implicit tags and their defaults</span>
-    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">dmarc_tags</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">dmarc_tags</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span> <span class="ow">and</span> <span class="s2">&quot;default&quot;</span> <span class="ow">in</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]:</span>
             <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">dmarc_tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">],</span> <span class="s2">&quot;explicit&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
     <span class="k">if</span> <span class="s2">&quot;p&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
@@ -1491,13 +1487,12 @@
     <span class="c1"># RFC 9989 only requires that the v tag come first; the p tag may appear</span>
     <span class="c1"># in any position. Older readers (pre-9989 implementations of RFC 7489)</span>
     <span class="c1"># may still expect p immediately after v, so warn when it isn&#39;t there.</span>
-    <span class="k">if</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;explicit&quot;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">tags</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">&quot;The p tag does not immediately follow the v tag. &quot;</span>
-                <span class="s2">&quot;RFC 9989 permits any ordering, but some older DMARC &quot;</span>
-                <span class="s2">&quot;implementations may require p to be the second tag.&quot;</span>
-            <span class="p">)</span>
+    <span class="k">if</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="s2">&quot;explicit&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">list</span><span class="p">(</span><span class="n">tags</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">&quot;The p tag does not immediately follow the v tag. &quot;</span>
+            <span class="s2">&quot;RFC 9989 permits any ordering, but some older DMARC &quot;</span>
+            <span class="s2">&quot;implementations may require p to be the second tag.&quot;</span>
+        <span class="p">)</span>
     <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;v&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;v&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
 
     <span class="c1"># Validate tag values</span>
@@ -1599,7 +1594,7 @@
             <span class="p">)</span>
         <span class="p">)</span>
 
-    <span class="k">if</span> <span class="s2">&quot;ruf&quot;</span> <span class="ow">in</span> <span class="n">tags</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+    <span class="k">if</span> <span class="s2">&quot;ruf&quot;</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
         <span class="n">parsed_uris</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">uris</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s2">&quot;ruf&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">uris</span><span class="p">:</span>
@@ -1667,13 +1662,12 @@
 
     <span class="c1"># Add descriptions if requested</span>
     <span class="k">if</span> <span class="n">include_tag_descriptions</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
-            <span class="n">tag_value</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
-            <span class="n">details</span> <span class="o">=</span> <span class="n">get_dmarc_tag_description</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">tag_value</span><span class="p">)</span>
-            <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">details</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">tag_details</span> <span class="ow">in</span> <span class="n">tags</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">details</span> <span class="o">=</span> <span class="n">get_dmarc_tag_description</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">tag_details</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">])</span>
+            <span class="n">tag_details</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">details</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">details</span><span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">]:</span>
-                <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">details</span><span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">]</span>
-            <span class="n">tags</span><span class="p">[</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">details</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span>
+                <span class="n">tag_details</span><span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">details</span><span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">]</span>
+            <span class="n">tag_details</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">details</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">tags</span><span class="p">,</span> <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="n">warnings</span><span class="p">}</span></div>
 
@@ -1872,10 +1866,9 @@
             <span class="s2">&quot;valid&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
             <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span>
         <span class="p">}</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">error</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
-            <span class="c1"># error.data only contains &quot;target&quot; key based on codebase analysis</span>
-            <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="n">error</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
-                <span class="n">error_results</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span>
+        <span class="c1"># error.data only contains a &quot;target&quot; key based on codebase analysis</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">error</span><span class="o">.</span><span class="n">data</span> <span class="ow">and</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="n">error</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="n">error_results</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">error_results</span></div>
 
 </pre></div>

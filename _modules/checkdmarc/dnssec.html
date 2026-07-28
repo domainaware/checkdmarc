@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.dnssec &mdash; checkdmarc 5.17.3 documentation</title>
+  <title>checkdmarc.dnssec &mdash; checkdmarc 5.17.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b41e92d6"></script>
+      <script src="../../_static/documentation_options.js?v=7f97021b"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -72,8 +72,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for checkdmarc.dnssec</h1><div class="highlight"><pre>
-<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="sd">&quot;&quot;&quot;DNSSEC tests&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;DNSSEC tests&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -83,10 +82,11 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.dnssec</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.exception</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.message</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">dns.query</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">dns.rdatatype</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.name</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.query</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.rdatatype</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dns.rrset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dns.rdatatype</span><span class="w"> </span><span class="kn">import</span> <span class="n">RdataType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">expiringdict</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpiringDict</span>
@@ -112,6 +112,8 @@
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
 <span class="n">DNSSEC_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span>
     <span class="n">max_len</span><span class="o">=</span><span class="n">DNSSEC_CACHE_MAX_LEN</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="n">DNSSEC_CACHE_MAX_AGE_SECONDS</span>
 <span class="p">)</span>
@@ -121,6 +123,44 @@
 <span class="n">TLSA_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span>
     <span class="n">max_len</span><span class="o">=</span><span class="n">DNSSEC_CACHE_MAX_LEN</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="o">=</span><span class="n">DNSSEC_CACHE_MAX_AGE_SECONDS</span>
 <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_find_record_and_signature</span><span class="p">(</span>
+    <span class="n">answer</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">rrset</span><span class="o">.</span><span class="n">RRset</span><span class="p">],</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">dns</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">Name</span><span class="p">,</span>
+    <span class="n">rdatatype</span><span class="p">:</span> <span class="n">RdataType</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">rrset</span><span class="o">.</span><span class="n">RRset</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">rrset</span><span class="o">.</span><span class="n">RRset</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pick the record set of the requested type out of a DNS answer, along with</span>
+<span class="sd">    the signature that covers it</span>
+
+<span class="sd">    An answer can hold more than one record set. A name that points at another</span>
+<span class="sd">    name, for example, returns every link in that chain, and each link may sit</span>
+<span class="sd">    in a different zone with a different signature (or no signature at all).</span>
+<span class="sd">    Picking records out by name and type keeps a record from being paired with</span>
+<span class="sd">    a signature that belongs to something else, or with no signature at all.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        answer (Sequence): The answer section of a DNS response</span>
+<span class="sd">        name (dns.name.Name): The name that was queried</span>
+<span class="sd">        rdatatype (RdataType): The record type that was queried</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: The matching record set and its signature, either of which is</span>
+<span class="sd">        ``None`` when the answer does not contain it</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rrset</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">rrsig</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">rset</span> <span class="ow">in</span> <span class="n">answer</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rset</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">rset</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">RdataType</span><span class="o">.</span><span class="n">RRSIG</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rset</span><span class="o">.</span><span class="n">covers</span> <span class="o">==</span> <span class="n">rdatatype</span><span class="p">:</span>
+                <span class="n">rrsig</span> <span class="o">=</span> <span class="n">rset</span>
+        <span class="k">elif</span> <span class="n">rset</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">rdatatype</span><span class="p">:</span>
+            <span class="n">rrset</span> <span class="o">=</span> <span class="n">rset</span>
+
+    <span class="k">return</span> <span class="n">rrset</span><span class="p">,</span> <span class="n">rrsig</span>
 
 
 <div class="viewcode-block" id="get_dnskey">
@@ -156,34 +196,38 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cached_result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">cached_result</span>
 
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for DNSKEY records at </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for DNSKEY records at </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">make_query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">DNSKEY</span><span class="p">,</span> <span class="n">want_dnssec</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">nameserver</span> <span class="ow">in</span> <span class="n">nameservers</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">response</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">tcp</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">nameserver</span><span class="p">),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">answer</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">answer</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No DNSKEY records found at </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">from_text</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+                <span class="n">rrset</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_find_record_and_signature</span><span class="p">(</span>
+                    <span class="n">response</span><span class="o">.</span><span class="n">answer</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">RdataType</span><span class="o">.</span><span class="n">DNSKEY</span>
+                <span class="p">)</span>
+                <span class="c1"># An answer that holds no DNSKEY for this name means the same</span>
+                <span class="c1"># thing as an empty answer: the name is not the apex of a</span>
+                <span class="c1"># signed zone. A name that points at another name answers with</span>
+                <span class="c1"># that chain rather than with a key, so check the base domain.</span>
+                <span class="k">if</span> <span class="n">rrset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No DNSKEY records found at </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                     <span class="n">base_domain</span> <span class="o">=</span> <span class="n">get_base_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">domain</span> <span class="o">!=</span> <span class="n">base_domain</span><span class="p">:</span>
                         <span class="k">return</span> <span class="n">get_dnskey</span><span class="p">(</span>
-                            <span class="n">base_domain</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+                            <span class="n">base_domain</span><span class="p">,</span>
+                            <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
+                            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+                            <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="n">cache</span><span class="p">[</span><span class="n">domain</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
                     <span class="k">return</span> <span class="kc">None</span>
-                <span class="n">rrset</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="k">for</span> <span class="n">rset</span> <span class="ow">in</span> <span class="n">answer</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">rset</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">!=</span> <span class="n">RdataType</span><span class="o">.</span><span class="n">RRSIG</span><span class="p">:</span>
-                        <span class="n">rrset</span> <span class="o">=</span> <span class="n">rset</span>
-                        <span class="k">break</span>
-                <span class="n">name</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">from_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
                 <span class="n">key</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">rrset</span><span class="p">}</span>
                 <span class="n">cache</span><span class="p">[</span><span class="n">domain</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span>
                 <span class="k">return</span> <span class="n">key</span>
         <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">EOFError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">cache</span><span class="p">[</span><span class="n">domain</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DNSKEY query error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DNSKEY query error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 
@@ -228,28 +272,24 @@
         <span class="n">dns</span><span class="o">.</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">NS</span><span class="p">,</span>
         <span class="n">dns</span><span class="o">.</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">CNAME</span><span class="p">,</span>
     <span class="p">]</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">from_text</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">rdatatype</span> <span class="ow">in</span> <span class="n">rdatatypes</span><span class="p">:</span>
         <span class="n">request</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">make_query</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">rdatatype</span><span class="p">,</span> <span class="n">want_dnssec</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">nameserver</span> <span class="ow">in</span> <span class="n">nameservers</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">response</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">tcp</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">nameserver</span><span class="p">),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">answer</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">answer</span>
-                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">rrset</span><span class="p">,</span> <span class="n">rrsig</span> <span class="o">=</span> <span class="n">_find_record_and_signature</span><span class="p">(</span>
+                        <span class="n">response</span><span class="o">.</span><span class="n">answer</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">rdatatype</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">rrset</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rrsig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="k">continue</span>
-                    <span class="n">rrset</span> <span class="o">=</span> <span class="kc">None</span>
-                    <span class="n">rrsig</span> <span class="o">=</span> <span class="kc">None</span>
-                    <span class="k">for</span> <span class="n">rset</span> <span class="ow">in</span> <span class="n">answer</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="n">rset</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">RdataType</span><span class="o">.</span><span class="n">RRSIG</span><span class="p">:</span>
-                            <span class="n">rrsig</span> <span class="o">=</span> <span class="n">rset</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="n">rrset</span> <span class="o">=</span> <span class="n">rset</span>
                     <span class="n">dns</span><span class="o">.</span><span class="n">dnssec</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">rrset</span><span class="p">,</span> <span class="n">rrsig</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found a signed </span><span class="si">{</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> record&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found a signed </span><span class="si">{</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> record&quot;</span><span class="p">)</span>
                     <span class="n">cache</span><span class="p">[</span><span class="n">domain</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="k">return</span> <span class="kc">True</span>
             <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">EOFError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DNSSEC query error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DNSSEC query error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="n">cache</span><span class="p">[</span><span class="n">domain</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">return</span> <span class="kc">False</span></div>
@@ -288,13 +328,12 @@
         <span class="n">cache</span> <span class="o">=</span> <span class="n">TLSA_CACHE</span>
 
     <span class="n">query_hostname</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">._</span><span class="si">{</span><span class="n">protocol</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ExpiringDict</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">query_hostname</span> <span class="ow">in</span> <span class="n">TLSA_CACHE</span><span class="p">:</span>
-            <span class="n">cached_results</span> <span class="o">=</span> <span class="n">TLSA_CACHE</span><span class="p">[</span><span class="n">query_hostname</span><span class="p">]</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cached_results</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">cached_results</span>
+    <span class="k">if</span> <span class="n">query_hostname</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="n">cached_results</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="n">query_hostname</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cached_results</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">cached_results</span>
     <span class="n">tlsa_records</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for TLSA records at </span><span class="si">{</span><span class="n">query_hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for TLSA records at </span><span class="si">{</span><span class="n">query_hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">make_query</span><span class="p">(</span>
         <span class="n">query_hostname</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">rdatatype</span><span class="o">.</span><span class="n">TLSA</span><span class="p">,</span> <span class="n">want_dnssec</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
@@ -304,32 +343,28 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">response</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">tcp</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">nameserver</span><span class="p">),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">answer</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">answer</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">rrset</span><span class="p">,</span> <span class="n">rrsig</span> <span class="o">=</span> <span class="n">_find_record_and_signature</span><span class="p">(</span>
+                    <span class="n">response</span><span class="o">.</span><span class="n">answer</span><span class="p">,</span>
+                    <span class="n">dns</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">from_text</span><span class="p">(</span><span class="n">query_hostname</span><span class="p">),</span>
+                    <span class="n">RdataType</span><span class="o">.</span><span class="n">TLSA</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">rrset</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rrsig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="k">return</span> <span class="n">tlsa_records</span>
                 <span class="n">dnskey</span> <span class="o">=</span> <span class="n">get_dnskey</span><span class="p">(</span>
                     <span class="n">domain</span><span class="o">=</span><span class="n">hostname</span><span class="p">,</span> <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="n">dnskey</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Found TLSA records at </span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2"> but not &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;a DNSKEY record to verify them&quot;</span>
                     <span class="p">)</span>
                     <span class="k">return</span> <span class="n">tlsa_records</span>
-                <span class="n">rrset</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="n">rrsig</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="k">for</span> <span class="n">rset</span> <span class="ow">in</span> <span class="n">answer</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">rset</span><span class="o">.</span><span class="n">rdtype</span> <span class="o">==</span> <span class="n">RdataType</span><span class="o">.</span><span class="n">RRSIG</span><span class="p">:</span>
-                        <span class="n">rrsig</span> <span class="o">=</span> <span class="n">rset</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">rrset</span> <span class="o">=</span> <span class="n">rset</span>
-                <span class="k">if</span> <span class="n">rrset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">dns</span><span class="o">.</span><span class="n">dnssec</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">rrset</span><span class="p">,</span> <span class="n">rrsig</span><span class="p">,</span> <span class="n">dnskey</span><span class="p">)</span>
-                    <span class="n">tlsa_records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">rrset</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
-                    <span class="n">cache</span><span class="p">[</span><span class="n">query_hostname</span><span class="p">]</span> <span class="o">=</span> <span class="n">tlsa_records</span>
+                <span class="n">dns</span><span class="o">.</span><span class="n">dnssec</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">rrset</span><span class="p">,</span> <span class="n">rrsig</span><span class="p">,</span> <span class="n">dnskey</span><span class="p">)</span>
+                <span class="n">tlsa_records</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">rrset</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">keys</span><span class="p">())]</span>
+                <span class="n">cache</span><span class="p">[</span><span class="n">query_hostname</span><span class="p">]</span> <span class="o">=</span> <span class="n">tlsa_records</span>
                 <span class="k">return</span> <span class="n">tlsa_records</span>
         <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">EOFError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;TLSA query error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;TLSA query error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">tlsa_records</span>
     <span class="k">return</span> <span class="n">tlsa_records</span></div>
 

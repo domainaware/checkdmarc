@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>checkdmarc.smtp &mdash; checkdmarc 5.17.3 documentation</title>
+  <title>checkdmarc.smtp &mdash; checkdmarc 5.17.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b41e92d6"></script>
+      <script src="../../_static/documentation_options.js?v=7f97021b"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -72,8 +72,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for checkdmarc.smtp</h1><div class="highlight"><pre>
-<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="sd">&quot;&quot;&quot;SMTP tests&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;SMTP tests&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -82,18 +81,17 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">smtplib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">ssl</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.exception</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dns.resolver</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dns.nameserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nameserver</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">expiringdict</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpiringDict</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">checkdmarc._constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">DEFAULT_DNS_TIMEOUT</span><span class="p">,</span>
     <span class="n">DEFAULT_DNS_MAX_RETRIES</span><span class="p">,</span>
+    <span class="n">DEFAULT_DNS_TIMEOUT</span><span class="p">,</span>
     <span class="n">DEFAULT_SMTP_TIMEOUT</span><span class="p">,</span>
     <span class="n">SMTP_CACHE_MAX_AGE_SECONDS</span><span class="p">,</span>
     <span class="n">SMTP_CACHE_MAX_LEN</span><span class="p">,</span>
@@ -122,6 +120,8 @@
 <span class="sd">WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="sd">See the License for the specific language governing permissions and</span>
 <span class="sd">limitations under the License.&quot;&quot;&quot;</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <span class="n">TLS_CACHE</span> <span class="o">=</span> <span class="n">ExpiringDict</span><span class="p">(</span>
@@ -190,7 +190,7 @@
             <span class="k">return</span> <span class="n">cached_result</span><span class="p">[</span><span class="s2">&quot;tls&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">ssl_context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ssl_context</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">create_default_context</span><span class="p">()</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Testing TLS/SSL on </span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Testing TLS/SSL on </span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTP_SSL</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ssl_context</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span> <span class="k">as</span> <span class="n">server</span><span class="p">:</span>
             <span class="n">server</span><span class="o">.</span><span class="n">ehlo_or_helo_if_needed</span><span class="p">()</span>
@@ -300,7 +300,7 @@
             <span class="k">return</span> <span class="n">cached_result</span><span class="p">[</span><span class="s2">&quot;starttls&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">ssl_context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ssl_context</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">create_default_context</span><span class="p">()</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Testing STARTTLS on </span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Testing STARTTLS on </span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTP</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span> <span class="k">as</span> <span class="n">server</span><span class="p">:</span>
             <span class="n">server</span><span class="o">.</span><span class="n">ehlo_or_helo_if_needed</span><span class="p">()</span>
@@ -425,7 +425,7 @@
     <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">hostnames</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
     <span class="n">dupe_hostnames</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Getting MX records for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Getting MX records for </span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">mx_records</span> <span class="o">=</span> <span class="n">get_mx_records</span><span class="p">(</span>
         <span class="n">domain</span><span class="p">,</span>
         <span class="n">nameservers</span><span class="o">=</span><span class="n">nameservers</span><span class="p">,</span>
@@ -445,7 +445,7 @@
         <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;MX records found on parked domains&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">approved_hostnames</span><span class="p">:</span>
-        <span class="n">approved_hostnames</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="n">h</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">approved_hostnames</span><span class="p">))</span>
+        <span class="n">approved_hostnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">approved_hostnames</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
         <span class="n">hostname</span> <span class="o">=</span> <span class="n">host</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">hostname</span> <span class="ow">in</span> <span class="n">hostnames</span><span class="p">:</span>
@@ -462,9 +462,10 @@
                     <span class="k">break</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">approved</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unapproved MX hostname: </span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">mta_sts_mx_patterns</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">mx_in_mta_sts_patterns</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">mta_sts_mx_patterns</span><span class="p">):</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2"> is not included in the MTA-STS policy&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mta_sts_mx_patterns</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">mx_in_mta_sts_patterns</span><span class="p">(</span>
+            <span class="n">hostname</span><span class="p">,</span> <span class="n">mta_sts_mx_patterns</span>
+        <span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2"> is not included in the MTA-STS policy&quot;</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">dnssec</span> <span class="o">=</span> <span class="kc">False</span>
@@ -475,7 +476,7 @@
                     <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="p">(</span><span class="n">dns</span><span class="o">.</span><span class="n">exception</span><span class="o">.</span><span class="n">DNSException</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">EOFError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
             <span class="n">host</span><span class="p">[</span><span class="s2">&quot;dnssec&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dnssec</span>
             <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">host</span><span class="p">[</span><span class="s2">&quot;addresses&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_a_records</span><span class="p">(</span>
@@ -540,10 +541,10 @@
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_tls</span> <span class="ow">and</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Windows&quot;</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Testing TLS is not supported on Windows&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Testing TLS is not supported on Windows&quot;</span><span class="p">)</span>
             <span class="n">skip_tls</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">if</span> <span class="n">skip_tls</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping TLS/SSL tests on </span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping TLS/SSL tests on </span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">starttls</span> <span class="o">=</span> <span class="n">test_starttls</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">STARTTLS_CACHE</span><span class="p">)</span>
