@@ -37,8 +37,13 @@ classifiers = [
 ]
 dependencies = [
     "dnspython>=2.0.0",
-    "cryptography>=48.0.1,<49.0",
-    "pyopenssl>=24.2.1",
+    "cryptography>=50.0.0",
+    # checkdmarc no longer imports pyopenssl; certificate handling uses
+    # cryptography.x509 directly. This floor is kept for one release so that
+    # upgrading checkdmarc also upgrades any leftover pyOpenSSL to a version
+    # compatible with cryptography 50 (older pyOpenSSL breaks at import
+    # against it). Remove this dependency in the release after 5.17.5.
+    "pyopenssl>=26.4.0",
     "pem>=23.1.0",
     "expiringdict>=1.1.4",
     "publicsuffixlist>=0.10.0",
