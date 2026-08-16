@@ -63,8 +63,9 @@ class Test(unittest.TestCase):
         spf_record = "v=spf1 include:example.doesnotexist ~all"
         domain = "example.com"
         results = checkdmarc.spf.parse_spf_record(spf_record, domain)
-        self.assertTrue(
-            "example.doesnotexist: The domain does not exist." in results["warnings"]
+        self.assertIn(
+            "Error when processing example.doesnotexist: The domain does not exist.",
+            results["warnings"],
         )
         self.assertEqual(results["dns_lookups"], 1)
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## 5.17.5
+
+### Security
+
+- Require `cryptography>=50.0.0` and remove the `<49.0` cap so installs get the fix for the PKCS#7 decryption padding oracle ([GHSA-g6cj-pr64-35w5](https://github.com/advisories/GHSA-g6cj-pr64-35w5)). checkdmarc does not use PKCS#7 decryption, but the old range could never resolve a patched version
+
+### Changed
+
+- Raise the `pyopenssl` floor to `>=26.4.0`. checkdmarc no longer imports pyOpenSSL — certificate handling uses `cryptography.x509` directly — but the dependency is kept for one release so upgrades also move any leftover pyOpenSSL to a version compatible with `cryptography` 50. It will be removed in the next release
+
+### Fixed
+
+- Update the network variant of the missing-include-domain SPF test to expect the `Error when processing` warning prefix introduced in 5.17.2; only the mocked variant was updated at the time, so the network test failed on every run
+
 ## 5.17.4
 
 ### Fixed
