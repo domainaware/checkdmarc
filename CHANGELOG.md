@@ -8,6 +8,8 @@
 
 ### Changed
 
+- Automate releases and docs deployment: pushing a version tag now runs the full CI suite (lint, type check, and a Python 3.10–3.14 test matrix), builds the package, publishes it to PyPI via Trusted Publishing, creates the GitHub Release with the tag's changelog section as its notes, and deploys the Sphinx docs to GitHub Pages. This replaces the manual `build.sh` script and the hand-copied `gh-pages` branch
+- Fix the Changelog link in the package metadata, which pointed at the nonexistent `master` branch
 - Raise the `pyopenssl` floor to `>=26.4.0`. checkdmarc no longer imports pyOpenSSL — certificate handling uses `cryptography.x509` directly — but the dependency is kept for one release so upgrades also move any leftover pyOpenSSL to a version compatible with `cryptography` 50. It will be removed in the next release
 
 ### Fixed

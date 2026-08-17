@@ -21,9 +21,6 @@ hatch build
 
 # Build docs
 cd docs && make html
-
-# Full build (format + docs + package)
-./build.sh
 ```
 
 Tests use `unittest.TestCase` and are organized under `tests/` with one file per
@@ -78,6 +75,28 @@ Some tests require network access and are skipped when `GITHUB_ACTIONS` env var 
 - Testing framework: **pytest**
 - Every bit of code should have a test
 - Build backend: **hatchling**
+
+## Releases and deployment
+
+- **CRITICAL: Never make a release without the explicit permission of the
+  maintainer.** That includes every action that starts or advances a release:
+  pushing a version tag, creating a GitHub Release, publishing to PyPI, or
+  merging a release branch. Preparing release changes on a branch is fine;
+  triggering the release itself requires the maintainer to say so, each time.
+- The version lives in `checkdmarc/_constants.py` as `__version__`. Hatch
+  reads it from there.
+- Releases are automated by `.github/workflows/release.yml`: pushing a tag
+  matching the version (e.g. `5.17.5`, no `v` prefix) runs the full CI suite
+  (lint + type-check + test matrix, reused from `ci.yml` via `workflow_call`),
+  and only if it passes builds the package, publishes it to PyPI via Trusted
+  Publishing, creates the GitHub Release with the tag's `CHANGELOG.md` section
+  as its notes, and deploys the Sphinx docs to GitHub Pages. The build job
+  fails if the tag doesn't match `__version__`.
+- Docs deployment lives in `.github/workflows/docs.yml`, which release.yml
+  calls. For documentation-only updates between releases, the maintainer can
+  run it on demand (Actions → Docs → Run workflow); it deploys straight to
+  GitHub Pages. Like releases, on-demand docs deployment is a
+  maintainer-permission action — see the CRITICAL rule above.
 
 ## Conventions
 
