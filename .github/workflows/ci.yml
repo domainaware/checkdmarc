@@ -96,8 +96,11 @@ jobs:
         # Feeds Codecov Test Analytics (flaky-test detection, per-test
         # history). Runs even on test failure so failed cases still get
         # reported. Uses the same CODECOV_TOKEN as the coverage upload.
+        # Same action as the coverage upload with report_type switching
+        # the payload; it replaces the deprecated test-results-action.
         if: ${{ !cancelled() && matrix.python-version == '3.12' }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         with:
+          report_type: test_results
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./junit.xml
