@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# The ci- prefix keeps this group distinct from the Release workflow's
+# when this workflow is called via workflow_call (github.workflow resolves
+# to the caller's name there, which would collide and self-cancel).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint, type-check, and build checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Force the latest ruff and pyright so lint/typecheck rules
+          # track upstream and surface new issues promptly. AGENTS.md
+          # requires the latest pyright in particular.
+          pip install --upgrade ruff pyright
+
+      - name: ruff
+        run: ruff check --show-fixes
+
+      - name: ruff format
+        run: ruff format --check .
+
+      - name: pyright
+        env:
+          # Override the pyright Python wrapper's pinned bundle so it
+          # downloads whatever upstream tagged as ``latest`` at run time,
+          # not just whatever was current when the wheel was published.
+          PYRIGHT_PYTHON_FORCE_VERSION: latest
+        run: pyright
+
+      - name: Test building documentation
+        run: |
+          cd docs
+          make html
+
+      - name: Test building packages
+        run: hatch build
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-cov
+
+      - name: pytest
+        run: pytest --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy tests/
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Upload test results to Codecov
+        # Feeds Codecov Test Analytics (flaky-test detection, per-test
+        # history). Runs even on test failure so failed cases still get
+        # reported. Uses the same CODECOV_TOKEN as the coverage upload.
+        if: ${{ !cancelled() && matrix.python-version == '3.12' }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./junit.xml
