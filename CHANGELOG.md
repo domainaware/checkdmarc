@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Update the GitHub Actions used by the workflows to their latest major versions: `checkout` v7, `setup-python` v7, `codecov-action` v7, `upload-artifact` v7, `download-artifact` v8, `configure-pages` v6, `upload-pages-artifact` v5, and `deploy-pages` v5. All now run on Node.js 24; no workflow behavior changes
+
 ## 5.17.5
 
 ### Security
