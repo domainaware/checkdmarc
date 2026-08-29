@@ -476,7 +476,7 @@ class TestEncryptedDnsTransports(unittest.TestCase):
                 nameservers=["tls://9.9.9.9#dns.quad9.net"],
                 cache=self._fresh_cache(),
             )
-        self.assertIsNotNone(key)
+        assert key is not None  # narrow Optional for pyright
         self.assertIn(dns.name.from_text("example.com"), key)
         address, kwargs = captured[0]
         self.assertEqual(address, "9.9.9.9")
