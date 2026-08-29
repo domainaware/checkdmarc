@@ -79,7 +79,9 @@ def _main():
         "--nameserver",
         nargs="+",
         help=(
-            "nameservers to query (default: the system-configured resolvers). "
+            "nameservers to query: IP addresses, https:// URLs (DNS over "
+            "HTTPS), and/or tls://ip[:port][#hostname] (DNS over TLS) "
+            "(default: the system-configured resolvers). "
             "For reliability, passing a mix of public resolvers is recommended, "
             f"e.g. {' '.join(RECOMMENDED_DNS_NAMESERVERS)}"
         ),

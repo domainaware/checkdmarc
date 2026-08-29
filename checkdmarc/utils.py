@@ -3,14 +3,21 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 import unicodedata
 from collections.abc import Sequence
 from typing import TypedDict
+from urllib.parse import urlsplit
 
 import dns.exception
+import dns.inet
+import dns.message
+import dns.nameserver
+import dns.query
 import dns.resolver
 import dns.reversename
+import httpx
 import publicsuffixlist
 from dns.nameserver import Nameserver
 from expiringdict import ExpiringDict
@@ -41,6 +48,11 @@ logger = logging.getLogger(__name__)
 DNS_CACHE = ExpiringDict(
     max_len=DNS_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
 )
+
+# The process-wide httpx client used for DNS over HTTPS queries, and the PID
+# it was created under. See _get_doh_session().
+_DOH_SESSION: httpx.Client | None = None
+_DOH_SESSION_PID: int | None = None
 
 # Errors considered transient and retryable by query_dns. LifetimeTimeout is
 # dnspython's deadline expiry; NoNameservers typically wraps a SERVFAIL from
@@ -130,6 +142,175 @@ def normalize_domain(domain: str) -> str:
     return domain.lower()
 
 
+def _get_doh_session() -> httpx.Client:
+    """
+    Returns the shared ``httpx.Client`` used for DNS over HTTPS queries.
+
+    The client is created on first use and reused afterwards, so DoH queries
+    share TLS connections instead of renegotiating one per lookup. It is
+    deliberately never closed: like the module's other shared state, it lives
+    for the life of the process.
+
+    The client is rebuilt when the current PID differs from the one it was
+    created under, because an application embedding this library in a
+    ``fork()``-based worker pool would otherwise inherit — and concurrently
+    use — the parent's sockets.
+
+    ``httpx.Client`` defaults are what make this work behind a corporate
+    proxy: ``trust_env=True`` honors ``HTTP_PROXY``/``HTTPS_PROXY``/
+    ``NO_PROXY`` and ``SSL_CERT_FILE``/``SSL_CERT_DIR``, and ``verify=True``
+    keeps certificate verification on. Neither is overridden here.
+
+    Returns:
+        httpx.Client: The shared DoH client for this process
+    """
+    global _DOH_SESSION, _DOH_SESSION_PID
+    pid = os.getpid()
+    if _DOH_SESSION is None or _DOH_SESSION_PID != pid:
+        _DOH_SESSION = httpx.Client(http1=True, http2=True)
+        _DOH_SESSION_PID = pid
+    return _DOH_SESSION
+
+
+class _SessionDoHNameserver(dns.nameserver.DoHNameserver):
+    """
+    A DNS over HTTPS nameserver that queries through a shared ``httpx``
+    client.
+
+    dnspython's stock ``DoHNameserver`` calls ``dns.query.https()`` without a
+    ``session``, which makes that function build an ``httpx.Client`` with its
+    own custom transport — and httpx only reads proxy environment variables
+    when no transport is supplied (``allow_env_proxies = trust_env and
+    transport is None``). Stock DoH therefore ignores ``HTTPS_PROXY``
+    entirely — and a proxy is the only way out of the networks encrypted DNS
+    support exists for.
+
+    Passing our own session instead gets environment proxies, environment CA
+    configuration (``SSL_CERT_FILE``), and connection reuse across queries.
+    ``bootstrap_address`` is deliberately not passed: with a session, the DoH
+    server's hostname is resolved by httpx — locally through the OS resolver,
+    or by the proxy itself via ``CONNECT`` when one is configured — so no
+    UDP/53 access is required.
+    """
+
+    def query(
+        self,
+        request: dns.message.QueryMessage,
+        timeout: float,
+        source: str | None,
+        source_port: int,
+        max_size: bool = False,
+        one_rr_per_rrset: bool = False,
+        ignore_trailing: bool = False,
+    ) -> dns.message.Message:
+        return dns.query.https(
+            request,
+            self.url,
+            timeout=timeout,
+            source=source,
+            source_port=source_port,
+            one_rr_per_rrset=one_rr_per_rrset,
+            ignore_trailing=ignore_trailing,
+            verify=self.verify,
+            post=(not self.want_get),
+            http_version=self.http_version,
+            session=_get_doh_session(),
+        )
+
+
+def _parse_dot_nameserver(entry: str) -> dns.nameserver.DoTNameserver:
+    """
+    Parses a ``tls://ip[:port][#hostname]`` nameserver entry.
+
+    The optional ``#hostname`` suffix names the TLS certificate identity to
+    use for SNI and verification, matching systemd-resolved's syntax.
+
+    Args:
+        entry (str): A ``tls://`` nameserver entry
+
+    Returns:
+        dns.nameserver.DoTNameserver: The parsed nameserver
+
+    Raises:
+        ValueError: The entry has no host, an unusable port, a host that
+            is not a literal IP address, or extra URL components
+    """
+    parts = urlsplit(entry)
+    try:
+        port = parts.port
+    except ValueError as e:
+        # urlsplit only validates the port when it is accessed
+        raise ValueError(f"Invalid DNS over TLS nameserver {entry}: {e}") from e
+    if parts.username or parts.path or parts.query:
+        # Catch tls://9.9.9.9/dns.quad9.net — a plausible slash-for-#
+        # typo that would otherwise "work" with no certificate identity
+        # and fail only at query time with an opaque TLS error
+        raise ValueError(
+            f"Invalid DNS over TLS nameserver {entry}: only "
+            "tls://ip[:port][#hostname] is supported — the TLS certificate "
+            "identity is given after #, not /"
+        )
+    address = parts.hostname
+    if not address:
+        raise ValueError(f"Invalid DNS over TLS nameserver {entry}: missing IP address")
+    if not dns.inet.is_address(address):
+        raise ValueError(
+            f"Invalid DNS over TLS nameserver {entry}: {address} is not an IP "
+            "address. Use tls://ip[:port][#hostname], where the optional "
+            "#hostname is the TLS certificate identity of the server"
+        )
+    hostname = parts.fragment or None
+    if port is None:
+        return dns.nameserver.DoTNameserver(address, hostname=hostname)
+    return dns.nameserver.DoTNameserver(address, port, hostname)
+
+
+def _nameservers_to_resolver_input(
+    nameservers: Sequence[str | Nameserver],
+) -> list[str | Nameserver]:
+    """
+    Converts configured nameserver entries into values that
+    ``dns.resolver.Resolver.nameservers`` accepts.
+
+    ``https://`` entries become DNS over HTTPS nameservers that share this
+    process's ``httpx`` client (so proxy and CA environment variables apply),
+    and ``tls://ip[:port][#hostname]`` entries become DNS over TLS
+    nameservers. Everything else — plain IPv4/IPv6 addresses and
+    ``dns.nameserver.Nameserver`` objects a caller built itself — is passed
+    through untouched, leaving dnspython to enrich and validate it exactly as
+    before.
+
+    Args:
+        nameservers (list): The configured nameservers
+
+    Returns:
+        list: A list of strings and/or ``dns.nameserver.Nameserver`` objects,
+        in the configured order
+
+    Raises:
+        ValueError: A ``tls://`` entry is malformed
+    """
+    resolver_input: list[str | Nameserver] = []
+    for entry in nameservers:
+        if not isinstance(entry, str):
+            resolver_input.append(entry)
+            continue
+        try:
+            # urlsplit lowercases the scheme, so HTTPS:// and TLS:// work too
+            scheme = urlsplit(entry).scheme
+        except ValueError:
+            # e.g. an unbalanced IPv6 bracket; let dnspython reject it with
+            # its own message about what a nameserver may be
+            scheme = ""
+        if scheme == "https":
+            resolver_input.append(_SessionDoHNameserver(entry))
+        elif scheme == "tls":
+            resolver_input.append(_parse_dot_nameserver(entry))
+        else:
+            resolver_input.append(entry)
+    return resolver_input
+
+
 def query_dns(
     domain: str,
     record_type: str,
@@ -155,7 +336,15 @@ def query_dns(
                             resolver on Windows). For reliability, pass
                             ``RECOMMENDED_DNS_NAMESERVERS`` or your own mix
                             of public resolvers so failover happens when one
-                            provider's path is slow or broken.
+                            provider's path is slow or broken. Each entry is
+                            an IP address (DNS over UDP/TCP port 53), an
+                            ``https://`` URL (DNS over HTTPS, honoring the
+                            ``HTTP_PROXY``/``HTTPS_PROXY``/``NO_PROXY`` and
+                            ``SSL_CERT_FILE`` environment variables), or
+                            ``tls://ip[:port][#hostname]`` (DNS over TLS,
+                            port 853 by default, with the optional
+                            ``#hostname`` naming the server's TLS
+                            certificate identity).
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): Overall DNS lifetime budget in seconds per
@@ -188,7 +377,7 @@ def query_dns(
         resolver = dns.resolver.Resolver()
         timeout = float(timeout)
         if nameservers is not None:
-            resolver.nameservers = list(nameservers)
+            resolver.nameservers = _nameservers_to_resolver_input(nameservers)
         # Cap per-query UDP timeout at 1s so dnspython retries within the
         # lifetime window on transient packet loss — otherwise with a single
         # nameserver and timeout == lifetime, one dropped UDP datagram

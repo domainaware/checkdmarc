@@ -1,4 +1,5 @@
-dnspython>=2.0.0
+dnspython[doh]>=2.7.0
+httpx>=0.26.0
 cryptography>=50.0.0
 pem>=23.1.0
 expiringdict>=1.1.4

@@ -24,9 +24,11 @@ options:
                         one or more file paths to output to (must end in .json or .csv)
                         (silences screen output)
   -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
-                        nameservers to query (default: the system-configured
-                        resolvers). For reliability, passing a mix of public
-                        resolvers is recommended, e.g. 1.1.1.1 8.8.8.8
+                        nameservers to query: IP addresses, https:// URLs (DNS
+                        over HTTPS), and/or tls://ip[:port][#hostname] (DNS over
+                        TLS) (default: the system-configured resolvers). For
+                        reliability, passing a mix of public resolvers is
+                        recommended, e.g. 1.1.1.1 8.8.8.8
   -t TIMEOUT, --timeout TIMEOUT
                         number of seconds to wait for an answer from DNS (default 2.0)
   -b BIMI_SELECTOR, --bimi-selector BIMI_SELECTOR
@@ -72,6 +74,51 @@ results = check_domains(
 Pick providers that make sense for your threat model and jurisdiction;
 Cloudflare (`1.1.1.1`), Google (`8.8.8.8`), and Quad9 (`9.9.9.9`) are all
 reasonable starting points.
+
+## Encrypted DNS
+
+Every entry in the `nameservers` list picks its own transport:
+
+- An IP address — plain DNS over UDP and TCP port 53, the default and the
+  behavior of every earlier release.
+- An `https://` URL — DNS over HTTPS (DoH).
+- `tls://ip[:port][#hostname]` — DNS over TLS (DoT). The port defaults to
+  853, and the optional `#hostname` names the TLS certificate identity of
+  the server (SNI), matching systemd-resolved's syntax. The host itself must
+  be an IP address, and an IPv6 address must be wrapped in brackets, so that
+  its colons cannot be mistaken for the port separator —
+  `tls://[2620:fe::fe]#dns.quad9.net`.
+
+Forms can be mixed, and are tried in the order given:
+
+```bash
+checkdmarc -n https://cloudflare-dns.com/dns-query tls://9.9.9.9#dns.quad9.net example.com
+```
+
+On a network where outbound DNS is blocked but an HTTP proxy is available,
+configure DoH nameservers and set the standard proxy environment variables:
+
+```bash
+export HTTPS_PROXY=http://proxy.example.net:3128
+```
+
+checkdmarc's DoH queries honor `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY`,
+and the proxy resolves the DoH server's own hostname on checkdmarc's behalf,
+so such a deployment needs no access to UDP port 53 at all.
+
+If the proxy inspects TLS, point the standard `SSL_CERT_FILE` environment
+variable at your organization's CA bundle so its certificate is trusted:
+
+```bash
+export SSL_CERT_FILE=/etc/ssl/certs/corporate-ca.pem
+```
+
+:::{note}
+checkdmarc's DoT connections are made directly to TCP port 853 and do not
+use a proxy. Use DoH on a proxy-only network. Note also that the STARTTLS
+test still needs a direct connection to each MX host on port 25; use
+`--skip-tls` where that is blocked.
+:::
 
 ## Example
 

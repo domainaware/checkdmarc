@@ -13,6 +13,7 @@ import dns.query
 import dns.rdatatype
 import dns.resolver
 import dns.rrset
+import httpx
 from dns.nameserver import Nameserver
 from dns.rdatatype import RdataType
 from expiringdict import ExpiringDict
@@ -22,7 +23,11 @@ from checkdmarc._constants import (
     DNSSEC_CACHE_MAX_AGE_SECONDS,
     DNSSEC_CACHE_MAX_LEN,
 )
-from checkdmarc.utils import get_base_domain, normalize_domain
+from checkdmarc.utils import (
+    _nameservers_to_resolver_input,
+    get_base_domain,
+    normalize_domain,
+)
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -49,6 +54,41 @@ DNSKEY_CACHE = ExpiringDict(
 TLSA_CACHE = ExpiringDict(
     max_len=DNSSEC_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
 )
+
+
+# Errors that mean one nameserver could not answer and the next one should be
+# tried. ssl.SSLError is an OSError subclass, so DNS over TLS handshake
+# failures are covered; httpx.HTTPError covers DNS over HTTPS transport
+# failures (connection, proxy, and timeout errors).
+_TRANSPORT_ERRORS = (dns.exception.DNSException, OSError, EOFError, httpx.HTTPError)
+
+
+def _query_nameserver(
+    request: dns.message.QueryMessage,
+    nameserver: str | Nameserver,
+    timeout: float,
+) -> dns.message.Message:
+    """
+    Sends one DNS query to one nameserver, honoring its transport.
+
+    A ``dns.nameserver.Nameserver`` object — such as the DNS over HTTPS and
+    DNS over TLS nameservers that ``https://`` and ``tls://`` entries map to —
+    is queried through its own ``query()`` method, with ``max_size=True`` so
+    a plain-DNS ``Do53Nameserver`` uses TCP, matching the direct
+    ``dns.query.tcp()`` call used for plain string entries. DNSSEC answers
+    carry signatures that routinely overflow a UDP datagram.
+
+    Args:
+        request (dns.message.QueryMessage): The query to send
+        nameserver: An IP address string or a ``dns.nameserver.Nameserver``
+        timeout (float): Timeout in seconds
+
+    Returns:
+        dns.message.Message: The response
+    """
+    if isinstance(nameserver, Nameserver):
+        return nameserver.query(request, timeout, None, 0, True)
+    return dns.query.tcp(request, str(nameserver), timeout=timeout)
 
 
 def _find_record_and_signature(
@@ -110,6 +150,7 @@ def get_dnskey(
     """
     if nameservers is None:
         nameservers = dns.resolver.Resolver().nameservers
+    nameservers = _nameservers_to_resolver_input(nameservers)
     if cache is None:
         cache = DNSKEY_CACHE
 
@@ -124,7 +165,7 @@ def get_dnskey(
     request = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec=True)
     for nameserver in nameservers:
         try:
-            response = dns.query.tcp(request, str(nameserver), timeout=timeout)
+            response = _query_nameserver(request, nameserver, timeout)
             if response is not None:
                 name = dns.name.from_text(domain)
                 rrset, _ = _find_record_and_signature(
@@ -149,7 +190,7 @@ def get_dnskey(
                 key = {name: rrset}
                 cache[domain] = key
                 return key
-        except (dns.exception.DNSException, OSError, EOFError) as e:
+        except _TRANSPORT_ERRORS as e:
             cache[domain] = None
             logger.debug(f"DNSKEY query error: {e}")
 
@@ -175,6 +216,7 @@ def test_dnssec(
     """
     if nameservers is None:
         nameservers = dns.resolver.Resolver().nameservers
+    nameservers = _nameservers_to_resolver_input(nameservers)
     if cache is None:
         cache = DNSSEC_CACHE
 
@@ -198,7 +240,7 @@ def test_dnssec(
         request = dns.message.make_query(domain, rdatatype, want_dnssec=True)
         for nameserver in nameservers:
             try:
-                response = dns.query.tcp(request, str(nameserver), timeout=timeout)
+                response = _query_nameserver(request, nameserver, timeout)
                 if response is not None:
                     rrset, rrsig = _find_record_and_signature(
                         response.answer, name, rdatatype
@@ -209,7 +251,7 @@ def test_dnssec(
                     logger.debug(f"Found a signed {rdatatype.name} record")
                     cache[domain] = True
                     return True
-            except (dns.exception.DNSException, OSError, EOFError) as e:
+            except _TRANSPORT_ERRORS as e:
                 logger.debug(f"DNSSEC query error: {e}")
 
     cache[domain] = False
@@ -241,6 +283,7 @@ def get_tlsa_records(
     """
     if nameservers is None:
         nameservers = dns.resolver.Resolver().nameservers
+    nameservers = _nameservers_to_resolver_input(nameservers)
     protocol = protocol.lower()
     if cache is None:
         cache = TLSA_CACHE
@@ -259,7 +302,7 @@ def get_tlsa_records(
         raise ValueError("At lease one nameserver is required")
     for nameserver in nameservers:
         try:
-            response = dns.query.tcp(request, str(nameserver), timeout=timeout)
+            response = _query_nameserver(request, nameserver, timeout)
             if response is not None:
                 rrset, rrsig = _find_record_and_signature(
                     response.answer,
@@ -281,7 +324,7 @@ def get_tlsa_records(
                 tlsa_records = [str(x) for x in list(rrset.items.keys())]
                 cache[query_hostname] = tlsa_records
                 return tlsa_records
-        except (dns.exception.DNSException, OSError, EOFError) as e:
+        except _TRANSPORT_ERRORS as e:
             logger.debug(f"TLSA query error: {e}")
             return tlsa_records
     return tlsa_records

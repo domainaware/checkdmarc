@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 5.18.0
+
+### Added
+
+- DNS over HTTPS (DoH) and DNS over TLS (DoT) support through the existing `nameservers` option, matching parsedmarc ([parsedmarc PR #886](https://github.com/domainaware/parsedmarc/pull/886)). Each entry picks its own transport: an IP address means plain DNS on port 53 exactly as before, an `https://` URL means DoH, and `tls://ip[:port][#hostname]` means DoT, where the port defaults to 853 and the optional `#hostname` names the server's TLS certificate identity, matching systemd-resolved's syntax. DoH queries go through a shared `httpx` client that honors the `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` and `SSL_CERT_FILE`/`SSL_CERT_DIR` environment variables, so checks can run on networks that block outbound DNS but provide an HTTP proxy. The DNSSEC, DNSKEY, and TLSA checks use the configured transports too. The `dnspython` requirement is now `dnspython[doh]>=2.7.0`
+
+### Removed
+
+- The `pyopenssl` dependency, as planned in 5.17.5. checkdmarc stopped importing pyOpenSSL in that release; the floor was kept for one release only so upgrades would also move any leftover pyOpenSSL to a version compatible with `cryptography` 50
 
 ### Changed
 
