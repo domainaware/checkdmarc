@@ -87,7 +87,9 @@ def _query_nameserver(
         dns.message.Message: The response
     """
     if isinstance(nameserver, Nameserver):
-        return nameserver.query(request, timeout, None, 0, True)
+        return nameserver.query(
+            request, timeout, source=None, source_port=0, max_size=True
+        )
     return dns.query.tcp(request, str(nameserver), timeout=timeout)
 
 
@@ -299,7 +301,7 @@ def get_tlsa_records(
         query_hostname, dns.rdatatype.TLSA, want_dnssec=True
     )
     if len(nameservers) == 0:
-        raise ValueError("At lease one nameserver is required")
+        raise ValueError("At least one nameserver is required")
     for nameserver in nameservers:
         try:
             response = _query_nameserver(request, nameserver, timeout)

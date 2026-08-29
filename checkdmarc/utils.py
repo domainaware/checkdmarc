@@ -262,7 +262,7 @@ def _parse_dot_nameserver(entry: str) -> dns.nameserver.DoTNameserver:
     hostname = parts.fragment or None
     if port is None:
         return dns.nameserver.DoTNameserver(address, hostname=hostname)
-    return dns.nameserver.DoTNameserver(address, port, hostname)
+    return dns.nameserver.DoTNameserver(address, port, hostname=hostname)
 
 
 def _nameservers_to_resolver_input(
