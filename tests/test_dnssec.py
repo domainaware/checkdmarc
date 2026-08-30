@@ -548,13 +548,15 @@ class TestDeprecatedTestDnssecAlias(unittest.TestCase):
     def testAliasWarnsAndDelegates(self):
         """test_dnssec() warns that it is deprecated and returns
         check_dnssec()'s result"""
-        with patch("dns.query.tcp", return_value=_response()):
-            with self.assertWarns(DeprecationWarning):
-                result = checkdmarc.dnssec.test_dnssec(
-                    "example.com",
-                    nameservers=["9.9.9.9"],
-                    cache=ExpiringDict(max_len=10, max_age_seconds=60),
-                )
+        with (
+            patch("dns.query.tcp", return_value=_response()),
+            self.assertWarns(DeprecationWarning),
+        ):
+            result = checkdmarc.dnssec.test_dnssec(
+                "example.com",
+                nameservers=["9.9.9.9"],
+                cache=ExpiringDict(max_len=10, max_age_seconds=60),
+            )
         self.assertFalse(result)
 
 
