@@ -1194,6 +1194,14 @@ class TestSPFCheckSpfErrorData(unittest.TestCase):
         self.assertFalse(result["valid"])
         self.assertEqual(cast(Any, result)["dns_lookups"], 11)
 
+    def testEmptyExpModifierRaisesSyntaxError(self):
+        """An exp modifier with an empty value raises SPFSyntaxError. The
+        check previously compared the value string to the integer 0, which
+        is never equal, so "exp=" was silently accepted."""
+        with self.assertRaises(checkdmarc.spf.SPFSyntaxError) as ctx:
+            checkdmarc.spf.parse_spf_record("v=spf1 -all exp=", "example.com")
+        self.assertIn("exp modifier is missing a value", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

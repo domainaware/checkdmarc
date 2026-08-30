@@ -695,7 +695,7 @@ def parse_spf_record(
             # preserve the provided value (which may include macros) so a
             # caller with SMTP context can expand it at evaluation time.
             exp = items_after_all[0].split("=")
-            if len(exp) < 2 or exp[1].strip() == 0:
+            if len(exp) < 2 or exp[1].strip() == "":
                 raise SPFSyntaxError("The exp modifier is missing a value")
             exp = exp[1].split(" ")
             if len(exp) > 1:

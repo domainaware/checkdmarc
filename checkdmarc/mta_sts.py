@@ -580,7 +580,9 @@ def check_mta_sts(
         warnings = mta_sts_record["warnings"]
         mta_sts_record = parse_mta_sts_record(mta_sts_record["record"])
         id_value = mta_sts_record["tags"]["id"]
-        policy = download_mta_sts_policy(domain, http_timeout=timeout)
+        # The timeout parameter is the DNS timeout; the policy download uses
+        # its own HTTP default, as the BIMI check does for its downloads
+        policy = download_mta_sts_policy(domain)
         warnings += policy["warnings"]
         policy = parse_mta_sts_policy(policy["policy"])
         warnings += policy["warnings"]

@@ -188,7 +188,7 @@ OID_LEGAL_ENTITY_IDENTIFIER = ObjectIdentifier("1.3.6.1.4.1.53087.1.5")
 OID_TRADEMARK_COUNTRY_OR_REGION_NAME = ObjectIdentifier("1.3.6.1.4.1.53087.1.3")
 OID_TRADEMARK_OFFICE_NAME = ObjectIdentifier("1.3.6.1.4.1.53087.1.2")
 OID_TRADEMARK_IDENTIFIER = ObjectIdentifier("1.3.6.1.4.1.53087.1.4")
-OID_WORD_MARK = (ObjectIdentifier("1.3.6.1.4.1.53087.1.6"),)
+OID_WORD_MARK = ObjectIdentifier("1.3.6.1.4.1.53087.1.6")
 OID_ORGANIZATION_IDENTIFIER = ObjectIdentifier("2.5.4.97")
 OID_PRIOR_USE_MARK_SOURCE_URL = ObjectIdentifier("1.3.6.1.4.1.53087.5.1")
 OID_SIGNED_CERTIFICATE_TIMESTAMP_LIST = ObjectIdentifier("1.3.6.1.4.1.11129.2.4.2")
@@ -1162,7 +1162,7 @@ def parse_bimi_record(
             selectors = [s.strip().lower() for s in tag_value.split(",")]
             tags[tag]["value"] = selectors
 
-    if parsed_dmarc_record and tags["l"] != "":
+    if parsed_dmarc_record and tags.get("l", {}).get("value", "") != "":
         if parsed_dmarc_record["valid"] is False:
             warnings.append(
                 "The domain does not have a valid DMARC record. A DMARC policy of quarantine or reject must be in place."

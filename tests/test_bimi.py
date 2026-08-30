@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import dns.exception
 import dns.resolver
 import requests
+from cryptography import x509
 
 import checkdmarc.bimi
 
@@ -415,6 +416,41 @@ class TestParseBimiRecord(unittest.TestCase):
         self.assertTrue(any("DMARC policy" in w for w in result["warnings"]))
         self.assertTrue(any("subdomain policy" in w for w in result["warnings"]))
         self.assertTrue(any("pct tag" in w for w in result["warnings"]))
+
+    def testNoLogoTagSkipsDmarcPolicyWarnings(self):
+        """A BIMI record with no l tag does not crash or warn about DMARC
+        policy; there is no logo to display, so the policy requirements do
+        not apply. The check previously read tags["l"] directly, raising
+        KeyError when the tag was absent."""
+        dmarc = cast(
+            Any,
+            {"valid": True, "tags": {"p": {"value": "none"}, "sp": {"value": "none"}}},
+        )
+        result = checkdmarc.bimi.parse_bimi_record(
+            "v=BIMI1;", parsed_dmarc_record=dmarc
+        )
+        self.assertFalse(any("DMARC" in w for w in result["warnings"]))
+
+    def testEmptyLogoTagSkipsDmarcPolicyWarnings(self):
+        """An empty l tag declines to publish a logo, so DMARC policy
+        warnings do not apply. The check previously compared the tag's dict
+        to the empty string, which is always unequal, so the warnings fired
+        anyway."""
+        dmarc = cast(
+            Any,
+            {"valid": True, "tags": {"p": {"value": "none"}, "sp": {"value": "none"}}},
+        )
+        result = checkdmarc.bimi.parse_bimi_record(
+            "v=BIMI1; l=;", parsed_dmarc_record=dmarc
+        )
+        self.assertFalse(any("DMARC" in w for w in result["warnings"]))
+
+    def testWordMarkOidHasLabel(self):
+        """The wordMark OID maps to its label. A trailing comma previously
+        made the OID_LABELS key a one-element tuple, so a certificate's
+        wordMark attribute was labeled with the raw dotted OID string."""
+        oid = x509.ObjectIdentifier("1.3.6.1.4.1.53087.1.6")
+        self.assertEqual(checkdmarc.bimi.OID_LABELS.get(oid), "wordMark")
 
 
 class TestExtractLogoFromCertificate(unittest.TestCase):

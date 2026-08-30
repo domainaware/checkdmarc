@@ -76,8 +76,11 @@ class DMARCRecordNotFound(DMARCError):
     """Raised when a DMARC record could not be found"""
 
     def __init__(self, error):
+        # Round the timeout before stringifying, so the message shows the
+        # rounded value
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+        super().__init__(str(error))
 
 
 class DMARCSyntaxError(DMARCError):

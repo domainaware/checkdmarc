@@ -311,5 +311,38 @@ class TestCheckMtaStsSuccess(unittest.TestCase):
         self.assertEqual(success["policy"]["mode"], "enforce")
 
 
+class TestCheckMtaStsHttpTimeout(unittest.TestCase):
+    def testPolicyDownloadUsesItsOwnHttpTimeout(self):
+        """check_mta_sts's timeout parameter is the DNS timeout; the policy
+        download request uses the HTTP default. The DNS timeout was
+        previously passed straight through as the HTTP timeout, so tuning
+        DNS timing silently changed HTTP behavior. Mocks at the requests
+        SDK boundary: the assertion is on the timeout the HTTP request is
+        sent with."""
+        valid_policy = (
+            "version: STSv1\r\n"
+            "mode: enforce\r\n"
+            "max_age: 86400\r\n"
+            "mx: mail.example.com\r\n"
+        )
+        fake_session = TestDownloadMtaStsPolicy._make_session(text=valid_policy)
+        with (
+            patch(
+                "checkdmarc.mta_sts.query_mta_sts_record",
+                return_value={
+                    "record": "v=STSv1; id=20240101T010101",
+                    "warnings": [],
+                },
+            ),
+            patch("checkdmarc.mta_sts.requests.Session", return_value=fake_session),
+        ):
+            result = checkdmarc.mta_sts.check_mta_sts("example.com", timeout=0.001)
+        self.assertTrue(result["valid"])
+        self.assertEqual(
+            fake_session.get.call_args.kwargs["timeout"],
+            checkdmarc.mta_sts.DEFAULT_HTTP_TIMEOUT,
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

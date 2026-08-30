@@ -12,6 +12,11 @@
 
 ### Fixed
 
+- An SPF `exp` modifier with an empty value (`exp=`) now raises `SPFSyntaxError` as intended; the check compared the value to the integer 0, which never matches a string, so the empty modifier was silently accepted
+- A BIMI record with no `l` tag no longer crashes with `KeyError` when checked alongside a DMARC record, and a record with an empty `l` tag no longer warns about DMARC policy requirements that only apply when a logo is published; the check compared the tag's dict to an empty string, which is always unequal
+- A certificate's wordMark attribute is now labeled `wordMark` in BIMI certificate metadata instead of its raw dotted OID string; a trailing comma made the label table's key a one-element tuple
+- `check_mta_sts()` no longer passes its DNS timeout as the HTTP timeout for the policy download; the download uses `DEFAULT_HTTP_TIMEOUT`, as the BIMI check already did
+- `DMARCRecordNotFound` now calls its parent constructor, so its message is carried explicitly rather than through a CPython quirk and its `data` attribute exists like other DMARC errors
 - SOA range and type errors now name the field that failed (`retry`, `expire`, or `minimum`) instead of always naming `refresh`
 - The BIMI check's DMARC policy warning stated the opposite of the requirement; it now reads "The DMARC policy (p tag) must be set to quarantine or reject"
 - The certificate metadata field for the X.509 subjectAlternativeName extension was misspelled `serviceAlternativeName`; code reading that key from BIMI certificate results should update
