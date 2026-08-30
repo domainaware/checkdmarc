@@ -10,6 +10,18 @@
 
 - The `pyopenssl` dependency, as planned in 5.17.5. checkdmarc stopped importing pyOpenSSL in that release; the floor was kept for one release only so upgrades would also move any leftover pyOpenSSL to a version compatible with `cryptography` 50
 
+### Fixed
+
+- SOA range and type errors now name the field that failed (`retry`, `expire`, or `minimum`) instead of always naming `refresh`
+- The BIMI check's DMARC policy warning stated the opposite of the requirement; it now reads "The DMARC policy (p tag) must be set to quarantine or reject"
+- The certificate metadata field for the X.509 subjectAlternativeName extension was misspelled `serviceAlternativeName`; code reading that key from BIMI certificate results should update
+- The `User-Agent` header sent on HTTP requests had doubled parentheses around the OS name
+- The example authorization record in the "does not indicate that it accepts DMARC reports" error contained a stray quote and a run of spaces from a misplaced line continuation
+- SPF TXT length warnings now report sizes in bytes, matching what is measured and what RFC 7208 § 3.3 limits, instead of calling them characters
+- Cleaned up user-facing messages across the package: corrected articles ("Found an SPF record…"), IPv4/IPv6 capitalization, double spaces, missing periods, inconsistent RFC citation punctuation, and the garbled DMARC fo tag redundancy warning
+- Corrected inaccurate docstrings throughout: copy-paste artifacts ("MTA-HTS", "SIS-MTA", "Tne", the wrong TLSRPT record location), missing parameters and return keys, the stale claim that BIMI file content is not analyzed, and wrong exception cross-references
+- Fixed documentation drift: the CLI usage block in the docs was missing `--retries` and is now generated from the real `--help` output, the docs index pointed at a nonexistent CI workflow badge, and README/docs typos ("Sponcors", "This is a project is maintained", a mis-quoted docker command) are corrected
+
 ### Changed
 
 - Update the GitHub Actions used by the workflows to their latest major versions: `checkout` v7, `setup-python` v7, `codecov-action` v7, `upload-artifact` v7, `download-artifact` v8, `configure-pages` v6, `upload-pages-artifact` v5, and `deploy-pages` v5. All now run on Node.js 24; no workflow behavior changes
@@ -831,7 +843,7 @@ API changes:
 
 - Require keyword arguments to be passed as `keyword=value` pairs instead of positional arguments
 - Add the option `ignore_too_many_lookups` to `checkdmarc.spf.parse_spf_record()`
-  - This option will stop `checkdmarc.spf.parse_spf_record()` from rasing exceptions related to too many DNS lookups, in support of the new feature
+  - This option will stop `checkdmarc.spf.parse_spf_record()` from raising exceptions related to too many DNS lookups, in support of the new feature
   - `False` by default to maintain backwards compatibility
   - `checkdmarc.spf.check_spf()` uses this functionality to support the new feature
 
@@ -891,7 +903,7 @@ API changes:
 ## 5.7.10
 
 - Raise a warning instead of a `UnicodeDecodeError` when encountering a `TXT` record that is not decodable (Close issue [#124](https://github.com/domainaware/checkdmarc/issues/124))
-- Alow CIDR notation on SPF `a` mechanisms (Close [#128](https://github.com/domainaware/checkdmarc/issues/128))
+- Allow CIDR notation on SPF `a` mechanisms (Close [#128](https://github.com/domainaware/checkdmarc/issues/128))
 - Fix documentation for `check_smtp_tls_reporting` (Close [#133](https://github.com/domainaware/checkdmarc/issues/133))
 - Fix SVG verification checks for BIMI SVG files (Close [#150](https://github.com/domainaware/checkdmarc/issues/150))
 - Allow BIMI Mark Verification Certificates to be used for subdomains (Close [#151](https://github.com/domainaware/checkdmarc/issues/151))

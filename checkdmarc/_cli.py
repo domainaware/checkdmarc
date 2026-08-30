@@ -64,7 +64,7 @@ def _main():
         "-f",
         "--format",
         default="json",
-        help="specify JSON or CSV screen output format",
+        help="specify JSON or CSV screen output format (default json)",
     )
     arg_parser.add_argument(
         "-o",
@@ -107,7 +107,10 @@ def _main():
     )
 
     arg_parser.add_argument(
-        "-b", "--bimi-selector", default="default", help="the BIMI selector to use"
+        "-b",
+        "--bimi-selector",
+        default="default",
+        help='the BIMI selector to use (default "default")',
     )
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
     arg_parser.add_argument(

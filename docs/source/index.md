@@ -1,6 +1,6 @@
 # Welcome to checkdmarc's documentation
 
-[![Python tests](https://github.com/domainaware/checkdmarc/actions/workflows/python-tests.yaml/badge.svg)](https://github.com/domainaware/checkdmarc/actions/workflows/python-tests.yaml)
+[![CI](https://github.com/domainaware/checkdmarc/actions/workflows/ci.yml/badge.svg)](https://github.com/domainaware/checkdmarc/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/checkdmarc)](https://pypi.org/project/checkdmarc/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/checkdmarc?color=blue)](https://pypistats.org/packages/checkdmarc)
 
@@ -8,7 +8,7 @@ A Python module, command line utility, and [web application](https://github.com/
 
 :::{note}
 
-This is a project is maintained by one developer.
+This project is maintained by one developer.
 Please consider [sponsoring my work](https://github.com/sponsors/seanthegeek) if you or your organization benefit from it.
 :::
 

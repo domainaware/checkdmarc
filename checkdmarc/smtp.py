@@ -72,7 +72,7 @@ MXResults = MXResultsSuccess | MXResultsFailure
 
 
 class SMTPError(Exception):
-    """Raised when SMTP error occurs"""
+    """Raised when an SMTP error occurs"""
 
 
 def test_tls(
@@ -83,12 +83,13 @@ def test_tls(
     timeout: float = DEFAULT_SMTP_TIMEOUT,
 ) -> bool:
     """
-    Attempt to connect to an SMTP server port 465 and validate TLS/SSL support
+    Attempt to connect to an SMTP server on port 465 and validate TLS/SSL support
 
     Args:
         hostname (str): The hostname
         cache (ExpiringDict): Cache storage
-        ssl_context (SSLContext): A SSL context
+        ssl_context (SSLContext): An SSL context
+        timeout (float): Number of seconds to wait for the SMTP server (default 5.0)
 
     Returns:
         bool: True if TLS supported
@@ -153,9 +154,9 @@ def test_tls(
         message = e.__str__()
         error_code = int(message.lstrip("(").split(",")[0])
         if error_code == 554:
-            message = " SMTP error code 554 - Not allowed"
+            message = "SMTP error code 554 - Not allowed"
         else:
-            message = f" SMTP error code {error_code}"
+            message = f"SMTP error code {error_code}"
         error = f"Could not connect: {message}"
         if cache is not None:
             cache[hostname] = {"tls": False, "error": error}
@@ -195,7 +196,8 @@ def test_starttls(
     Args:
         hostname (str): The hostname
         cache (ExpiringDict): Cache storage
-        ssl_context: A SSL context
+        ssl_context (SSLContext): An SSL context
+        timeout (float): Number of seconds to wait for the SMTP server (default 5.0)
 
     Returns:
         bool: True if STARTTLS supported
@@ -263,9 +265,9 @@ def test_starttls(
         message = e.__str__()
         error_code = int(message.lstrip("(").split(",")[0])
         if error_code == 554:
-            message = " SMTP error code 554 - Not allowed"
+            message = "SMTP error code 554 - Not allowed"
         else:
-            message = f" SMTP error code {error_code}"
+            message = f"SMTP error code {error_code}"
         error = f"Could not connect: {message}"
         if cache is not None:
             cache[hostname] = {"starttls": False, "error": error}
@@ -305,27 +307,31 @@ def get_mx_hosts(
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> MXResultsSuccess:
     """
-    Gets MX hostname and their addresses
+    Gets MX hostnames and their addresses
 
     Args:
         domain (str): A domain name
         skip_tls (bool): Skip STARTTLS testing
         approved_hostnames (list): A list of approved MX hostname substrings
         mta_sts_mx_patterns (list): A list of MX patterns from MTA-STS
-        parked (bool): Indicates that the domains are parked
+        parked (bool): Indicates that the domain is parked
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         dict: a ``dict`` with the following keys:
                      - ``hosts`` - A ``list`` of ``dict`` with keys of
 
+                       - ``preference`` - The MX preference integer
                        - ``hostname`` - A hostname
                        - ``dnssec`` - DNSSEC status
                        - ``addresses`` - A ``list`` of IP addresses
                        - ``tlsa`` - A list of TLSA records, if they exist
+                       - ``tls`` - TLS support status (absent if TLS testing is skipped)
+                       - ``starttls`` - STARTTLS support status (absent if TLS testing is skipped)
 
                      - ``warnings`` - A ``list`` of MX resolution warnings
 
@@ -351,7 +357,7 @@ def get_mx_hosts(
             }
         )
     if parked and len(hosts) > 0:
-        warnings.append("MX records found on parked domains")
+        warnings.append("MX records found on a parked domain")
 
     if approved_hostnames:
         approved_hostnames = [h.lower() for h in approved_hostnames]
@@ -409,7 +415,7 @@ def get_mx_hosts(
             if hostname.lower().endswith(".msv1.invalid"):
                 warnings.append(
                     f"{e}. Consider using a TXT record to "
-                    " validate domain ownership in Office 365 "
+                    "validate domain ownership in Office 365 "
                     "instead."
                 )
             else:
@@ -495,7 +501,7 @@ def check_mx(
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> MXResults:
     """
-    Gets MX hostname and their addresses, or an empty list of hosts and an
+    Gets MX hostnames and their addresses, or an empty list of hosts and an
     error if a DNS error occurs
 
     Args:
@@ -506,7 +512,7 @@ def check_mx(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
@@ -514,8 +520,13 @@ def check_mx(
 
                      - ``hosts`` - A ``list`` of ``dict`` with keys of
 
+                       - ``preference`` - The MX preference integer
                        - ``hostname`` - A hostname
+                       - ``dnssec`` - DNSSEC status
                        - ``addresses`` - A ``list`` of IP addresses
+                       - ``tlsa`` - A list of TLSA records, if they exist
+                       - ``tls`` - TLS support status (absent if TLS testing is skipped)
+                       - ``starttls`` - STARTTLS support status (absent if TLS testing is skipped)
 
                      - ``warnings`` - A ``list`` of MX resolution warnings
 

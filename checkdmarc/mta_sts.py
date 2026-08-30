@@ -225,7 +225,7 @@ def query_mta_sts_record(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
 
 
@@ -238,6 +238,7 @@ def query_mta_sts_record(
         :exc:`checkdmarc.mta_sts.MTASTSRecordNotFound`
         :exc:`checkdmarc.mta_sts.MTASTSRecordInWrongLocation`
         :exc:`checkdmarc.mta_sts.MultipleMTASTSRecords`
+        :exc:`checkdmarc.mta_sts.UnrelatedTXTRecordFoundAtMTASTS`
 
     """
     domain = normalize_domain(domain)
@@ -318,9 +319,9 @@ def parse_mta_sts_record(
     Parses an MTA-STS record
 
     Args:
-        record (str): A MTA-STS record
+        record (str): An MTA-STS record
         include_tag_descriptions (bool): Include descriptions in parsed results
-        syntax_error_marker (str): The maker for pointing out syntax errors
+        syntax_error_marker (str): The marker for pointing out syntax errors
 
     Returns:
         dict: a ``dict`` with the following keys:
@@ -344,11 +345,11 @@ def parse_mta_sts_record(
     """
     logger.debug("Parsing the MTA-STS record")
     spf_in_dmarc_error_msg = (
-        "Found a SPF record where a MTA-STS record "
+        "Found an SPF record where an MTA-STS record "
         "should be; most likely, the _mta-sts "
         "subdomain record does not actually exist, "
         "and the request for TXT records was "
-        "redirected to the base domain"
+        "redirected to the base domain."
     )
     warnings = []
     record = record.strip('"')
@@ -391,7 +392,7 @@ def parse_mta_sts_record(
         if len(duplicate_tags):
             duplicate_tags_str = ",".join(duplicate_tags)
             raise InvalidMTASTSTag(
-                f"Duplicate {duplicate_tags_str} tags are not permitted"
+                f"Duplicate {duplicate_tags_str} tags are not permitted."
             )
 
     results: ParsedMTASTSRecord = {"tags": tags, "warnings": warnings}
@@ -403,7 +404,7 @@ def download_mta_sts_policy(
     domain: str, *, http_timeout: float = DEFAULT_HTTP_TIMEOUT
 ) -> DownloadedMTASTSPolicy:
     """
-    Downloads a domains MTA-HTS policy
+    Downloads a domain's MTA-STS policy
 
     Args:
         domain (str): A domain name
@@ -432,8 +433,8 @@ def download_mta_sts_policy(
             content_type = content_type.strip()
             if content_type != expected_content_type:
                 warnings.append(
-                    f"Content-Type header should be "
-                    f"{expected_content_type} not {content_type}"
+                    f"The Content-Type header should be "
+                    f"{expected_content_type}, not {content_type}"
                 )
         else:
             warnings.append(
@@ -556,7 +557,7 @@ def check_mta_sts(
     Returns:
         dict: a ``dict`` with the following keys:
 
-                       - ``id`` - The SIS-MTA DNS record ID
+                       - ``id`` - The MTA-STS DNS record ID
                        - ``policy`` - The parsed MTA-STS policy
                        - ``valid`` - True
                        - ``warnings`` - A ``list`` of warnings
@@ -564,7 +565,7 @@ def check_mta_sts(
                     If an error occurs, the dictionary will have the
                     following keys:
 
-                      - ``error`` - Tne error message
+                      - ``error`` - The error message
                       - ``valid`` - False
     """
     domain = normalize_domain(domain)
@@ -601,14 +602,14 @@ def check_mta_sts(
 
 def mx_in_mta_sts_patterns(mx_hostname: str, mta_sts_mx_patterns: list[str]) -> bool:
     """
-    Tests is a given MX hostname is covered by a given list of MX patterns
-    from an MTA-STS policy:
+    Tests whether a given MX hostname is covered by a given list of MX
+    patterns from an MTA-STS policy.
 
     Args:
         mx_hostname (str): The MX hostname to test
         mta_sts_mx_patterns (list): The list of MTA-STS MX patterns
 
-    Returns: True if the MX hostname is included, false if not
+    Returns: True if the MX hostname is included, False if not
     """
     for pattern in mta_sts_mx_patterns:
         regex_pattern = pattern.replace(r".", r"\.")

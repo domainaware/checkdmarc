@@ -3,7 +3,8 @@
 ```text
 usage: checkdmarc [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d] [-f FORMAT]
                   [-o OUTPUT [OUTPUT ...]] [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT]
-                  [-b BIMI_SELECTOR] [-v] [-w WAIT] [--skip-tls] [--debug]
+                  [--retries RETRIES] [-b BIMI_SELECTOR] [-v] [-w WAIT] [--skip-tls]
+                  [--debug]
                   domain [domain ...]
 
 Validates and parses email-related DNS records
@@ -19,20 +20,22 @@ options:
   --mx MX [MX ...]      approved MX hostname substrings
   -d, --descriptions    include descriptions of tags in the JSON output
   -f FORMAT, --format FORMAT
-                        specify JSON or CSV screen output format
+                        specify JSON or CSV screen output format (default json)
   -o OUTPUT [OUTPUT ...], --output OUTPUT [OUTPUT ...]
                         one or more file paths to output to (must end in .json or .csv)
                         (silences screen output)
   -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
-                        nameservers to query: IP addresses, https:// URLs (DNS
-                        over HTTPS), and/or tls://ip[:port][#hostname] (DNS over
-                        TLS) (default: the system-configured resolvers). For
-                        reliability, passing a mix of public resolvers is
-                        recommended, e.g. 1.1.1.1 8.8.8.8
+                        nameservers to query: IP addresses, https:// URLs (DNS over
+                        HTTPS), and/or tls://ip[:port][#hostname] (DNS over TLS)
+                        (default: the system-configured resolvers). For reliability,
+                        passing a mix of public resolvers is recommended, e.g. 1.1.1.1
+                        8.8.8.8
   -t TIMEOUT, --timeout TIMEOUT
                         number of seconds to wait for an answer from DNS (default 2.0)
+  --retries RETRIES     number of times to retry on timeout or other transient errors
+                        (default 0)
   -b BIMI_SELECTOR, --bimi-selector BIMI_SELECTOR
-                        The BIMI selector to use (default default)
+                        the BIMI selector to use (default "default")
   -v, --version         show program's version number and exit
   -w WAIT, --wait WAIT  number of seconds to wait between checking domains (default 0.0)
   --skip-tls            skip TLS/SSL testing

@@ -834,7 +834,7 @@ class TestGetCertificateMetadata(unittest.TestCase):
         )
         result = checkdmarc.bimi.get_certificate_metadata(pem)
         errs = result["validation_errors"]
-        self.assertTrue(any("serviceAlternativeName" in e for e in errs))
+        self.assertTrue(any("subjectAlternativeName" in e for e in errs))
         self.assertTrue(any("logotype" in e for e in errs))
 
     def testForbiddenExtensionRejected(self):

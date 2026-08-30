@@ -98,7 +98,7 @@ class UnrelatedTXTRecordFoundAtTLSRPT(SMTPTLSReportingError):
 class SPFRecordFoundWhereTLSRPTShouldBe(UnrelatedTXTRecordFoundAtTLSRPT):
     """Raised when an SPF record is found where an SMTP TLS Reporting record
     should be;
-    most likely, the ``_smtp._tls.SMTPTLSReporting`` subdomain
+    most likely, the ``_smtp._tls`` subdomain
     record does not actually exist, and the request for ``TXT`` records was
     redirected to the base domain"""
 
@@ -197,7 +197,7 @@ def query_smtp_tls_reporting_record(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
@@ -209,6 +209,7 @@ def query_smtp_tls_reporting_record(
         :exc:`checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordNotFound`
         :exc:`checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordInWrongLocation`
         :exc:`checkdmarc.smtp_tls_reporting.MultipleSMTPTLSReportingRecords`
+        :exc:`checkdmarc.smtp_tls_reporting.UnrelatedTXTRecordFoundAtTLSRPT`
 
     """
     domain = normalize_domain(domain)
@@ -263,7 +264,7 @@ def query_smtp_tls_reporting_record(
                 if record.startswith(txt_prefix):
                     raise SMTPTLSReportingRecordInWrongLocation(
                         "The SMTP TLS Reporting record must be located at "
-                        f"{target}, not {domain}"
+                        f"{target}, not {domain}."
                     )
         except dns.resolver.NoAnswer:
             pass
@@ -294,9 +295,9 @@ def parse_smtp_tls_reporting_record(
     Parses an SMTP TLS Reporting record
 
     Args:
-        record (str): A SMTP TLS Reporting record
+        record (str): An SMTP TLS Reporting record
         include_tag_descriptions (bool): Include descriptions in parsed results
-        syntax_error_marker (str): The maker for pointing out syntax errors
+        syntax_error_marker (str): The marker for pointing out syntax errors
 
     Returns:
         dict: a ``dict`` with the following keys:
@@ -319,11 +320,11 @@ def parse_smtp_tls_reporting_record(
     """
     logger.debug("Parsing the SMTP TLS Reporting record")
     spf_in_smtp_error_msg = (
-        "Found a SPF record where a SMTP TLS Reporting "
+        "Found an SPF record where an SMTP TLS Reporting "
         "record should be; most likely, the _smtp._tls "
         "subdomain record does not actually exist, "
         "and the request for TXT records was "
-        "redirected to the base domain"
+        "redirected to the base domain."
     )
     warnings = []
     record = record.strip('"')
@@ -368,7 +369,7 @@ def parse_smtp_tls_reporting_record(
         if len(duplicate_tags):
             duplicate_tags_str = ",".join(duplicate_tags)
             raise InvalidSMTPTLSReportingTag(
-                f"Duplicate {duplicate_tags_str} tags are not permitted"
+                f"Duplicate {duplicate_tags_str} tags are not permitted."
             )
         tags[tag] = {"value": tag_value}
         if include_tag_descriptions:
@@ -379,7 +380,7 @@ def parse_smtp_tls_reporting_record(
     for uri in tags["rua"]["value"]:
         if len(SMTPTLSREPORTING_URI_REGEX.findall(uri)) != 1:
             raise SMTPTLSReportingSyntaxError(
-                f"{uri} is not a valid SMTP TLS reporting URI."
+                f"{uri} is not a valid SMTP TLS Reporting URI."
             )
     results: ParsedSMTPTLSReportingRecord = {"tags": tags, "warnings": warnings}
 
@@ -395,7 +396,7 @@ def check_smtp_tls_reporting(
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SMTPTLSReportingResults:
     """
-    Returns a dictionary with a parsed SMTP-TLS Reporting policy or an error.
+    Returns a dictionary with a parsed SMTP TLS Reporting record or an error.
 
     Args:
         domain (str): A domain name
@@ -409,13 +410,13 @@ def check_smtp_tls_reporting(
         dict: a ``dict`` with the following keys:
 
                        - ``valid`` - True
-                         ``tags`` - A dictionary of tags and values
+                       - ``tags`` - A dictionary of tags and values
                        - ``warnings`` - A ``list`` of warnings
 
                     If an error occurs, the dictionary will have the
                     following keys:
 
-                      - ``error`` - Tne error message
+                      - ``error`` - The error message
                       - ``valid`` - False
     """
     domain = normalize_domain(domain)

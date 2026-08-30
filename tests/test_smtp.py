@@ -415,7 +415,7 @@ class TestGetMxHosts(unittest.TestCase):
         finally:
             for p in patches:
                 p.stop()
-        self.assertIn("MX records found on parked domains", result["warnings"])
+        self.assertIn("MX records found on a parked domain", result["warnings"])
 
     def testStarttlsSupported(self):
         """When STARTTLS is supported, host['starttls'] and host['tls'] are True"""

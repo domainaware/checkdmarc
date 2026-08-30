@@ -16,7 +16,7 @@ from xml.parsers.expat import ExpatError
 try:
     from importlib.resources import files
 except ImportError:
-    # Try backported to PY<3 `importlib_resources`
+    # Fall back to the `importlib_resources` backport on older Python versions
     from importlib_resources import files
 
 
@@ -79,7 +79,6 @@ logger = logging.getLogger(__name__)
 # TypedDict definitions for BIMI record structures
 
 
-# These typedicts can't be used in Python 3.9-3.10 because there is no way to set a field as optional, but keeping them for later
 class SVGMetadata(TypedDict):
     """Metadata extracted from SVG image"""
 
@@ -207,7 +206,7 @@ OID_LABELS = {
     NameOID.STATE_OR_PROVINCE_NAME: "stateOrProvinceName",
     NameOID.POSTAL_CODE: "postalCode",
     NameOID.COUNTRY_NAME: "countryName",
-    ExtensionOID.SUBJECT_ALTERNATIVE_NAME: "serviceAlternativeName",
+    ExtensionOID.SUBJECT_ALTERNATIVE_NAME: "subjectAlternativeName",
     ExtensionOID.NAME_CONSTRAINTS: "nameConstraints",
     # EVC OIDs
     NameOID.JURISDICTION_LOCALITY_NAME: "jurisdictionOfIncorporationLocalityName",
@@ -526,7 +525,7 @@ def get_svg_metadata(raw_xml: str | bytes) -> dict[str, Any]:
         ).hexdigest()  # pyright: ignore[reportAttributeAccessIssue]
         return metadata
     except (ExpatError, KeyError, ValueError, IndexError, TypeError) as e:
-        raise ValueError(f"Not a SVG file: {e!s}")
+        raise ValueError(f"Not an SVG file: {e!s}")
 
 
 def check_svg_requirements(svg_metadata: dict) -> list[str]:
@@ -653,7 +652,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
         try:
             vmc.extensions.get_extension_for_oid(OID_PILOT_IDENTIFIER_EXTENSION)
             validation_errors.append(
-                "Certificate issued on or after 2025-03-15 must not contain the Pilot identifier extension."
+                "Certificates issued on or after 2025-03-15 must not contain the Pilot identifier extension."
             )
             valid = False
         except ExtensionNotFound:
@@ -701,7 +700,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
             and base_domain not in cert_domains
         ):
             plural = "domain" if len(cert_domains) == 1 else "domains"
-            cert_domains = ". ".join(cert_domains)
+            cert_domains = ", ".join(cert_domains)
             validation_errors.append(
                 f"{base_domain} does not match the certificate {plural}: {cert_domains}"
             )
@@ -733,7 +732,7 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
                     if required_field not in cert_subject:
                         valid = False
                         validation_errors.append(
-                            f"The the certificate's subject is missing the required field {required_field}."
+                            f"The certificate's subject is missing the required field {required_field}."
                         )
                 either_or_pairs = list(
                     EITHER_OR_SUBJECT_FIELDS_BY_MARK_TYPE.get("All", [])
@@ -828,7 +827,7 @@ def _query_bimi_record(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
@@ -857,7 +856,7 @@ def _query_bimi_record(
                 unrelated_records.append(record)
 
         if bimi_record_count > 1:
-            raise MultipleBIMIRecords("Multiple BMI records are not permitted.")
+            raise MultipleBIMIRecords("Multiple BIMI records are not permitted.")
         if len(unrelated_records) > 0:
             ur_str = "\n\n".join(unrelated_records)
             raise UnrelatedTXTRecordFoundAtBIMI(
@@ -921,11 +920,11 @@ def query_bimi_record(
 
     Args:
         domain (str): A domain name
-        selector (str): The BMI selector
+        selector (str): The BIMI selector
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
@@ -938,6 +937,7 @@ def query_bimi_record(
         :exc:`checkdmarc.bimi.BIMIRecordNotFound`
         :exc:`checkdmarc.bimi.BIMIRecordInWrongLocation`
         :exc:`checkdmarc.bimi.MultipleBIMIRecords`
+        :exc:`checkdmarc.bimi.UnrelatedTXTRecordFoundAtBIMI`
 
     """
     domain = normalize_domain(domain)
@@ -964,7 +964,7 @@ def query_bimi_record(
         )
         for root_record in root_records:
             if root_record.startswith("v=BIMI1"):
-                warnings.append(f"BIMI record at root of {domain} has no effect.")
+                warnings.append(f"A BIMI record at the root of {domain} has no effect.")
     except dns.resolver.NXDOMAIN:
         raise BIMIRecordNotFound("The domain does not exist.")
     except dns.exception.DNSException:
@@ -1010,7 +1010,7 @@ def parse_bimi_record(
         domain (str): The domain where the BIMI record was located
         parsed_dmarc_record (dict): A parsed DMARC record
         include_tag_descriptions (bool): Include descriptions in parsed results
-        syntax_error_marker (str): The maker for pointing out syntax errors
+        syntax_error_marker (str): The marker for pointing out syntax errors
         http_timeout (float): HTTP timeout in seconds
 
     Returns:
@@ -1020,13 +1020,14 @@ def parse_bimi_record(
            - ``value`` - The BIMI tag value
            - ``description`` - A description of the tag/value
          - ``image`` - SVG image metadata, if any
-         - ``certificate`` - Verified Mark Certificate (VMC metadata), if any
+         - ``certificate`` - Verified Mark Certificate (VMC) metadata, if any
          - ``warnings`` - A ``list`` of warnings
 
         .. note::
-            This will attempt to download the files at the URLs provided in
-            the BIMI record and will include a warning if the downloads fail,
-            but the file content is not currently analyzed.
+            This will attempt to download and validate the SVG image and mark
+            certificate at the URLs provided in the BIMI record; a download or
+            processing failure is reported as an ``error`` entry under
+            ``image`` or ``certificate``.
 
          .. note::
             ``description`` is only included if
@@ -1046,7 +1047,7 @@ def parse_bimi_record(
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT})
     spf_in_dmarc_error_msg = (
-        "Found a SPF record where a BIMI record "
+        "Found an SPF record where a BIMI record "
         "should be; most likely, the _bimi "
         "subdomain record does not actually exist, "
         "and the request for TXT records was "
@@ -1093,7 +1094,7 @@ def parse_bimi_record(
         if len(duplicate_tags):
             duplicate_tags_str = ",".join(duplicate_tags)
             raise InvalidBIMITag(
-                f"Duplicate {duplicate_tags_str} tags are not permitted"
+                f"Duplicate {duplicate_tags_str} tags are not permitted."
             )
         tags[tag] = {"value": tag_value}
         if include_tag_descriptions:
@@ -1114,7 +1115,7 @@ def parse_bimi_record(
                     svg_metadata = get_svg_metadata(raw_xml)
                     if svg_metadata["width"] != svg_metadata["height"]:
                         warnings.append(
-                            f"It is recommended for BIMI SVG dimensions to be square, not {svg_metadata['width']}x{svg_metadata['height']}."
+                            f"It is recommended that the BIMI SVG image be square (equal width and height), not {svg_metadata['width']}x{svg_metadata['height']}."
                         )
                     title = svg_metadata.get("title")
                     if isinstance(title, dict):
@@ -1172,7 +1173,7 @@ def parse_bimi_record(
                 "reject",
             ]:
                 warnings.append(
-                    "The DMARC policy (p tag) must not be set to quarantine or reject."
+                    "The DMARC policy (p tag) must be set to quarantine or reject."
                 )
             if parsed_dmarc_record["tags"]["sp"]["value"] not in [
                 "quarantine",
@@ -1221,9 +1222,10 @@ def check_bimi(
     Returns a dictionary with a parsed BIMI record or an error.
 
     .. note::
-            This will attempt to download the files at the URLs provided in
-            the BIMI record and will include a warning if the downloads fail,
-            but the file content is not currently analyzed.
+            This will attempt to download and validate the SVG image and mark
+            certificate at the URLs provided in the BIMI record; a download or
+            processing failure is reported as an ``error`` entry under
+            ``image`` or ``certificate``.
 
     Args:
         domain (str): A domain name
@@ -1241,14 +1243,18 @@ def check_bimi(
         dict: a ``dict`` with the following keys:
 
                        - ``record`` - The BIMI record string
-                       - ``parsed`` - The parsed BIMI record
                        - ``valid`` - True
+                       - ``selector`` - The BIMI selector
+                       - ``location`` - The domain where the record was found
+                       - ``tags`` - The parsed BIMI record tags
+                       - ``image`` - SVG image metadata, if any
+                       - ``certificate`` - Mark certificate metadata, if any
                        - ``warnings`` - A ``list`` of warnings
 
                     If a DNS error occurs, the dictionary will have the
                     following keys:
 
-                      - ``error`` - Tne error message
+                      - ``error`` - The error message
                       - ``valid`` - False
     """
     bimi_results: BIMICheckResult = {"record": None, "valid": True}

@@ -73,10 +73,9 @@ class DMARCError(Exception):
 
 
 class DMARCRecordNotFound(DMARCError):
+    """Raised when a DMARC record could not be found"""
+
     def __init__(self, error):
-        """
-        Raised when a DMARC record could not be found
-        """
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
 
@@ -385,7 +384,7 @@ dmarc_tags: DMARCTagMap = {
                 "failed SPF evaluation, "
                 "regardless of its alignment. "
                 "SPF-specific reporting is "
-                "described in AFRF-SPF"
+                "described in AFRF-SPF."
             ),
         },
     },
@@ -467,7 +466,7 @@ dmarc_tags: DMARCTagMap = {
                 "suspicious. "
                 "Depending on the "
                 "capabilities of the "
-                "MailReceiver, "
+                "Mail Receiver, "
                 'this can mean "place into spam folder", '
                 '"scrutinize with additional intensity", '
                 'and/or "flag as suspicious".'
@@ -575,7 +574,7 @@ dmarc_tags: DMARCTagMap = {
                 "suspicious. "
                 "Depending on the "
                 "capabilities of the "
-                "MailReceiver, "
+                "Mail Receiver, "
                 'this can mean "place into spam folder", '
                 '"scrutinize with additional intensity", '
                 'and/or "flag as suspicious".'
@@ -669,9 +668,9 @@ def _query_dmarc_record(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
-        ignore_unrelated_records (bool): Do not raise a warning if unrelated records are found
+        ignore_unrelated_records (bool): Do not raise an error if unrelated TXT records are found
         apex_fallback (bool): When ``_dmarc.{domain}`` has no answer, also
             query the apex of ``{domain}`` and raise
             ``DMARCRecordInWrongLocation`` if a ``v=DMARC1`` record is found
@@ -786,7 +785,7 @@ def query_dmarc_record(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
         ignore_unrelated_records (bool): Ignore unrelated TXT records
 
@@ -834,7 +833,9 @@ def query_dmarc_record(
         )
         for root_record in root_records:
             if root_record.startswith("v=DMARC1"):
-                warnings.append(f"DMARC record at root of {domain} has no effect.")
+                warnings.append(
+                    f"A DMARC record at the root of {domain} has no effect."
+                )
     except dns.resolver.NXDOMAIN:
         raise DMARCRecordNotFound("The domain does not exist.")
     except dns.exception.DNSException:
@@ -894,7 +895,7 @@ def get_dmarc_tag_description(
     tag: str, value: str | list[str] | None = None
 ) -> DMARCTagDetails:
     """
-    Get the name, default value, and description for a DMARC tag, amd/or a
+    Get the name, default value, and description for a DMARC tag, and/or a
     description for a tag value
 
     Args:
@@ -959,7 +960,7 @@ def parse_dmarc_report_uri(uri: str) -> ParsedDMARCReportURI:
                 if uri.startswith("mailto:")
                 else (
                     " - please make sure that the URI begins with "
-                    "a schema such as mailto:"
+                    "a scheme such as mailto:"
                 )
             )
         )
@@ -1090,8 +1091,7 @@ def verify_dmarc_report_destination(
             f"{destination_domain} does not indicate that it accepts "
             f"DMARC reports about {source_domain} - "
             "Authorization record not found: "
-            f'{source_domain}._report._dmarc.{destination_domain} " \
-                    IN TXT "v=DMARC1"'
+            f'{source_domain}._report._dmarc.{destination_domain} IN TXT "v=DMARC1"'
         )
         dmarc_record_count = 0
         unrelated_records = []
@@ -1188,7 +1188,7 @@ def parse_dmarc_record(
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
-        syntax_error_marker (str): The maker for pointing out syntax errors
+        syntax_error_marker (str): The marker for pointing out syntax errors
 
     Returns:
         dict: a ``dict`` with the following keys:
@@ -1217,7 +1217,7 @@ def parse_dmarc_record(
     """
     logger.debug(f"Parsing the DMARC record for {domain}")
     spf_in_dmarc_error_msg = (
-        "Found a SPF record where a DMARC record "
+        "Found an SPF record where a DMARC record "
         "should be; most likely, the _dmarc "
         "subdomain record does not actually exist, "
         "and the request for TXT records was "
@@ -1333,7 +1333,7 @@ def parse_dmarc_record(
             tag_value = tag_value.split(":")
             if "0" in tag_value and "1" in tag_value:
                 warnings.append(
-                    "When 1 is present in the fo tag, including in the fo tag 0 is redundant."
+                    "When 1 is present in the fo tag, also including 0 is redundant."
                 )
             for value in tag_value:
                 if value not in allowed_values:
@@ -1450,7 +1450,7 @@ def parse_dmarc_record(
                     if len(hosts) == 0:
                         raise DMARCReportEmailAddressMissingMXRecords(
                             "The domain for ruf email address "
-                            f"{email_address} has no MX records"
+                            f"{email_address} has no MX records."
                         )
                 except DNSException as warning:
                     raise DMARCReportEmailAddressMissingMXRecords(
@@ -1539,8 +1539,8 @@ def get_dmarc_record(
     Returns:
         dict: a ``dict`` with the following keys:
          - ``record`` - The DMARC record string
-         - ``location`` -  Where the DMARC was found
-         - ``parsed`` - See :meth:`checkdmarc.parse_dmarc_record`
+         - ``location`` - The domain where the DMARC record was found
+         - ``parsed`` - See :func:`checkdmarc.dmarc.parse_dmarc_record`
 
     Raises:
         :exc:`checkdmarc.dmarc.DMARCRecordNotFound`
@@ -1616,7 +1616,7 @@ def check_dmarc(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
 
 
@@ -1625,6 +1625,8 @@ def check_dmarc(
 
                      - ``record`` - the unparsed DMARC record string
                      - ``location`` - the domain where the record was found
+                     - ``valid`` - True
+                     - ``tags`` - a ``dict`` of parsed DMARC tags
                      - ``warnings`` - warning conditions found
 
                     If a DNS error occurs, the dictionary will have the

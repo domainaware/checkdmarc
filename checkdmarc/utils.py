@@ -102,7 +102,7 @@ class DNSException(Exception):
 
 
 class DNSExceptionNXDOMAIN(DNSException):
-    """Raised when a NXDOMAIN DNS error (RCODE:3) occurs"""
+    """Raised when an NXDOMAIN DNS error (RCODE:3) occurs"""
 
 
 def get_base_domain(domain: str) -> str:
@@ -126,7 +126,7 @@ def get_base_domain(domain: str) -> str:
 
 def normalize_domain(domain: str) -> str:
     """
-    Normalize an input domain by removing zero-width characters and lowering it
+    Normalize an input domain by removing zero-width characters and lowercasing it
 
     Args:
         domain (str): A domain or subdomain
@@ -467,6 +467,7 @@ def get_a_records(
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
+        retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:
         list: A sorted list of IPv4 and IPv6 addresses
@@ -508,7 +509,7 @@ def get_reverse_dns(
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> list[str]:
     """
-    Queries for an IP addresses reverse DNS hostname(s)
+    Queries for an IP address's reverse DNS hostname(s)
 
     Args:
         ip_address (str): An IPv4 or IPv6 address
@@ -656,7 +657,7 @@ def get_nameservers(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
 
     Returns:

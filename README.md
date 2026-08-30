@@ -7,9 +7,9 @@
 
 A Python module, command line utility, and [web application](https://github.com/domainaware/checkdmarc-web-frontend) for validating SPF and DMARC DNS records.
 
-## Sponcors
+## Sponsors
 
-This is a project is maintained by one developer.
+This project is maintained by one developer.
 Please consider [sponsoring my work](https://github.com/sponsors/seanthegeek) if you or your organization benefit from it.
 
 ## Features
@@ -42,5 +42,5 @@ Please consider [sponsoring my work](https://github.com/sponsors/seanthegeek) if
 
 ## Docker support
 
-1. Build the image using docker `build . -t checkdmarc`
+1. Build the image using `docker build . -t checkdmarc`
 2. Use the image with a command like `docker run --rm checkdmarc google.nl`

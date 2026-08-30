@@ -273,7 +273,7 @@ def get_tlsa_records(
     Checks for TLSA records on the given hostname
 
     Args:
-        hostname (str): The domain to check
+        hostname (str): The hostname to check
         nameservers (list): A list of nameservers to query
         timeout (float): Timeout in seconds
         port (int): The port
