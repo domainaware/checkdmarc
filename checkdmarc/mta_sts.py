@@ -522,7 +522,9 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
             parsed_policy[key] = value
         else:
             value = str(value)
-            if len(MTA_STS_MX_REGEX.findall(value)) == 0:
+            # fullmatch, not findall: an unanchored search accepts any value
+            # containing a single legal character, e.g. "not a hostname!"
+            if MTA_STS_MX_REGEX.fullmatch(value) is None:
                 raise MTASTSPolicySyntaxError(
                     f"Line {line_number}: Invalid mx value: {value}"
                 )

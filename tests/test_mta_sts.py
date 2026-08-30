@@ -79,6 +79,22 @@ class Test(unittest.TestCase):
             policy,
         )
 
+    def testParseMtaStsPolicyInvalidMxValue(self):
+        """parse_mta_sts_policy rejects an mx value that is not a hostname
+        pattern, naming the line. The check used findall with an unanchored
+        pattern, so any value containing a single allowed character passed
+        and "not a hostname!" was accepted as an MX entry."""
+        policy = (
+            "version: STSv1\r\n"
+            "mode: enforce\r\n"
+            "mx: not a hostname!\r\n"
+            "max_age: 86400\r\n"
+        )
+        with self.assertRaises(checkdmarc.mta_sts.MTASTSPolicySyntaxError) as ctx:
+            checkdmarc.mta_sts.parse_mta_sts_policy(policy)
+        self.assertIn("Line 3", str(ctx.exception))
+        self.assertIn("Invalid mx value", str(ctx.exception))
+
     def testParseMtaStsPolicyDecimalMaxAge(self):
         """parse_mta_sts_policy raises error for decimal max_age"""
         policy = "version: STSv1\r\nmode: enforce\r\nmax_age: 86400.5\r\nmx: mail.example.com\r\n"
