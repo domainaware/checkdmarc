@@ -16,15 +16,17 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -p, --parked          indicate that the domains are parked
-  --ns NS [NS ...]      approved nameserver substrings
-  --mx MX [MX ...]      approved MX hostname substrings
+  --ns NS [NS ...], --approved-ns NS [NS ...]
+                        approved nameserver substrings
+  --mx MX [MX ...], --approved-mx MX [MX ...]
+                        approved MX hostname substrings
   -d, --descriptions    include descriptions of tags in the JSON output
   -f FORMAT, --format FORMAT
                         specify JSON or CSV screen output format (default json)
   -o OUTPUT [OUTPUT ...], --output OUTPUT [OUTPUT ...]
                         one or more file paths to output to (must end in .json or .csv)
                         (silences screen output)
-  -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...]
+  -n NAMESERVER [NAMESERVER ...], --nameserver NAMESERVER [NAMESERVER ...], --nameservers NAMESERVER [NAMESERVER ...]
                         nameservers to query: IP addresses, https:// URLs (DNS over
                         HTTPS), and/or tls://ip[:port][#hostname] (DNS over TLS)
                         (default: the system-configured resolvers). For reliability,

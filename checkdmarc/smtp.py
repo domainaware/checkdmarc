@@ -7,6 +7,7 @@ import platform
 import smtplib
 import socket
 import ssl
+import warnings as _warnings
 from collections.abc import Sequence
 from typing import TypedDict
 
@@ -22,7 +23,7 @@ from checkdmarc._constants import (
     SMTP_CACHE_MAX_AGE_SECONDS,
     SMTP_CACHE_MAX_LEN,
 )
-from checkdmarc.dnssec import get_tlsa_records, test_dnssec
+from checkdmarc.dnssec import check_dnssec, get_tlsa_records
 from checkdmarc.mta_sts import mx_in_mta_sts_patterns
 from checkdmarc.utils import (
     DNSException,
@@ -298,6 +299,7 @@ def get_mx_hosts(
     domain: str,
     *,
     skip_tls: bool = False,
+    approved_mx_hostnames: list[str] | None = None,
     approved_hostnames: list[str] | None = None,
     mta_sts_mx_patterns: list[str] | None = None,
     parked: bool = False,
@@ -312,7 +314,8 @@ def get_mx_hosts(
     Args:
         domain (str): A domain name
         skip_tls (bool): Skip STARTTLS testing
-        approved_hostnames (list): A list of approved MX hostname substrings
+        approved_mx_hostnames (list): A list of approved MX hostname substrings
+        approved_hostnames (list): Deprecated alias for ``approved_mx_hostnames``
         mta_sts_mx_patterns (list): A list of MX patterns from MTA-STS
         parked (bool): Indicates that the domain is parked
         nameservers (list): A list of nameservers to query
@@ -336,6 +339,14 @@ def get_mx_hosts(
                      - ``warnings`` - A ``list`` of MX resolution warnings
 
     """
+    if approved_hostnames is not None:
+        _warnings.warn(
+            "The approved_hostnames parameter is deprecated; use approved_mx_hostnames",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if approved_mx_hostnames is None:
+            approved_mx_hostnames = approved_hostnames
     hosts = []
     warnings = []
     hostnames = set()
@@ -359,8 +370,8 @@ def get_mx_hosts(
     if parked and len(hosts) > 0:
         warnings.append("MX records found on a parked domain")
 
-    if approved_hostnames:
-        approved_hostnames = [h.lower() for h in approved_hostnames]
+    if approved_mx_hostnames:
+        approved_mx_hostnames = [h.lower() for h in approved_mx_hostnames]
     for host in hosts:
         hostname = host["hostname"]
         if hostname in hostnames:
@@ -369,9 +380,9 @@ def get_mx_hosts(
                 dupe_hostnames.add(hostname)
             continue
         hostnames.add(hostname)
-        if approved_hostnames:
+        if approved_mx_hostnames:
             approved = False
-            for approved_hostname in approved_hostnames:
+            for approved_hostname in approved_mx_hostnames:
                 if approved_hostname in hostname:
                     approved = True
                     break
@@ -385,7 +396,7 @@ def get_mx_hosts(
         try:
             dnssec = False
             try:
-                dnssec = test_dnssec(
+                dnssec = check_dnssec(
                     hostname,
                     nameservers=nameservers,
                     timeout=timeout,
@@ -540,7 +551,7 @@ def check_mx(
         mx_results = get_mx_hosts(
             domain,
             skip_tls=skip_tls,
-            approved_hostnames=approved_mx_hostnames,
+            approved_mx_hostnames=approved_mx_hostnames,
             mta_sts_mx_patterns=mta_sts_mx_patterns,
             nameservers=nameservers,
             resolver=resolver,

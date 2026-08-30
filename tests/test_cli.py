@@ -126,6 +126,26 @@ class TestCLI(unittest.TestCase):
         )
         self.assertEqual(kwargs["approved_mx_hostnames"], ["mx1.example.com"])
 
+    def testAliasFlags(self):
+        """--nameservers, --approved-ns, and --approved-mx are aliases for
+        -n/--nameserver, --ns, and --mx"""
+        mock_check = _run_cli(
+            [
+                "--nameservers",
+                "1.1.1.1",
+                "--approved-ns",
+                "ns1.example.com",
+                "--approved-mx",
+                "mx1.example.com",
+                "--",
+                "example.com",
+            ]
+        )
+        kwargs = mock_check.call_args.kwargs
+        self.assertEqual(kwargs["nameservers"], ["1.1.1.1"])
+        self.assertEqual(kwargs["approved_nameservers"], ["ns1.example.com"])
+        self.assertEqual(kwargs["approved_mx_hostnames"], ["mx1.example.com"])
+
     def testNameserversForwarded(self):
         """-n / --nameserver list is passed to check_domains"""
         mock_check = _run_cli(

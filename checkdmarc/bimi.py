@@ -120,9 +120,13 @@ class BIMIQueryResult(TypedDict):
 
 
 class BIMITagValue(TypedDict, total=False):
-    """BIMI tag value structure"""
+    """BIMI tag value structure
 
-    value: str
+    ``value`` is a list only for the ``lps`` tag, whose value is a
+    comma-separated list of local-part prefixes.
+    """
+
+    value: str | list[str]
     name: str
     description: str
 
@@ -322,17 +326,16 @@ FIELD_REQUIRED_IF_FIELD_IS_PRESENT_BY_MARK_TYPE: dict[str, dict[str, str]] = {
     },
 }
 
-_ksf_dicts = [
-    REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE,
-    OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE,
-]
-KNOWN_SUBJECT_FIELDS = []
-for ksf_dict in _ksf_dicts:
-    for key in ksf_dict:
-        if isinstance(ksf_dict[key], list):
-            for i in range(len(ksf_dict[key])):
-                KNOWN_SUBJECT_FIELDS.append(ksf_dict[key][i])
-KNOWN_SUBJECT_FIELDS = set(KNOWN_SUBJECT_FIELDS)
+KNOWN_SUBJECT_FIELDS = frozenset(
+    field
+    for fields_by_mark_type in (
+        REQUIRED_SUBJECT_FIELDS_BY_MARK_TYPE,
+        OPTIONAL_SUBJECT_FIELDS_BY_MARK_TYPE,
+    )
+    for fields in fields_by_mark_type.values()
+    if isinstance(fields, list)
+    for field in fields
+)
 
 
 BIMI_TAGS = {
@@ -700,9 +703,10 @@ def get_certificate_metadata(pem_crt: bytes, *, domain=None) -> dict[str, Any]:
             and base_domain not in cert_domains
         ):
             plural = "domain" if len(cert_domains) == 1 else "domains"
-            cert_domains = ", ".join(cert_domains)
+            cert_domains_str = ", ".join(cert_domains)
             validation_errors.append(
-                f"{base_domain} does not match the certificate {plural}: {cert_domains}"
+                f"{base_domain} does not match the certificate {plural}: "
+                f"{cert_domains_str}"
             )
             valid = False
     try:
@@ -1046,7 +1050,7 @@ def parse_bimi_record(
     logger.debug("Parsing the BIMI record")
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT})
-    spf_in_dmarc_error_msg = (
+    spf_in_bimi_error_msg = (
         "Found an SPF record where a BIMI record "
         "should be; most likely, the _bimi "
         "subdomain record does not actually exist, "
@@ -1056,20 +1060,20 @@ def parse_bimi_record(
     warnings = []
     record = record.strip('"')
     if record.lower().startswith("v=spf1"):
-        raise SPFRecordFoundWhereBIMIRecordShouldBe(spf_in_dmarc_error_msg)
+        raise SPFRecordFoundWhereBIMIRecordShouldBe(spf_in_bimi_error_msg)
     bimi_syntax_checker = _BIMIGrammar()
-    parsed_record = bimi_syntax_checker.parse(record)
-    if not parsed_record.is_valid:
-        expecting = [str(x).strip('"') for x in list(parsed_record.expecting)]
+    grammar_result = bimi_syntax_checker.parse(record)
+    if not grammar_result.is_valid:
+        expecting = [str(x).strip('"') for x in list(grammar_result.expecting)]
         marked_record = (
-            record[: parsed_record.pos]
+            record[: grammar_result.pos]
             + syntax_error_marker
-            + record[parsed_record.pos :]
+            + record[grammar_result.pos :]
         )
-        expecting = " or ".join(expecting)
+        expecting_str = " or ".join(expecting)
         raise BIMISyntaxError(
-            f"Error: Expected {expecting} at position "
-            f"{parsed_record.pos} "
+            f"Error: Expected {expecting_str} at position "
+            f"{grammar_result.pos} "
             f"(marked with {syntax_error_marker}) in: "
             f"{marked_record}"
         )
@@ -1159,8 +1163,8 @@ def parse_bimi_record(
         elif tag == "lps":
             # Comma-separated local-parts; strip whitespace and lowercase
             # for case-insensitive matching at delivery time.
-            selectors = [s.strip().lower() for s in tag_value.split(",")]
-            tags[tag]["value"] = selectors
+            local_part_prefixes = [s.strip().lower() for s in tag_value.split(",")]
+            tags[tag]["value"] = local_part_prefixes
 
     if parsed_dmarc_record and tags.get("l", {}).get("value", "") != "":
         if parsed_dmarc_record["valid"] is False:

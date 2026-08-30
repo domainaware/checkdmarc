@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from collections.abc import Sequence
 
 import dns.dnssec
@@ -197,7 +198,7 @@ def get_dnskey(
             logger.debug(f"DNSKEY query error: {e}")
 
 
-def test_dnssec(
+def check_dnssec(
     domain: str,
     *,
     nameservers: Sequence[str | Nameserver] | None = None,
@@ -258,6 +259,22 @@ def test_dnssec(
 
     cache[domain] = False
     return False
+
+
+def test_dnssec(
+    domain: str,
+    *,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    cache: ExpiringDict | None = None,
+) -> bool:
+    """Deprecated alias for :func:`check_dnssec`"""
+    warnings.warn(
+        "test_dnssec() is deprecated; use check_dnssec()",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return check_dnssec(domain, nameservers=nameservers, timeout=timeout, cache=cache)
 
 
 def get_tlsa_records(

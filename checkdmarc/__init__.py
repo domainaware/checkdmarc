@@ -23,12 +23,17 @@ from checkdmarc._constants import (
 )
 from checkdmarc.bimi import BIMICheckResult, check_bimi
 from checkdmarc.dmarc import DMARCErrorResults, DMARCResults, check_dmarc
-from checkdmarc.dnssec import test_dnssec
-from checkdmarc.mta_sts import MTASTSCheckResults, check_mta_sts
+from checkdmarc.dnssec import check_dnssec
+from checkdmarc.dnssec import test_dnssec as test_dnssec
+from checkdmarc.mta_sts import MTASTSCheckResult, check_mta_sts
+from checkdmarc.mta_sts import MTASTSCheckResults as MTASTSCheckResults
 from checkdmarc.smtp import MXResults, check_mx
 from checkdmarc.smtp_tls_reporting import (
-    SMTPTLSReportingResults,
+    SMTPTLSReportingResult,
     check_smtp_tls_reporting,
+)
+from checkdmarc.smtp_tls_reporting import (
+    SMTPTLSReportingResults as SMTPTLSReportingResults,
 )
 from checkdmarc.soa import SOARecordResults, check_soa
 from checkdmarc.spf import SPFRecordResults, check_spf
@@ -81,8 +86,8 @@ class DomainCheckResult(_DomainCheckResultOptional):
     mx: MXResults
     spf: SPFRecordResults
     dmarc: DMARCResults | DMARCErrorResults
-    smtp_tls_reporting: SMTPTLSReportingResults
-    mta_sts: MTASTSCheckResults
+    smtp_tls_reporting: SMTPTLSReportingResult
+    mta_sts: MTASTSCheckResult
 
 
 def check_domains(
@@ -165,7 +170,7 @@ def check_domains(
             "mx": [],
         }
 
-        domain_results["dnssec"] = test_dnssec(
+        domain_results["dnssec"] = check_dnssec(
             domain, nameservers=nameservers, timeout=timeout
         )
         domain_results["soa"] = check_soa(
@@ -246,7 +251,7 @@ def check_domains(
             logger.debug(f"Sleeping for {wait} seconds")
             sleep(wait)
     if len(results) == 1:
-        results = results[0]
+        return results[0]
 
     return results
 

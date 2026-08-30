@@ -1035,6 +1035,10 @@ class TestGetCertificateMetadata(unittest.TestCase):
                 for e in result["validation_errors"]
             )
         )
+        # Regression: the local list was rebound to a comma-joined string to
+        # build the error message, so the public domains field (declared
+        # list[str] | None) held a str on this exact branch
+        self.assertIsInstance(result["domains"], list)
 
     def testMissingMarkType(self):
         """A subject without a markType field is rejected"""

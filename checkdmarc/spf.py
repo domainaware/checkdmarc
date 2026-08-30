@@ -516,16 +516,16 @@ def query_spf_record(
     # Per RFC 7208 § 3.3: any single TXT "character-string" should be ≤255 bytes.
     # Per RFC 7208 § 3.4: keep overall SPF record small enough for UDP (advise ~450B, warn at >512B).
     try:
-        quoted_chunks = re.findall(r'"([^"]*)"', spf_record) if spf_record else []
-        if quoted_chunks:
-            for i, chunk in enumerate(quoted_chunks, 1):
+        txt_strings = re.findall(r'"([^"]*)"', spf_record) if spf_record else []
+        if txt_strings:
+            for i, chunk in enumerate(txt_strings, 1):
                 blen = len(chunk.encode("utf-8"))
                 if blen > 255:
                     warnings.append(
                         f"SPF TXT string chunk #{i} for {domain} is {blen} bytes (>255). "
                         "Each individual TXT character-string should be ≤ 255 bytes (RFC 7208 § 3.3)."
                     )
-            joined = "".join(quoted_chunks).replace('"', "")
+            joined = "".join(txt_strings)
         else:
             joined = spf_record or ""
             blen = len(joined.encode("utf-8"))
@@ -659,12 +659,12 @@ def parse_spf_record(
         # grammar only sees "v=spf1 ... all" and not the trailing junk/exp.
         grammar_record = record[: after_all_match.start(1)].rstrip()
 
-    parsed_record = spf_syntax_checker.parse(grammar_record)
+    grammar_result = spf_syntax_checker.parse(grammar_record)
 
-    if not parsed_record.is_valid:
-        pos = parsed_record.pos
+    if not grammar_result.is_valid:
+        pos = grammar_result.pos
         expecting: list[str] = [
-            str(x).strip('"') for x in list(parsed_record.expecting)
+            str(x).strip('"') for x in list(grammar_result.expecting)
         ]
         expecting_str = " or ".join(expecting)
         marked_record = record[:pos] + syntax_error_marker + record[pos:]
@@ -694,13 +694,13 @@ def parse_spf_record(
             # Therefore, do not perform any DNS lookups here. Simply
             # preserve the provided value (which may include macros) so a
             # caller with SMTP context can expand it at evaluation time.
-            exp = items_after_all[0].split("=")
-            if len(exp) < 2 or exp[1].strip() == "":
+            exp_parts = items_after_all[0].split("=")
+            if len(exp_parts) < 2 or exp_parts[1].strip() == "":
                 raise SPFSyntaxError("The exp modifier is missing a value")
-            exp = exp[1].split(" ")
-            if len(exp) > 1:
+            exp_tokens = exp_parts[1].split(" ")
+            if len(exp_tokens) > 1:
                 warnings.append("No text should exist after the exp modifier value.")
-            exp = exp[0]
+            exp = exp_tokens[0]
             parsed["exp"] = exp
             if "%" in exp:
                 _validate_spf_macros(exp, domain, syntax_error_marker)
@@ -788,13 +788,16 @@ def parse_spf_record(
 
                     parsed["mechanisms"].append(a_mechanism)
                     continue
+                cidr = None
+                value_parts = value.split("/", 1)
+                value = value_parts[0]
+                if len(value_parts) == 2:
+                    cidr = value_parts[1]
+                # An a mechanism with no domain (a or a/24) means the
+                # current domain, so default after the CIDR suffix is split
+                # off
                 if value == "":
                     value = domain
-                cidr = None
-                value = value.split("/")
-                value = value[0]
-                if len(value) == 2:
-                    cidr = value[1]
                 a_records = get_a_records(
                     value,
                     nameservers=nameservers,
@@ -961,14 +964,14 @@ def parse_spf_record(
                     raise SPFRedirectLoop(f"Redirect loop: {value.lower()}")
                 seen.append(value.lower())
                 try:
-                    redirect_record = query_spf_record(
+                    redirect_query = query_spf_record(
                         value,
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
                         retries=retries,
                     )
-                    redirect_record = redirect_record["record"]
+                    redirect_record = redirect_query["record"]
                     redirected_spf = parse_spf_record(
                         redirect_record,
                         value,
@@ -1076,14 +1079,14 @@ def parse_spf_record(
                 seen.append(value.lower())
 
                 try:
-                    include_record = query_spf_record(
+                    include_query = query_spf_record(
                         value,
                         nameservers=nameservers,
                         resolver=resolver,
                         timeout=timeout,
                         retries=retries,
                     )
-                    include_record = include_record["record"]
+                    include_record = include_query["record"]
                     include = parse_spf_record(
                         include_record,
                         value,

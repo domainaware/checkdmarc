@@ -119,7 +119,7 @@ class Test(unittest.TestCase):
     @network_test
     def testDNSSEC(self):
         """Test known good DNSSEC"""
-        self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
+        self.assertEqual(checkdmarc.dnssec.check_dnssec("fbi.gov"), True)
 
     @network_test
     def testDNSSECNameChainDoesNotRaise(self):
@@ -129,7 +129,7 @@ class Test(unittest.TestCase):
         names rather than with records of its own.
         """
         self.assertEqual(
-            checkdmarc.dnssec.test_dnssec("aws.amazon.com", nameservers=["1.1.1.1"]),
+            checkdmarc.dnssec.check_dnssec("aws.amazon.com", nameservers=["1.1.1.1"]),
             False,
         )
 
@@ -149,7 +149,7 @@ class Test(unittest.TestCase):
             patch("dns.query.tcp", return_value=response),
             patch("dns.dnssec.validate", return_value=None),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "example.com", cache=_fresh_cache(), nameservers=["192.0.2.1"]
             )
         self.assertTrue(result)
@@ -158,7 +158,7 @@ class Test(unittest.TestCase):
         """test_dnssec returns False when no DNSKEY found"""
         with patch("checkdmarc.dnssec.get_dnskey") as mock_key:
             mock_key.return_value = None
-            result = checkdmarc.dnssec.test_dnssec("example.com")
+            result = checkdmarc.dnssec.check_dnssec("example.com")
             self.assertFalse(result)
 
     def testGetDnskeyCache(self):
@@ -257,14 +257,14 @@ class TestTestDnssec(unittest.TestCase):
         cache = _fresh_cache()
         cache["example.com"] = True
         with patch("checkdmarc.dnssec.get_dnskey") as mock_key:
-            result = checkdmarc.dnssec.test_dnssec("example.com", cache=cache)
+            result = checkdmarc.dnssec.check_dnssec("example.com", cache=cache)
         self.assertTrue(result)
         mock_key.assert_not_called()
 
     def testCacheHitFalse(self):
         cache = _fresh_cache()
         cache["example.com"] = False
-        result = checkdmarc.dnssec.test_dnssec("example.com", cache=cache)
+        result = checkdmarc.dnssec.check_dnssec("example.com", cache=cache)
         self.assertFalse(result)
 
     def testNoSignedRecordsReturnsFalse(self):
@@ -273,7 +273,7 @@ class TestTestDnssec(unittest.TestCase):
             patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
             patch("dns.query.tcp", return_value=_response()),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
@@ -289,7 +289,7 @@ class TestTestDnssec(unittest.TestCase):
             patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
             patch("dns.query.tcp", return_value=_response(*_cname_chain())),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "aws.amazon.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
@@ -303,7 +303,7 @@ class TestTestDnssec(unittest.TestCase):
             patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
             patch("dns.query.tcp", return_value=response),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
@@ -323,7 +323,7 @@ class TestTestDnssec(unittest.TestCase):
                 side_effect=dns.exception.ValidationFailure("bad signature"),
             ),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
@@ -542,6 +542,20 @@ class TestEncryptedDnsTransports(unittest.TestCase):
                 cache=self._fresh_cache(),
             )
         self.assertIn("tls://not-an-ip", str(ctx.exception))
+
+
+class TestDeprecatedTestDnssecAlias(unittest.TestCase):
+    def testAliasWarnsAndDelegates(self):
+        """test_dnssec() warns that it is deprecated and returns
+        check_dnssec()'s result"""
+        with patch("dns.query.tcp", return_value=_response()):
+            with self.assertWarns(DeprecationWarning):
+                result = checkdmarc.dnssec.test_dnssec(
+                    "example.com",
+                    nameservers=["9.9.9.9"],
+                    cache=ExpiringDict(max_len=10, max_age_seconds=60),
+                )
+        self.assertFalse(result)
 
 
 if __name__ == "__main__":

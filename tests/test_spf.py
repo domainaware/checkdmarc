@@ -1203,5 +1203,35 @@ class TestSPFCheckSpfErrorData(unittest.TestCase):
         self.assertIn("exp modifier is missing a value", str(ctx.exception))
 
 
+class TestAMechanismCidr(unittest.TestCase):
+    """Regression tests for CIDR suffixes on a mechanisms (issue #128). The
+    split result used to be reassigned over the value variable, so the
+    length check inspected the hostname string: the CIDR suffix was never
+    applied, and a two-character hostname had its second character used as
+    one."""
+
+    def _parse(self, record):
+        with patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]):
+            return checkdmarc.spf.parse_spf_record(record, "example.com")
+
+    def testCidrSuffixIsAppliedToAddresses(self):
+        result = self._parse("v=spf1 a:mail.example.com/24 -all")
+        mechanism = cast(Any, result["parsed"]["mechanisms"][0])
+        self.assertEqual(mechanism["value"], "mail.example.com")
+        self.assertEqual(mechanism["addresses"], ["192.0.2.1/24"])
+
+    def testBareCidrUsesCurrentDomain(self):
+        """a/24 means the current domain with a CIDR suffix"""
+        result = self._parse("v=spf1 a/24 -all")
+        mechanism = cast(Any, result["parsed"]["mechanisms"][0])
+        self.assertEqual(mechanism["value"], "example.com")
+        self.assertEqual(mechanism["addresses"], ["192.0.2.1/24"])
+
+    def testShortHostnameWithoutCidrGetsNoCidr(self):
+        result = self._parse("v=spf1 a:hi -all")
+        mechanism = cast(Any, result["parsed"]["mechanisms"][0])
+        self.assertEqual(mechanism["addresses"], ["192.0.2.1"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

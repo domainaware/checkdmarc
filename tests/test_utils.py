@@ -734,5 +734,26 @@ class TestEncryptedDnsNameservers(unittest.TestCase):
         self.assertEqual(checkdmarc.utils._DOH_SESSION_PID, os.getpid())
 
 
+class TestDnsCacheConfiguration(unittest.TestCase):
+    def testDnsCacheMaxAgeEnvVarTakesEffect(self):
+        """The DNS_CACHE_MAX_AGE_SECONDS environment variable configures the
+        DNS cache. The cache used to be built from the DNSSEC constant, so
+        this documented variable had no effect at all."""
+        import importlib
+
+        import checkdmarc._constants
+        import checkdmarc.utils
+
+        def restore():
+            importlib.reload(checkdmarc._constants)
+            importlib.reload(checkdmarc.utils)
+
+        self.addCleanup(restore)
+        with patch.dict(os.environ, {"DNS_CACHE_MAX_AGE_SECONDS": "123"}):
+            importlib.reload(checkdmarc._constants)
+            importlib.reload(checkdmarc.utils)
+            self.assertEqual(checkdmarc.utils.DNS_CACHE.max_age, 123)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

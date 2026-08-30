@@ -111,9 +111,13 @@ class MTASTSPolicySyntaxError(MTASTSPolicyError):
     """Raised when a syntax error is found in an MTA-STS policy"""
 
 
-class MTASTSQueryResults(TypedDict):
+class MTASTSQueryResult(TypedDict):
     record: str
     warnings: list[str]
+
+
+# Deprecated alias for MTASTSQueryResult
+MTASTSQueryResults = MTASTSQueryResult
 
 
 # Tags is a dict mapping tag names to tag values (simple strings in MTA-STS)
@@ -171,7 +175,9 @@ class MTASTSCheckFailure(TypedDict):
     error: str
 
 
-MTASTSCheckResults = MTASTSCheckSuccess | MTASTSCheckFailure
+MTASTSCheckResult = MTASTSCheckSuccess | MTASTSCheckFailure
+# Deprecated alias for MTASTSCheckResult
+MTASTSCheckResults = MTASTSCheckResult
 
 
 class _STSGrammar(pyleri.Grammar):
@@ -187,7 +193,7 @@ class _STSGrammar(pyleri.Grammar):
     )
 
 
-mta_sts_tags = {
+MTA_STS_TAGS = {
     "v": {
         "name": "Version",
         "required": True,
@@ -206,6 +212,9 @@ mta_sts_tags = {
     },
 }
 
+# Deprecated alias for MTA_STS_TAGS
+mta_sts_tags = MTA_STS_TAGS
+
 STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
 
@@ -216,7 +225,7 @@ def query_mta_sts_record(
     resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
-) -> MTASTSQueryResults:
+) -> MTASTSQueryResult:
     """
     Queries DNS for an MTA-STS record
 
@@ -304,7 +313,7 @@ def query_mta_sts_record(
     if sts_record is None:
         raise MTASTSRecordNotFound("An MTA-STS DNS record does not exist.")
 
-    results: MTASTSQueryResults = {"record": sts_record, "warnings": warnings}
+    results: MTASTSQueryResult = {"record": sts_record, "warnings": warnings}
 
     return results
 
@@ -325,16 +334,13 @@ def parse_mta_sts_record(
 
     Returns:
         dict: a ``dict`` with the following keys:
-         - ``tags`` - a ``dict`` of MTA-STS tags
-
-           - ``value`` - The MTA-STS tag value
-           - ``description`` - A description of the tag/value
-
+         - ``tags`` - a ``dict`` mapping each MTA-STS tag to its string value
          - ``warnings`` - A ``list`` of warnings
 
          .. note::
-            ``description`` is only included if
-            ``include_tag_descriptions`` is set to ``True``
+            ``include_tag_descriptions`` is accepted for API consistency
+            with the other record parsers, but MTA-STS tag values are plain
+            strings and no descriptions are currently added
 
     Raises:
         :exc:`checkdmarc.mta_sts.MTASTSRecordSyntaxError`
@@ -344,7 +350,7 @@ def parse_mta_sts_record(
 
     """
     logger.debug("Parsing the MTA-STS record")
-    spf_in_dmarc_error_msg = (
+    spf_in_mta_sts_error_msg = (
         "Found an SPF record where an MTA-STS record "
         "should be; most likely, the _mta-sts "
         "subdomain record does not actually exist, "
@@ -354,20 +360,20 @@ def parse_mta_sts_record(
     warnings = []
     record = record.strip('"')
     if record.lower().startswith("v=spf1"):
-        raise SPFRecordFoundWhereMTASTSRecordShouldBe(spf_in_dmarc_error_msg)
+        raise SPFRecordFoundWhereMTASTSRecordShouldBe(spf_in_mta_sts_error_msg)
     sts_syntax_checker = _STSGrammar()
-    parsed_record = sts_syntax_checker.parse(record)
-    if not parsed_record.is_valid:
-        expecting = [str(x).strip('"') for x in list(parsed_record.expecting)]
+    grammar_result = sts_syntax_checker.parse(record)
+    if not grammar_result.is_valid:
+        expecting = [str(x).strip('"') for x in list(grammar_result.expecting)]
         marked_record = (
-            record[: parsed_record.pos]
+            record[: grammar_result.pos]
             + syntax_error_marker
-            + record[parsed_record.pos :]
+            + record[grammar_result.pos :]
         )
-        expecting = " or ".join(expecting)
+        expecting_str = " or ".join(expecting)
         raise MTASTSRecordSyntaxError(
-            f"Error: Expected {expecting} "
-            f"at position {parsed_record.pos} "
+            f"Error: Expected {expecting_str} "
+            f"at position {grammar_result.pos} "
             f"(marked with {syntax_error_marker}) "
             f"in: {marked_record}"
         )
@@ -380,7 +386,7 @@ def parse_mta_sts_record(
     for pair in pairs:
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
-        if tag not in mta_sts_tags:
+        if tag not in MTA_STS_TAGS:
             raise InvalidMTASTSTag(f"{tag} is not a valid MTA-STS record tag.")
         # Check for duplicate tags
         if tag in seen_tags:
@@ -483,23 +489,25 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
         policy = policy.replace("\n", "\r\n")
     lines = policy.split("\r\n")
     for i in range(len(lines)):
-        line = i + 1
+        line_number = i + 1
         if lines[i] == "":
             continue
         key_value = lines[i].split(":")
         if len(key_value) != 2:
-            raise MTASTSPolicySyntaxError(f"Line {line}: Not a key: value pair.")
+            raise MTASTSPolicySyntaxError(f"Line {line_number}: Not a key: value pair.")
         key = key_value[0].strip()
         value = key_value[1].strip()
         if key not in acceptable_keys:
-            raise MTASTSPolicySyntaxError(f"Line {line}: Unexpected key: {key}")
+            raise MTASTSPolicySyntaxError(f"Line {line_number}: Unexpected key: {key}")
         if key in seen_keys and key != "mx":
-            raise MTASTSPolicySyntaxError(f"Line {line}: Duplicate key: {key}")
+            raise MTASTSPolicySyntaxError(f"Line {line_number}: Duplicate key: {key}")
         seen_keys.add(key)
         if key == "version" and value not in versions:
-            raise MTASTSPolicySyntaxError(f"Line {line}: Invalid version: {value}")
+            raise MTASTSPolicySyntaxError(
+                f"Line {line_number}: Invalid version: {value}"
+            )
         elif key == "mode" and value not in modes:
-            raise MTASTSPolicySyntaxError(f"Line {line}: Invalid mode: {value}")
+            raise MTASTSPolicySyntaxError(f"Line {line_number}: Invalid mode: {value}")
         elif key == "max_age":
             error_msg = "max_age must be an integer value between 0 and 31557600."
             if "." in value:
@@ -515,7 +523,9 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
         else:
             value = str(value)
             if len(MTA_STS_MX_REGEX.findall(value)) == 0:
-                raise MTASTSPolicySyntaxError(f"Line {line}: Invalid mx value: {value}")
+                raise MTASTSPolicySyntaxError(
+                    f"Line {line_number}: Invalid mx value: {value}"
+                )
             mx.append(value)
     for required_key in required_keys:
         if required_key not in parsed_policy:
@@ -541,7 +551,7 @@ def check_mta_sts(
     resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
-) -> MTASTSCheckResults:
+) -> MTASTSCheckResult:
     """
     Returns a dictionary with a parsed MTA-STS policy or an error.
 
@@ -570,27 +580,27 @@ def check_mta_sts(
     """
     domain = normalize_domain(domain)
     try:
-        mta_sts_record = query_mta_sts_record(
+        query_results = query_mta_sts_record(
             domain,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
             retries=retries,
         )
-        warnings = mta_sts_record["warnings"]
-        mta_sts_record = parse_mta_sts_record(mta_sts_record["record"])
-        id_value = mta_sts_record["tags"]["id"]
+        warnings = query_results["warnings"]
+        parsed_record = parse_mta_sts_record(query_results["record"])
+        id_value = parsed_record["tags"]["id"]
         # The timeout parameter is the DNS timeout; the policy download uses
         # its own HTTP default, as the BIMI check does for its downloads
-        policy = download_mta_sts_policy(domain)
-        warnings += policy["warnings"]
-        policy = parse_mta_sts_policy(policy["policy"])
-        warnings += policy["warnings"]
+        download_results = download_mta_sts_policy(domain)
+        warnings += download_results["warnings"]
+        parsed_policy = parse_mta_sts_policy(download_results["policy"])
+        warnings += parsed_policy["warnings"]
 
         mta_sts_results: MTASTSCheckSuccess = {
             "valid": True,
             "id": id_value,
-            "policy": policy["policy"],
+            "policy": parsed_policy["policy"],
             "warnings": warnings,
         }
         return mta_sts_results

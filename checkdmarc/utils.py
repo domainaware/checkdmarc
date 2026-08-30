@@ -25,8 +25,8 @@ from expiringdict import ExpiringDict
 from checkdmarc._constants import (
     DEFAULT_DNS_MAX_RETRIES,
     DEFAULT_DNS_TIMEOUT,
+    DNS_CACHE_MAX_AGE_SECONDS,
     DNS_CACHE_MAX_LEN,
-    DNSSEC_CACHE_MAX_AGE_SECONDS,
 )
 
 """Copyright 2019-2023 Sean Whalen
@@ -46,7 +46,7 @@ limitations under the License."""
 logger = logging.getLogger(__name__)
 
 DNS_CACHE = ExpiringDict(
-    max_len=DNS_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
+    max_len=DNS_CACHE_MAX_LEN, max_age_seconds=DNS_CACHE_MAX_AGE_SECONDS
 )
 
 # The process-wide httpx client used for DNS over HTTPS queries, and the PID
@@ -87,10 +87,27 @@ class NameserverResultError(TypedDict):
 NameserverResult = NameserverResultOk | NameserverResultError
 
 
-class MXHost(TypedDict):
+class MXRecord(TypedDict):
+    """One MX record: a hostname and its preference"""
+
     hostname: str
     preference: int
-    ip_addresses: list[str]
+
+
+class MXHost(MXRecord, total=False):
+    """A Mail Exchange host
+
+    ``hostname`` and ``preference`` come from the MX record itself
+    (``get_mx_records()``); the remaining fields are added by
+    ``checkdmarc.smtp.get_mx_hosts()`` — ``tls`` and ``starttls`` only when
+    TLS testing is not skipped.
+    """
+
+    addresses: list[str]
+    dnssec: bool
+    tlsa: list[str]
+    tls: bool
+    starttls: bool
 
 
 class DNSException(Exception):
@@ -408,20 +425,20 @@ def query_dns(
         resource_records = [r.strings for r in answers]
         if quoted_txt_segments:
             # Join each sequence of byte chunks, adding quotes around each
-            _resource_record = [
+            joined_records = [
                 b"".join(b'"' + part + b'"' for part in record)
                 for record in resource_records
                 if record  # skip empty or None
             ]
         else:
             # Join each sequence of byte chunks into a single bytes object
-            _resource_record = [
+            joined_records = [
                 b"".join(record)
                 for record in resource_records
                 if record  # skip empty or None
             ]
         records = []
-        for r in _resource_record:
+        for r in joined_records:
             try:
                 r = r.decode()
             except UnicodeDecodeError:
@@ -685,17 +702,18 @@ def get_nameservers(
     except dns.exception.DNSException as error:
         raise DNSException(error)
 
+    approved_substrings = None
     if approved_nameservers:
-        approved_nameservers = [str(h).lower() for h in approved_nameservers]
-    for nameserver in ns_records:
-        if approved_nameservers:
+        approved_substrings = [str(h).lower() for h in approved_nameservers]
+    for ns_hostname in ns_records:
+        if approved_substrings:
             approved = False
-            for approved_nameserver in approved_nameservers:
-                if str(approved_nameserver).lower() in nameserver.lower():
+            for approved_substring in approved_substrings:
+                if approved_substring in ns_hostname.lower():
                     approved = True
                     break
             if not approved:
-                warnings.append(f"Unapproved nameserver: {nameserver}")
+                warnings.append(f"Unapproved nameserver: {ns_hostname}")
 
     result: NameserverResultOk = {"hostnames": ns_records, "warnings": warnings}
     return result
@@ -743,9 +761,9 @@ def get_mx_records(
             logger.debug('"No Service" MX record found')
             return []
         for record in answers:
-            record = record.split(" ")
-            preference = int(record[0])
-            hostname = record[1].rstrip(".").strip().lower()
+            fields = record.split(" ")
+            preference = int(fields[0])
+            hostname = fields[1].rstrip(".").strip().lower()
             hosts.append({"preference": preference, "hostname": hostname})
         hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
     except dns.resolver.NXDOMAIN:

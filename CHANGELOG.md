@@ -10,8 +10,25 @@
 
 - The `pyopenssl` dependency, as planned in 5.17.5. checkdmarc stopped importing pyOpenSSL in that release; the floor was kept for one release only so upgrades would also move any leftover pyOpenSSL to a version compatible with `cryptography` 50
 
+### Changed
+
+- Update the GitHub Actions used by the workflows to their latest major versions: `checkout` v7, `setup-python` v7, `codecov-action` v7, `upload-artifact` v7, `download-artifact` v8, `configure-pages` v6, `upload-pages-artifact` v5, and `deploy-pages` v5. All now run on Node.js 24; no workflow behavior changes
+- Renamed identifiers whose names misdescribed what they hold, keeping the old names as deprecated aliases where they were public API:
+  - `checkdmarc.dnssec.check_dnssec()` replaces `test_dnssec()`, matching every other module's `check_*()` entry point; `test_dnssec()` remains as a deprecated alias that warns
+  - `get_mx_hosts()` takes `approved_mx_hostnames`, matching `check_mx()` and `check_domains()`; the old `approved_hostnames` keyword remains as a deprecated alias that warns
+  - The CLI accepts `--nameservers` as an alias for `-n/--nameserver`, and `--approved-ns`/`--approved-mx` as clearer aliases for `--ns`/`--mx`
+  - `MTASTSQueryResult`, `MTASTSCheckResult`, `SMTPTLSReportingQueryResult`, and `SMTPTLSReportingResult` replace their plural forms, matching the singular BIMI result types; the plural names remain as aliases
+  - `MTA_STS_TAGS` and `SMTP_TLS_REPORTING_TAGS` replace the lowercase `mta_sts_tags` and `smtp_rpt_tags` constants, matching `BIMI_TAGS`; the lowercase names remain as aliases
+- The `MXHost` type now declares the fields MX host dicts actually carry (`addresses`, `dnssec`, `tlsa`, `tls`, `starttls` as optional keys, with `hostname` and `preference` required in a new `MXRecord` base); the declared `ip_addresses` field never existed in any produced data
+- Removed unused module-level copies of the DMARC grammar internals (`checkdmarc.dmarc.version_tag`, `tag_value`, and `START`), which duplicated the private grammar class and shadow-collided with unrelated locals
+- Many internal variables renamed so a name no longer changes type or meaning mid-function (split results, parse results, pyleri grammar results, joined display strings); no behavior changes
+
 ### Fixed
 
+- An SPF `a` mechanism's CIDR suffix now applies to the returned addresses. A split result was reassigned over the same variable, so the length check inspected the hostname string: `a:example.com/24` silently lost its suffix, a two-character hostname had its second character used as one, and `a/24` failed to default to the current domain
+- The `DNS_CACHE_MAX_AGE_SECONDS` environment variable now actually configures the DNS cache, which was wired to the DNSSEC constant, so the documented variable had no effect and `DNSSEC_CACHE_MAX_AGE_SECONDS` silently controlled both caches
+- The `domains` field of BIMI certificate metadata now stays a list when the checked domain does not match the certificate; building the error message rebound the list to a comma-joined string
+- `parse_mta_sts_record()`'s docstring no longer claims tag values carry descriptions; MTA-STS tag values are plain strings and `include_tag_descriptions` currently adds none
 - An SPF `exp` modifier with an empty value (`exp=`) now raises `SPFSyntaxError` as intended; the check compared the value to the integer 0, which never matches a string, so the empty modifier was silently accepted
 - A BIMI record with no `l` tag no longer crashes with `KeyError` when checked alongside a DMARC record, and a record with an empty `l` tag no longer warns about DMARC policy requirements that only apply when a logo is published; the check compared the tag's dict to an empty string, which is always unequal
 - A certificate's wordMark attribute is now labeled `wordMark` in BIMI certificate metadata instead of its raw dotted OID string; a trailing comma made the label table's key a one-element tuple
@@ -26,10 +43,6 @@
 - Cleaned up user-facing messages across the package: corrected articles ("Found an SPF record…"), IPv4/IPv6 capitalization, double spaces, missing periods, inconsistent RFC citation punctuation, and the garbled DMARC fo tag redundancy warning
 - Corrected inaccurate docstrings throughout: copy-paste artifacts ("MTA-HTS", "SIS-MTA", "Tne", the wrong TLSRPT record location), missing parameters and return keys, the stale claim that BIMI file content is not analyzed, and wrong exception cross-references
 - Fixed documentation drift: the CLI usage block in the docs was missing `--retries` and is now generated from the real `--help` output, the docs index pointed at a nonexistent CI workflow badge, and README/docs typos are corrected
-
-### Changed
-
-- Update the GitHub Actions used by the workflows to their latest major versions: `checkout` v7, `setup-python` v7, `codecov-action` v7, `upload-artifact` v7, `download-artifact` v8, `configure-pages` v6, `upload-pages-artifact` v5, and `deploy-pages` v5. All now run on Node.js 24; no workflow behavior changes
 
 ## 5.17.5
 

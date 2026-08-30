@@ -286,16 +286,6 @@ class DMARCErrorData(TypedDict, total=False):
     target: str
 
 
-version_tag = pyleri.Regex(DMARC_VERSION_REGEX_STRING, re.IGNORECASE)
-tag_value = pyleri.Regex(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
-START = pyleri.Sequence(
-    version_tag,
-    pyleri.List(
-        tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
-    ),
-)
-
-
 dmarc_tags: DMARCTagMap = {
     "adkim": {
         "name": "DKIM Alignment Mode",
@@ -1231,18 +1221,18 @@ def parse_dmarc_record(
     if record.lower().startswith("v=spf1"):
         raise SPFRecordFoundWhereDMARCRecordShouldBe(spf_in_dmarc_error_msg)
     dmarc_syntax_checker = _DMARCGrammar()
-    parsed_record = dmarc_syntax_checker.parse(record)
-    if not parsed_record.is_valid:
-        expecting = [str(x).strip('"') for x in list(parsed_record.expecting)]
+    grammar_result = dmarc_syntax_checker.parse(record)
+    if not grammar_result.is_valid:
+        expecting = [str(x).strip('"') for x in list(grammar_result.expecting)]
         marked_record = (
-            record[: parsed_record.pos]
+            record[: grammar_result.pos]
             + syntax_error_marker
-            + record[parsed_record.pos :]
+            + record[grammar_result.pos :]
         )
-        expecting = " or ".join(expecting)
+        expecting_str = " or ".join(expecting)
         raise DMARCSyntaxError(
-            f"Error: Expected {expecting} at position "
-            f"{parsed_record.pos} "
+            f"Error: Expected {expecting_str} at position "
+            f"{grammar_result.pos} "
             f"(marked with {syntax_error_marker}) in: "
             f"{marked_record}"
         )
@@ -1333,12 +1323,12 @@ def parse_dmarc_record(
                 f"An sp tag value of none makes DMARC unenforced on email sent as a subdomain of {domain}."
             )
         if tag == "fo":
-            tag_value = tag_value.split(":")
-            if "0" in tag_value and "1" in tag_value:
+            fo_options = tag_value.split(":")
+            if "0" in fo_options and "1" in fo_options:
                 warnings.append(
                     "When 1 is present in the fo tag, also including 0 is redundant."
                 )
-            for value in tag_value:
+            for value in fo_options:
                 if value not in allowed_values:
                     raise InvalidDMARCTagValue(
                         f"{value} is not a valid option for the DMARC fo tag."
@@ -1355,10 +1345,10 @@ def parse_dmarc_record(
         uris = tags["rua"]["value"].split(",")
         for uri in uris:
             try:
-                uri = parse_dmarc_report_uri(uri)
-                parsed_uris.append(uri)
-                email_address = uri["address"]
-                if uri["size_limit"]:
+                parsed_uri = parse_dmarc_report_uri(uri)
+                parsed_uris.append(parsed_uri)
+                email_address = parsed_uri["address"]
+                if parsed_uri["size_limit"]:
                     warnings.append(
                         "The size limit (`!size`) on rua URI for "
                         f"{email_address} is obsolete in RFC 9989 "
@@ -1421,10 +1411,10 @@ def parse_dmarc_record(
         uris = tags["ruf"]["value"].split(",")
         for uri in uris:
             try:
-                uri = parse_dmarc_report_uri(uri)
-                parsed_uris.append(uri)
-                email_address = uri["address"]
-                if uri["size_limit"]:
+                parsed_uri = parse_dmarc_report_uri(uri)
+                parsed_uris.append(parsed_uri)
+                email_address = parsed_uri["address"]
+                if parsed_uri["size_limit"]:
                     warnings.append(
                         "The size limit (`!size`) on ruf URI for "
                         f"{email_address} is obsolete in RFC 9989 "
@@ -1564,7 +1554,7 @@ def get_dmarc_record(
     )
 
     if include_tag_descriptions:
-        tags = parse_dmarc_record(
+        parsed = parse_dmarc_record(
             query["record"],
             query["location"],
             include_tag_descriptions=True,
@@ -1576,11 +1566,11 @@ def get_dmarc_record(
         result: DMARCRecordWithDescriptions = {
             "record": query["record"],
             "location": query["location"],
-            "parsed": tags,
+            "parsed": parsed,
         }
         return result
     else:
-        tags = parse_dmarc_record(
+        parsed = parse_dmarc_record(
             query["record"],
             query["location"],
             include_tag_descriptions=False,
@@ -1592,7 +1582,7 @@ def get_dmarc_record(
         result_no_desc: DMARCRecord = {
             "record": query["record"],
             "location": query["location"],
-            "parsed": tags,
+            "parsed": parsed,
         }
         return result_no_desc
 
