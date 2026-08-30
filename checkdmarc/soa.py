@@ -55,7 +55,7 @@ def soa_rname_to_email(rname: str) -> str:
 
 def parse_soa_string(rr: str) -> ParsedSOARecord:
     """
-    Parses a raw SOA record string and returns an dict with validated fields.
+    Parses a raw SOA record string and returns a dict with validated fields.
     """
     if not isinstance(rr, str) or not rr.strip():
         raise ValueError("SOA rrdata must be a non-empty string.")
@@ -82,9 +82,9 @@ def parse_soa_string(rr: str) -> ParsedSOARecord:
         "rname_email_address": soa_rname_to_email(rname),
         "serial": check_u32("serial", serial),
         "refresh": check_u32("refresh", refresh),
-        "retry": check_u32("refresh", retry),
-        "expire": check_u32("refresh", expire),
-        "minimum": check_u32("refresh", minimum),
+        "retry": check_u32("retry", retry),
+        "expire": check_u32("expire", expire),
+        "minimum": check_u32("minimum", minimum),
     }
 
     return soa_record
@@ -99,15 +99,15 @@ def check_soa(
     retries: int = DEFAULT_DNS_MAX_RETRIES,
 ) -> SOARecordResults:
     """
-    Returns a dictionary of a domain's SOA record and a parsed version of the record or a dictionary with an
-    the record and an error.
+    Returns a dictionary with a domain's SOA record and its parsed values, or a
+    dictionary with the record (``None`` on a DNS error) and an error.
 
     Args:
         domain (str): A domain name
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
     Returns:
         dict: A dictionary with the following keys:

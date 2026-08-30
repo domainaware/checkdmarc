@@ -40,7 +40,8 @@ def _main():
     """Called when the module in executed"""
     arg_parser = ArgumentParser(description=__doc__)
     arg_parser.add_argument(
-        "domain",
+        "domains",
+        metavar="domain",
         nargs="+",
         help="one or more domains, or a single path to a "
         "file containing a list of domains",
@@ -52,8 +53,12 @@ def _main():
         action="store_true",
         default=False,
     )
-    arg_parser.add_argument("--ns", nargs="+", help="approved nameserver substrings")
-    arg_parser.add_argument("--mx", nargs="+", help="approved MX hostname substrings")
+    arg_parser.add_argument(
+        "--ns", "--approved-ns", nargs="+", help="approved nameserver substrings"
+    )
+    arg_parser.add_argument(
+        "--mx", "--approved-mx", nargs="+", help="approved MX hostname substrings"
+    )
     arg_parser.add_argument(
         "-d",
         "--descriptions",
@@ -64,7 +69,7 @@ def _main():
         "-f",
         "--format",
         default="json",
-        help="specify JSON or CSV screen output format",
+        help="specify JSON or CSV screen output format (default json)",
     )
     arg_parser.add_argument(
         "-o",
@@ -77,9 +82,12 @@ def _main():
     arg_parser.add_argument(
         "-n",
         "--nameserver",
+        "--nameservers",
         nargs="+",
         help=(
-            "nameservers to query (default: the system-configured resolvers). "
+            "nameservers to query: IP addresses, https:// URLs (DNS over "
+            "HTTPS), and/or tls://ip[:port][#hostname] (DNS over TLS) "
+            "(default: the system-configured resolvers). "
             "For reliability, passing a mix of public resolvers is recommended, "
             f"e.g. {' '.join(RECOMMENDED_DNS_NAMESERVERS)}"
         ),
@@ -105,7 +113,10 @@ def _main():
     )
 
     arg_parser.add_argument(
-        "-b", "--bimi-selector", default="default", help="the BIMI selector to use"
+        "-b",
+        "--bimi-selector",
+        default="default",
+        help='the BIMI selector to use (default "default")',
     )
     arg_parser.add_argument("-v", "--version", action="version", version=__version__)
     arg_parser.add_argument(
@@ -130,7 +141,7 @@ def _main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
         logger.debug("Debug output enabled")
-    domains = args.domain
+    domains = args.domains
     if len(domains) == 1 and os.path.exists(domains[0]):
         with open(domains[0]) as domains_file:
             domains = sorted(
@@ -158,11 +169,12 @@ def _main():
     )
 
     if args.output is None:
+        output = results
         if args.format.lower() == "json":
-            results = results_to_json(results)
+            output = results_to_json(results)
         elif args.format.lower() == "csv":
-            results = results_to_csv(results)
-        print(results)
+            output = results_to_csv(results)
+        print(output)
     else:
         for path in args.output:
             json_path = path.lower().endswith(".json")

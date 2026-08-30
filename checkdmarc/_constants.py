@@ -19,11 +19,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "5.17.5"
+__version__ = "5.18.0"
 
 OS = platform.system()
 OS_RELEASE = platform.release()
-USER_AGENT = f"Mozilla/5.0 (({OS} {OS_RELEASE})) checkdmarc/{__version__}"
+USER_AGENT = f"Mozilla/5.0 ({OS} {OS_RELEASE}) checkdmarc/{__version__}"
 SYNTAX_ERROR_MARKER = "➞"
 DEFAULT_HTTP_TIMEOUT = 2.0
 DEFAULT_DNS_TIMEOUT = 2.0

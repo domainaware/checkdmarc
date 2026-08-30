@@ -23,12 +23,17 @@ from checkdmarc._constants import (
 )
 from checkdmarc.bimi import BIMICheckResult, check_bimi
 from checkdmarc.dmarc import DMARCErrorResults, DMARCResults, check_dmarc
-from checkdmarc.dnssec import test_dnssec
-from checkdmarc.mta_sts import MTASTSCheckResults, check_mta_sts
+from checkdmarc.dnssec import check_dnssec
+from checkdmarc.dnssec import test_dnssec as test_dnssec
+from checkdmarc.mta_sts import MTASTSCheckResult, check_mta_sts
+from checkdmarc.mta_sts import MTASTSCheckResults as MTASTSCheckResults
 from checkdmarc.smtp import MXResults, check_mx
 from checkdmarc.smtp_tls_reporting import (
-    SMTPTLSReportingResults,
+    SMTPTLSReportingResult,
     check_smtp_tls_reporting,
+)
+from checkdmarc.smtp_tls_reporting import (
+    SMTPTLSReportingResults as SMTPTLSReportingResults,
 )
 from checkdmarc.soa import SOARecordResults, check_soa
 from checkdmarc.spf import SPFRecordResults, check_spf
@@ -81,8 +86,8 @@ class DomainCheckResult(_DomainCheckResultOptional):
     mx: MXResults
     spf: SPFRecordResults
     dmarc: DMARCResults | DMARCErrorResults
-    smtp_tls_reporting: SMTPTLSReportingResults
-    mta_sts: MTASTSCheckResults
+    smtp_tls_reporting: SMTPTLSReportingResult
+    mta_sts: MTASTSCheckResult
 
 
 def check_domains(
@@ -101,14 +106,15 @@ def check_domains(
     wait: float = 0.0,
 ) -> DomainCheckResult | list[DomainCheckResult]:
     """
-    Check the given domains for SPF and DMARC records, parse them, and return
-    them
+    Check the given domains for email security records (SPF, DMARC, MX/STARTTLS,
+    DNSSEC, SOA, NS, MTA-STS, SMTP TLS Reporting, and BIMI), parse them, and
+    return the results
 
     Args:
         domains (list): A list of domains to check
         parked (bool): Indicates that the domains are parked
-        approved_nameservers (list): A list of approved nameservers
-        approved_mx_hostnames (list): A list of approved MX hostname
+        approved_nameservers (list): A list of approved nameserver substrings
+        approved_mx_hostnames (list): A list of approved MX hostname substrings
         skip_tls (bool): Skip STARTTLS testing
         bimi_selector (str): The BIMI selector to test
         include_tag_descriptions (bool): Include descriptions of
@@ -164,7 +170,7 @@ def check_domains(
             "mx": [],
         }
 
-        domain_results["dnssec"] = test_dnssec(
+        domain_results["dnssec"] = check_dnssec(
             domain, nameservers=nameservers, timeout=timeout
         )
         domain_results["soa"] = check_soa(
@@ -245,7 +251,7 @@ def check_domains(
             logger.debug(f"Sleeping for {wait} seconds")
             sleep(wait)
     if len(results) == 1:
-        results = results[0]
+        return results[0]
 
     return results
 
@@ -269,7 +275,8 @@ def check_ns(
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
-        timeout (float): number of seconds to wait for a record from DNS
+        timeout (float): number of seconds to wait for an answer from DNS
+        retries (int): The number of times to retry on timeout or other transient errors
     Returns:
         dict: A dictionary with the following keys:
 
@@ -307,7 +314,7 @@ def results_to_json(
     Converts a dictionary of results or list of results to a JSON string
 
     Args:
-        results (dict): A dictionary of results
+        results (dict or list): A dictionary of results, or a list of them
 
     Returns:
         str: Results in JSON format
@@ -319,11 +326,11 @@ def results_to_csv_rows(
     results: DomainCheckResult | list[DomainCheckResult],
 ) -> list[dict]:
     """
-    Converts a results dictionary or list of dictionaries and returns a
+    Converts a results dictionary or list of dictionaries to a
     list of CSV row dictionaries
 
     Args:
-        results (dict): A dictionary of results
+        results (dict or list): A dictionary of results, or a list of them
 
     Returns:
         list: A list of CSV row dictionaries
@@ -447,7 +454,7 @@ def results_to_csv(
     Converts a dictionary of results to CSV
 
     Args:
-        results (dict): A dictionary of results
+        results (dict or list): A dictionary of results, or a list of them
 
     Returns:
         str: A CSV of results

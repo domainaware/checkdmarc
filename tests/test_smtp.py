@@ -276,7 +276,7 @@ class TestGetMxHosts(unittest.TestCase):
                 "checkdmarc.smtp.get_reverse_dns",
                 return_value=reverse if reverse is not None else [],
             ),
-            patch("checkdmarc.smtp.test_dnssec", return_value=dnssec),
+            patch("checkdmarc.smtp.check_dnssec", return_value=dnssec),
             patch(
                 "checkdmarc.smtp.get_tlsa_records",
                 return_value=tlsa if tlsa is not None else [],
@@ -322,7 +322,7 @@ class TestGetMxHosts(unittest.TestCase):
         )
 
     def testUnapprovedHostname(self):
-        """An MX outside approved_hostnames triggers a warning"""
+        """An MX outside approved_mx_hostnames triggers a warning"""
         patches = self._patch_dns(
             [self._mx("mail.evil.example")],
             reverse=["mail.evil.example"],
@@ -333,8 +333,29 @@ class TestGetMxHosts(unittest.TestCase):
             result = checkdmarc.smtp.get_mx_hosts(
                 "example.com",
                 skip_tls=True,
-                approved_hostnames=["good.example.com"],
+                approved_mx_hostnames=["good.example.com"],
             )
+        finally:
+            for p in patches:
+                p.stop()
+        self.assertTrue(any("Unapproved MX hostname" in w for w in result["warnings"]))
+
+    def testDeprecatedApprovedHostnamesAlias(self):
+        """approved_hostnames still filters as a deprecated alias for
+        approved_mx_hostnames, and warns about the rename"""
+        patches = self._patch_dns(
+            [self._mx("mail.evil.example")],
+            reverse=["mail.evil.example"],
+        )
+        for p in patches:
+            p.start()
+        try:
+            with self.assertWarns(DeprecationWarning):
+                result = checkdmarc.smtp.get_mx_hosts(
+                    "example.com",
+                    skip_tls=True,
+                    approved_hostnames=["good.example.com"],
+                )
         finally:
             for p in patches:
                 p.stop()
@@ -415,7 +436,7 @@ class TestGetMxHosts(unittest.TestCase):
         finally:
             for p in patches:
                 p.stop()
-        self.assertIn("MX records found on parked domains", result["warnings"])
+        self.assertIn("MX records found on a parked domain", result["warnings"])
 
     def testStarttlsSupported(self):
         """When STARTTLS is supported, host['starttls'] and host['tls'] are True"""
@@ -675,7 +696,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
             )
             stack.enter_context(
                 patch(
-                    "checkdmarc.smtp.test_dnssec",
+                    "checkdmarc.smtp.check_dnssec",
                     side_effect=dns.exception.DNSException("dnssec failed"),
                 )
             )
@@ -709,7 +730,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
                 )
             )
             stack.enter_context(
-                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+                patch("checkdmarc.smtp.check_dnssec", return_value=False)
             )
             stack.enter_context(
                 patch(
@@ -737,7 +758,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
                 )
             )
             stack.enter_context(
-                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+                patch("checkdmarc.smtp.check_dnssec", return_value=False)
             )
             stack.enter_context(
                 patch("checkdmarc.smtp.get_a_records", side_effect=a_record_results)
@@ -770,7 +791,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
                 )
             )
             stack.enter_context(
-                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+                patch("checkdmarc.smtp.check_dnssec", return_value=False)
             )
             stack.enter_context(
                 patch("checkdmarc.smtp.get_a_records", side_effect=a_record_results)
@@ -801,7 +822,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
                 )
             )
             stack.enter_context(
-                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+                patch("checkdmarc.smtp.check_dnssec", return_value=False)
             )
             stack.enter_context(
                 patch("checkdmarc.smtp.get_a_records", return_value=["192.0.2.1"])
@@ -835,7 +856,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
                 )
             )
             stack.enter_context(
-                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+                patch("checkdmarc.smtp.check_dnssec", return_value=False)
             )
             stack.enter_context(
                 patch("checkdmarc.smtp.get_a_records", return_value=["192.0.2.1"])
@@ -872,7 +893,7 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
                 )
             )
             stack.enter_context(
-                patch("checkdmarc.smtp.test_dnssec", return_value=False)
+                patch("checkdmarc.smtp.check_dnssec", return_value=False)
             )
             stack.enter_context(
                 patch("checkdmarc.smtp.get_a_records", return_value=["192.0.2.1"])

@@ -8,9 +8,11 @@ import dns.exception
 import dns.name
 import dns.rdatatype
 import dns.rrset
+import httpx
 from expiringdict import ExpiringDict
 
 import checkdmarc.dnssec
+import checkdmarc.utils
 
 OFFLINE_MODE = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
@@ -117,7 +119,7 @@ class Test(unittest.TestCase):
     @network_test
     def testDNSSEC(self):
         """Test known good DNSSEC"""
-        self.assertEqual(checkdmarc.dnssec.test_dnssec("fbi.gov"), True)
+        self.assertEqual(checkdmarc.dnssec.check_dnssec("fbi.gov"), True)
 
     @network_test
     def testDNSSECNameChainDoesNotRaise(self):
@@ -127,7 +129,7 @@ class Test(unittest.TestCase):
         names rather than with records of its own.
         """
         self.assertEqual(
-            checkdmarc.dnssec.test_dnssec("aws.amazon.com", nameservers=["1.1.1.1"]),
+            checkdmarc.dnssec.check_dnssec("aws.amazon.com", nameservers=["1.1.1.1"]),
             False,
         )
 
@@ -147,7 +149,7 @@ class Test(unittest.TestCase):
             patch("dns.query.tcp", return_value=response),
             patch("dns.dnssec.validate", return_value=None),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "example.com", cache=_fresh_cache(), nameservers=["192.0.2.1"]
             )
         self.assertTrue(result)
@@ -156,7 +158,7 @@ class Test(unittest.TestCase):
         """test_dnssec returns False when no DNSKEY found"""
         with patch("checkdmarc.dnssec.get_dnskey") as mock_key:
             mock_key.return_value = None
-            result = checkdmarc.dnssec.test_dnssec("example.com")
+            result = checkdmarc.dnssec.check_dnssec("example.com")
             self.assertFalse(result)
 
     def testGetDnskeyCache(self):
@@ -255,14 +257,14 @@ class TestTestDnssec(unittest.TestCase):
         cache = _fresh_cache()
         cache["example.com"] = True
         with patch("checkdmarc.dnssec.get_dnskey") as mock_key:
-            result = checkdmarc.dnssec.test_dnssec("example.com", cache=cache)
+            result = checkdmarc.dnssec.check_dnssec("example.com", cache=cache)
         self.assertTrue(result)
         mock_key.assert_not_called()
 
     def testCacheHitFalse(self):
         cache = _fresh_cache()
         cache["example.com"] = False
-        result = checkdmarc.dnssec.test_dnssec("example.com", cache=cache)
+        result = checkdmarc.dnssec.check_dnssec("example.com", cache=cache)
         self.assertFalse(result)
 
     def testNoSignedRecordsReturnsFalse(self):
@@ -271,7 +273,7 @@ class TestTestDnssec(unittest.TestCase):
             patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
             patch("dns.query.tcp", return_value=_response()),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
@@ -287,7 +289,7 @@ class TestTestDnssec(unittest.TestCase):
             patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
             patch("dns.query.tcp", return_value=_response(*_cname_chain())),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "aws.amazon.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
@@ -301,7 +303,7 @@ class TestTestDnssec(unittest.TestCase):
             patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
             patch("dns.query.tcp", return_value=response),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
@@ -321,7 +323,7 @@ class TestTestDnssec(unittest.TestCase):
                 side_effect=dns.exception.ValidationFailure("bad signature"),
             ),
         ):
-            result = checkdmarc.dnssec.test_dnssec(
+            result = checkdmarc.dnssec.check_dnssec(
                 "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
@@ -439,6 +441,123 @@ class TestGetTlsaRecords(unittest.TestCase):
                 "mail.example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertEqual(result, [])
+
+
+class TestEncryptedDnsTransports(unittest.TestCase):
+    """The DNSSEC checks query each nameserver directly rather than through
+    a resolver, so ``tls://`` and ``https://`` entries are mapped to
+    dnspython nameserver objects and dispatched through their own
+    ``query()`` method. These tests mock at the dnspython SDK boundary
+    (``dns.query.tls`` / ``dns.query.https`` / ``dns.query.tcp``) and assert
+    on the key get_dnskey parses out of the answer."""
+
+    @staticmethod
+    def _dnskey_response() -> MagicMock:
+        return _response(
+            dns.rrset.from_text("example.com.", 300, "IN", "DNSKEY", DNSKEY_RDATA)
+        )
+
+    def _fresh_cache(self) -> ExpiringDict:
+        return ExpiringDict(max_len=10, max_age_seconds=60)
+
+    def test_dot_nameserver_entry_is_queried_over_tls(self):
+        """A tls:// entry reaches dns.query.tls with the address, the
+        default port, and the #hostname suffix as server_hostname — the
+        name the server's certificate is checked against."""
+        captured = []
+
+        def responder(request, address, **kwargs):
+            captured.append((address, kwargs))
+            return self._dnskey_response()
+
+        with patch("dns.query.tls", side_effect=responder):
+            key = checkdmarc.dnssec.get_dnskey(
+                "example.com",
+                nameservers=["tls://9.9.9.9#dns.quad9.net"],
+                cache=self._fresh_cache(),
+            )
+        assert key is not None  # narrow Optional for pyright
+        self.assertIn(dns.name.from_text("example.com"), key)
+        address, kwargs = captured[0]
+        self.assertEqual(address, "9.9.9.9")
+        self.assertEqual(kwargs["server_hostname"], "dns.quad9.net")
+        self.assertEqual(kwargs["port"], 853)
+
+    def test_doh_nameserver_entry_is_queried_over_https_with_shared_session(self):
+        """An https:// entry reaches dns.query.https with the URL and the
+        module's shared httpx client, so proxy and CA environment
+        variables apply to DNSSEC queries too."""
+        captured = []
+
+        def responder(request, url, **kwargs):
+            captured.append((url, kwargs))
+            return self._dnskey_response()
+
+        with patch("dns.query.https", side_effect=responder):
+            key = checkdmarc.dnssec.get_dnskey(
+                "example.com",
+                nameservers=["https://dns.example/dns-query"],
+                cache=self._fresh_cache(),
+            )
+        self.assertIsNotNone(key)
+        url, kwargs = captured[0]
+        self.assertEqual(url, "https://dns.example/dns-query")
+        self.assertIs(kwargs["session"], checkdmarc.utils._DOH_SESSION)
+
+    def test_plain_string_entry_still_uses_tcp(self):
+        """An IP address entry keeps the direct dns.query.tcp call — the
+        behavior of every earlier release."""
+        with patch("dns.query.tcp", return_value=self._dnskey_response()) as tcp:
+            key = checkdmarc.dnssec.get_dnskey(
+                "example.com",
+                nameservers=["9.9.9.9"],
+                cache=self._fresh_cache(),
+            )
+        self.assertIsNotNone(key)
+        self.assertEqual(tcp.call_args.args[1], "9.9.9.9")
+
+    def test_doh_transport_error_falls_through_to_next_nameserver(self):
+        """An httpx transport failure from a DoH nameserver is treated like
+        any other unreachable nameserver: it is logged and the next entry
+        is tried."""
+        with (
+            patch("dns.query.https", side_effect=httpx.ConnectError("boom")),
+            patch("dns.query.tcp", return_value=self._dnskey_response()),
+        ):
+            key = checkdmarc.dnssec.get_dnskey(
+                "example.com",
+                nameservers=["https://dns.example/dns-query", "9.9.9.9"],
+                cache=self._fresh_cache(),
+            )
+        self.assertIsNotNone(key)
+
+    def test_malformed_tls_entry_raises_before_any_query(self):
+        """A malformed tls:// entry is a configuration error, not a DNS
+        failure, so it raises rather than being swallowed by the
+        per-nameserver error handling."""
+        with self.assertRaises(ValueError) as ctx:
+            checkdmarc.dnssec.get_dnskey(
+                "example.com",
+                nameservers=["tls://not-an-ip"],
+                cache=self._fresh_cache(),
+            )
+        self.assertIn("tls://not-an-ip", str(ctx.exception))
+
+
+class TestDeprecatedTestDnssecAlias(unittest.TestCase):
+    def testAliasWarnsAndDelegates(self):
+        """test_dnssec() warns that it is deprecated and returns
+        check_dnssec()'s result"""
+        with (
+            patch("dns.query.tcp", return_value=_response()),
+            self.assertWarns(DeprecationWarning),
+        ):
+            result = checkdmarc.dnssec.test_dnssec(
+                "example.com",
+                nameservers=["9.9.9.9"],
+                cache=ExpiringDict(max_len=10, max_age_seconds=60),
+            )
+        self.assertFalse(result)
 
 
 if __name__ == "__main__":

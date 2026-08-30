@@ -1066,5 +1066,18 @@ class TestCheckDmarcErrorWithTarget(unittest.TestCase):
         self.assertEqual(cast(Any, result)["target"], "_dmarc.example.com")
 
 
+class TestDmarcRecordNotFound(unittest.TestCase):
+    def testMessageAndDataArePreserved(self):
+        """DMARCRecordNotFound keeps its message and carries the data
+        attribute its parent class defines. Its __init__ previously never
+        called the parent constructor, so the message survived only through
+        a CPython quirk and the data attribute did not exist at all."""
+        error = checkdmarc.dmarc.DMARCRecordNotFound(
+            "A DMARC record does not exist for this domain"
+        )
+        self.assertEqual(str(error), "A DMARC record does not exist for this domain")
+        self.assertIsNone(error.data)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
