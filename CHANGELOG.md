@@ -20,7 +20,7 @@
 - SPF TXT length warnings now report sizes in bytes, matching what is measured and what RFC 7208 § 3.3 limits, instead of calling them characters
 - Cleaned up user-facing messages across the package: corrected articles ("Found an SPF record…"), IPv4/IPv6 capitalization, double spaces, missing periods, inconsistent RFC citation punctuation, and the garbled DMARC fo tag redundancy warning
 - Corrected inaccurate docstrings throughout: copy-paste artifacts ("MTA-HTS", "SIS-MTA", "Tne", the wrong TLSRPT record location), missing parameters and return keys, the stale claim that BIMI file content is not analyzed, and wrong exception cross-references
-- Fixed documentation drift: the CLI usage block in the docs was missing `--retries` and is now generated from the real `--help` output, the docs index pointed at a nonexistent CI workflow badge, and README/docs typos ("Sponcors", "This is a project is maintained", a mis-quoted docker command) are corrected
+- Fixed documentation drift: the CLI usage block in the docs was missing `--retries` and is now generated from the real `--help` output, the docs index pointed at a nonexistent CI workflow badge, and README/docs typos are corrected
 
 ### Changed
 
