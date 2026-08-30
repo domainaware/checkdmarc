@@ -71,6 +71,19 @@ class Test(unittest.TestCase):
         self.assertEqual(len(cast(Any, results)["warnings"]), 0)
 
 
+class TestBimiRecordAtRoot(unittest.TestCase):
+    def testBimiRecordAtRootProducesWarning(self):
+        """A BIMI record published at the domain root (instead of under
+        <selector>._bimi) has no effect and produces a warning, matching the
+        equivalent DMARC root-record check."""
+        with (
+            patch("checkdmarc.bimi._query_bimi_record", return_value="v=BIMI1; l=;"),
+            patch("checkdmarc.bimi.query_dns", return_value=["v=BIMI1; l=;"]),
+        ):
+            result = checkdmarc.bimi.query_bimi_record("example.com")
+        self.assertTrue(any("no effect" in w for w in result["warnings"]))
+
+
 class TestLpsTag(unittest.TestCase):
     """parse_bimi_record handles the lps= tag (comma-separated local-parts)"""
 
