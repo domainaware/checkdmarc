@@ -2,6 +2,7 @@
 
 import os
 import unittest
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import dns.dnssec
@@ -13,6 +14,7 @@ import dns.rrset
 import httpx
 from cryptography.hazmat.primitives.asymmetric import ec
 from dns.dnssectypes import Algorithm
+from dns.rdtypes.ANY.DNSKEY import DNSKEY
 from expiringdict import ExpiringDict
 
 import checkdmarc.dnssec
@@ -608,6 +610,43 @@ class TestCheckDnssec(unittest.TestCase):
             )
         self.assertFalse(result)
         self.assertTrue(any("bogus" in line for line in logs.output))
+
+    def testDnskeyQueryUnanswered(self):
+        """DS present but no nameserver answers the DNSKEY query: False"""
+        cache = _fresh_cache()
+        ds, _, _ = _signed_zone("example.com.")
+        with (
+            patch(
+                "checkdmarc.dnssec._query_nameserver",
+                side_effect=[_response(ds), None],
+            ),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertFalse(result)
+        self.assertTrue(
+            any("DNSKEY query" in line for line in logs.output),
+            logs.output,
+        )
+
+    def testUnsupportedDsDigestTypeMatchesNoKey(self):
+        """A DS record whose digest type cannot be computed is skipped, so
+        no key anchors and the result is False"""
+        cache = _fresh_cache()
+        _, key, sig = _signed_zone("example.com.")
+        keytag = dns.dnssec.key_id(cast(DNSKEY, key[0]))
+        bad_ds = dns.rrset.from_text(
+            "example.com.", 300, "IN", "DS", f"{keytag} 13 99 aabbccdd"
+        )
+        with patch(
+            "dns.query.tcp", side_effect=[_response(bad_ds), _response(key, sig)]
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertFalse(result)
 
 
 class TestGetTlsaRecords(unittest.TestCase):

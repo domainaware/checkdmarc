@@ -144,6 +144,14 @@ class Test(unittest.TestCase):
             )
             self.assertFalse(result["valid"])
 
+    def testTrailingFieldDelimiter(self):
+        """A trailing field delimiter is legal per the RFC 8460 section 3
+        ABNF; the empty final field it leaves is skipped"""
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            "v=TLSRPTv1; rua=mailto:tlsrpt@example.com;"
+        )
+        self.assertIn("mailto:tlsrpt@example.com", result["tags"]["rua"]["value"])
+
 
 class TestQuerySmtpTlsReportingRecord(unittest.TestCase):
     def testRecordFound(self):

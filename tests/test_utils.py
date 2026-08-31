@@ -416,6 +416,32 @@ class TestGetSoaRecord(unittest.TestCase):
                 "www.example.com",
             )
 
+    def testBaseDomainFallbackNxdomain(self):
+        """NXDOMAIN on both the domain and its base domain raises
+        DNSExceptionNXDOMAIN naming the base domain"""
+        with (
+            patch("checkdmarc.utils.query_dns", side_effect=dns.resolver.NXDOMAIN()),
+            self.assertRaises(checkdmarc.utils.DNSExceptionNXDOMAIN) as ctx,
+        ):
+            checkdmarc.utils.get_soa_record("www.example.com")
+        self.assertIn("example.com does not exist", str(ctx.exception))
+
+    def testBaseDomainFallbackGenericError(self):
+        """A non-NXDOMAIN DNS error on the base-domain fallback is wrapped
+        in DNSException"""
+        with (
+            patch(
+                "checkdmarc.utils.query_dns",
+                side_effect=[
+                    dns.resolver.NoAnswer(),
+                    dns.exception.DNSException("SERVFAIL at the base domain"),
+                ],
+            ),
+            self.assertRaises(checkdmarc.utils.DNSException) as ctx,
+        ):
+            checkdmarc.utils.get_soa_record("www.example.com")
+        self.assertIn("SERVFAIL at the base domain", str(ctx.exception))
+
 
 class TestGetNameservers(unittest.TestCase):
     def testSuccess(self):
@@ -663,6 +689,24 @@ class TestGetMxRecords(unittest.TestCase):
             resolver=resolver,
             retries=0,
         )
+
+    def testNameserverListConfiguresResolver(self):
+        """A caller-supplied nameserver list is applied to the constructed
+        resolver, and the lifetime scales with the number of entries"""
+        rrset = dns.rrset.from_text(
+            "ns-config-test.example.", 300, "IN", "MX", "10 mail.example.com."
+        )
+        fake_resolver = MagicMock()
+        fake_resolver.resolve.return_value = rrset
+        with patch("dns.resolver.Resolver", return_value=fake_resolver):
+            result = checkdmarc.utils.get_mx_record_set(
+                "ns-config-test.example",
+                nameservers=["192.0.2.53", "192.0.2.54"],
+            )
+        self.assertEqual([h["hostname"] for h in result["hosts"]], ["mail.example.com"])
+        self.assertEqual(fake_resolver.nameservers, ["192.0.2.53", "192.0.2.54"])
+        # DEFAULT_DNS_TIMEOUT (2.0s) scaled by two nameservers
+        self.assertEqual(fake_resolver.lifetime, 4.0)
 
 
 class TestEncryptedDnsNameservers(unittest.TestCase):

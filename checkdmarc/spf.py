@@ -736,7 +736,6 @@ def parse_spf_record(
     total_dns_lookups = 0
     total_void_dns_lookups = 0
     error = None
-    all_seen = False
     exp_seen = False
     redirect_seen = False
 
@@ -1031,17 +1030,10 @@ def parse_spf_record(
         mechanism = name
         try:
             if mechanism == "all":
-                if all_seen:
-                    # RFC 7208 section 4.6.2: evaluation stops at the first
-                    # matching mechanism, so extra all mechanisms are legal
-                    # but unused.
-                    warnings.append(
-                        "The record contains multiple all mechanisms; only "
-                        "the first one is used (RFC 7208 § 4.6.2)."
-                    )
-                else:
-                    all_seen = True
-                    parsed["all"] = action
+                # Only one all term can reach this loop: everything after
+                # the first all mechanism was trimmed from grammar_record,
+                # and extra all mechanisms are warned about there.
+                parsed["all"] = action
 
             elif mechanism in ("ip4", "ip6"):
                 ip_mechanism: SPFMechanism = {

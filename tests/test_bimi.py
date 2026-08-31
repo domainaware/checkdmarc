@@ -464,6 +464,24 @@ class TestParseBimiRecord(unittest.TestCase):
             )
         self.assertIn("error", result["image"])
 
+    def testLogoProcessingFailure(self):
+        """A ValueError while parsing a fetched image produces an image error
+        entry, not a raised exception"""
+        fake_session = MagicMock()
+        fake_session.get.return_value = _fake_response(b"<svg/>")
+        with (
+            patch("checkdmarc.bimi.requests.Session", return_value=fake_session),
+            patch(
+                "checkdmarc.bimi.get_svg_metadata",
+                side_effect=ValueError("bad XML"),
+            ),
+        ):
+            result = checkdmarc.bimi.parse_bimi_record(
+                "v=BIMI1; l=https://example.com/logo.svg"
+            )
+        self.assertIn("Failed to process BIMI image", result["image"]["error"])
+        self.assertIn("bad XML", result["image"]["error"])
+
     def testCertificateFetchFailure(self):
         """A failed a= fetch produces a certificate error entry"""
         fake_session = MagicMock()

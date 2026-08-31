@@ -1620,6 +1620,81 @@ class TestRFC7208Conformance(unittest.TestCase):
         self.assertIn("error", result)
         self.assertEqual(result["dns_lookups"], 11)
 
+    def testGarbageTermIsSyntaxError(self):
+        """A term matching no RFC 7208 section 12 production is a permerror
+
+        a+mx passes the record-level grammar as two adjacent tokens (a, +mx)
+        but is a single whitespace-delimited term matching no production.
+        """
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 a+mx -all",
+            "example.com",
+        )
+
+    def testRedirectMissingValue(self):
+        """redirect= with no value is a syntax error"""
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 redirect=",
+            "example.com",
+        )
+
+    def testExpMissingValue(self):
+        """exp= with no value is a syntax error"""
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 exp= ip4:192.0.2.1 -all",
+            "example.com",
+        )
+
+    def testUnknownMechanismRejected(self):
+        """An unknown name with a mechanism separator is a syntax error
+        (only unknown modifiers, name=value, are ignored per section 6)"""
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 foo:bar -all",
+            "example.com",
+        )
+
+    def testAllWithValueRejected(self):
+        """all takes no value per the section 12 ABNF"""
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 all:x",
+            "example.com",
+        )
+
+    def testBareIp4Rejected(self):
+        """ip4 requires a value"""
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 ip4 -all",
+            "example.com",
+        )
+
+    def testPtrCidrRejected(self):
+        """ptr takes no CIDR prefix length per the section 12 ABNF"""
+        self.assertRaises(
+            checkdmarc.spf.SPFSyntaxError,
+            checkdmarc.spf.parse_spf_record,
+            "v=spf1 ptr/24 -all",
+            "example.com",
+        )
+
+    def testMultipleAllFirstMatchWins(self):
+        """Multiple all mechanisms are legal; the first match is used and a
+        warning is emitted (RFC 7208 section 4.6.2)"""
+        result = checkdmarc.spf.parse_spf_record("v=spf1 ~all -all", "example.com")
+        self.assertEqual(result["parsed"]["all"], "softfail")
+        self.assertTrue(any("multiple all mechanisms" in w for w in result["warnings"]))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -305,13 +305,13 @@ class TestGetMxHosts(unittest.TestCase):
                     mx_records, warnings=mx_warnings, null_mx=null_mx
                 ),
             ),
-            patch(
-                "checkdmarc.smtp.query_dns",
-                **(
-                    {"side_effect": dns.resolver.NoAnswer()}
-                    if cname is None
-                    else {"return_value": cname}
-                ),
+            (
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+                if cname is None
+                else patch("checkdmarc.smtp.query_dns", return_value=cname)
             ),
             patch(
                 "checkdmarc.smtp.get_a_records",

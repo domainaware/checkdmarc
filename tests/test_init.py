@@ -225,6 +225,14 @@ def _full_result(domain="example.com", *, with_bimi=False, with_errors=False):
     return result
 
 
+class TestSkipTlsDeprecation(unittest.TestCase):
+    def testSkipTlsDeprecatedNoOp(self):
+        """check_domains warns that skip_tls is a no-op and ignores it"""
+        with self.assertWarns(DeprecationWarning):
+            results = checkdmarc.check_domains([], skip_tls=True)
+        self.assertEqual(results, [])
+
+
 class TestResultsToCsvRowsBranches(unittest.TestCase):
     def testFullSuccessRow(self):
         rows = checkdmarc.results_to_csv_rows(
