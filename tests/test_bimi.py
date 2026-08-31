@@ -516,6 +516,15 @@ class TestParseBimiRecord(unittest.TestCase):
             "v=BIMI1; l=https://example.com/logo%zz.svg",
         )
 
+    def testUriIpv4LiteralRejected(self):
+        """A dotted-quad host satisfies the label grammar, but section 4.3
+        of the BIMI draft requires a fully qualified domain name"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMIIndicatorURI,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=https://192.0.2.1/logo.svg",
+        )
+
     def testUriMultipleFragmentDelimitersRejected(self):
         """RFC 3986 allows "#" exactly once, as the fragment delimiter, so
         an l= URI with a second "#" is rejected"""

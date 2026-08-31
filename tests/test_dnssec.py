@@ -530,6 +530,37 @@ class TestCheckDnssec(unittest.TestCase):
             )
         self.assertTrue(result)
 
+    def testSubdomainWithOnlySignedAaaaReturnsTrue(self):
+        """A name below a signed zone apex whose only record set is a
+        signed AAAA must count as covered, not fall off the end of the
+        record-type list"""
+        ds, key, sig = _signed_zone("example.com.")
+        aaaa_response = _response(
+            dns.rrset.from_text("sub.example.com.", 300, "IN", "AAAA", "2001:db8::1"),
+            _rrsig("sub.example.com.", "AAAA"),
+        )
+        with (
+            patch(
+                "dns.query.tcp",
+                side_effect=[
+                    _response(),  # DS sub.example.com: none
+                    _response(ds),  # DS example.com
+                    _response(key, sig),  # DNSKEY example.com
+                    _response(),  # MX
+                    _response(),  # A
+                    aaaa_response,  # AAAA with a signature
+                ],
+            ),
+            # The AAAA signature is synthetic, so signature verification is
+            # patched out; the DS-to-DNSKEY digest comparison still runs
+            # for real.
+            patch("dns.dnssec.validate", return_value=None),
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "sub.example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
+            )
+        self.assertTrue(result)
+
     def testSubdomainWithUnsignedRecordsReturnsFalse(self):
         """A name below a signed zone apex with no signed records: False"""
         ds, key, sig = _signed_zone("example.com.")
@@ -545,7 +576,9 @@ class TestCheckDnssec(unittest.TestCase):
                     _response(key, sig),  # DNSKEY example.com
                     _response(),  # MX
                     a_response,  # A record without a signature
+                    _response(),  # AAAA
                     _response(),  # NS
+                    _response(),  # TXT
                     _response(),  # CNAME
                 ],
             ),
@@ -578,7 +611,9 @@ class TestCheckDnssec(unittest.TestCase):
                     _response(key, sig),  # DNSKEY example.com
                     mx_response,  # MX with a signature that will not verify
                     _response(),  # A
+                    _response(),  # AAAA
                     _response(),  # NS
+                    _response(),  # TXT
                     _response(),  # CNAME
                 ],
             ),

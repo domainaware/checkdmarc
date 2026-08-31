@@ -56,6 +56,22 @@ class Test(unittest.TestCase):
         email = checkdmarc.soa.soa_rname_to_email(r"a\"b.example.com.")
         self.assertEqual(email, '"a\\"b"@example.com')
 
+    def testSoaRnameToEmailDomainEscapesDecoded(self):
+        """RFC 1035 escapes in the domain labels are decoded too, instead
+        of leaving DNS presentation syntax in the returned address"""
+        email = checkdmarc.soa.soa_rname_to_email(r"host.ex\097mple.com.")
+        self.assertEqual(email, "host@example.com")
+
+    def testSoaRnameToEmailInvalidDomainEscape(self):
+        """A domain label that decodes to something no email domain can
+        carry (here a space) is invalid; unlike the local part, a domain
+        has no quoted form to fall back to"""
+        self.assertRaises(
+            ValueError,
+            checkdmarc.soa.soa_rname_to_email,
+            r"host.bad\032domain.com.",
+        )
+
     def testSoaRnameToEmailUnrepresentableCharacter(self):
         """A decoded control character cannot appear in any valid email
         address, quoted or not"""

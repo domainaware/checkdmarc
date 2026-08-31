@@ -109,6 +109,17 @@ class Test(unittest.TestCase):
             checkdmarc.mta_sts.parse_mta_sts_policy("")
         self.assertIn("Missing required key", str(ctx.exception))
 
+    def testParseMtaStsPolicyMxLabelLength(self):
+        """DNS labels are capped at 63 octets (RFC 1035 section 2.3.4), so
+        a 64-character label in an mx value is invalid while a
+        63-character label is fine"""
+        base = "version: STSv1\nmode: enforce\nmax_age: 86400\nmx: {}.example.com\n"
+        ok = checkdmarc.mta_sts.parse_mta_sts_policy(base.format("a" * 63))
+        self.assertEqual(ok["policy"]["mx"], [f"{'a' * 63}.example.com"])
+        with self.assertRaises(checkdmarc.mta_sts.MTASTSPolicySyntaxError) as ctx:
+            checkdmarc.mta_sts.parse_mta_sts_policy(base.format("a" * 64))
+        self.assertIn("Invalid mx value", str(ctx.exception))
+
     def testParseMtaStsPolicyStrayCarriageReturn(self):
         """RFC 8461 section 3.2 allows CR only as part of a CRLF line
         ending, so a CR CR LF ending or a CR in the middle of a line is a
@@ -572,15 +583,25 @@ class TestDownloadMtaStsPolicy(unittest.TestCase):
 
     def testRedirectsNotFollowed(self):
         """RFC 8461 section 3.3: HTTP 3xx redirects MUST NOT be followed.
-        The mock provides the HTTP boundary; the assertion is that the
-        request is sent with redirects disabled."""
-        fake_session = self._make_session()
-        with patch(
-            "checkdmarc.mta_sts.requests.Session",
-            return_value=fake_session,
+        The fake server answers 301 to a client that does not follow
+        redirects and 200 to one that does, so this fails on behavior if
+        redirect following is ever re-enabled."""
+        fake_session = MagicMock()
+
+        def _get(url, *, timeout=None, allow_redirects=True, **kwargs):
+            response = MagicMock()
+            response.status_code = 200 if allow_redirects else 301
+            response.text = "version: STSv1"
+            response.headers = {"Content-Type": "text/plain"}
+            return response
+
+        fake_session.get.side_effect = _get
+        with (
+            patch("checkdmarc.mta_sts.requests.Session", return_value=fake_session),
+            self.assertRaises(checkdmarc.mta_sts.MTASTSPolicyDownloadError) as ctx,
         ):
             checkdmarc.mta_sts.download_mta_sts_policy("example.com")
-        self.assertIs(fake_session.get.call_args.kwargs["allow_redirects"], False)
+        self.assertIn("301", str(ctx.exception))
 
 
 class TestCheckMtaStsSuccess(unittest.TestCase):

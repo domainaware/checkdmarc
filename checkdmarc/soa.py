@@ -62,11 +62,18 @@ def soa_rname_to_email(rname: str) -> str:
     holding a space or ``@``) is returned as an RFC 5322 quoted-string, so
     the result is always a syntactically valid address; a local part
     holding a character no valid address can carry (a control character or
-    a byte outside ASCII) raises ``ValueError``.
+    a byte outside ASCII) raises ``ValueError``. Escapes in the domain
+    labels are decoded the same way, and because a domain has no quoted
+    form to fall back to, a domain that does not decode to a plain
+    dot-atom raises ``ValueError``.
     """
     s = rname.rstrip(".")
-    local_chars: list[str] = []
-    domain: str | None = None
+    # Decode the whole name into labels, not just the first one: the
+    # domain labels can carry RFC 1035 escapes too (e.g. ex\097mple), and
+    # copying them verbatim would leave DNS presentation syntax in the
+    # returned address.
+    labels: list[str] = []
+    current_chars: list[str] = []
     i = 0
     while i < len(s):
         char = s[i]
@@ -78,24 +85,35 @@ def soa_rname_to_email(rname: str) -> str:
                     raise ValueError(
                         f"Invalid SOA RNAME (escape value over 255): {rname!r}"
                     )
-                local_chars.append(chr(value))
+                current_chars.append(chr(value))
                 i += 4
             elif i + 1 < len(s):
-                local_chars.append(s[i + 1])
+                current_chars.append(s[i + 1])
                 i += 2
             else:
                 raise ValueError(f"Invalid SOA RNAME (trailing backslash): {rname!r}")
         elif char == ".":
-            domain = s[i + 1 :]
-            break
-        else:
-            local_chars.append(char)
+            labels.append("".join(current_chars))
+            current_chars = []
             i += 1
-    if domain is None:
+        else:
+            current_chars.append(char)
+            i += 1
+    labels.append("".join(current_chars))
+    if len(labels) < 2:
         raise ValueError(f"Invalid SOA RNAME (no unescaped dot): {rname!r}")
-    local = "".join(local_chars)
+    local = labels[0]
+    domain = ".".join(labels[1:])
     if not local or not domain:
         raise ValueError(f"Invalid SOA RNAME split: {rname!r}")
+    # The decoded domain must itself read as a valid email domain (a
+    # dot-atom, RFC 5322 section 3.4.1); unlike the local part, there is
+    # no quoted form to fall back to.
+    if _DOT_ATOM_TEXT_REGEX.fullmatch(domain) is None:
+        raise ValueError(
+            f"Invalid SOA RNAME (the domain part does not decode to a "
+            f"valid email domain): {rname!r}"
+        )
     if _DOT_ATOM_TEXT_REGEX.fullmatch(local) is None:
         # Decoded escapes can produce characters an unquoted local part
         # cannot carry (e.g. "\@" -> "@", "\032" -> a space). RFC 5322

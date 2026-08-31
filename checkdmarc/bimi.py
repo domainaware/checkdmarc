@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import gzip
 import hashlib
+import ipaddress
 import logging
 import re
 from collections.abc import Sequence
@@ -185,8 +186,12 @@ _BIMI_VERSION_PREFIX_REGEX = re.compile(
 # character set below excludes both spaces and commas.
 _BIMI_URI_REGEX = re.compile(
     r"https://"
-    r"(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+"  # host labels before the last dot
-    r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"  # final host label
+    # The host: labels before the last dot, then the final label. Captured
+    # so parse_bimi_record can reject a dotted-quad IPv4 literal, which
+    # satisfies the label grammar but is not the fully qualified domain
+    # name the draft requires.
+    r"(?P<host>(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+"
+    r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)"
     r"(?::\d{1,5})?"  # optional port
     # path and query: RFC 3986 characters, with "%" only as a valid
     # two-hex-digit percent-escape (a bare "%" or "%zz" is malformed).
@@ -1166,7 +1171,20 @@ def parse_bimi_record(
             tags[tag]["name"] = BIMI_TAGS[tag]["name"]
             tags[tag]["description"] = BIMI_TAGS[tag]["description"]
         if tag in ("l", "a") and tag_value != "":
-            if not _BIMI_URI_REGEX.fullmatch(tag_value):
+            uri_match = _BIMI_URI_REGEX.fullmatch(tag_value)
+            valid_uri = uri_match is not None
+            if uri_match is not None:
+                try:
+                    # A dotted-quad like 192.0.2.1 satisfies the label
+                    # grammar, but section 4.3 of the BIMI draft requires
+                    # the host to be a fully qualified domain name, so an
+                    # IPv4 literal is invalid. (An IPv6 literal cannot
+                    # match: ":" is not a label character.)
+                    ipaddress.IPv4Address(uri_match.group("host"))
+                    valid_uri = False
+                except ValueError:
+                    pass
+            if not valid_uri:
                 message = (
                     f"The {tag} tag value must be empty or a single HTTPS "
                     "URI containing a fully qualified domain name, with any "

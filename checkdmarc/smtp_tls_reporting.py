@@ -49,8 +49,13 @@ SMTPTLSREPORTING_VERSION_REGEX_STRING = r"v=TLSRPTv1"
 # The shared utils regexes are unsuitable here: HTTPS_REGEX allows raw
 # spaces, and MAILTO_REGEX_STRING allows raw "!" plus the DMARC-only
 # "!size" suffix, which RFC 8460 does not define.
+# The local part is dot-separated atoms: RFC 6068 mailto URIs carry an
+# RFC 5322 addr-spec, whose dot-atom form requires a nonempty run of atom
+# characters between dots, so a leading, trailing, or doubled dot (e.g.
+# mailto:.alerts@example.com) is invalid.
+_TLSRPT_MAILTO_ATOM = r"(?:[A-Za-z0-9\-_~$&'()*+=]|%[0-9A-Fa-f]{2})+"
 TLSRPT_MAILTO_REGEX_STRING = (
-    r"mailto:(?:[A-Za-z0-9\-._~$&'()*+=]|%[0-9A-Fa-f]{2})+"
+    rf"mailto:{_TLSRPT_MAILTO_ATOM}(?:\.{_TLSRPT_MAILTO_ATOM})*"
     r"@(?:[A-Za-z0-9\-]+\.)*[A-Za-z0-9\-]+"
 )
 # Path, query, and fragment characters per RFC 3986: pchar plus "/" and

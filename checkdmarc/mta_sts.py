@@ -59,10 +59,12 @@ MTA_STS_TAG_VALUE_REGEX_STRING = (
 # dot-separated labels of letters, digits, and interior hyphens (RFC 5321
 # section 4.1.2). A wildcard is only allowed as the complete left-most
 # label, so "mail.*.example.com" and "*example.com" are invalid.
+# Each label is capped at 63 octets (RFC 1035 section 2.3.4): a first
+# and last alphanumeric character around at most 61 interior characters.
 MTA_STS_MX_REGEX_STRING = (
     r"(?:\*\.)?"
-    r"[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?"
-    r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?)*"
+    r"[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?"
+    r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?)*"
 )
 MTA_STS_MX_REGEX = re.compile(MTA_STS_MX_REGEX_STRING)
 

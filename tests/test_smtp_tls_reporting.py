@@ -205,6 +205,25 @@ class Test(unittest.TestCase):
         )
         self.assertIn("mailto:a%21b@example.com", result["tags"]["rua"]["value"])
 
+    def testMailtoLocalPartDotAtomRules(self):
+        """The RFC 5322 addr-spec dot-atom requires nonempty atoms between
+        dots, so a leading, trailing, or doubled dot in the local part is
+        invalid while inner single dots are fine"""
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            "v=TLSRPTv1; rua=mailto:first.last@example.com"
+        )
+        self.assertIn("mailto:first.last@example.com", result["tags"]["rua"]["value"])
+        for bad in (
+            "v=TLSRPTv1; rua=mailto:.alerts@example.com",
+            "v=TLSRPTv1; rua=mailto:alerts.@example.com",
+            "v=TLSRPTv1; rua=mailto:a..b@example.com",
+        ):
+            self.assertRaises(
+                checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError,
+                checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+                bad,
+            )
+
     def testHttpsUriIpv6Literal(self):
         """An https report URI with a bracketed IPv6 literal authority is a
         valid RFC 3986 URI and must be accepted"""

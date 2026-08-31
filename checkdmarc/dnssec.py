@@ -332,7 +332,8 @@ def check_dnssec(
     - The signature over the DNSKEY record set verifies against a DS-matched
       key (RFC 4035 section 5)
     - For a domain below the zone apex, a record set at the domain itself
-      carries a signature that verifies against those keys
+      (MX, A, AAAA, NS, TXT, or CNAME) carries a signature that verifies
+      against those keys
 
     ``False`` covers every other outcome, and the log tells them apart: an
     unsigned zone (no DS record at the parent — including a zone that
@@ -497,11 +498,18 @@ def check_dnssec(
 
     # The domain sits below the zone apex, so DNSSEC only covers it if its
     # own records carry signatures that verify against the zone's keys.
+    # The types below are the ones an email-security check can expect at
+    # such a name; a name that only holds some other type (or no records
+    # at all) returns False, as the docstring says — proving a signed
+    # zone covers an empty name would take NSEC/NSEC3 authenticated
+    # denial, which this bounded check does not implement.
     keyring = {zone_name: dnskey_rrset}
     rdatatypes = [
         dns.rdatatype.MX,
         dns.rdatatype.A,
+        dns.rdatatype.AAAA,
         dns.rdatatype.NS,
+        dns.rdatatype.TXT,
         dns.rdatatype.CNAME,
     ]
     for rdatatype in rdatatypes:
