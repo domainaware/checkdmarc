@@ -32,7 +32,7 @@ Please consider [sponsoring my work](https://github.com/sponsors/seanthegeek) if
 - MX records
   - Preference
   - IPv4 and IPv6 addresses
-  - Checks for STARTTLS
+  - Optional STARTTLS and TLS testing (pass `--check-mx-tls`)
   - Use of DNSSEC/TLSA/DANE to pin certificates
 - MTA-STS
 - SMTP TLS reporting

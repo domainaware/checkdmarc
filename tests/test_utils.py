@@ -12,6 +12,7 @@ import dns.rdata
 import dns.rdataclass
 import dns.rdatatype
 import dns.resolver
+import dns.rrset
 import httpx
 from expiringdict import ExpiringDict
 
@@ -368,6 +369,94 @@ class TestGetSoaRecord(unittest.TestCase):
                 "example.com",
             )
 
+    def testChildZoneOwnSoaIsReturned(self):
+        """A delegated child zone's own SOA is returned, not the parent's
+
+        RFC 2181 section 7: the SOA record sits at the top of each zone, and
+        a delegated subdomain is its own zone. The old code always queried
+        the PSL base domain, so a child zone got its parent's SOA (and the
+        parent's contact address)."""
+        child_soa = "ns1.sub.example.com. admin.sub.example.com. 1 2 3 4 5"
+        with patch(
+            "checkdmarc.utils.query_dns", return_value=[child_soa]
+        ) as mock_query:
+            result = checkdmarc.utils.get_soa_record("sub.example.com")
+        self.assertEqual(result, child_soa)
+        self.assertEqual(mock_query.call_args.args[0], "sub.example.com")
+        self.assertEqual(mock_query.call_count, 1)
+
+    def testFallbackToBaseDomainOnNoAnswer(self):
+        """A name inside its parent's zone (no SOA of its own) falls back to
+        the base domain's SOA"""
+        base_soa = "ns1.example.com. admin.example.com. 1 2 3 4 5"
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=[dns.resolver.NoAnswer(), [base_soa]],
+        ) as mock_query:
+            result = checkdmarc.utils.get_soa_record("www.example.com")
+        self.assertEqual(result, base_soa)
+        self.assertEqual(mock_query.call_args.args[0], "example.com")
+
+    def testFallbackToBaseDomainOnNXDOMAIN(self):
+        """A nonexistent subdomain still yields the base domain's SOA"""
+        base_soa = "ns1.example.com. admin.example.com. 1 2 3 4 5"
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=[dns.resolver.NXDOMAIN(), [base_soa]],
+        ):
+            result = checkdmarc.utils.get_soa_record("nope.example.com")
+        self.assertEqual(result, base_soa)
+
+    def testSubdomainNoAnswerAnywhere(self):
+        """No SOA at the name or the base domain raises DNSException"""
+        with patch("checkdmarc.utils.query_dns", side_effect=dns.resolver.NoAnswer()):
+            self.assertRaises(
+                checkdmarc.utils.DNSException,
+                checkdmarc.utils.get_soa_record,
+                "www.example.com",
+            )
+
+    def testBaseDomainFallbackNxdomain(self):
+        """NXDOMAIN on both the domain and its base domain raises
+        DNSExceptionNXDOMAIN naming the base domain"""
+        with (
+            patch("checkdmarc.utils.query_dns", side_effect=dns.resolver.NXDOMAIN()),
+            self.assertRaises(checkdmarc.utils.DNSExceptionNXDOMAIN) as ctx,
+        ):
+            checkdmarc.utils.get_soa_record("www.example.com")
+        self.assertIn("example.com does not exist", str(ctx.exception))
+
+    def testBaseDomainFallbackGenericError(self):
+        """A non-NXDOMAIN DNS error on the base-domain fallback is wrapped
+        in DNSException"""
+        with (
+            patch(
+                "checkdmarc.utils.query_dns",
+                side_effect=[
+                    dns.resolver.NoAnswer(),
+                    dns.exception.DNSException("SERVFAIL at the base domain"),
+                ],
+            ),
+            self.assertRaises(checkdmarc.utils.DNSException) as ctx,
+        ):
+            checkdmarc.utils.get_soa_record("www.example.com")
+        self.assertIn("SERVFAIL at the base domain", str(ctx.exception))
+
+    def testIntermediateZoneSoa(self):
+        """A delegated zone between the queried name and the base domain is
+        found by the ancestor walk instead of being skipped"""
+        soa = "dns0.cl.cam.ac.uk. hostmaster.cl.cam.ac.uk. 1 2 3 4 5"
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=[dns.resolver.NoAnswer(), [soa]],
+        ) as query:
+            result = checkdmarc.utils.get_soa_record("www.cl.cam.ac.uk")
+        self.assertEqual(result, soa)
+        self.assertEqual(
+            [call.args[0] for call in query.call_args_list],
+            ["www.cl.cam.ac.uk", "cl.cam.ac.uk"],
+        )
+
 
 class TestGetNameservers(unittest.TestCase):
     def testSuccess(self):
@@ -455,47 +544,198 @@ class TestGetARecords(unittest.TestCase):
             )
 
 
+def _fake_mx_resolver(rdata_texts, qname="example.com."):
+    """Build a resolver mock whose resolve() answers an MX query with real
+    dnspython rdata objects, so get_mx_record_set parses actual
+    rdata.preference / rdata.exchange values rather than mock stand-ins."""
+    resolver = _fake_resolver()
+    resolver.resolve.return_value = dns.rrset.from_text(
+        qname, 300, "IN", "MX", *rdata_texts
+    )
+    return resolver
+
+
 class TestGetMxRecords(unittest.TestCase):
+    def setUp(self):
+        # get_mx_record_set caches parsed answers in the module-level DNS
+        # cache; give each test a fresh one so tests can't see each other's
+        # answers for the same domain name.
+        patcher = patch.object(
+            checkdmarc.utils,
+            "DNS_CACHE",
+            ExpiringDict(max_len=100, max_age_seconds=60),
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def testSuccess(self):
-        with patch(
-            "checkdmarc.utils.query_dns",
-            return_value=["20 mx2.example.com.", "10 mx1.example.com."],
-        ):
-            result = checkdmarc.utils.get_mx_records("example.com")
+        resolver = _fake_mx_resolver(["20 mx2.example.com.", "10 mx1.example.com."])
+        result = checkdmarc.utils.get_mx_records("example.com", resolver=resolver)
         # Sorted by preference
         self.assertEqual(result[0]["hostname"], "mx1.example.com")
         self.assertEqual(result[0]["preference"], 10)
         self.assertEqual(result[1]["preference"], 20)
 
     def testNullMXReturnsEmpty(self):
-        """RFC 7505 'null MX' ('0 ') means the domain doesn't accept mail"""
-        with patch("checkdmarc.utils.query_dns", return_value=["0 "]):
-            result = checkdmarc.utils.get_mx_records("example.com")
-        self.assertEqual(result, [])
+        """A lone RFC 7505 null MX ('0 .') means the domain doesn't accept
+        mail: no hosts, and get_mx_record_set flags it as a null MX"""
+        resolver = _fake_mx_resolver(["0 ."])
+        result = checkdmarc.utils.get_mx_record_set("example.com", resolver=resolver)
+        self.assertEqual(result["hosts"], [])
+        self.assertTrue(result["null_mx"])
+        self.assertEqual(result["warnings"], [])
+        # The plain hosts-only helper keeps its historical contract
+        self.assertEqual(
+            checkdmarc.utils.get_mx_records("example.com", resolver=resolver), []
+        )
+
+    def testNullMXAlongsideAnotherRootTarget(self):
+        """A null MX coexisting with any additional MX record — even another
+        root-target record like '10 .' — is an RFC 7505 section 3 violation,
+        not a null MX"""
+        resolver = _fake_mx_resolver(["0 .", "10 ."])
+        result = checkdmarc.utils.get_mx_record_set("example.com", resolver=resolver)
+        self.assertFalse(result["null_mx"])
+        self.assertEqual(result["hosts"], [])
+        self.assertEqual(result["record_count"], 2)
+        self.assertTrue(
+            any("RFC 7505 section 3 requires" in w for w in result["warnings"]),
+            result["warnings"],
+        )
+
+    def testNullMXAlongsideOtherRecords(self):
+        """A null MX coexisting with real MX records violates RFC 7505
+        section 3: warn, and never emit an empty-hostname host entry"""
+        resolver = _fake_mx_resolver(["0 .", "10 mail.example.com."])
+        result = checkdmarc.utils.get_mx_record_set("example.com", resolver=resolver)
+        self.assertFalse(result["null_mx"])
+        self.assertEqual(len(result["hosts"]), 1)
+        self.assertEqual(result["hosts"][0]["hostname"], "mail.example.com")
+        self.assertTrue(any("RFC 7505 section 3" in w for w in result["warnings"]))
+
+    def testNonZeroPreferenceRootTargetIsMalformed(self):
+        """'10 .' is not a null MX (which requires preference 0) — it is a
+        malformed record and must not become a host entry"""
+        resolver = _fake_mx_resolver(["10 ."])
+        result = checkdmarc.utils.get_mx_record_set("example.com", resolver=resolver)
+        self.assertEqual(result["hosts"], [])
+        self.assertFalse(result["null_mx"])
+        self.assertTrue(any("malformed" in w for w in result["warnings"]))
+
+    def testIPAddressTargetWarns(self):
+        """RFC 5321 section 5.1: the MX data field must be a domain name,
+        not an IP address literal"""
+        resolver = _fake_mx_resolver(["10 192.0.2.1."])
+        result = checkdmarc.utils.get_mx_record_set("example.com", resolver=resolver)
+        self.assertEqual(len(result["hosts"]), 1)
+        self.assertTrue(
+            any(
+                "IP address" in w and "RFC 5321 section 5.1" in w
+                for w in result["warnings"]
+            )
+        )
+
+    def testInvalidHostnameSyntaxWarns(self):
+        """RFC 5321 section 2.3.5 hostname syntax: labels are letters,
+        digits, and interior hyphens — no underscores, no edge hyphens"""
+        for target in ("mail_1.example.com.", "-bad-.example.com."):
+            with self.subTest(target=target):
+                resolver = _fake_mx_resolver([f"10 {target}"])
+                result = checkdmarc.utils.get_mx_record_set(
+                    "example.com", resolver=resolver
+                )
+                self.assertEqual(len(result["hosts"]), 1)
+                self.assertTrue(
+                    any("RFC 5321 section 2.3.5" in w for w in result["warnings"])
+                )
+
+    def testValidHostnameNoSyntaxWarning(self):
+        """An ordinary hostname produces no syntax warnings"""
+        resolver = _fake_mx_resolver(["10 mail-1.example.com."])
+        result = checkdmarc.utils.get_mx_record_set("example.com", resolver=resolver)
+        self.assertEqual(result["warnings"], [])
+
+    def testAnswersAreCached(self):
+        """The second lookup for the same domain is served from the cache"""
+        resolver = _fake_mx_resolver(["10 mail.example.com."])
+        first = checkdmarc.utils.get_mx_record_set("example.com", resolver=resolver)
+        second = checkdmarc.utils.get_mx_record_set("example.com", resolver=resolver)
+        self.assertEqual(first, second)
+        self.assertEqual(resolver.resolve.call_count, 1)
 
     def testNXDOMAIN(self):
-        with patch("checkdmarc.utils.query_dns", side_effect=dns.resolver.NXDOMAIN()):
-            self.assertRaises(
-                checkdmarc.utils.DNSExceptionNXDOMAIN,
-                checkdmarc.utils.get_mx_records,
-                "example.com",
-            )
+        resolver = _fake_resolver()
+        resolver.resolve.side_effect = dns.resolver.NXDOMAIN()
+        self.assertRaises(
+            checkdmarc.utils.DNSExceptionNXDOMAIN,
+            checkdmarc.utils.get_mx_records,
+            "example.com",
+            resolver=resolver,
+        )
 
     def testNoAnswerReturnsEmpty(self):
-        with patch("checkdmarc.utils.query_dns", side_effect=dns.resolver.NoAnswer()):
-            result = checkdmarc.utils.get_mx_records("example.com")
+        resolver = _fake_resolver()
+        resolver.resolve.side_effect = dns.resolver.NoAnswer()
+        result = checkdmarc.utils.get_mx_records("example.com", resolver=resolver)
         self.assertEqual(result, [])
+        # "No MX records" is not the same statement as a null MX record
+        record_set = checkdmarc.utils.get_mx_record_set(
+            "example.com", resolver=resolver
+        )
+        self.assertFalse(record_set["null_mx"])
 
     def testGenericError(self):
-        with patch(
-            "checkdmarc.utils.query_dns",
-            side_effect=dns.exception.DNSException("DNS lookup failed"),
-        ):
-            self.assertRaises(
-                checkdmarc.utils.DNSException,
-                checkdmarc.utils.get_mx_records,
-                "example.com",
+        resolver = _fake_resolver()
+        resolver.resolve.side_effect = dns.exception.DNSException("DNS lookup failed")
+        self.assertRaises(
+            checkdmarc.utils.DNSException,
+            checkdmarc.utils.get_mx_records,
+            "example.com",
+            resolver=resolver,
+        )
+
+    def testTransientErrorIsRetried(self):
+        """A LifetimeTimeout is retried before the answer comes back"""
+        resolver = _fake_mx_resolver(["10 mail.example.com."])
+        answer = resolver.resolve.return_value
+        resolver.resolve.side_effect = [dns.resolver.LifetimeTimeout(), answer]
+        result = checkdmarc.utils.get_mx_records(
+            "example.com", resolver=resolver, retries=1
+        )
+        self.assertEqual(result[0]["hostname"], "mail.example.com")
+        self.assertEqual(resolver.resolve.call_count, 2)
+
+    def testTransientErrorGivesUp(self):
+        """A persistent transient error is re-raised once retries run out"""
+        resolver = _fake_resolver()
+        resolver.resolve.side_effect = dns.resolver.LifetimeTimeout(
+            timeout=1.0, errors=[]
+        )
+        self.assertRaises(
+            checkdmarc.utils.DNSException,
+            checkdmarc.utils.get_mx_records,
+            "example.com",
+            resolver=resolver,
+            retries=0,
+        )
+
+    def testNameserverListConfiguresResolver(self):
+        """A caller-supplied nameserver list is applied to the constructed
+        resolver, and the lifetime scales with the number of entries"""
+        rrset = dns.rrset.from_text(
+            "ns-config-test.example.", 300, "IN", "MX", "10 mail.example.com."
+        )
+        fake_resolver = MagicMock()
+        fake_resolver.resolve.return_value = rrset
+        with patch("dns.resolver.Resolver", return_value=fake_resolver):
+            result = checkdmarc.utils.get_mx_record_set(
+                "ns-config-test.example",
+                nameservers=["192.0.2.53", "192.0.2.54"],
             )
+        self.assertEqual([h["hostname"] for h in result["hosts"]], ["mail.example.com"])
+        self.assertEqual(fake_resolver.nameservers, ["192.0.2.53", "192.0.2.54"])
+        # DEFAULT_DNS_TIMEOUT (2.0s) scaled by two nameservers
+        self.assertEqual(fake_resolver.lifetime, 4.0)
 
 
 class TestEncryptedDnsNameservers(unittest.TestCase):

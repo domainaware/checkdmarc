@@ -29,9 +29,10 @@ from checkdmarc.utils import (
     DNSException,
     MXHost,
     get_a_records,
-    get_mx_records,
+    get_mx_record_set,
     get_reverse_dns,
     normalize_domain,
+    query_dns,
 )
 
 """Copyright 2019-2023 Sean Whalen
@@ -223,8 +224,11 @@ def test_starttls(
                 server.starttls(context=ssl_context)
                 server.ehlo()
                 starttls = True
-                if cache is not None:
-                    cache[hostname] = {"starttls": starttls, "error": None}
+            # Cache the answer either way: a server that does not offer
+            # STARTTLS is just as conclusive as one that does, and caching
+            # only successes meant re-probing such servers on every call.
+            if cache is not None:
+                cache[hostname] = {"starttls": starttls, "error": None}
             return starttls
 
     except socket.gaierror:
@@ -298,7 +302,8 @@ def test_starttls(
 def get_mx_hosts(
     domain: str,
     *,
-    skip_tls: bool = False,
+    check_mx_tls: bool = False,
+    skip_tls: bool | None = None,
     approved_mx_hostnames: list[str] | None = None,
     approved_hostnames: list[str] | None = None,
     mta_sts_mx_patterns: list[str] | None = None,
@@ -313,7 +318,10 @@ def get_mx_hosts(
 
     Args:
         domain (str): A domain name
-        skip_tls (bool): Skip STARTTLS testing
+        check_mx_tls (bool): Test each MX host for STARTTLS and TLS support
+                             (off by default)
+        skip_tls (bool): Deprecated, no effect — TLS testing is opt-in via
+                         ``check_mx_tls``
         approved_mx_hostnames (list): A list of approved MX hostname substrings
         approved_hostnames (list): Deprecated alias for ``approved_mx_hostnames``
         mta_sts_mx_patterns (list): A list of MX patterns from MTA-STS
@@ -347,19 +355,43 @@ def get_mx_hosts(
         )
         if approved_mx_hostnames is None:
             approved_mx_hostnames = approved_hostnames
+    if skip_tls is not None:
+        _warnings.warn(
+            "The skip_tls parameter is deprecated and has no effect; "
+            "TLS testing is opt-in via check_mx_tls",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     hosts = []
     warnings = []
     hostnames = set()
     dupe_hostnames = set()
     logger.debug(f"Getting MX records for {domain}")
-    mx_records = get_mx_records(
+    mx_record_set = get_mx_record_set(
         domain,
         nameservers=nameservers,
         resolver=resolver,
         timeout=timeout,
         retries=retries,
     )
-    for record in mx_records:
+    warnings.extend(mx_record_set["warnings"])
+    if mx_record_set["null_mx"]:
+        # A null MX record (RFC 7505) is a deliberate statement, unlike
+        # having no MX records at all — surface the difference.
+        warnings.append(
+            f"{domain} has a null MX record (RFC 7505): the domain "
+            "explicitly does not accept mail"
+        )
+    elif mx_record_set["record_count"] == 0:
+        # Only an actual empty MX answer triggers the implicit MX rule;
+        # malformed records (like a lone "10 .") produce no usable
+        # hosts but are MX records, and already carry their own warnings.
+        warnings.append(
+            f"{domain} has no MX records; mail could still be delivered to "
+            "the address of an A or AAAA record for the domain, if one "
+            "exists (the implicit MX rule in RFC 5321 section 5.1)"
+        )
+    for record in mx_record_set["hosts"]:
         hosts.append(
             {
                 "preference": record["preference"],
@@ -392,6 +424,32 @@ def get_mx_hosts(
             hostname, mta_sts_mx_patterns
         ):
             warnings.append(f"{hostname} is not included in the MTA-STS policy")
+
+        # RFC 2181 section 10.3: an MX record must not point at a CNAME
+        # alias. Address lookups follow CNAME chains silently, so ask for
+        # the CNAME record itself — an answer means the target is an alias.
+        # A failed lookup only skips this check (the address lookup below
+        # reports actual resolution problems).
+        try:
+            cname_answers = query_dns(
+                hostname,
+                "CNAME",
+                nameservers=nameservers,
+                resolver=resolver,
+                timeout=timeout,
+                retries=retries,
+            )
+            if len(cname_answers) > 0:
+                warnings.append(
+                    f"The MX record for {domain} points at {hostname}, "
+                    f"which is a CNAME alias for {cname_answers[0]}; "
+                    "MX records must not point at aliases "
+                    "(RFC 2181 section 10.3)"
+                )
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+            pass  # Not an alias
+        except dns.exception.DNSException as error:
+            logger.debug(f"CNAME check for MX host {hostname} failed: {error}")
 
         try:
             dnssec = False
@@ -466,10 +524,10 @@ def get_mx_hosts(
                         f"{reverse_hostname} do not resolve to "
                         f"{address}"
                     )
-        if not skip_tls and platform.system() == "Windows":
+        if check_mx_tls and platform.system() == "Windows":
             logger.warning("Testing TLS is not supported on Windows")
-            skip_tls = True
-        if skip_tls:
+            check_mx_tls = False
+        if not check_mx_tls:
             logger.debug(f"Skipping TLS/SSL tests on {hostname}")
         else:
             try:
@@ -477,7 +535,15 @@ def get_mx_hosts(
                 tls = starttls
                 if not starttls:
                     warnings.append(f"STARTTLS is not supported on {hostname}.")
-                    tls = test_tls(hostname, cache=TLS_CACHE)
+                    try:
+                        tls = test_tls(hostname, cache=TLS_CACHE)
+                    except SMTPError as error:
+                        # Name the probe that failed: this fallback tests
+                        # implicit TLS on port 465, not the port 25
+                        # STARTTLS session that was already reported.
+                        raise SMTPError(
+                            f"implicit TLS on port 465 failed: {error}"
+                        ) from error
 
                     if not tls:
                         warnings.append(f"SSL/TLS is not supported on {hostname}.")
@@ -505,7 +571,8 @@ def check_mx(
     *,
     approved_mx_hostnames: list[str] | None = None,
     mta_sts_mx_patterns: list[str] | None = None,
-    skip_tls: bool = False,
+    check_mx_tls: bool = False,
+    skip_tls: bool | None = None,
     nameservers: Sequence[str | Nameserver] | None = None,
     resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
@@ -517,7 +584,10 @@ def check_mx(
 
     Args:
         domain (str): A domain name
-        skip_tls (bool): Skip STARTTLS testing
+        check_mx_tls (bool): Test each MX host for STARTTLS and TLS support
+                             (off by default)
+        skip_tls (bool): Deprecated, no effect — TLS testing is opt-in via
+                         ``check_mx_tls``
         approved_mx_hostnames (list): A list of approved MX hostname substrings
         mta_sts_mx_patterns (list): A list of MX patterns from MTA-STS
         nameservers (list): A list of nameservers to query
@@ -550,6 +620,7 @@ def check_mx(
     try:
         mx_results = get_mx_hosts(
             domain,
+            check_mx_tls=check_mx_tls,
             skip_tls=skip_tls,
             approved_mx_hostnames=approved_mx_hostnames,
             mta_sts_mx_patterns=mta_sts_mx_patterns,

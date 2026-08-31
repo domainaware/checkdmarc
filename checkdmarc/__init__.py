@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import warnings as _warnings
 from collections.abc import Sequence
 from csv import DictWriter
 from io import StringIO
@@ -96,7 +97,8 @@ def check_domains(
     parked: bool = False,
     approved_nameservers: Sequence[str | Nameserver] | None = None,
     approved_mx_hostnames: list[str] | None = None,
-    skip_tls: bool = False,
+    check_mx_tls: bool = False,
+    skip_tls: bool | None = None,
     bimi_selector: str = "default",
     include_tag_descriptions: bool = False,
     nameservers: Sequence[str | Nameserver] | None = None,
@@ -115,7 +117,10 @@ def check_domains(
         parked (bool): Indicates that the domains are parked
         approved_nameservers (list): A list of approved nameserver substrings
         approved_mx_hostnames (list): A list of approved MX hostname substrings
-        skip_tls (bool): Skip STARTTLS testing
+        check_mx_tls (bool): Test each MX host for STARTTLS and TLS support
+                             (off by default)
+        skip_tls (bool): Deprecated, no effect — TLS testing is opt-in via
+                         ``check_mx_tls``
         bimi_selector (str): The BIMI selector to test
         include_tag_descriptions (bool): Include descriptions of
                                                tags and/or tag values in the
@@ -135,7 +140,10 @@ def check_domains(
 
        - ``domain`` - The domain name
        - ``base_domain`` - The base domain
-       - ``dnssec`` - DNSSEC validation status (bool)
+       - ``dnssec`` - ``True`` when the domain's zone has a DS record at its
+         parent and the zone's DNSKEY and record signatures verify against
+         it; ``False`` for unsigned or broken zones (bool — see
+         :func:`checkdmarc.dnssec.check_dnssec` for the trust assumptions)
        - ``soa`` - Start of Authority record information
        - ``ns`` - Nameserver information and warnings
        - ``mx`` - Mail exchanger records and STARTTLS test results
@@ -145,6 +153,13 @@ def check_domains(
        - ``mta_sts`` - MTA-STS policy validation results
        - ``bimi`` - BIMI record validation results (optional, only if bimi_selector is not None)
     """
+    if skip_tls is not None:
+        _warnings.warn(
+            "The skip_tls parameter is deprecated and has no effect; "
+            "TLS testing is opt-in via check_mx_tls",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     domains = sorted(
         {normalize_domain(d.rstrip(".\r\n").strip().split(",")[0]) for d in domains}
     )
@@ -201,7 +216,7 @@ def check_domains(
             domain,
             approved_mx_hostnames=approved_mx_hostnames,
             mta_sts_mx_patterns=mta_sts_mx_patterns,
-            skip_tls=skip_tls,
+            check_mx_tls=check_mx_tls,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,

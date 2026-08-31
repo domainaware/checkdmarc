@@ -13,9 +13,22 @@ from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import dns.exception
+import dns.resolver
 from expiringdict import ExpiringDict
 
 import checkdmarc.smtp
+
+
+def _mx_record_set(hosts, *, warnings=None, null_mx=False, record_count=None):
+    """Build a get_mx_record_set-shaped return value for mocking."""
+    if record_count is None:
+        record_count = len(hosts) + (1 if null_mx else 0)
+    return {
+        "hosts": hosts,
+        "warnings": warnings if warnings is not None else [],
+        "null_mx": null_mx,
+        "record_count": record_count,
+    }
 
 
 class TestTestTLS(unittest.TestCase):
@@ -191,6 +204,21 @@ class TestTestSTARTTLS(unittest.TestCase):
         self.assertFalse(result)
         fake_server.starttls.assert_not_called()
 
+    def testNoSTARTTLSExtensionResultIsCached(self):
+        """A negative STARTTLS result is cached, so the server is not
+        re-probed on the next call"""
+        cache = ExpiringDict(max_len=10, max_age_seconds=60)
+        fake_server = MagicMock()
+        fake_server.__enter__.return_value = fake_server
+        fake_server.has_extn.return_value = False
+        with patch("smtplib.SMTP", return_value=fake_server) as mock_smtp:
+            first = checkdmarc.smtp.test_starttls("mail.example.com", cache=cache)
+            second = checkdmarc.smtp.test_starttls("mail.example.com", cache=cache)
+        self.assertFalse(first)
+        self.assertFalse(second)
+        self.assertEqual(cache["mail.example.com"], {"starttls": False, "error": None})
+        self.assertEqual(mock_smtp.call_count, 1)
+
     def testCacheHitSuccess(self):
         """Cached STARTTLS success returns without touching the network"""
         cache = ExpiringDict(max_len=10, max_age_seconds=60)
@@ -264,10 +292,30 @@ class TestGetMxHosts(unittest.TestCase):
         reverse=None,
         dnssec=False,
         tlsa=None,
+        mx_warnings=None,
+        null_mx=False,
+        cname=None,
     ):
-        """Return a list of patch context managers seeding the DNS helpers."""
+        """Return a list of patch context managers seeding the DNS helpers.
+
+        ``cname=None`` makes the CNAME alias check see NoAnswer (the target
+        is not an alias); pass a list to make the target an alias.
+        """
         return [
-            patch("checkdmarc.smtp.get_mx_records", return_value=mx_records),
+            patch(
+                "checkdmarc.smtp.get_mx_record_set",
+                return_value=_mx_record_set(
+                    mx_records, warnings=mx_warnings, null_mx=null_mx
+                ),
+            ),
+            (
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+                if cname is None
+                else patch("checkdmarc.smtp.query_dns", return_value=cname)
+            ),
             patch(
                 "checkdmarc.smtp.get_a_records",
                 return_value=a_records if a_records is not None else ["192.0.2.1"],
@@ -284,7 +332,7 @@ class TestGetMxHosts(unittest.TestCase):
         ]
 
     def testSuccessSkipTLS(self):
-        """A clean single-MX domain returns no warnings when skip_tls=True"""
+        """A clean single-MX domain returns no warnings by default"""
         patches = self._patch_dns(
             [self._mx("mail.example.com")],
             a_records=["192.0.2.1"],
@@ -293,7 +341,7 @@ class TestGetMxHosts(unittest.TestCase):
         for p in patches:
             p.start()
         try:
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         finally:
             for p in patches:
                 p.stop()
@@ -313,7 +361,7 @@ class TestGetMxHosts(unittest.TestCase):
         for p in patches:
             p.start()
         try:
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         finally:
             for p in patches:
                 p.stop()
@@ -332,7 +380,6 @@ class TestGetMxHosts(unittest.TestCase):
         try:
             result = checkdmarc.smtp.get_mx_hosts(
                 "example.com",
-                skip_tls=True,
                 approved_mx_hostnames=["good.example.com"],
             )
         finally:
@@ -353,7 +400,6 @@ class TestGetMxHosts(unittest.TestCase):
             with self.assertWarns(DeprecationWarning):
                 result = checkdmarc.smtp.get_mx_hosts(
                     "example.com",
-                    skip_tls=True,
                     approved_hostnames=["good.example.com"],
                 )
         finally:
@@ -372,7 +418,6 @@ class TestGetMxHosts(unittest.TestCase):
         try:
             result = checkdmarc.smtp.get_mx_hosts(
                 "example.com",
-                skip_tls=True,
                 mta_sts_mx_patterns=["*.other.example"],
             )
         finally:
@@ -392,7 +437,7 @@ class TestGetMxHosts(unittest.TestCase):
         for p in patches:
             p.start()
         try:
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         finally:
             for p in patches:
                 p.stop()
@@ -413,7 +458,7 @@ class TestGetMxHosts(unittest.TestCase):
         for p in patches:
             p.start()
         try:
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         finally:
             for p in patches:
                 p.stop()
@@ -430,9 +475,7 @@ class TestGetMxHosts(unittest.TestCase):
         for p in patches:
             p.start()
         try:
-            result = checkdmarc.smtp.get_mx_hosts(
-                "example.com", skip_tls=True, parked=True
-            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com", parked=True)
         finally:
             for p in patches:
                 p.stop()
@@ -448,7 +491,7 @@ class TestGetMxHosts(unittest.TestCase):
             p.start()
         try:
             with patch("checkdmarc.smtp.test_starttls", return_value=True):
-                result = checkdmarc.smtp.get_mx_hosts("example.com")
+                result = checkdmarc.smtp.get_mx_hosts("example.com", check_mx_tls=True)
         finally:
             for p in patches:
                 p.stop()
@@ -469,7 +512,7 @@ class TestGetMxHosts(unittest.TestCase):
                 patch("checkdmarc.smtp.test_starttls", return_value=False),
                 patch("checkdmarc.smtp.test_tls", return_value=True),
             ):
-                result = checkdmarc.smtp.get_mx_hosts("example.com")
+                result = checkdmarc.smtp.get_mx_hosts("example.com", check_mx_tls=True)
         finally:
             for p in patches:
                 p.stop()
@@ -493,7 +536,7 @@ class TestGetMxHosts(unittest.TestCase):
                 patch("checkdmarc.smtp.test_starttls", return_value=False),
                 patch("checkdmarc.smtp.test_tls", return_value=False),
             ):
-                result = checkdmarc.smtp.get_mx_hosts("example.com")
+                result = checkdmarc.smtp.get_mx_hosts("example.com", check_mx_tls=True)
         finally:
             for p in patches:
                 p.stop()
@@ -517,7 +560,7 @@ class TestGetMxHosts(unittest.TestCase):
                 "checkdmarc.smtp.test_starttls",
                 side_effect=checkdmarc.smtp.SMTPError("Connection refused"),
             ):
-                result = checkdmarc.smtp.get_mx_hosts("example.com")
+                result = checkdmarc.smtp.get_mx_hosts("example.com", check_mx_tls=True)
         finally:
             for p in patches:
                 p.stop()
@@ -534,12 +577,217 @@ class TestGetMxHosts(unittest.TestCase):
         for p in patches:
             p.start()
         try:
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         finally:
             for p in patches:
                 p.stop()
         host = cast(Any, result["hosts"][0])
         self.assertEqual(host["tlsa"], tlsa)
+
+    def testNullMxWarning(self):
+        """A null MX (RFC 7505) yields an explicit does-not-accept-mail
+        warning, distinct from the no-MX case"""
+        patches = self._patch_dns([], null_mx=True)
+        for p in patches:
+            p.start()
+        try:
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        finally:
+            for p in patches:
+                p.stop()
+        self.assertEqual(result["hosts"], [])
+        self.assertTrue(
+            any(
+                "null MX" in w and "explicitly does not accept mail" in w
+                for w in result["warnings"]
+            )
+        )
+        self.assertFalse(any("implicit MX" in w for w in result["warnings"]))
+
+    def testNoMxImplicitMxWarning(self):
+        """No MX records at all notes that RFC 5321 section 5.1 implicit MX
+        delivery may still apply"""
+        patches = self._patch_dns([])
+        for p in patches:
+            p.start()
+        try:
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        finally:
+            for p in patches:
+                p.stop()
+        self.assertEqual(result["hosts"], [])
+        self.assertTrue(
+            any("implicit MX" in w and "RFC 5321" in w for w in result["warnings"])
+        )
+        self.assertFalse(any("null MX" in w for w in result["warnings"]))
+
+    def testMxRecordSetWarningsPropagate(self):
+        """Warnings from the MX record set itself (e.g. an RFC 7505
+        violation) appear in the get_mx_hosts warnings"""
+        patches = self._patch_dns(
+            [self._mx("mail.example.com")],
+            reverse=["mail.example.com"],
+            mx_warnings=["example.com advertises a null MX record (0 .) ..."],
+        )
+        for p in patches:
+            p.start()
+        try:
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        finally:
+            for p in patches:
+                p.stop()
+        self.assertTrue(any("null MX record (0 .)" in w for w in result["warnings"]))
+
+    def testCnameAliasWarning(self):
+        """An MX target that is a CNAME alias triggers an RFC 2181 section
+        10.3 warning"""
+        patches = self._patch_dns(
+            [self._mx("mail.example.com")],
+            reverse=["mail.example.com"],
+            cname=["real.example.com"],
+        )
+        for p in patches:
+            p.start()
+        try:
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        finally:
+            for p in patches:
+                p.stop()
+        self.assertTrue(
+            any(
+                "CNAME alias for real.example.com" in w and "RFC 2181" in w
+                for w in result["warnings"]
+            )
+        )
+
+    def testCnameLookupErrorIsOnlyLogged(self):
+        """A DNS failure during the CNAME check skips the check silently
+        (logged), without failing the host or adding a warning"""
+        patches = self._patch_dns(
+            [self._mx("mail.example.com")],
+            reverse=["mail.example.com"],
+        )
+        # Replace the query_dns patch with one that raises a hard DNS error
+        patches[1] = patch(
+            "checkdmarc.smtp.query_dns",
+            side_effect=dns.exception.DNSException("SERVFAIL"),
+        )
+        for p in patches:
+            p.start()
+        try:
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        finally:
+            for p in patches:
+                p.stop()
+        self.assertEqual(result["warnings"], [])
+        self.assertEqual(len(result["hosts"]), 1)
+
+    def testTlsFallbackFailureNamesPort465(self):
+        """When the port-465 fallback probe fails, the warning says the
+        implicit TLS probe failed rather than reading as a port-25 failure"""
+        patches = self._patch_dns(
+            [self._mx("mail.example.com")],
+            reverse=["mail.example.com"],
+        )
+        for p in patches:
+            p.start()
+        try:
+            with (
+                patch("checkdmarc.smtp.test_starttls", return_value=False),
+                patch(
+                    "checkdmarc.smtp.test_tls",
+                    side_effect=checkdmarc.smtp.SMTPError("Connection refused"),
+                ),
+            ):
+                result = checkdmarc.smtp.get_mx_hosts("example.com", check_mx_tls=True)
+        finally:
+            for p in patches:
+                p.stop()
+        self.assertTrue(
+            any(
+                "implicit TLS on port 465 failed" in w and "Connection refused" in w
+                for w in result["warnings"]
+            )
+        )
+        host = cast(Any, result["hosts"][0])
+        self.assertFalse(host["tls"])
+        self.assertFalse(host["starttls"])
+
+    def testMalformedOnlyMxDoesNotClaimImplicitMx(self):
+        """MX records that produce no usable hosts (e.g. a lone "10 .") must
+        not trigger the implicit-MX message: an MX RR exists"""
+        with patch(
+            "checkdmarc.smtp.get_mx_record_set",
+            return_value=_mx_record_set(
+                [],
+                warnings=["The MX record '10 .' on example.com is malformed"],
+                record_count=1,
+            ),
+        ):
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        self.assertFalse(
+            any("implicit MX" in w for w in result["warnings"]),
+            result["warnings"],
+        )
+
+    def testEmptyMxAnswerNotesImplicitMx(self):
+        """An actual empty MX answer notes the RFC 5321 implicit MX rule"""
+        with patch(
+            "checkdmarc.smtp.get_mx_record_set",
+            return_value=_mx_record_set([], record_count=0),
+        ):
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        self.assertTrue(
+            any("implicit MX" in w for w in result["warnings"]),
+            result["warnings"],
+        )
+
+    def testTlsTestingIsOptIn(self):
+        """TLS testing is off by default: no probe runs and no tls/starttls
+        keys appear unless check_mx_tls=True is passed"""
+        patches = self._patch_dns(
+            [self._mx("mail.example.com")],
+            reverse=["mail.example.com"],
+        )
+        for p in patches:
+            p.start()
+        try:
+            with patch(
+                "checkdmarc.smtp.test_starttls",
+                side_effect=AssertionError("TLS probe ran without opt-in"),
+            ):
+                result = checkdmarc.smtp.get_mx_hosts("example.com")
+        finally:
+            for p in patches:
+                p.stop()
+        host = cast(Any, result["hosts"][0])
+        self.assertNotIn("tls", host)
+        self.assertNotIn("starttls", host)
+
+    def testSkipTlsDeprecatedNoOp(self):
+        """skip_tls warns DeprecationWarning and has no effect either way"""
+        patches = self._patch_dns(
+            [self._mx("mail.example.com")],
+            reverse=["mail.example.com"],
+        )
+        for p in patches:
+            p.start()
+        try:
+            with (
+                patch(
+                    "checkdmarc.smtp.test_starttls",
+                    side_effect=AssertionError("TLS probe ran without opt-in"),
+                ),
+                self.assertWarns(DeprecationWarning),
+            ):
+                # skip_tls=False used to mean "test TLS"; now it is inert.
+                result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=False)
+        finally:
+            for p in patches:
+                p.stop()
+        host = cast(Any, result["hosts"][0])
+        self.assertNotIn("tls", host)
+        self.assertNotIn("starttls", host)
 
 
 class TestCheckMx(unittest.TestCase):
@@ -690,8 +938,8 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    "checkdmarc.smtp.get_mx_records",
-                    return_value=[self._mx("mail.example.com")],
+                    "checkdmarc.smtp.get_mx_record_set",
+                    return_value=_mx_record_set([self._mx("mail.example.com")]),
                 )
             )
             stack.enter_context(
@@ -712,7 +960,13 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
             stack.enter_context(
                 patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
             )
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         host = cast(Any, result["hosts"][0])
         self.assertFalse(host["dnssec"])
 
@@ -725,8 +979,8 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    "checkdmarc.smtp.get_mx_records",
-                    return_value=[self._mx("mail.msv1.invalid")],
+                    "checkdmarc.smtp.get_mx_record_set",
+                    return_value=_mx_record_set([self._mx("mail.msv1.invalid")]),
                 )
             )
             stack.enter_context(
@@ -741,7 +995,13 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
             stack.enter_context(
                 patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
             )
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         self.assertTrue(any("Office 365" in w for w in result["warnings"]))
 
     def testReverseDnsMismatchWarning(self):
@@ -753,8 +1013,8 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    "checkdmarc.smtp.get_mx_records",
-                    return_value=[self._mx("mail.example.com")],
+                    "checkdmarc.smtp.get_mx_record_set",
+                    return_value=_mx_record_set([self._mx("mail.example.com")]),
                 )
             )
             stack.enter_context(
@@ -772,7 +1032,13 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
             stack.enter_context(
                 patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
             )
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         self.assertTrue(any("do not resolve to" in w for w in result["warnings"]))
 
     def testReverseDnsAResolutionFails(self):
@@ -786,8 +1052,8 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    "checkdmarc.smtp.get_mx_records",
-                    return_value=[self._mx("mail.example.com")],
+                    "checkdmarc.smtp.get_mx_record_set",
+                    return_value=_mx_record_set([self._mx("mail.example.com")]),
                 )
             )
             stack.enter_context(
@@ -805,7 +1071,13 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
             stack.enter_context(
                 patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
             )
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         self.assertTrue(any("re-resolution failed" in w for w in result["warnings"]))
 
     def testReverseDnsLookupRaises(self):
@@ -817,8 +1089,8 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    "checkdmarc.smtp.get_mx_records",
-                    return_value=[self._mx("mail.example.com")],
+                    "checkdmarc.smtp.get_mx_record_set",
+                    return_value=_mx_record_set([self._mx("mail.example.com")]),
                 )
             )
             stack.enter_context(
@@ -836,7 +1108,13 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
             stack.enter_context(
                 patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
             )
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=True)
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+            )
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
         # An empty PTR list produces the "no reverse DNS records" warning
         self.assertTrue(
             any("reverse DNS" in w and "PTR" in w for w in result["warnings"])
@@ -851,8 +1129,8 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    "checkdmarc.smtp.get_mx_records",
-                    return_value=[self._mx("mail.example.com")],
+                    "checkdmarc.smtp.get_mx_record_set",
+                    return_value=_mx_record_set([self._mx("mail.example.com")]),
                 )
             )
             stack.enter_context(
@@ -872,11 +1150,17 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
             )
             stack.enter_context(
                 patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+            )
+            stack.enter_context(
+                patch(
                     "checkdmarc.smtp.test_starttls",
                     side_effect=DNSException("dns broken"),
                 )
             )
-            result = checkdmarc.smtp.get_mx_hosts("example.com")
+            result = checkdmarc.smtp.get_mx_hosts("example.com", check_mx_tls=True)
         host = cast(Any, result["hosts"][0])
         self.assertFalse(host["starttls"])
         self.assertFalse(host["tls"])
@@ -888,8 +1172,8 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    "checkdmarc.smtp.get_mx_records",
-                    return_value=[self._mx("mail.example.com")],
+                    "checkdmarc.smtp.get_mx_record_set",
+                    return_value=_mx_record_set([self._mx("mail.example.com")]),
                 )
             )
             stack.enter_context(
@@ -907,12 +1191,18 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
             stack.enter_context(
                 patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
             )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+            )
             stack.enter_context(patch("platform.system", return_value="Windows"))
             stack.enter_context(patch("checkdmarc.smtp.test_starttls"))
             stack.enter_context(patch("checkdmarc.smtp.test_tls"))
-            result = checkdmarc.smtp.get_mx_hosts("example.com", skip_tls=False)
-        # When skip_tls flips to True via the Windows branch, no tls/starttls keys
-        # are added to the host dict.
+            result = checkdmarc.smtp.get_mx_hosts("example.com", check_mx_tls=True)
+        # The Windows branch disables TLS testing even when requested,
+        # so no tls/starttls keys are added to the host dict.
         host = cast(Any, result["hosts"][0])
         self.assertNotIn("tls", host)
         self.assertNotIn("starttls", host)

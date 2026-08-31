@@ -636,24 +636,39 @@ def get_soa_record(
         :exc:`checkdmarc.DNSException`
 
     """
-    domain = get_base_domain(domain)
-    try:
-        record = query_dns(
-            domain,
-            "SOA",
-            nameservers=nameservers,
-            resolver=resolver,
-            timeout=timeout,
-            retries=retries,
-        )[0]
-    except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
-    except dns.resolver.NoAnswer:
-        raise DNSException(f"The domain {domain} does not have an SOA record.")
-    except dns.exception.DNSException as error:
-        raise DNSException(error)
-
-    return record
+    # Every zone has its own SOA record at its top (RFC 2181 section 7), and
+    # a delegated child zone (e.g. cl.cam.ac.uk inside cam.ac.uk) is its own
+    # zone. Walk from the domain itself up through each ancestor to the
+    # registered/base domain, returning the first SOA found, so a delegated
+    # zone between the queried name and the base domain (cl.cam.ac.uk
+    # between www.cl.cam.ac.uk and cam.ac.uk) is not skipped.
+    domain = normalize_domain(domain)
+    base_domain = get_base_domain(domain)
+    labels = domain.split(".")
+    base_label_count = len(base_domain.split("."))
+    candidates = [
+        ".".join(labels[i:]) for i in range(max(1, len(labels) - base_label_count + 1))
+    ]
+    last_error_was_nxdomain = False
+    for candidate in candidates:
+        try:
+            return query_dns(
+                candidate,
+                "SOA",
+                nameservers=nameservers,
+                resolver=resolver,
+                timeout=timeout,
+                retries=retries,
+            )[0]
+        except dns.resolver.NXDOMAIN:
+            last_error_was_nxdomain = True
+        except dns.resolver.NoAnswer:
+            last_error_was_nxdomain = False
+        except dns.exception.DNSException as error:
+            raise DNSException(error)
+    if last_error_was_nxdomain:
+        raise DNSExceptionNXDOMAIN(f"The domain {base_domain} does not exist.")
+    raise DNSException(f"The domain {base_domain} does not have an SOA record.")
 
 
 def get_nameservers(
@@ -719,6 +734,191 @@ def get_nameservers(
     return result
 
 
+# One label (dot-separated part) of a hostname: it starts and ends with a
+# letter or digit and may contain hyphens in between, up to 63 characters
+# total (RFC 5321 sections 2.3.5 and 4.1.2; the length cap is from RFC 1035
+# section 2.3.4). Underscores and leading/trailing hyphens are not allowed.
+_HOSTNAME_LABEL_REGEX = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
+
+
+class MXRecordSet(TypedDict):
+    """Everything learned from a domain's MX lookup: the usable hosts,
+    warnings about problems in the records themselves, and whether the
+    domain published a null MX record (RFC 7505) declaring that it does
+    not accept mail."""
+
+    hosts: list[MXHost]
+    warnings: list[str]
+    null_mx: bool
+    record_count: int
+
+
+def _is_valid_mx_hostname(hostname: str) -> bool:
+    """Returns True if every label of the hostname follows RFC 5321
+    section 2.3.5 hostname syntax."""
+    return all(
+        _HOSTNAME_LABEL_REGEX.match(label) is not None for label in hostname.split(".")
+    )
+
+
+def _resolve_mx_rdatas(
+    domain: str,
+    *,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
+) -> list[tuple[int, str]]:
+    """
+    Queries DNS for a domain's MX records and returns
+    ``(preference, exchange)`` pairs read from dnspython's parsed answer
+    objects. Each exchange keeps its absolute form (trailing dot), so a
+    null MX target is exactly ``"."``.
+
+    MX answers get their own query path instead of ``query_dns()`` because
+    that function flattens answers to text and strips trailing dots, which
+    turns the null MX ``"0 ."`` into the ambiguous ``"0 "``. Resolver
+    setup, caching, and retry behavior mirror ``query_dns()``.
+    """
+    domain = normalize_domain(domain)
+    cache_key = f"{domain}_MX_parsed"
+    cached = DNS_CACHE.get(cache_key)
+    if isinstance(cached, list):
+        return cached
+    if not resolver:
+        resolver = dns.resolver.Resolver()
+        timeout = float(timeout)
+        if nameservers is not None:
+            resolver.nameservers = _nameservers_to_resolver_input(nameservers)
+        # Same per-query UDP timeout cap and lifetime scaling as query_dns()
+        resolver.timeout = min(1.0, timeout)
+        if len(resolver.nameservers) > 1:
+            resolver.lifetime = timeout * len(resolver.nameservers)
+        else:
+            resolver.lifetime = timeout
+    attempts = 0
+    while True:
+        try:
+            answers = resolver.resolve(domain, "MX", lifetime=resolver.lifetime)
+            break
+        except _RETRYABLE_DNS_ERRORS:
+            attempts += 1
+            if attempts > retries:
+                raise
+    records = [(int(rdata.preference), rdata.exchange.to_text()) for rdata in answers]
+    DNS_CACHE[cache_key] = records
+    return records
+
+
+def get_mx_record_set(
+    domain: str,
+    *,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
+) -> MXRecordSet:
+    """
+    Queries DNS for a domain's Mail Exchange records, validates them, and
+    reports what the records mean
+
+    Args:
+        domain (str): A domain name
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+        retries (int): The number of times to retry on timeout or other transient errors
+
+    Returns:
+        dict: A dictionary with the following keys:
+
+              - ``hosts`` - A list of ``dicts``; each containing a
+                ``preference`` integer and a ``hostname``
+              - ``warnings`` - Warnings about the MX records themselves
+              - ``null_mx`` - True when the domain publishes only a null MX
+                record (``0 .``), meaning it explicitly does not accept
+                mail (RFC 7505)
+              - ``record_count`` - The number of MX records in the DNS
+                answer, including null and malformed records that do not
+                become ``hosts`` entries
+
+    Raises:
+        :exc:`checkdmarc.DNSException`
+
+    """
+    hosts: list[MXHost] = []
+    warnings: list[str] = []
+    null_mx = False
+    logger.debug(f"Checking for MX records on {domain}")
+    try:
+        answers = _resolve_mx_rdatas(
+            domain,
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            retries=retries,
+        )
+    except dns.resolver.NXDOMAIN:
+        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
+    except dns.resolver.NoAnswer:
+        answers = []
+    except dns.exception.DNSException as error:
+        raise DNSException(error)
+    # Records whose target is the DNS root (".") are not real mail hosts:
+    # with preference 0 that is the RFC 7505 null MX ("this domain does not
+    # accept mail"); with any other preference it is simply malformed.
+    # Either way the record must not become a host entry.
+    root_target_records = [(p, x) for (p, x) in answers if x == "."]
+    named_records = [(p, x) for (p, x) in answers if x != "."]
+    for preference, _exchange in root_target_records:
+        if preference != 0:
+            warnings.append(
+                f"The MX record '{preference} .' on {domain} is malformed: "
+                "a root (.) target is only valid in a null MX record, "
+                "which must use preference 0 (RFC 7505 section 3)"
+            )
+    if any(preference == 0 for (preference, _) in root_target_records):
+        if len(answers) > 1:
+            # RFC 7505 section 3: "A domain that advertises a null MX
+            # MUST NOT advertise any other MX RR." Any additional record —
+            # named or another root target — invalidates the null MX.
+            warnings.append(
+                f"{domain} advertises a null MX record (0 .) alongside "
+                "other MX records; RFC 7505 section 3 requires the null MX "
+                "to be the only MX record"
+            )
+        else:
+            logger.debug('"No Service" (null MX) record found')
+            null_mx = True
+    for preference, exchange in named_records:
+        hostname = exchange.rstrip(".").lower()
+        # RFC 5321 section 5.1: the MX data field must be a domain name,
+        # never an IP address literal.
+        if dns.inet.is_address(hostname.strip("[]")):
+            warnings.append(
+                f"The MX record for {domain} points at the IP address "
+                f"{hostname}; RFC 5321 section 5.1 requires MX records "
+                "to point at a domain name"
+            )
+        elif not _is_valid_mx_hostname(hostname):
+            warnings.append(
+                f"The MX hostname {hostname} for {domain} is not valid "
+                "hostname syntax: each dot-separated part must contain "
+                "only letters, digits, and interior hyphens "
+                "(RFC 5321 section 2.3.5)"
+            )
+        hosts.append({"preference": preference, "hostname": hostname})
+    hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
+    results: MXRecordSet = {
+        "hosts": hosts,
+        "warnings": warnings,
+        "null_mx": null_mx,
+        "record_count": len(answers),
+    }
+    return results
+
+
 def get_mx_records(
     domain: str,
     *,
@@ -729,6 +929,10 @@ def get_mx_records(
 ) -> list[MXHost]:
     """
     Queries DNS for a list of Mail Exchange hosts
+
+    Use :func:`get_mx_record_set` instead when the warnings about the
+    records or the null MX status are needed; this function returns only
+    the hosts (an empty list for a domain with a null MX record).
 
     Args:
         domain (str): A domain name
@@ -746,30 +950,10 @@ def get_mx_records(
         :exc:`checkdmarc.DNSException`
 
     """
-    hosts = []
-    try:
-        logger.debug(f"Checking for MX records on {domain}")
-        answers = query_dns(
-            domain,
-            "MX",
-            nameservers=nameservers,
-            resolver=resolver,
-            timeout=timeout,
-            retries=retries,
-        )
-        if answers == ["0 "]:
-            logger.debug('"No Service" MX record found')
-            return []
-        for record in answers:
-            fields = record.split(" ")
-            preference = int(fields[0])
-            hostname = fields[1].rstrip(".").strip().lower()
-            hosts.append({"preference": preference, "hostname": hostname})
-        hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
-    except dns.resolver.NXDOMAIN:
-        raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
-    except dns.resolver.NoAnswer:
-        pass
-    except dns.exception.DNSException as error:
-        raise DNSException(error)
-    return hosts
+    return get_mx_record_set(
+        domain,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        retries=retries,
+    )["hosts"]

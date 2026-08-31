@@ -88,23 +88,25 @@ class TestLpsTag(unittest.TestCase):
     """parse_bimi_record handles the lps= tag (comma-separated local-parts)"""
 
     def testCommaSeparatedSelectors(self):
-        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; lps=news,billing,support")
+        result = checkdmarc.bimi.parse_bimi_record(
+            "v=BIMI1; l=; lps=news,billing,support"
+        )
         self.assertEqual(result["tags"]["lps"]["value"], ["news", "billing", "support"])
 
     def testSpacesAroundCommasAreStripped(self):
         result = checkdmarc.bimi.parse_bimi_record(
-            "v=BIMI1; lps=news, billing, support"
+            "v=BIMI1; l=; lps=news, billing, support"
         )
         self.assertEqual(result["tags"]["lps"]["value"], ["news", "billing", "support"])
 
     def testSelectorsLowercased(self):
-        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; lps=News,Billing")
+        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; l=; lps=News,Billing")
         self.assertEqual(result["tags"]["lps"]["value"], ["news", "billing"])
 
     def testSelectorCharacters(self):
         """Per draft-bimi-14 § 4.3.14, local-part-text = ALPHA / DIGIT / '-' only"""
         result = checkdmarc.bimi.parse_bimi_record(
-            "v=BIMI1; lps=sales-team,help-desk,info123"
+            "v=BIMI1; l=; lps=sales-team,help-desk,info123"
         )
         self.assertEqual(
             result["tags"]["lps"]["value"],
@@ -112,20 +114,26 @@ class TestLpsTag(unittest.TestCase):
         )
 
     def testSingleSelector(self):
-        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; lps=news")
+        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; l=; lps=news")
         self.assertEqual(result["tags"]["lps"]["value"], ["news"])
+
+    def testEmptyValueParsesToEmptyList(self):
+        """lps= with no value means zero prefixes (the local-part always
+        matches), so it parses to an empty list, not [""]"""
+        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; l=; lps=")
+        self.assertEqual(result["tags"]["lps"]["value"], [])
 
     def testInvalidCharactersRejected(self):
         """Underscores and dots are not allowed in local-part-text"""
         self.assertRaises(
             checkdmarc.bimi.BIMISyntaxError,
             checkdmarc.bimi.parse_bimi_record,
-            "v=BIMI1; lps=help_desk",
+            "v=BIMI1; l=; lps=help_desk",
         )
         self.assertRaises(
             checkdmarc.bimi.BIMISyntaxError,
             checkdmarc.bimi.parse_bimi_record,
-            "v=BIMI1; lps=info.support",
+            "v=BIMI1; l=; lps=info.support",
         )
 
 
@@ -149,17 +157,20 @@ class TestQueryBimiRecordPropagatesSpecificErrors(unittest.TestCase):
                 "example.com",
             )
 
-    def testUnrelatedRecordPropagates(self):
-        """A v=BIMI1 record alongside an unrelated TXT raises UnrelatedTXTRecordFoundAtBIMI"""
+    def testUnrelatedRecordDiscardedWithWarning(self):
+        """A v=BIMI1 record beside an unrelated TXT record is still used;
+        the unrelated record is discarded with a warning, per section 7.2
+        step 4 of the BIMI draft (non-BIMI records must be discarded)."""
+        warnings = []
         with patch(
             "checkdmarc.bimi.query_dns",
-            return_value=["v=BIMI1; l=", "some other txt record"],
+            return_value=["some other txt record", "v=BIMI1; l="],
         ):
-            self.assertRaises(
-                checkdmarc.bimi.UnrelatedTXTRecordFoundAtBIMI,
-                checkdmarc.bimi._query_bimi_record,
-                "example.com",
+            record = checkdmarc.bimi._query_bimi_record(
+                "example.com", warnings=warnings
             )
+        self.assertEqual(record, "v=BIMI1; l=")
+        self.assertTrue(any("Unrelated TXT records" in w for w in warnings))
 
     def testWrongLocationPropagates(self):
         """A v=BIMI1 record at the apex (not at the selector) raises BIMIRecordInWrongLocation.
@@ -244,6 +255,43 @@ class TestGetSvgMetadata(unittest.TestCase):
     def testInvalidSvgRaisesValueError(self):
         self.assertRaises(ValueError, checkdmarc.bimi.get_svg_metadata, "not an svg")
 
+    def testFilesizeMeasuresRawBytes(self):
+        """filesize reports the byte length of the file as served, which is
+        what counts against the SVG Tiny PS 32 KB cap — not the Python
+        object size of a decoded string."""
+        padded = (VALID_SVG + " " * (24114 - len(VALID_SVG))).encode("utf-8")
+        self.assertEqual(len(padded), 24114)
+        metadata = checkdmarc.bimi.get_svg_metadata(padded)
+        self.assertEqual(metadata["filesize"], "24.114 KB")
+
+    def testSha256HashesRawBytes(self):
+        """sha256 is computed over the raw response bytes, so it can be
+        compared byte for byte against the certificate's embedded logotype
+        hash. Multibyte UTF-8 must be hashed as served, not re-encoded."""
+        import hashlib
+
+        svg_bytes = VALID_SVG.replace("Example Brand", "Exämple Bränd").encode("utf-8")
+        metadata = checkdmarc.bimi.get_svg_metadata(svg_bytes)
+        self.assertEqual(metadata["sha256"], hashlib.sha256(svg_bytes).hexdigest())
+
+    def testMalformedBytesAreNotSanitized(self):
+        """The exact bytes that get hashed are the bytes that must validate
+        as XML: a byte no decode could keep must fail parsing instead of
+        being silently dropped so that a sanitized document validates while
+        the hash describes the unsanitized file"""
+        svg_bytes = VALID_SVG.encode("utf-8").replace(b"<title>", b"<!--\xff--><title>")
+        self.assertRaises(ValueError, checkdmarc.bimi.get_svg_metadata, svg_bytes)
+
+    def testUtf16SvgParses(self):
+        """The XML parser reads the declared encoding from the raw bytes, so
+        a UTF-16 SVG parses instead of being garbled by a forced UTF-8
+        decode"""
+        svg_bytes = (
+            '<?xml version="1.0" encoding="utf-16"?>' + VALID_SVG.split("?>", 1)[1]
+        ).encode("utf-16")
+        metadata = checkdmarc.bimi.get_svg_metadata(svg_bytes)
+        self.assertEqual(metadata["svg_version"], "1.2")
+
 
 class TestCheckSvgRequirements(unittest.TestCase):
     @staticmethod
@@ -313,15 +361,50 @@ class TestQueryBimiRecordSuccess(unittest.TestCase):
             result = checkdmarc.bimi._query_bimi_record("example.com")
         self.assertIsNone(result)
 
+    def testVersionTagWhitespaceTolerated(self):
+        """Discovery recognizes a record with spaces around the '=' in the
+        version tag; the ABNF (v *WSP "=" *WSP BIMI1) allows them, and the
+        record grammar already accepts them."""
+        with patch(
+            "checkdmarc.bimi.query_dns",
+            return_value=["v = BIMI1; l=;"],
+        ):
+            result = checkdmarc.bimi._query_bimi_record("example.com")
+        self.assertEqual(result, "v = BIMI1; l=;")
+        # The same record also parses
+        parsed = checkdmarc.bimi.parse_bimi_record("v = BIMI1; l=;")
+        self.assertIn("l", parsed["tags"])
+
 
 class TestParseBimiRecord(unittest.TestCase):
-    def testUnknownTagSyntaxError(self):
-        """The grammar rejects unknown tags as BIMISyntaxError before
-        the InvalidBIMITag check has a chance to run."""
+    def testUnknownTagIgnoredWithWarning(self):
+        """Unknown tags are ignored with a warning instead of failing the
+        record, per section 4.3 of the BIMI draft ("unknown tags MUST be
+        ignored"). Tag names longer than three characters must also lex."""
+        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; l=; a=; foo=bar")
+        self.assertNotIn("foo", result["tags"])
+        self.assertTrue(
+            any("Unknown BIMI record tag foo" in w for w in result["warnings"])
+        )
+        # A tag name of any length is tolerated
+        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; l=; longtagname=value")
+        self.assertTrue(
+            any("Unknown BIMI record tag longtagname" in w for w in result["warnings"])
+        )
+
+    def testUnknownTagGrammarEnforced(self):
+        """Only unknown tags inside the DKIM tag-value grammar the draft
+        imports (RFC 6376 section 3.2) are ignored: a "." is not legal in
+        a tag name, while interior whitespace in a value is significant
+        and allowed"""
+        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; l=; foo=a b")
+        self.assertTrue(
+            any("Unknown BIMI record tag foo" in w for w in result["warnings"])
+        )
         self.assertRaises(
             checkdmarc.bimi.BIMISyntaxError,
             checkdmarc.bimi.parse_bimi_record,
-            "v=BIMI1; xyz=foo",
+            "v=BIMI1; l=; foo.bar=x",
         )
 
     def testDuplicateTag(self):
@@ -346,6 +429,50 @@ class TestParseBimiRecord(unittest.TestCase):
             "v=BIMI1 garbage",
         )
 
+    def testRawSpaceInLocationURIRejected(self):
+        """A raw (unencoded) space is not legal in a URI, so an l= value
+        containing one is rejected"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMIIndicatorURI,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=https://a.example/my logo.svg",
+        )
+
+    def testUnencodedCommaInLocationURIRejected(self):
+        """Commas within a URI must be percent-encoded per the bimi-uri
+        definition in section 4.3 of the BIMI draft"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMIIndicatorURI,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=https://a.example/logo,v2.svg",
+        )
+
+    def testUnencodedCommaInEvidenceURIRejected(self):
+        """The same bimi-uri rules apply to the a= tag value"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMITagValue,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=; a=https://a.example/evidence,1.pem",
+        )
+
+    def testNonHTTPSLocationURIRejected(self):
+        """Only HTTPS is a supported transport for the l= tag"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMIIndicatorURI,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=http://a.example/logo.svg",
+        )
+
+    def testPercentEncodedCommaInLocationURIAccepted(self):
+        """A percent-encoded comma is fine"""
+        fake_session = MagicMock()
+        fake_session.get.return_value = _fake_response(VALID_SVG.encode("utf-8"))
+        with patch("checkdmarc.bimi.requests.Session", return_value=fake_session):
+            result = checkdmarc.bimi.parse_bimi_record(
+                "v=BIMI1; l=https://a.example/logo%2Cv2.svg"
+            )
+        self.assertIn("image", result)
+
     def testLogoFetchedAndParsed(self):
         """l= tag triggers an HTTP fetch and SVG metadata is included"""
         fake_session = MagicMock()
@@ -369,6 +496,106 @@ class TestParseBimiRecord(unittest.TestCase):
             )
         self.assertIn("error", result["image"])
 
+    def testCertificateErrorPathDoesNotCrashHashCheck(self):
+        """get_certificate_metadata's error path returns metadata without a
+        logotype_sha256 key; the logotype comparison must not raise KeyError
+        and must not report a false mismatch"""
+        fake_session = MagicMock()
+        fake_session.get.return_value = _fake_response(VALID_SVG.encode("utf-8"))
+        with (
+            patch("checkdmarc.bimi.requests.Session", return_value=fake_session),
+            patch(
+                "checkdmarc.bimi.get_certificate_metadata",
+                return_value={
+                    "valid": False,
+                    "validation_errors": ["could not process the certificate"],
+                },
+            ),
+        ):
+            result = checkdmarc.bimi.parse_bimi_record(
+                "v=BIMI1; l=https://example.com/logo.svg; "
+                "a=https://example.com/logo.pem"
+            )
+        self.assertIn("image", result)
+        self.assertFalse(
+            any("does not match" in w for w in result["warnings"]),
+            result["warnings"],
+        )
+
+    def testUriMalformedPercentEscapeRejected(self):
+        """A non-hex percent escape like %zz is not valid RFC 3986
+        percent-encoding, so the l= URI is rejected"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMIIndicatorURI,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=https://example.com/logo%zz.svg",
+        )
+
+    def testUriIpv4LiteralRejectedForAuthorityEvidence(self):
+        """Section 4.3 of the BIMI draft says the a= URI MUST contain a
+        fully qualified domain name, so an IP literal is invalid there"""
+        fake_session = MagicMock()
+        fake_session.get.return_value = _fake_response(VALID_SVG.encode("utf-8"))
+        with patch("checkdmarc.bimi.requests.Session", return_value=fake_session):
+            self.assertRaises(
+                checkdmarc.bimi.InvalidBIMITagValue,
+                checkdmarc.bimi.parse_bimi_record,
+                "v=BIMI1; l=https://example.com/logo.svg; a=https://192.0.2.1/cert.pem",
+            )
+
+    def testUriIpLiteralAllowedForIndicatorLocation(self):
+        """Unlike a=, the l= tag has no FQDN requirement — its value is
+        the imported RFC 3986 URI grammar with HTTPS transport (BIMI
+        draft section 4.3) — so IPv4 and bracketed IPv6 hosts are
+        syntactically valid indicator locations"""
+        for uri in ("https://192.0.2.1/logo.svg", "https://[2001:db8::1]/logo.svg"):
+            with self.subTest(uri=uri):
+                fake_session = MagicMock()
+                fake_session.get.return_value = _fake_response(
+                    VALID_SVG.encode("utf-8")
+                )
+                with patch(
+                    "checkdmarc.bimi.requests.Session", return_value=fake_session
+                ):
+                    result = checkdmarc.bimi.parse_bimi_record(f"v=BIMI1; l={uri}")
+                self.assertEqual(result["tags"]["l"]["value"], uri)
+
+    def testUriInvalidIpv6LiteralRejected(self):
+        """A bracketed host that is not a real RFC 4291 IPv6 address is
+        not a valid RFC 3986 authority"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMIIndicatorURI,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=https://[::::]/logo.svg",
+        )
+
+    def testUriMultipleFragmentDelimitersRejected(self):
+        """RFC 3986 allows "#" exactly once, as the fragment delimiter, so
+        an l= URI with a second "#" is rejected"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMIIndicatorURI,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=https://example.com/logo.svg#one#two",
+        )
+
+    def testLogoProcessingFailure(self):
+        """A ValueError while parsing a fetched image produces an image error
+        entry, not a raised exception"""
+        fake_session = MagicMock()
+        fake_session.get.return_value = _fake_response(b"<svg/>")
+        with (
+            patch("checkdmarc.bimi.requests.Session", return_value=fake_session),
+            patch(
+                "checkdmarc.bimi.get_svg_metadata",
+                side_effect=ValueError("bad XML"),
+            ),
+        ):
+            result = checkdmarc.bimi.parse_bimi_record(
+                "v=BIMI1; l=https://example.com/logo.svg"
+            )
+        self.assertIn("Failed to process BIMI image", result["image"]["error"])
+        self.assertIn("bad XML", result["image"]["error"])
+
     def testCertificateFetchFailure(self):
         """A failed a= fetch produces a certificate error entry"""
         fake_session = MagicMock()
@@ -391,7 +618,7 @@ class TestParseBimiRecord(unittest.TestCase):
 
     def testValidAvp(self):
         """avp=brand parses cleanly"""
-        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; avp=brand")
+        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; l=; avp=brand")
         self.assertEqual(result["tags"]["avp"]["value"], "brand")
 
     def testInvalidDmarcWarning(self):
@@ -425,24 +652,67 @@ class TestParseBimiRecord(unittest.TestCase):
                 "v=BIMI1; l=https://example.com/logo.svg",
                 parsed_dmarc_record=dmarc,
             )
-        # DMARC p, sp, and pct all flag warnings
+        # DMARC p and sp flag warnings; pct does not, because the pct=100
+        # requirement only applies when p=quarantine (BIMI draft section
+        # 7.1 step 9), and here p=none.
         self.assertTrue(any("DMARC policy" in w for w in result["warnings"]))
         self.assertTrue(any("subdomain policy" in w for w in result["warnings"]))
-        self.assertTrue(any("pct tag" in w for w in result["warnings"]))
+        self.assertFalse(any("pct tag" in w for w in result["warnings"]))
 
-    def testNoLogoTagSkipsDmarcPolicyWarnings(self):
-        """A BIMI record with no l tag does not crash or warn about DMARC
-        policy; there is no logo to display, so the policy requirements do
-        not apply. The check previously read tags["l"] directly, raising
-        KeyError when the tag was absent."""
+    def _parse_with_dmarc_policy(self, p, pct):
+        fake_session = MagicMock()
+        fake_session.get.return_value = _fake_response(VALID_SVG.encode("utf-8"))
         dmarc = cast(
             Any,
-            {"valid": True, "tags": {"p": {"value": "none"}, "sp": {"value": "none"}}},
+            {
+                "valid": True,
+                "tags": {
+                    "p": {"value": p},
+                    "sp": {"value": p},
+                    "pct": {"value": pct},
+                },
+            },
         )
-        result = checkdmarc.bimi.parse_bimi_record(
-            "v=BIMI1;", parsed_dmarc_record=dmarc
-        )
-        self.assertFalse(any("DMARC" in w for w in result["warnings"]))
+        with patch("checkdmarc.bimi.requests.Session", return_value=fake_session):
+            return checkdmarc.bimi.parse_bimi_record(
+                "v=BIMI1; l=https://example.com/logo.svg",
+                parsed_dmarc_record=dmarc,
+            )
+
+    def testPctWarningForQuarantineWithPartialPct(self):
+        """p=quarantine with pct!=100 warns: BIMI draft section 7.1 step 9
+        requires pct=100 when the policy is quarantine"""
+        result = self._parse_with_dmarc_policy("quarantine", 50)
+        self.assertTrue(any("pct tag" in w for w in result["warnings"]))
+
+    def testNoPctWarningForReject(self):
+        """p=reject satisfies BIMI regardless of pct; no pct warning"""
+        result = self._parse_with_dmarc_policy("reject", 50)
+        self.assertFalse(any("pct" in w for w in result["warnings"]))
+
+    def testNoPctWarningForQuarantineWithFullPct(self):
+        """p=quarantine with pct=100 satisfies BIMI; no pct warning"""
+        result = self._parse_with_dmarc_policy("quarantine", 100)
+        self.assertFalse(any("pct" in w for w in result["warnings"]))
+
+    def testMissingLTagIsError(self):
+        """A record without the l= tag is an error: l= is REQUIRED per
+        section 4.3 of the BIMI draft, and declining to participate is
+        expressed with an empty value (l=;) per section 4.3.1 — not by
+        omitting the tag."""
+        with self.assertRaises(checkdmarc.bimi.BIMISyntaxError) as ctx:
+            checkdmarc.bimi.parse_bimi_record("v=BIMI1;")
+        self.assertIn("required l tag", str(ctx.exception))
+
+    def testMissingLTagMakesCheckBimiInvalid(self):
+        """check_bimi reports a record without l= as invalid"""
+        with (
+            patch("checkdmarc.bimi._query_bimi_record", return_value="v=BIMI1;"),
+            patch("checkdmarc.bimi.query_dns", return_value=[]),
+        ):
+            result = checkdmarc.bimi.check_bimi("example.com")
+        self.assertFalse(cast(Any, result)["valid"])
+        self.assertIn("required l tag", cast(Any, result)["error"])
 
     def testEmptyLogoTagSkipsDmarcPolicyWarnings(self):
         """An empty l tag declines to publish a logo, so DMARC policy
@@ -527,6 +797,27 @@ class TestCheckBimi(unittest.TestCase):
         self.assertFalse(cast(Any, result)["valid"])
         self.assertIn("error", cast(Any, result))
 
+    def testQueryWarningsAreKept(self):
+        """Warnings raised while locating the record — an unrelated TXT
+        record beside it, or a record at the root of the domain — must
+        survive into the check result instead of being replaced by the
+        parser's own warnings, as check_mta_sts already does."""
+        with patch(
+            "checkdmarc.bimi.query_bimi_record",
+            return_value={
+                "record": "v=BIMI1; l=;",
+                "selector": "default",
+                "location": "default._bimi.example.com",
+                "warnings": ["Unrelated TXT records were found and ignored."],
+            },
+        ):
+            result = cast(Any, checkdmarc.bimi.check_bimi("example.com"))
+        self.assertTrue(result["valid"])
+        self.assertTrue(
+            any("Unrelated TXT records" in w for w in result["warnings"]),
+            result["warnings"],
+        )
+
 
 class TestSvgMetadataForbiddenAttributes(unittest.TestCase):
     """SVG x/y attributes on the root <svg> are forbidden by BIMI; they
@@ -551,12 +842,21 @@ class TestSvgMetadataForbiddenAttributes(unittest.TestCase):
 class TestExtractLogoFromPemBytes(unittest.TestCase):
     """extract_logo_from_certificate accepts a PEM bundle as bytes too"""
 
-    def testBytesInputDelegatesToPemLoader(self):
-        """When given bytes, extract_logo_from_certificate loads the PEM and
-        operates on the second cert (index 1) of the bundle."""
+    def testBytesInputInspectsLeafCertificate(self):
+        """When given bytes, extract_logo_from_certificate loads the PEM
+        bundle and inspects the first certificate — PEM bundles list the
+        leaf (end-entity) certificate first, followed by intermediates."""
+        import base64
+
         from cryptography.x509 import ExtensionNotFound
 
+        svg_bytes = VALID_SVG.encode("utf-8")
+        b64 = base64.b64encode(svg_bytes).decode("ascii")
+        leaf_ext = MagicMock()
+        leaf_ext.value.value = b"\x00data:image/svg+xml;base64," + b64.encode("ascii")
         fake_certs = [MagicMock(), MagicMock()]
+        # The leaf (first) cert carries the logotype; the intermediate does not
+        fake_certs[0].extensions.get_extension_for_oid.return_value = leaf_ext
         fake_certs[1].extensions.get_extension_for_oid.side_effect = ExtensionNotFound(
             "no ext", MagicMock()
         )
@@ -565,8 +865,7 @@ class TestExtractLogoFromPemBytes(unittest.TestCase):
             return_value=fake_certs,
         ):
             result = checkdmarc.bimi.extract_logo_from_certificate(b"-----PEM-----")
-        # Second cert is inspected; missing extension -> None
-        self.assertIsNone(result)
+        self.assertEqual(result, svg_bytes)
 
 
 class TestBIMIRecordNotFoundWithTimeout(unittest.TestCase):
@@ -623,6 +922,48 @@ class TestQueryBimiRecordBaseDomainFallback(unittest.TestCase):
         ):
             checkdmarc.bimi.query_bimi_record("sub.example.com")
         self.assertIn("subdomain or its base domain", str(ctx.exception))
+
+    def testFallbackKeepsCustomSelector(self):
+        """The organizational-domain fallback keeps the caller's selector:
+        per section 7.2 step 6 of the BIMI draft, a custom selector that
+        does not exist falls back to <selector>._bimi.<org domain>, not to
+        default._bimi.<org domain>."""
+        queried = []
+
+        def fake_query_dns(target, rdtype, **kwargs):
+            queried.append(target)
+            if target == "brand._bimi.sub.example.com":
+                raise dns.resolver.NoAnswer()
+            if target == "brand._bimi.example.com":
+                return ["v=BIMI1; l=;"]
+            return []
+
+        with patch("checkdmarc.bimi.query_dns", side_effect=fake_query_dns):
+            result = checkdmarc.bimi.query_bimi_record(
+                "sub.example.com", selector="brand"
+            )
+        self.assertIn("brand._bimi.example.com", queried)
+        self.assertNotIn("default._bimi.example.com", queried)
+        self.assertEqual(result["location"], "example.com")
+        self.assertEqual(result["record"], "v=BIMI1; l=;")
+
+    def testOnlyUnrelatedRecordsFallBackToOrgDomain(self):
+        """When the selector holds only unrelated TXT records, they are
+        discarded with a warning and discovery continues to the
+        organizational domain (BIMI draft section 7.2 steps 4 and 6)."""
+
+        def fake_query_dns(target, rdtype, **kwargs):
+            if target == "default._bimi.sub.example.com":
+                return ["verification=token"]
+            if target == "default._bimi.example.com":
+                return ["v=BIMI1; l=;"]
+            return []
+
+        with patch("checkdmarc.bimi.query_dns", side_effect=fake_query_dns):
+            result = checkdmarc.bimi.query_bimi_record("sub.example.com")
+        self.assertEqual(result["location"], "example.com")
+        self.assertEqual(result["record"], "v=BIMI1; l=;")
+        self.assertTrue(any("Unrelated TXT records" in w for w in result["warnings"]))
 
 
 class TestParseBimiRecordExtraBranches(unittest.TestCase):
@@ -753,6 +1094,71 @@ class TestParseBimiRecordExtraBranches(unittest.TestCase):
             result = checkdmarc.bimi.parse_bimi_record(
                 "v=BIMI1; l=https://example.com/logo.svg; "
                 "a=https://example.com/cert.pem"
+            )
+        self.assertTrue(
+            any(
+                "does not match the image embedded in the certificate" in w
+                for w in result["warnings"]
+            )
+        )
+
+    def testTagOrderDoesNotAffectHashCheck(self):
+        """The image-vs-certificate logotype hash comparison happens after
+        all tags are read, so a= before l= behaves identically to l= before
+        a= (tags other than v= may appear in any order per section 4.3 of
+        the BIMI draft) and no spurious warnings fire."""
+        import hashlib
+
+        svg_bytes = VALID_SVG.encode("utf-8")
+        svg_sha = hashlib.sha256(svg_bytes).hexdigest()
+
+        def fake_get(url, timeout=None):
+            if url.endswith(".svg"):
+                return _fake_response(svg_bytes)
+            return _fake_response(b"-----PEM-----")
+
+        for record in (
+            "v=BIMI1; a=https://example.com/cert.pem; l=https://example.com/logo.svg",
+            "v=BIMI1; l=https://example.com/logo.svg; a=https://example.com/cert.pem",
+        ):
+            fake_session = MagicMock()
+            fake_session.get.side_effect = fake_get
+            with (
+                patch("checkdmarc.bimi.requests.Session", return_value=fake_session),
+                patch(
+                    "checkdmarc.bimi.get_certificate_metadata",
+                    return_value={"valid": True, "logotype_sha256": svg_sha},
+                ),
+            ):
+                result = checkdmarc.bimi.parse_bimi_record(record)
+            self.assertFalse(
+                any("does not match" in w for w in result["warnings"]), record
+            )
+            self.assertFalse(
+                any("will not display" in w for w in result["warnings"]), record
+            )
+
+    def testTagOrderDoesNotHideHashMismatch(self):
+        """A real hash mismatch is detected even when a= appears before l="""
+        svg_bytes = VALID_SVG.encode("utf-8")
+
+        def fake_get(url, timeout=None):
+            if url.endswith(".svg"):
+                return _fake_response(svg_bytes)
+            return _fake_response(b"-----PEM-----")
+
+        fake_session = MagicMock()
+        fake_session.get.side_effect = fake_get
+        with (
+            patch("checkdmarc.bimi.requests.Session", return_value=fake_session),
+            patch(
+                "checkdmarc.bimi.get_certificate_metadata",
+                return_value={"valid": True, "logotype_sha256": "0" * 64},
+            ),
+        ):
+            result = checkdmarc.bimi.parse_bimi_record(
+                "v=BIMI1; a=https://example.com/cert.pem; "
+                "l=https://example.com/logo.svg"
             )
         self.assertTrue(
             any(
