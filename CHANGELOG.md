@@ -10,6 +10,8 @@ found 81 discrepancies, most confirmed by executing the old code. This
 release fixes all of them. Many fixes change validation verdicts —
 records the specs call valid are no longer rejected, and records they
 call invalid are no longer accepted — hence the major version.
+This release also contains everything staged for 5.18.0, which
+was never released.
 
 ### Breaking changes
 
@@ -26,27 +28,7 @@ call invalid are no longer accepted — hence the major version.
 - `get_mx_record_set()` in `checkdmarc.utils`, returning MX hosts, warnings, and null MX status parsed from dnspython rdata instead of text splitting
 - Null MX (RFC 7505) handling: a lone `0 .` record yields an explicit "does not accept mail" warning distinct from having no MX records (which now notes the RFC 5321 §5.1 implicit MX rule); a null MX coexisting with other MX records is flagged as an RFC 7505 §3 violation instead of producing an empty-hostname host entry
 - MX target sanity warnings: IP-address literals (RFC 5321 §5.1), hostnames failing RFC 5321 §2.3.5 label syntax, and targets that are CNAME aliases (RFC 2181 §10.3)
-
-### Fixed
-
-- SPF: the 10-lookup and 2-void-lookup limits are enforced after every counted term rather than in some branches only; `redirect` is ignored when an `all` mechanism is present (RFC 7208 §6.1); a `v=spf10`-style sibling TXT record is discarded instead of hiding a valid record (§4.5); multiple `all` mechanisms are valid with first-match semantics (§4.6.2); terms after `all` are no longer processed or counted; duplicate includes count their lookups like real evaluation; the term-value charset matches the §12 ABNF (so `%{ir=}` and `!` parse); exp-only macro letters `c`/`r`/`t` are rejected outside exp text (§7.2); the uppercase `R` transformer is accepted; `exp` is honored anywhere in the record; `mx` CIDR suffixes are stripped before the DNS query instead of being sent as part of the name; dual-CIDR lengths and leading-zero CIDRs are validated; empty `a:`/`mx:`/`ptr:` domain-specs are rejected
-- DMARC: the grammar matches the §4.8 ABNF (any-length tag names, full value charset — mandatory percent-encoding like `%2C` in report URIs now parses, and bare `v=DMARC1` is valid); non-mailto report URIs are kept with a warning instead of invalidating the record (§4.7); invalid `adkim`/`aspf` values fall back to `r` with a warning; `fo=0:1` is reported as invalid (mutually exclusive), not "redundant"; the record-detection filter tolerates ABNF-legal whitespace and case around `v=`; an unrelated TXT record no longer causes a false "authorization record not found"; an NXDOMAIN on the courtesy apex query no longer discards an already-found record; two citations to nonexistent RFC sections corrected
-- BIMI: the organizational-domain fallback keeps the caller's selector instead of reverting to `default` (draft §7.2 step 6); the SVG-vs-certificate logotype hash check is tag-order-independent and hashes the raw bytes; SVG file size is measured in actual bytes instead of `sys.getsizeof` of a decoded string; the `pct` warning fires only for `p=quarantine` per §7.1 step 9; empty `lps=` parses to an empty list; `l=`/`a=` URIs are validated against the `bimi-uri` ABNF (no raw spaces or unencoded commas); the PEM-bytes certificate path reads the leaf certificate
-- MTA-STS: the policy fetch no longer follows redirects and requires HTTP 200 exactly (RFC 8461 §3.3); MX pattern matching is anchored with `*` matching a single label, so `*.example.com` no longer matches `mail.example.com.evil.com` (§4.1); a TXT record without `id` returns `valid: False` instead of crashing; duplicate fields are first-wins with a warning (§3.2); mixed LF/CRLF policies parse; `mx` values are validated against the `["*."] Domain` ABNF; record detection keys on `v=STSv1;` including the semicolon; `id` is capped at 32 alphanumerics; `max_age` accepts only plain digits
-- TLSRPT: whitespace around commas between `rua` URIs is accepted per the §3 ABNF; duplicate `rua` tags warn instead of failing; record detection keys on `v=TLSRPTv1;` per §3.1; URI validation is anchored so garbage-prefixed schemes are rejected; the parser returns the matching TLSRPT record instead of whichever TXT record sorted first
-- SMTP: negative STARTTLS results are cached like positive ones; the port-465 fallback failure warning names the implicit-TLS probe instead of reading as a port 25 failure
-- SOA: `check_soa()` queries the domain's own SOA first and falls back to the base domain only when there is no answer, so delegated child zones report their own SOA and contact (RFC 2181 §7); `soa_rname_to_email()` handles RFC 1035 §5.1 escapes, including an escaped backslash before a real label separator
-- DNSSEC: caller-supplied caches are forwarded to `get_dnskey()`; the `dnssec` result-key documentation states what the boolean actually means
-
-## 5.18.0
-
-### Added
-
 - DNS over HTTPS (DoH) and DNS over TLS (DoT) support through the existing `nameservers` option, matching parsedmarc ([parsedmarc PR #886](https://github.com/domainaware/parsedmarc/pull/886)). Each entry picks its own transport: an IP address means plain DNS on port 53 exactly as before, an `https://` URL means DoH, and `tls://ip[:port][#hostname]` means DoT, where the port defaults to 853 and the optional `#hostname` names the server's TLS certificate identity, matching systemd-resolved's syntax. DoH queries go through a shared `httpx` client that honors the `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` and `SSL_CERT_FILE`/`SSL_CERT_DIR` environment variables, so checks can run on networks that block outbound DNS but provide an HTTP proxy. The DNSSEC, DNSKEY, and TLSA checks use the configured transports too. The `dnspython` requirement is now `dnspython[doh]>=2.7.0`
-
-### Removed
-
-- The `pyopenssl` dependency, as planned in 5.17.5. checkdmarc stopped importing pyOpenSSL in that release; the floor was kept for one release only so upgrades would also move any leftover pyOpenSSL to a version compatible with `cryptography` 50
 
 ### Changed
 
@@ -61,8 +43,20 @@ call invalid are no longer accepted — hence the major version.
 - Removed unused module-level copies of the DMARC grammar internals (`checkdmarc.dmarc.version_tag`, `tag_value`, and `START`), which duplicated the private grammar class and shadow-collided with unrelated locals
 - Many internal variables renamed so a name no longer changes type or meaning mid-function (split results, parse results, pyleri grammar results, joined display strings); no behavior changes
 
+### Removed
+
+- The `pyopenssl` dependency, as planned in 5.17.5. checkdmarc stopped importing pyOpenSSL in that release; the floor was kept for one release only so upgrades would also move any leftover pyOpenSSL to a version compatible with `cryptography` 50
+
 ### Fixed
 
+- SPF: the 10-lookup and 2-void-lookup limits are enforced after every counted term rather than in some branches only; `redirect` is ignored when an `all` mechanism is present (RFC 7208 §6.1); a `v=spf10`-style sibling TXT record is discarded instead of hiding a valid record (§4.5); multiple `all` mechanisms are valid with first-match semantics (§4.6.2); terms after `all` are no longer processed or counted; duplicate includes count their lookups like real evaluation; the term-value charset matches the §12 ABNF (so `%{ir=}` and `!` parse); exp-only macro letters `c`/`r`/`t` are rejected outside exp text (§7.2); the uppercase `R` transformer is accepted; `exp` is honored anywhere in the record; `mx` CIDR suffixes are stripped before the DNS query instead of being sent as part of the name; dual-CIDR lengths and leading-zero CIDRs are validated; empty `a:`/`mx:`/`ptr:` domain-specs are rejected
+- DMARC: the grammar matches the §4.8 ABNF (any-length tag names, full value charset — mandatory percent-encoding like `%2C` in report URIs now parses, and bare `v=DMARC1` is valid); non-mailto report URIs are kept with a warning instead of invalidating the record (§4.7); invalid `adkim`/`aspf` values fall back to `r` with a warning; `fo=0:1` is reported as invalid (mutually exclusive), not "redundant"; the record-detection filter tolerates ABNF-legal whitespace and case around `v=`; an unrelated TXT record no longer causes a false "authorization record not found"; an NXDOMAIN on the courtesy apex query no longer discards an already-found record; two citations to nonexistent RFC sections corrected
+- BIMI: the organizational-domain fallback keeps the caller's selector instead of reverting to `default` (draft §7.2 step 6); the SVG-vs-certificate logotype hash check is tag-order-independent and hashes the raw bytes; SVG file size is measured in actual bytes instead of `sys.getsizeof` of a decoded string; the `pct` warning fires only for `p=quarantine` per §7.1 step 9; empty `lps=` parses to an empty list; `l=`/`a=` URIs are validated against the `bimi-uri` ABNF (no raw spaces or unencoded commas); the PEM-bytes certificate path reads the leaf certificate
+- MTA-STS: the policy fetch no longer follows redirects and requires HTTP 200 exactly (RFC 8461 §3.3); MX pattern matching is anchored with `*` matching a single label, so `*.example.com` no longer matches `mail.example.com.evil.com` (§4.1); a TXT record without `id` returns `valid: False` instead of crashing; duplicate fields are first-wins with a warning (§3.2); mixed LF/CRLF policies parse; `mx` values are validated against the `["*."] Domain` ABNF; record detection keys on `v=STSv1;` including the semicolon; `id` is capped at 32 alphanumerics; `max_age` accepts only plain digits
+- TLSRPT: whitespace around commas between `rua` URIs is accepted per the §3 ABNF; duplicate `rua` tags warn instead of failing; record detection keys on `v=TLSRPTv1;` per §3.1; URI validation is anchored so garbage-prefixed schemes are rejected; the parser returns the matching TLSRPT record instead of whichever TXT record sorted first
+- SMTP: negative STARTTLS results are cached like positive ones; the port-465 fallback failure warning names the implicit-TLS probe instead of reading as a port 25 failure
+- SOA: `check_soa()` queries the domain's own SOA first and falls back to the base domain only when there is no answer, so delegated child zones report their own SOA and contact (RFC 2181 §7); `soa_rname_to_email()` handles RFC 1035 §5.1 escapes, including an escaped backslash before a real label separator
+- DNSSEC: caller-supplied caches are forwarded to `get_dnskey()`; the `dnssec` result-key documentation states what the boolean actually means
 - An SPF `a` mechanism's CIDR suffix now applies to the returned addresses. A split result was reassigned over the same variable, so the length check inspected the hostname string: `a:example.com/24` silently lost its suffix, a two-character hostname had its second character used as one, and `a/24` failed to default to the current domain
 - The `DNS_CACHE_MAX_AGE_SECONDS` environment variable now actually configures the DNS cache, which was wired to the DNSSEC constant, so the documented variable had no effect and `DNSSEC_CACHE_MAX_AGE_SECONDS` silently controlled both caches
 - The `domains` field of BIMI certificate metadata now stays a list when the checked domain does not match the certificate; building the error message rebound the list to a comma-joined string
