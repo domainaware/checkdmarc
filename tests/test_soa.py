@@ -33,20 +33,37 @@ class Test(unittest.TestCase):
     def testSoaRnameToEmailEscapedBackslashBeforeDot(self):
         """An escaped backslash before a real dot keeps the dot as the
         label boundary (RFC 1035 section 5.1): in a\\\\.b.example.com. the
-        local part is 'a\\' and the domain is b.example.com"""
+        local part is 'a\\', which is not a valid dot-atom, so it comes
+        back as a quoted-string with the backslash escaped"""
         email = checkdmarc.soa.soa_rname_to_email("a\\\\.b.example.com.")
-        self.assertEqual(email, "a\\@b.example.com")
+        self.assertEqual(email, '"a\\\\"@b.example.com')
 
     def testSoaRnameToEmailEscapedAtSign(self):
-        """A \\@ escape expands to a literal @ in the local part"""
+        """A \\@ escape expands to a literal @ in the local part, which
+        RFC 5322 only allows inside a quoted-string"""
         email = checkdmarc.soa.soa_rname_to_email(r"a\@b.example.com.")
-        self.assertEqual(email, "a@b@example.com")
+        self.assertEqual(email, '"a@b"@example.com')
 
     def testSoaRnameToEmailDecimalEscape(self):
         """A \\DDD escape (RFC 1035 section 5.1) expands to the byte with
-        that decimal value"""
+        that decimal value; a space forces the quoted-string form"""
         email = checkdmarc.soa.soa_rname_to_email(r"john\032doe.example.com.")
-        self.assertEqual(email, "john doe@example.com")
+        self.assertEqual(email, '"john doe"@example.com')
+
+    def testSoaRnameToEmailQuoteCharacterIsEscaped(self):
+        """A decoded '"' must be escaped as a quoted-pair inside the
+        quoted-string (RFC 5322 section 3.2.4)"""
+        email = checkdmarc.soa.soa_rname_to_email(r"a\"b.example.com.")
+        self.assertEqual(email, '"a\\"b"@example.com')
+
+    def testSoaRnameToEmailUnrepresentableCharacter(self):
+        """A decoded control character cannot appear in any valid email
+        address, quoted or not"""
+        self.assertRaises(
+            ValueError,
+            checkdmarc.soa.soa_rname_to_email,
+            r"a\000b.example.com.",
+        )
 
     def testSoaRnameToEmailDecimalEscapeOutOfRange(self):
         """A \\DDD escape over 255 is invalid"""

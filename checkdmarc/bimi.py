@@ -188,9 +188,14 @@ _BIMI_URI_REGEX = re.compile(
     r"(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+"  # host labels before the last dot
     r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"  # final host label
     r"(?::\d{1,5})?"  # optional port
-    # path/query/fragment: RFC 3986 characters, with "%" only as a valid
-    # two-hex-digit percent-escape (a bare "%" or "%zz" is malformed)
-    r"(?:[/?#](?:[a-z0-9\-._~:/?#\[\]@!$&'()*+=]|%[0-9a-f]{2})*)?",
+    # path and query: RFC 3986 characters, with "%" only as a valid
+    # two-hex-digit percent-escape (a bare "%" or "%zz" is malformed).
+    # "#" is excluded from the class because RFC 3986 allows it only
+    # once, as the fragment delimiter, and "[" / "]" are legal only in
+    # an IP-literal host (which the FQDN host rule above excludes).
+    r"(?:[/?](?:[a-z0-9\-._~:/?@!$&'()*+=]|%[0-9a-f]{2})*)?"
+    # optional fragment after the single allowed "#"
+    r"(?:#(?:[a-z0-9\-._~:/?@!$&'()*+=]|%[0-9a-f]{2})*)?",
     re.IGNORECASE,
 )
 

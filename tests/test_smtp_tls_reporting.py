@@ -213,6 +213,27 @@ class Test(unittest.TestCase):
         )
         self.assertIn("https://[2001:db8::1]/tlsrpt", result["tags"]["rua"]["value"])
 
+    def testHttpsUriInvalidIpv6LiteralRejected(self):
+        """A bracketed authority that is not a real IPv6 address (RFC 4291)
+        is not a valid RFC 3986 host"""
+        self.assertRaises(
+            checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError,
+            checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+            "v=TLSRPTv1; rua=https://[::::]/tlsrpt",
+        )
+
+    def testHttpsUriSingleFragmentDelimiter(self):
+        """RFC 3986 allows "#" exactly once, as the fragment delimiter"""
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            "v=TLSRPTv1; rua=https://example.com/a#one"
+        )
+        self.assertIn("https://example.com/a#one", result["tags"]["rua"]["value"])
+        self.assertRaises(
+            checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError,
+            checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+            "v=TLSRPTv1; rua=https://example.com/a#one#two",
+        )
+
 
 class TestQuerySmtpTlsReportingRecord(unittest.TestCase):
     def testDiscoveryAcceptsWspBeforeDelimiter(self):

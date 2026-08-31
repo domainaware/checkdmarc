@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from typing import TypedDict
 
@@ -12,6 +13,12 @@ from checkdmarc.utils import DNSException, get_soa_record
 """Functions for parsing DNS Start of Authority records"""
 
 U32_MAX = 2**32 - 1
+
+# RFC 5322 section 3.2.3 dot-atom-text: runs of atext separated by single
+# dots. A local part that matches this needs no quoting.
+_DOT_ATOM_TEXT_REGEX = re.compile(
+    r"[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~]+(?:\.[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~]+)*"
+)
 
 
 class ParsedSOARecord(TypedDict):
@@ -50,6 +57,12 @@ def soa_rname_to_email(rname: str) -> str:
     value. A simple regex lookbehind gets ``a\\\\.b.example.com.`` wrong:
     the dot there follows an *escaped* backslash, so it is a real label
     boundary (local part ``a\\``, domain ``b.example.com``).
+
+    A decoded local part that is not a plain dot-atom (for example one
+    holding a space or ``@``) is returned as an RFC 5322 quoted-string, so
+    the result is always a syntactically valid address; a local part
+    holding a character no valid address can carry (a control character or
+    a byte outside ASCII) raises ``ValueError``.
     """
     s = rname.rstrip(".")
     local_chars: list[str] = []
@@ -83,6 +96,20 @@ def soa_rname_to_email(rname: str) -> str:
     local = "".join(local_chars)
     if not local or not domain:
         raise ValueError(f"Invalid SOA RNAME split: {rname!r}")
+    if _DOT_ATOM_TEXT_REGEX.fullmatch(local) is None:
+        # Decoded escapes can produce characters an unquoted local part
+        # cannot carry (e.g. "\@" -> "@", "\032" -> a space). RFC 5322
+        # section 3.2.4 allows them inside a quoted-string, with '"' and
+        # "\" escaped as quoted-pairs; characters outside VCHAR and WSP
+        # cannot appear in a valid address at all.
+        for char in local:
+            if char not in (" ", "\t") and not ("\x21" <= char <= "\x7e"):
+                raise ValueError(
+                    f"Invalid SOA RNAME (local part contains a character "
+                    f"that cannot appear in an email address): {rname!r}"
+                )
+        escaped = local.replace("\\", "\\\\").replace('"', '\\"')
+        local = f'"{escaped}"'
     return f"{local}@{domain}"
 
 

@@ -109,6 +109,18 @@ class Test(unittest.TestCase):
             checkdmarc.mta_sts.parse_mta_sts_policy("")
         self.assertIn("Missing required key", str(ctx.exception))
 
+    def testParseMtaStsPolicyStrayCarriageReturn(self):
+        """RFC 8461 section 3.2 allows CR only as part of a CRLF line
+        ending, so a CR CR LF ending or a CR in the middle of a line is a
+        syntax error rather than being silently stripped"""
+        for policy in (
+            "version: STSv1\r\r\nmode: none\r\nmax_age: 86400\r\n",
+            "version: STSv1\r\nmode: no\rne\r\nmax_age: 86400\r\n",
+        ):
+            with self.assertRaises(checkdmarc.mta_sts.MTASTSPolicySyntaxError) as ctx:
+                checkdmarc.mta_sts.parse_mta_sts_policy(policy)
+            self.assertIn("carriage return", str(ctx.exception))
+
     def testParseMtaStsPolicyMixedLineEndings(self):
         """RFC 8461 section 3.2 allows each line to end with LF or CRLF,
         so a policy mixing both must parse"""

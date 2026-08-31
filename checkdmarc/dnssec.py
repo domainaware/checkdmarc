@@ -145,11 +145,14 @@ def _query_rrset(
     """
     Query one record type at one name, asking for DNSSEC signatures
 
-    Nameservers are tried in order until one answers; a transport failure
-    moves on to the next entry. The raw response is returned alongside the
-    record set and its signature so the caller can inspect the response code
-    and flags — a SERVFAIL from a validating resolver carries meaning that an
-    empty answer does not.
+    Nameservers are tried in order until one gives a usable answer; a
+    transport failure, or a response code such as REFUSED or FORMERR that
+    means the server could not answer rather than that the records are
+    absent, moves on to the next entry. The raw response is returned
+    alongside the record set and its signature so the caller can inspect the
+    response code and flags — a SERVFAIL from a validating resolver carries
+    meaning that an empty answer does not, so a SERVFAIL response is
+    returned when no other nameserver gives a NOERROR or NXDOMAIN answer.
 
     Args:
         domain (str): The name to query
@@ -164,6 +167,7 @@ def _query_rrset(
     """
     request = dns.message.make_query(domain, rdatatype, want_dnssec=True)
     name = dns.name.from_text(domain)
+    servfail_response = None
     for nameserver in nameservers:
         try:
             response = _query_nameserver(request, nameserver, timeout)
@@ -172,8 +176,28 @@ def _query_rrset(
             continue
         if response is None:
             continue
+        rcode = response.rcode()
+        if rcode == dns.rcode.SERVFAIL:
+            # A validating resolver answers SERVFAIL for a zone that fails
+            # validation, so the response means something — but another
+            # configured nameserver may still hold a real answer. Keep the
+            # first SERVFAIL and fall back to it after the loop.
+            if servfail_response is None:
+                servfail_response = response
+            continue
+        if rcode not in (dns.rcode.NOERROR, dns.rcode.NXDOMAIN):
+            # REFUSED, FORMERR, NOTIMP, and the like mean this nameserver
+            # could not or would not answer, not that the record set is
+            # absent; treat them like transport failures and move on.
+            logger.debug(
+                f"{rdatatype.name} query at {domain} returned "
+                f"{dns.rcode.to_text(rcode)}; trying the next nameserver"
+            )
+            continue
         rrset, rrsig = _find_record_and_signature(response.answer, name, rdatatype)
         return rrset, rrsig, response
+    if servfail_response is not None:
+        return None, None, servfail_response
     return None, None, None
 
 

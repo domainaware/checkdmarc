@@ -571,9 +571,22 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     seen_keys: set[str] = set()
     # RFC 8461 section 3.2: each line may end with either LF or CRLF, so
     # mixed line endings within one policy file are acceptable. Split only
-    # on LF and drop a trailing CR: str.splitlines() would also split on
-    # separators the RFC does not allow (vertical tab, form feed, U+2028).
-    lines = [line.rstrip("\r") for line in policy.split("\n")]
+    # on LF and drop the one CR belonging to a CRLF: str.splitlines()
+    # would also split on separators the RFC does not allow (vertical
+    # tab, form feed, U+2028), and rstrip("\r") would remove every
+    # trailing CR, hiding invalid endings such as CR CR LF. Any CR left
+    # after removing the CRLF one is a stray control character the
+    # sts-policy-value grammar forbids, so reject it here — the later
+    # .strip() on each value would silently discard it otherwise.
+    lines = []
+    for line_index, raw_line in enumerate(policy.split("\n")):
+        line = raw_line.removesuffix("\r")
+        if "\r" in line:
+            raise MTASTSPolicySyntaxError(
+                f"Line {line_index + 1}: A carriage return that is not part "
+                "of a CRLF line ending is not allowed (RFC 8461 section 3.2)."
+            )
+        lines.append(line)
     for i in range(len(lines)):
         line_number = i + 1
         if lines[i] == "":

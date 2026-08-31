@@ -499,6 +499,15 @@ class TestParseBimiRecord(unittest.TestCase):
             "v=BIMI1; l=https://example.com/logo%zz.svg",
         )
 
+    def testUriMultipleFragmentDelimitersRejected(self):
+        """RFC 3986 allows "#" exactly once, as the fragment delimiter, so
+        an l= URI with a second "#" is rejected"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMIIndicatorURI,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=https://example.com/logo.svg#one#two",
+        )
+
     def testLogoProcessingFailure(self):
         """A ValueError while parsing a fetched image produces an image error
         entry, not a raised exception"""

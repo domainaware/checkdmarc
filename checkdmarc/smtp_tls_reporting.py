@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import re
 from collections.abc import Sequence
@@ -52,12 +53,21 @@ TLSRPT_MAILTO_REGEX_STRING = (
     r"mailto:(?:[A-Za-z0-9\-._~$&'()*+=]|%[0-9A-Fa-f]{2})+"
     r"@(?:[A-Za-z0-9\-]+\.)*[A-Za-z0-9\-]+"
 )
+# Path, query, and fragment characters per RFC 3986: pchar plus "/" and
+# "?", minus the ",", "!", and ";" that RFC 8460 requires percent-encoded.
+# "#" is excluded because RFC 3986 allows it only once, as the fragment
+# delimiter, and "[" / "]" are legal only in an IP-literal host.
+_TLSRPT_URI_CHAR = r"(?:[A-Za-z0-9\-._~$&'()*+=:@/?]|%[0-9A-Fa-f]{2})"
 # The https authority may be a hostname (one or more labels) or a
-# bracketed IPv6 literal, per the RFC 3986 authority grammar.
+# bracketed IPv6 literal, per the RFC 3986 authority grammar. The bracket
+# branch only checks the character shape; parse_smtp_tls_reporting_record
+# checks the captured text against the ipaddress module, because a full
+# RFC 4291 IPv6 grammar is impractical in a regular expression.
 TLSRPT_HTTPS_REGEX_STRING = (
-    r"https://(?:\[[0-9A-Fa-f:.]+\]|(?:[A-Za-z0-9\-]+\.)*[A-Za-z0-9\-]+)"
+    r"https://(?:\[(?P<ipv6>[0-9A-Fa-f:.]+)\]|(?:[A-Za-z0-9\-]+\.)*[A-Za-z0-9\-]+)"
     r"(?::[0-9]{1,5})?"
-    r"(?:[/?#](?:[A-Za-z0-9\-._~$&'()*+=:@/?#\[\]]|%[0-9A-Fa-f]{2})*)?"
+    rf"(?:[/?]{_TLSRPT_URI_CHAR}*)?"
+    rf"(?:#{_TLSRPT_URI_CHAR}*)?"
 )
 SMTPTLSREPORTING_URI_REGEX_STRING = (
     rf"({TLSRPT_MAILTO_REGEX_STRING}|{TLSRPT_HTTPS_REGEX_STRING})"
@@ -487,7 +497,17 @@ def parse_smtp_tls_reporting_record(
     for uri in uris:
         # fullmatch anchors the check so that a URI with a bogus prefix
         # (e.g. xhttps://...) does not pass on a partial match
-        if SMTPTLSREPORTING_URI_REGEX.fullmatch(uri) is None:
+        match = SMTPTLSREPORTING_URI_REGEX.fullmatch(uri)
+        valid = match is not None
+        if match is not None and match.group("ipv6") is not None:
+            # The regex only checks the rough shape of a bracketed IPv6
+            # literal; let the ipaddress module decide whether it is a
+            # real RFC 4291 address (e.g. "[::::]" is not).
+            try:
+                ipaddress.IPv6Address(match.group("ipv6"))
+            except ValueError:
+                valid = False
+        if not valid:
             raise SMTPTLSReportingSyntaxError(
                 f"{uri} is not a valid SMTP TLS Reporting URI."
             )

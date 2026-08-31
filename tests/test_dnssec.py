@@ -2,7 +2,7 @@
 
 import os
 import unittest
-from typing import cast
+from typing import ClassVar, cast
 from unittest.mock import MagicMock, patch
 
 import dns.dnssec
@@ -931,6 +931,86 @@ class TestEncryptedDnsTransports(unittest.TestCase):
                 cache=self._fresh_cache(),
             )
         self.assertIn("tls://not-an-ip", str(ctx.exception))
+
+
+class TestQueryRrsetRcodeHandling(unittest.TestCase):
+    NAMESERVERS: ClassVar[list[str]] = ["192.0.2.1", "192.0.2.2"]
+
+    def _ds_answer(self):
+        ds = dns.rrset.from_text("example.com.", 300, "IN", "DS", MISMATCHED_DS_RDATA)
+        return _response(ds, _rrsig("example.com.", "DS"))
+
+    def testRefusedFallsThroughToNextNameserver(self):
+        """REFUSED means the nameserver would not answer, not that the
+        record set is absent; the next nameserver's answer must be used"""
+        answers = [_response(rcode=dns.rcode.REFUSED), self._ds_answer()]
+        with patch("checkdmarc.dnssec._query_nameserver", side_effect=answers):
+            rrset, rrsig, response = checkdmarc.dnssec._query_rrset(
+                "example.com", dns.rdatatype.DS, self.NAMESERVERS, 2.0
+            )
+        self.assertIsNotNone(rrset)
+        self.assertIsNotNone(rrsig)
+        self.assertIsNotNone(response)
+        assert response is not None
+        self.assertEqual(response.rcode(), dns.rcode.NOERROR)
+
+    def testAllRefusedMeansNoAnswer(self):
+        """When every nameserver refuses, the caller must see a lookup
+        failure, not a clean empty answer that reads as an unsigned zone"""
+        answers = [
+            _response(rcode=dns.rcode.REFUSED),
+            _response(rcode=dns.rcode.FORMERR),
+        ]
+        with patch("checkdmarc.dnssec._query_nameserver", side_effect=answers):
+            rrset, rrsig, response = checkdmarc.dnssec._query_rrset(
+                "example.com", dns.rdatatype.DS, self.NAMESERVERS, 2.0
+            )
+        self.assertIsNone(rrset)
+        self.assertIsNone(rrsig)
+        self.assertIsNone(response)
+
+    def testServfailPreservedWhenNoBetterAnswer(self):
+        """A SERVFAIL from a validating resolver carries DNSSEC meaning, so
+        it is returned when no nameserver gives a real answer"""
+        answers = [
+            _response(rcode=dns.rcode.SERVFAIL),
+            _response(rcode=dns.rcode.REFUSED),
+        ]
+        with patch("checkdmarc.dnssec._query_nameserver", side_effect=answers):
+            rrset, _, response = checkdmarc.dnssec._query_rrset(
+                "example.com", dns.rdatatype.DS, self.NAMESERVERS, 2.0
+            )
+        self.assertIsNone(rrset)
+        self.assertIsNotNone(response)
+        assert response is not None
+        self.assertEqual(response.rcode(), dns.rcode.SERVFAIL)
+
+    def testServfailThenRealAnswerPrefersTheAnswer(self):
+        """A later nameserver's real answer wins over an earlier SERVFAIL"""
+        answers = [_response(rcode=dns.rcode.SERVFAIL), self._ds_answer()]
+        with patch("checkdmarc.dnssec._query_nameserver", side_effect=answers):
+            rrset, _, response = checkdmarc.dnssec._query_rrset(
+                "example.com", dns.rdatatype.DS, self.NAMESERVERS, 2.0
+            )
+        self.assertIsNotNone(rrset)
+        self.assertIsNotNone(response)
+        assert response is not None
+        self.assertEqual(response.rcode(), dns.rcode.NOERROR)
+
+    def testDsRefusedIsNotCached(self):
+        """REFUSED on the DS query from the only nameserver: the check
+        could not run, so the result is False but nothing is cached"""
+        cache = _fresh_cache()
+        with (
+            patch("dns.query.tcp", return_value=_response(rcode=dns.rcode.REFUSED)),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertFalse(result)
+        self.assertNotIn("example.com", cache)
+        self.assertTrue(any("no nameserver answered" in line for line in logs.output))
 
 
 class TestDeprecatedTestDnssecAlias(unittest.TestCase):
