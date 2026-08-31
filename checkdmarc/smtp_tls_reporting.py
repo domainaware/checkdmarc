@@ -467,8 +467,15 @@ def parse_smtp_tls_reporting_record(
         tag, _, tag_value = field.partition("=")
         if tag in SMTP_TLS_REPORTING_TAGS:
             if tag in tags:
-                # RFC 8460 does not forbid repeating a tag, so keep the
-                # record valid; use the first value and warn.
+                if tag == "rua":
+                    # RFC 8460 section 3: "The record supports the
+                    # ability to declare more than one rua", so each
+                    # repeated rua field adds report destinations; the
+                    # combined value is split into URIs below.
+                    tags["rua"]["value"] = f"{tags['rua']['value']},{tag_value}"
+                    continue
+                # Repeating any other defined tag has no additive meaning,
+                # so keep the record valid; use the first value and warn.
                 warnings.append(
                     f"The record contains more than one {tag} tag. Only "
                     f"the first {tag} value is used; the duplicates "

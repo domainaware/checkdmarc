@@ -598,7 +598,18 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
         key_value = lines[i].split(":", 1)
         if len(key_value) != 2:
             raise MTASTSPolicySyntaxError(f"Line {line_number}: Not a key: value pair.")
-        key = key_value[0].strip()
+        raw_key = key_value[0]
+        key = raw_key.strip()
+        # RFC 8461 section 3.2: the field delimiter is ":" *WSP, so
+        # whitespace is allowed after the colon (and after the value, via
+        # the record-level *WSP) but never before the field name or
+        # between the name and the colon.
+        if key != raw_key:
+            raise MTASTSPolicySyntaxError(
+                f"Line {line_number}: Whitespace is not allowed before a "
+                "field name or between the name and the colon "
+                "(RFC 8461 section 3.2)."
+            )
         value = key_value[1].strip()
         if key not in known_keys:
             # RFC 8461 section 3.2: unknown fields SHALL be ignored, not

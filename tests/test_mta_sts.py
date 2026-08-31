@@ -109,6 +109,18 @@ class Test(unittest.TestCase):
             checkdmarc.mta_sts.parse_mta_sts_policy("")
         self.assertIn("Missing required key", str(ctx.exception))
 
+    def testParseMtaStsPolicyWhitespaceBeforeFieldName(self):
+        """RFC 8461 section 3.2 defines the delimiter as ":" *WSP, so
+        whitespace is legal after the colon but not before the field name
+        or between the name and the colon"""
+        for policy in (
+            "version : STSv1\nmode: none\nmax_age: 86400\n",
+            "version: STSv1\n mode: none\nmax_age: 86400\n",
+        ):
+            with self.assertRaises(checkdmarc.mta_sts.MTASTSPolicySyntaxError) as ctx:
+                checkdmarc.mta_sts.parse_mta_sts_policy(policy)
+            self.assertIn("before a field name", str(ctx.exception))
+
     def testParseMtaStsPolicyMxLabelLength(self):
         """DNS labels are capped at 63 octets (RFC 1035 section 2.3.4), so
         a 64-character label in an mx value is invalid while a

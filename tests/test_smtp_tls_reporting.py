@@ -43,14 +43,17 @@ class Test(unittest.TestCase):
         self.assertNotIn("1ext", result["tags"])
         self.assertTrue(any("1ext" in warning for warning in result["warnings"]))
 
-    def testParseSmtpTlsReportingDuplicateTag(self):
-        """Duplicate rua tags warn but stay valid; the first value is used"""
+    def testParseSmtpTlsReportingRepeatedRuaFields(self):
+        """RFC 8460 section 3: "The record supports the ability to declare
+        more than one rua", so repeated rua fields merge their report
+        destinations with no warning"""
         record = "v=TLSRPTv1; rua=mailto:a@example.com; rua=mailto:b@example.com"
         result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(record)
-        self.assertEqual(result["tags"]["rua"]["value"], ["mailto:a@example.com"])
-        self.assertTrue(
-            any("more than one rua" in warning for warning in result["warnings"])
+        self.assertEqual(
+            result["tags"]["rua"]["value"],
+            ["mailto:a@example.com", "mailto:b@example.com"],
         )
+        self.assertEqual(result["warnings"], [])
 
     def testParseSmtpTlsReportingWhitespaceAroundURICommas(self):
         """Whitespace around rua URI commas is allowed (RFC 8460 s3 ABNF)"""
