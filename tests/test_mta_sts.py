@@ -311,6 +311,26 @@ class Test(unittest.TestCase):
         failure = cast(Any, result)
         self.assertIn("id", failure["error"])
 
+    def testWspBeforeFieldDelimiter(self):
+        """WSP before the ";" is legal per the RFC 8461 section 3.1 ABNF
+        (sts-field-delim = *WSP ";" *WSP) but warned about, because the
+        section's prose discard rule keys on the literal "v=STSv1;" """
+        result = checkdmarc.mta_sts.parse_mta_sts_record("v=STSv1 ; id=abc123")
+        self.assertEqual(result["tags"]["id"], "abc123")
+        self.assertTrue(
+            any("v=STSv1;" in w for w in result["warnings"]), result["warnings"]
+        )
+
+    def testPolicyRejectsNonRfcLineSeparators(self):
+        """Only LF and CRLF terminate policy lines (RFC 8461 section 3.2);
+        separators like vertical tab must not be treated as line breaks"""
+        policy = "version: STSv1\x0bmode: none\x0bmax_age: 86400"
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            policy,
+        )
+
 
 class TestQueryMtaStsRecord(unittest.TestCase):
     def testRecordFound(self):
@@ -406,6 +426,29 @@ class TestQueryMtaStsRecord(unittest.TestCase):
         with patch("checkdmarc.mta_sts.query_dns", side_effect=fake_dns):
             self.assertRaises(
                 checkdmarc.mta_sts.MTASTSRecordNotFound,
+                checkdmarc.mta_sts.query_mta_sts_record,
+                "example.com",
+            )
+
+    def testDiscoveryAcceptsWspBeforeDelimiter(self):
+        """A record with WSP before the ";" is recognized at discovery, not
+        discarded as unrelated"""
+        with patch(
+            "checkdmarc.mta_sts.query_dns",
+            return_value=["v=STSv1 ; id=abc123"],
+        ):
+            result = checkdmarc.mta_sts.query_mta_sts_record("example.com")
+        self.assertEqual(result["record"], "v=STSv1 ; id=abc123")
+
+    def testRecordAtApexIsWrongLocation(self):
+        """An STS record published at the domain apex instead of the
+        _mta-sts subdomain raises MTASTSRecordInWrongLocation"""
+        with patch(
+            "checkdmarc.mta_sts.query_dns",
+            side_effect=[dns.resolver.NXDOMAIN(), ["v=STSv1; id=abc123"]],
+        ):
+            self.assertRaises(
+                checkdmarc.mta_sts.MTASTSRecordInWrongLocation,
                 checkdmarc.mta_sts.query_mta_sts_record,
                 "example.com",
             )

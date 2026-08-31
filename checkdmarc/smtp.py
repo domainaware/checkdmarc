@@ -382,7 +382,10 @@ def get_mx_hosts(
             f"{domain} has a null MX record (RFC 7505): the domain "
             "explicitly does not accept mail"
         )
-    elif len(mx_record_set["hosts"]) == 0:
+    elif mx_record_set["record_count"] == 0:
+        # Only an actual empty MX answer triggers the implicit MX rule;
+        # malformed records (like a lone "10 .") produce no usable
+        # hosts but are MX records, and already carry their own warnings.
         warnings.append(
             f"{domain} has no MX records; mail could still be delivered to "
             "the address of an A or AAAA record for the domain, if one "

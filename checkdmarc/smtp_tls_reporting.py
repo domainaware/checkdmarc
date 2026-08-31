@@ -18,7 +18,6 @@ from checkdmarc._constants import (
     SYNTAX_ERROR_MARKER,
 )
 from checkdmarc.utils import (
-    HTTPS_REGEX,
     MAILTO_REGEX_STRING,
     WSP_REGEX,
     normalize_domain,
@@ -44,7 +43,17 @@ logger = logging.getLogger(__name__)
 # The RFC 8460 section 3 grammar uses RFC 7405 %s (case-sensitive) strings,
 # so "v=TLSRPTv1" must appear exactly, with no whitespace around the "=".
 SMTPTLSREPORTING_VERSION_REGEX_STRING = r"v=TLSRPTv1"
-SMTPTLSREPORTING_URI_REGEX_STRING = rf"({MAILTO_REGEX_STRING}|{HTTPS_REGEX})"
+# RFC 8460 section 3: a tlsrpt-uri is an RFC 3986 URI in which ",", "!",
+# and ";" must be percent-encoded. This local https pattern accepts
+# RFC 3986 path/query characters minus those three — and no raw spaces,
+# which the shared utils.HTTPS_REGEX would allow.
+TLSRPT_HTTPS_REGEX_STRING = (
+    r"https://(?:[A-Za-z0-9\-]+\.)+[A-Za-z0-9\-]+(?::[0-9]{1,5})?"
+    r"(?:[/?#](?:[A-Za-z0-9\-._~$&'()*+=:@/?#]|%[0-9A-Fa-f]{2})*)?"
+)
+SMTPTLSREPORTING_URI_REGEX_STRING = (
+    rf"({MAILTO_REGEX_STRING}|{TLSRPT_HTTPS_REGEX_STRING})"
+)
 
 # One tag=value field. The name side covers both the "rua" tag and RFC 8460
 # section 3 extension names: a letter or digit followed by up to 31 more
@@ -265,7 +274,10 @@ def query_smtp_tls_reporting_record(
     # discarded. The trailing ";" is part of the rule, and the section 3
     # grammar requires at least one field after the version tag, so a record
     # that is exactly "v=TLSRPTv1" is not a TLSRPT record either.
-    txt_prefix = "v=TLSRPTv1;"
+    # The section 3 ABNF allows WSP on either side of the ";"
+    # (field-delim = *WSP ";" *WSP), so accept that form here too; the
+    # parser warns that literal-minded senders may discard it.
+    txt_prefix = re.compile(rf"v=TLSRPTv1{WSP_REGEX}*;")
     tlsrpt_record = None
     tlsrpt_records = []
     unrelated_records = []
@@ -280,7 +292,7 @@ def query_smtp_tls_reporting_record(
             retries=retries,
         )
         for record in records:
-            if record.startswith(txt_prefix):
+            if txt_prefix.match(record) is not None:
                 tlsrpt_records.append(record)
             else:
                 unrelated_records.append(record)
@@ -314,7 +326,7 @@ def query_smtp_tls_reporting_record(
                 retries=retries,
             )
             for record in records:
-                if record.startswith(txt_prefix):
+                if txt_prefix.match(record) is not None:
                     raise SMTPTLSReportingRecordInWrongLocation(
                         "The SMTP TLS Reporting record must be located at "
                         f"{target}, not {domain}."
@@ -384,6 +396,16 @@ def parse_smtp_tls_reporting_record(
     record = record.strip('"').strip()
     if record.lower().startswith("v=spf1"):
         raise SPFRecordFoundWhereTLSRPTShouldBe(spf_in_tlsrpt_error_msg)
+    if record.startswith("v=TLSRPTv1") and not record.startswith("v=TLSRPTv1;"):
+        # The RFC 8460 section 3 ABNF allows WSP before the ";"
+        # (field-delim = *WSP ";" *WSP), but the section 3.1 prose discard
+        # rule keys on the literal string "v=TLSRPTv1;".
+        warnings.append(
+            'The record does not begin with the literal "v=TLSRPTv1;" '
+            "(there is whitespace before the semicolon); senders that "
+            "apply the RFC 8460 section 3.1 discard rule literally will "
+            "ignore this record"
+        )
     smtp_tls_syntax_checker = _SMTPTLSReportingGrammar()
     grammar_result = smtp_tls_syntax_checker.parse(record)
     if not grammar_result.is_valid:

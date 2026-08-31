@@ -442,6 +442,21 @@ class TestGetSoaRecord(unittest.TestCase):
             checkdmarc.utils.get_soa_record("www.example.com")
         self.assertIn("SERVFAIL at the base domain", str(ctx.exception))
 
+    def testIntermediateZoneSoa(self):
+        """A delegated zone between the queried name and the base domain is
+        found by the ancestor walk instead of being skipped"""
+        soa = "dns0.cl.cam.ac.uk. hostmaster.cl.cam.ac.uk. 1 2 3 4 5"
+        with patch(
+            "checkdmarc.utils.query_dns",
+            side_effect=[dns.resolver.NoAnswer(), [soa]],
+        ) as query:
+            result = checkdmarc.utils.get_soa_record("www.cl.cam.ac.uk")
+        self.assertEqual(result, soa)
+        self.assertEqual(
+            [call.args[0] for call in query.call_args_list],
+            ["www.cl.cam.ac.uk", "cl.cam.ac.uk"],
+        )
+
 
 class TestGetNameservers(unittest.TestCase):
     def testSuccess(self):

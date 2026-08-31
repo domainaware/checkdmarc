@@ -62,6 +62,15 @@ DMARC_TAG_VALUE_REGEX = re.compile(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 # whitespace around the equals sign and an upper- or lowercase tag name).
 _DMARC_RECORD_REGEX = re.compile(rf"^{DMARC_VERSION_REGEX_STRING}{WSP_REGEX}*(?:;|$)")
 
+# RFC 9989 section 4.7 imports the RFC 3986 URI grammar for report URIs.
+# This is not the full grammar: it requires a scheme followed by RFC 3986
+# unreserved and reserved characters or valid percent-escapes, which is
+# enough to reject raw spaces, control characters, and malformed escapes.
+_URI_REGEX = re.compile(
+    r"[a-z][a-z0-9+.\-]*:(?:[a-z0-9\-._~!$&'()*+,;=:@/?#\[\]]|%[0-9a-f]{2})+",
+    re.IGNORECASE,
+)
+
 # Extracts the value of the psd tag from a raw record string during the
 # RFC 9989 §4.10 tree walk, before the record is fully parsed. The v tag
 # must come first, so a psd tag is always preceded by a separator, and a
@@ -1042,7 +1051,11 @@ def parse_dmarc_report_uri(uri: str) -> ParsedDMARCReportURI:
         # recognizable non-mailto scheme in the parsed output; only a URI
         # with no scheme at all (or a malformed mailto URI) is an error.
         scheme_match = re.match(r"([a-z][a-z0-9+.\-]*):", uri, re.IGNORECASE)
-        if scheme_match is not None and scheme_match.group(1).lower() != "mailto":
+        if (
+            scheme_match is not None
+            and scheme_match.group(1).lower() != "mailto"
+            and _URI_REGEX.fullmatch(uri) is not None
+        ):
             return {
                 "scheme": scheme_match.group(1).lower(),
                 "address": uri,

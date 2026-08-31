@@ -19,12 +19,15 @@ from expiringdict import ExpiringDict
 import checkdmarc.smtp
 
 
-def _mx_record_set(hosts, *, warnings=None, null_mx=False):
+def _mx_record_set(hosts, *, warnings=None, null_mx=False, record_count=None):
     """Build a get_mx_record_set-shaped return value for mocking."""
+    if record_count is None:
+        record_count = len(hosts) + (1 if null_mx else 0)
     return {
         "hosts": hosts,
         "warnings": warnings if warnings is not None else [],
         "null_mx": null_mx,
+        "record_count": record_count,
     }
 
 
@@ -709,6 +712,35 @@ class TestGetMxHosts(unittest.TestCase):
         host = cast(Any, result["hosts"][0])
         self.assertFalse(host["tls"])
         self.assertFalse(host["starttls"])
+
+    def testMalformedOnlyMxDoesNotClaimImplicitMx(self):
+        """MX records that produce no usable hosts (e.g. a lone "10 .") must
+        not trigger the implicit-MX message: an MX RR exists"""
+        with patch(
+            "checkdmarc.smtp.get_mx_record_set",
+            return_value=_mx_record_set(
+                [],
+                warnings=["The MX record '10 .' on example.com is malformed"],
+                record_count=1,
+            ),
+        ):
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        self.assertFalse(
+            any("implicit MX" in w for w in result["warnings"]),
+            result["warnings"],
+        )
+
+    def testEmptyMxAnswerNotesImplicitMx(self):
+        """An actual empty MX answer notes the RFC 5321 implicit MX rule"""
+        with patch(
+            "checkdmarc.smtp.get_mx_record_set",
+            return_value=_mx_record_set([], record_count=0),
+        ):
+            result = checkdmarc.smtp.get_mx_hosts("example.com")
+        self.assertTrue(
+            any("implicit MX" in w for w in result["warnings"]),
+            result["warnings"],
+        )
 
     def testTlsTestingIsOptIn(self):
         """TLS testing is off by default: no probe runs and no tls/starttls

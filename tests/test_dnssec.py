@@ -666,6 +666,57 @@ class TestCheckDnssec(unittest.TestCase):
         self.assertTrue(result)
         self.assertTrue(any("AD flag" in line for line in logs.output), logs.output)
 
+    def testIntermediateSignedZoneWalk(self):
+        """A delegated signed zone between the queried name and the base
+        domain anchors validation, instead of being skipped for the base
+        domain's keys
+
+        www.signed-child.example.com has no DS of its own; the walk must
+        stop at signed-child.example.com (which has one) rather than
+        jumping to example.com. Real cryptography end to end.
+        """
+        cache = _fresh_cache()
+        private_key = ec.generate_private_key(ec.SECP256R1())
+        zone = dns.name.from_text("signed-child.example.com.")
+        dnskey = dns.dnssec.make_dnskey(
+            private_key.public_key(), Algorithm.ECDSAP256SHA256, flags=257
+        )
+        key_rrset = dns.rrset.from_rdata(zone, 300, dnskey)
+        key_sig = dns.rrset.from_rdata(
+            zone,
+            300,
+            dns.dnssec.sign(key_rrset, private_key, zone, dnskey, lifetime=3600),
+        )
+        ds = dns.dnssec.make_ds(zone, dnskey, "SHA256")
+        ds_rrset = dns.rrset.from_text(
+            "signed-child.example.com.", 300, "IN", "DS", ds.to_text()
+        )
+        www = dns.name.from_text("www.signed-child.example.com.")
+        a_rrset = dns.rrset.from_text(
+            "www.signed-child.example.com.", 300, "IN", "A", "192.0.2.1"
+        )
+        a_sig = dns.rrset.from_rdata(
+            www,
+            300,
+            dns.dnssec.sign(a_rrset, private_key, zone, dnskey, lifetime=3600),
+        )
+        with patch(
+            "dns.query.tcp",
+            side_effect=[
+                _response(),  # DS at www.signed-child.example.com: empty
+                _response(ds_rrset),  # DS at signed-child.example.com
+                _response(key_rrset, key_sig),  # DNSKEY for the child zone
+                _response(),  # MX at www: empty
+                _response(a_rrset, a_sig),  # A at www, signed by the child
+            ],
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "www.signed-child.example.com",
+                nameservers=["192.0.2.1"],
+                cache=cache,
+            )
+        self.assertTrue(result)
+
 
 class TestGetTlsaRecords(unittest.TestCase):
     def testNoNameserversRaises(self):

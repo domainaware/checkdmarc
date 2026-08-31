@@ -40,9 +40,12 @@ logger = logging.getLogger(__name__)
 
 
 # RFC 8461 section 3.1: the record must begin with the case-sensitive
-# literal "v=STSv1;" — no spaces around the equals sign. The trailing
-# whitespace here is the start of the field delimiter (*WSP ";" *WSP).
-MTA_STS_VERSION_REGEX_STRING = rf"v=STSv1;{WSP_REGEX}*"
+# version field "v=STSv1" — no spaces around the equals sign. The
+# whitespace around the ";" is the field delimiter (*WSP ";" *WSP), so
+# "v=STSv1 ; id=x" is syntactically valid, though senders applying the
+# section's literal 'begin with "v=STSv1;"' discard rule may ignore it
+# (parse_mta_sts_record warns about that form).
+MTA_STS_VERSION_REGEX_STRING = rf"v=STSv1{WSP_REGEX}*;{WSP_REGEX}*"
 # RFC 8461 section 3.1: a field name is 1-32 letters, digits, underscores,
 # hyphens, or dots (starting with a letter or digit), followed directly by
 # "=" (no surrounding spaces) and a value of any visible ASCII characters
@@ -292,9 +295,12 @@ def query_mta_sts_record(
     logger.debug(f"Checking for an MTA-STS record on {domain}")
     warnings = []
     target = f"_mta-sts.{domain}"
-    # RFC 8461 section 3.1: records that do not begin with the exact
-    # string "v=STSv1;" are discarded, not treated as errors
-    txt_prefix = "v=STSv1;"
+    # RFC 8461 section 3.1: records that do not begin with "v=STSv1;" are
+    # discarded, not treated as errors. The section's ABNF allows WSP on
+    # either side of the ";" (sts-field-delim = *WSP ";" *WSP), so accept
+    # that form here too; the parser warns that literal-minded senders may
+    # discard it.
+    txt_prefix = re.compile(rf"v=STSv1{WSP_REGEX}*;")
     sts_record = None
     sts_records = []
     unrelated_records = []
@@ -309,7 +315,7 @@ def query_mta_sts_record(
             retries=retries,
         )
         for record in records:
-            if record.startswith(txt_prefix):
+            if txt_prefix.match(record) is not None:
                 sts_records.append(record)
             else:
                 unrelated_records.append(record)
@@ -349,7 +355,7 @@ def query_mta_sts_record(
                 retries=retries,
             )
             for record in records:
-                if record.startswith(txt_prefix):
+                if txt_prefix.match(record) is not None:
                     raise MTASTSRecordInWrongLocation(
                         f"The MTA-STS record must be located at {target}, not {domain}."
                     )
@@ -405,6 +411,16 @@ def parse_mta_sts_record(
     record = record.strip('"')
     if record.lower().startswith("v=spf1"):
         raise SPFRecordFoundWhereMTASTSRecordShouldBe(_SPF_IN_MTA_STS_ERROR_MSG)
+    if record.startswith("v=STSv1") and not record.startswith("v=STSv1;"):
+        # The RFC 8461 section 3.1 ABNF allows WSP before the ";"
+        # (sts-field-delim = *WSP ";" *WSP), but the same section's prose
+        # discard rule keys on the literal string "v=STSv1;".
+        warnings.append(
+            'The record does not begin with the literal "v=STSv1;" '
+            "(there is whitespace before the semicolon); senders that "
+            "apply the RFC 8461 section 3.1 discard rule literally will "
+            "ignore this record"
+        )
     sts_syntax_checker = _STSGrammar()
     grammar_result = sts_syntax_checker.parse(record)
     if not grammar_result.is_valid:
@@ -544,8 +560,10 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     values: dict[str, str | int] = {}
     seen_keys: set[str] = set()
     # RFC 8461 section 3.2: each line may end with either LF or CRLF, so
-    # mixed line endings within one policy file are acceptable
-    lines = policy.splitlines()
+    # mixed line endings within one policy file are acceptable. Split only
+    # on LF and drop a trailing CR: str.splitlines() would also split on
+    # separators the RFC does not allow (vertical tab, form feed, U+2028).
+    lines = [line.rstrip("\r") for line in policy.split("\n")]
     for i in range(len(lines)):
         line_number = i + 1
         if lines[i] == "":

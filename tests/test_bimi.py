@@ -464,6 +464,32 @@ class TestParseBimiRecord(unittest.TestCase):
             )
         self.assertIn("error", result["image"])
 
+    def testCertificateErrorPathDoesNotCrashHashCheck(self):
+        """get_certificate_metadata's error path returns metadata without a
+        logotype_sha256 key; the logotype comparison must not raise KeyError
+        and must not report a false mismatch"""
+        fake_session = MagicMock()
+        fake_session.get.return_value = _fake_response(VALID_SVG.encode("utf-8"))
+        with (
+            patch("checkdmarc.bimi.requests.Session", return_value=fake_session),
+            patch(
+                "checkdmarc.bimi.get_certificate_metadata",
+                return_value={
+                    "valid": False,
+                    "validation_errors": ["could not process the certificate"],
+                },
+            ),
+        ):
+            result = checkdmarc.bimi.parse_bimi_record(
+                "v=BIMI1; l=https://example.com/logo.svg; "
+                "a=https://example.com/logo.pem"
+            )
+        self.assertIn("image", result)
+        self.assertFalse(
+            any("does not match" in w for w in result["warnings"]),
+            result["warnings"],
+        )
+
     def testLogoProcessingFailure(self):
         """A ValueError while parsing a fetched image produces an image error
         entry, not a raised exception"""

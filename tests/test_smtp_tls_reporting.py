@@ -152,8 +152,39 @@ class Test(unittest.TestCase):
         )
         self.assertIn("mailto:tlsrpt@example.com", result["tags"]["rua"]["value"])
 
+    def testWspBeforeFieldDelimiterWarns(self):
+        """WSP before the ";" is legal per the RFC 8460 section 3 ABNF
+        (field-delim = *WSP ";" *WSP) but warned about, because the
+        section 3.1 prose discard rule keys on the literal "v=TLSRPTv1;" """
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            "v=TLSRPTv1 ; rua=mailto:tlsrpt@example.com"
+        )
+        self.assertIn("mailto:tlsrpt@example.com", result["tags"]["rua"]["value"])
+        self.assertTrue(
+            any("v=TLSRPTv1;" in w for w in result["warnings"]), result["warnings"]
+        )
+
+    def testHttpsUriWithSpaceRejected(self):
+        """RFC 3986 URIs cannot contain raw spaces"""
+        self.assertRaises(
+            checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError,
+            checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+            "v=TLSRPTv1; rua=https://example.com/a b",
+        )
+
 
 class TestQuerySmtpTlsReportingRecord(unittest.TestCase):
+    def testDiscoveryAcceptsWspBeforeDelimiter(self):
+        """A record with WSP before the ";" is recognized at discovery"""
+        with patch(
+            "checkdmarc.smtp_tls_reporting.query_dns",
+            return_value=["v=TLSRPTv1 ; rua=mailto:tlsrpt@example.com"],
+        ):
+            result = checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record(
+                "example.com"
+            )
+        self.assertEqual(result["record"], "v=TLSRPTv1 ; rua=mailto:tlsrpt@example.com")
+
     def testRecordFound(self):
         with patch(
             "checkdmarc.smtp_tls_reporting.query_dns",
@@ -247,6 +278,22 @@ class TestQuerySmtpTlsReportingRecord(unittest.TestCase):
         ):
             self.assertRaises(
                 checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordNotFound,
+                checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record,
+                "example.com",
+            )
+
+    def testRecordAtApexIsWrongLocation(self):
+        """A TLSRPT record published at the domain apex instead of the
+        _smtp._tls subdomain raises SMTPTLSReportingRecordInWrongLocation"""
+        with patch(
+            "checkdmarc.smtp_tls_reporting.query_dns",
+            side_effect=[
+                dns.resolver.NXDOMAIN(),
+                ["v=TLSRPTv1; rua=mailto:tlsrpt@example.com"],
+            ],
+        ):
+            self.assertRaises(
+                checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordInWrongLocation,
                 checkdmarc.smtp_tls_reporting.query_smtp_tls_reporting_record,
                 "example.com",
             )

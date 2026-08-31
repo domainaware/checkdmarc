@@ -638,46 +638,37 @@ def get_soa_record(
     """
     # Every zone has its own SOA record at its top (RFC 2181 section 7), and
     # a delegated child zone (e.g. cl.cam.ac.uk inside cam.ac.uk) is its own
-    # zone. So ask for the domain's own SOA first, and only fall back to the
-    # registered/base domain when the name itself has no SOA — a subdomain
-    # that is part of its parent's zone rather than a zone of its own.
+    # zone. Walk from the domain itself up through each ancestor to the
+    # registered/base domain, returning the first SOA found, so a delegated
+    # zone between the queried name and the base domain (cl.cam.ac.uk
+    # between www.cl.cam.ac.uk and cam.ac.uk) is not skipped.
     domain = normalize_domain(domain)
-    try:
-        return query_dns(
-            domain,
-            "SOA",
-            nameservers=nameservers,
-            resolver=resolver,
-            timeout=timeout,
-            retries=retries,
-        )[0]
-    except dns.resolver.NXDOMAIN:
-        domain_exists = False
-    except dns.resolver.NoAnswer:
-        domain_exists = True
-    except dns.exception.DNSException as error:
-        raise DNSException(error)
-
     base_domain = get_base_domain(domain)
-    if base_domain == domain:
-        if not domain_exists:
-            raise DNSExceptionNXDOMAIN(f"The domain {domain} does not exist.")
-        raise DNSException(f"The domain {domain} does not have an SOA record.")
-    try:
-        return query_dns(
-            base_domain,
-            "SOA",
-            nameservers=nameservers,
-            resolver=resolver,
-            timeout=timeout,
-            retries=retries,
-        )[0]
-    except dns.resolver.NXDOMAIN:
+    labels = domain.split(".")
+    base_label_count = len(base_domain.split("."))
+    candidates = [
+        ".".join(labels[i:]) for i in range(max(1, len(labels) - base_label_count + 1))
+    ]
+    last_error_was_nxdomain = False
+    for candidate in candidates:
+        try:
+            return query_dns(
+                candidate,
+                "SOA",
+                nameservers=nameservers,
+                resolver=resolver,
+                timeout=timeout,
+                retries=retries,
+            )[0]
+        except dns.resolver.NXDOMAIN:
+            last_error_was_nxdomain = True
+        except dns.resolver.NoAnswer:
+            last_error_was_nxdomain = False
+        except dns.exception.DNSException as error:
+            raise DNSException(error)
+    if last_error_was_nxdomain:
         raise DNSExceptionNXDOMAIN(f"The domain {base_domain} does not exist.")
-    except dns.resolver.NoAnswer:
-        raise DNSException(f"The domain {base_domain} does not have an SOA record.")
-    except dns.exception.DNSException as error:
-        raise DNSException(error)
+    raise DNSException(f"The domain {base_domain} does not have an SOA record.")
 
 
 def get_nameservers(
@@ -759,6 +750,7 @@ class MXRecordSet(TypedDict):
     hosts: list[MXHost]
     warnings: list[str]
     null_mx: bool
+    record_count: int
 
 
 def _is_valid_mx_hostname(hostname: str) -> bool:
@@ -847,6 +839,9 @@ def get_mx_record_set(
               - ``null_mx`` - True when the domain publishes only a null MX
                 record (``0 .``), meaning it explicitly does not accept
                 mail (RFC 7505)
+              - ``record_count`` - The number of MX records in the DNS
+                answer, including null and malformed records that do not
+                become ``hosts`` entries
 
     Raises:
         :exc:`checkdmarc.DNSException`
@@ -914,7 +909,12 @@ def get_mx_record_set(
             )
         hosts.append({"preference": preference, "hostname": hostname})
     hosts = sorted(hosts, key=lambda h: (h["preference"], h["hostname"]))
-    results: MXRecordSet = {"hosts": hosts, "warnings": warnings, "null_mx": null_mx}
+    results: MXRecordSet = {
+        "hosts": hosts,
+        "warnings": warnings,
+        "null_mx": null_mx,
+        "record_count": len(answers),
+    }
     return results
 
 

@@ -743,6 +743,32 @@ class Test(unittest.TestCase):
             self.assertTrue(any("no effect" in w for w in result["warnings"]))
 
 
+class TestReportUriRfc3986(unittest.TestCase):
+    def testMalformedNonMailtoUriRejected(self):
+        """A non-mailto value that is not an RFC 3986 URI (raw space) is an
+        error, not preserved as a valid report URI"""
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCReportURI,
+            checkdmarc.dmarc.parse_dmarc_report_uri,
+            "foo:bad space",
+        )
+
+    def testMalformedPercentEscapeRejected(self):
+        """A URI with a malformed percent-escape is not a valid RFC 3986 URI"""
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCReportURI,
+            checkdmarc.dmarc.parse_dmarc_report_uri,
+            "https://dmarc.example.com/%zz",
+        )
+
+    def testWellFormedHttpsUriKept(self):
+        """A well-formed non-mailto URI is preserved (RFC 9989 section 4.7)"""
+        result = checkdmarc.dmarc.parse_dmarc_report_uri(
+            "https://dmarc.example.com/submit"
+        )
+        self.assertEqual(result["scheme"], "https")
+
+
 class TestQueryDmarcRecordEdges(unittest.TestCase):
     """_query_dmarc_record apex fallback and exception branches"""
 

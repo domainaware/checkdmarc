@@ -1253,9 +1253,14 @@ def parse_bimi_record(
     # (tags other than v= may appear in any order per section 4.3 of the
     # BIMI draft).
     if svg_metadata is not None and cert_metadata is not None:
-        if svg_metadata["sha256"] == cert_metadata["logotype_sha256"]:
+        # get_certificate_metadata's error path returns metadata without a
+        # logotype_sha256 key, so read it with .get(): with no hash to
+        # compare against, the certificate's own error or validation
+        # messages already describe the problem.
+        cert_logo_hash = cert_metadata.get("logotype_sha256")
+        if cert_logo_hash is not None and svg_metadata["sha256"] == cert_logo_hash:
             hash_match = True
-        else:
+        elif cert_logo_hash is not None:
             warnings.append(
                 "The image at the l= tag URL does not match the image embedded in the certificate."
             )

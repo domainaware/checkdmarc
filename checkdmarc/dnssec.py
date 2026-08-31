@@ -350,19 +350,34 @@ def check_dnssec(
         if isinstance(cached_result, bool):
             return cached_result
 
-    # Find the zone the parent vouches for: the domain itself when a DS
-    # record exists there, otherwise the base domain.
-    zone = domain
-    logger.debug(f"Checking for DS records at {zone}")
-    ds_rrset, _, ds_response = _query_rrset(zone, RdataType.DS, nameservers, timeout)
-    if ds_rrset is None:
-        base_domain = get_base_domain(domain)
-        if base_domain != domain:
-            zone = base_domain
-            logger.debug(f"Checking for DS records at {zone}")
-            ds_rrset, _, ds_response = _query_rrset(
-                zone, RdataType.DS, nameservers, timeout
-            )
+    # Find the zone the parent vouches for by walking from the domain
+    # itself up through each ancestor to the base domain and using the
+    # first (deepest) name with a DS record. A delegated signed zone
+    # between the queried name and the base domain (for example
+    # signed-child.example.com under www.signed-child.example.com) holds
+    # the keys that actually sign the name's records, so jumping straight
+    # to the base domain would validate against the wrong keys.
+    base_domain = get_base_domain(domain)
+    labels = domain.split(".")
+    base_label_count = len(base_domain.split("."))
+    candidates = [
+        ".".join(labels[i:]) for i in range(max(1, len(labels) - base_label_count + 1))
+    ]
+    zone = candidates[-1]
+    ds_rrset = None
+    ds_response = None
+    for candidate in candidates:
+        logger.debug(f"Checking for DS records at {candidate}")
+        ds_rrset, _, ds_response = _query_rrset(
+            candidate, RdataType.DS, nameservers, timeout
+        )
+        if (
+            ds_response is None
+            or ds_response.rcode() == dns.rcode.SERVFAIL
+            or ds_rrset is not None
+        ):
+            zone = candidate
+            break
     if ds_response is None:
         logger.warning(
             f"Could not check DNSSEC for {domain}: no nameserver answered the DS query"
