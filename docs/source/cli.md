@@ -3,8 +3,8 @@
 ```text
 usage: checkdmarc [-h] [-p] [--ns NS [NS ...]] [--mx MX [MX ...]] [-d] [-f FORMAT]
                   [-o OUTPUT [OUTPUT ...]] [-n NAMESERVER [NAMESERVER ...]] [-t TIMEOUT]
-                  [--retries RETRIES] [-b BIMI_SELECTOR] [-v] [-w WAIT] [--skip-tls]
-                  [--debug]
+                  [--retries RETRIES] [-b BIMI_SELECTOR] [-v] [-w WAIT] [--check-mx-tls]
+                  [--skip-tls] [--debug]
                   domain [domain ...]
 
 Validates and parses email-related DNS records
@@ -40,7 +40,9 @@ options:
                         the BIMI selector to use (default "default")
   -v, --version         show program's version number and exit
   -w WAIT, --wait WAIT  number of seconds to wait between checking domains (default 0.0)
-  --skip-tls            skip TLS/SSL testing
+  --check-mx-tls        test MX hosts for STARTTLS and TLS support
+  --skip-tls            deprecated, no effect: TLS testing is off unless --check-mx-tls
+                        is given
   --debug               enable debugging output
 ```
 
@@ -61,7 +63,7 @@ next provider within ~1 second instead of timing out.
 On the CLI:
 
 ```bash
-checkdmarc -n 1.1.1.1 8.8.8.8 --skip-tls proton.me
+checkdmarc -n 1.1.1.1 8.8.8.8 proton.me
 ```
 
 In the API, the recommended pair is exposed as
@@ -121,14 +123,14 @@ export SSL_CERT_FILE=/etc/ssl/certs/corporate-ca.pem
 :::{note}
 checkdmarc's DoT connections are made directly to TCP port 853 and do not
 use a proxy. Use DoH on a proxy-only network. Note also that the STARTTLS
-test still needs a direct connection to each MX host on port 25; use
-`--skip-tls` where that is blocked.
+test (opt-in via `--check-mx-tls`) needs a direct connection to each MX
+host on port 25, so leave it off where that is blocked.
 :::
 
 ## Example
 
 ```bash
-checkdmarc --skip-tls proton.me
+checkdmarc proton.me
 ```
 
 ```json

@@ -8,13 +8,17 @@ from collections.abc import Sequence
 
 import dns.dnssec
 import dns.exception
+import dns.flags
 import dns.message
 import dns.name
 import dns.query
+import dns.rcode
+import dns.rdataclass
 import dns.rdatatype
 import dns.resolver
 import dns.rrset
 import httpx
+from dns.dnssectypes import DSDigest
 from dns.nameserver import Nameserver
 from dns.rdatatype import RdataType
 from expiringdict import ExpiringDict
@@ -132,6 +136,92 @@ def _find_record_and_signature(
     return rrset, rrsig
 
 
+def _query_rrset(
+    domain: str,
+    rdatatype: RdataType,
+    nameservers: Sequence[str | Nameserver],
+    timeout: float,
+) -> tuple[dns.rrset.RRset | None, dns.rrset.RRset | None, dns.message.Message | None]:
+    """
+    Query one record type at one name, asking for DNSSEC signatures
+
+    Nameservers are tried in order until one answers; a transport failure
+    moves on to the next entry. The raw response is returned alongside the
+    record set and its signature so the caller can inspect the response code
+    and flags — a SERVFAIL from a validating resolver carries meaning that an
+    empty answer does not.
+
+    Args:
+        domain (str): The name to query
+        rdatatype (RdataType): The record type to query
+        nameservers (list): A list of nameservers to query
+        timeout (float): Timeout in seconds
+
+    Returns:
+        tuple: The record set, the RRSIG covering it, and the raw response.
+        All three are ``None`` when no nameserver answered; the first two are
+        ``None`` when the response does not contain them.
+    """
+    request = dns.message.make_query(domain, rdatatype, want_dnssec=True)
+    name = dns.name.from_text(domain)
+    for nameserver in nameservers:
+        try:
+            response = _query_nameserver(request, nameserver, timeout)
+        except _TRANSPORT_ERRORS as e:
+            logger.debug(f"{rdatatype.name} query error at {domain}: {e}")
+            continue
+        if response is None:
+            continue
+        rrset, rrsig = _find_record_and_signature(response.answer, name, rdatatype)
+        return rrset, rrsig, response
+    return None, None, None
+
+
+def _ds_matched_keys(
+    zone_name: dns.name.Name,
+    ds_rrset: dns.rrset.RRset,
+    dnskey_rrset: dns.rrset.RRset,
+) -> dns.rrset.RRset:
+    """
+    Find the DNSKEYs that the parent zone's DS records vouch for
+
+    Per RFC 4035 section 5.2, a DS record authenticates a DNSKEY when a
+    digest of that key, computed with the DS record's digest algorithm,
+    matches the digest the DS record carries. Each key is digested with
+    ``dns.dnssec.make_ds`` and compared against each DS record; keys with
+    a digest algorithm this host cannot compute are skipped rather than
+    treated as matches.
+
+    Args:
+        zone_name (dns.name.Name): The zone apex the records belong to
+        ds_rrset (dns.rrset.RRset): The DS records from the parent zone
+        dnskey_rrset (dns.rrset.RRset): The zone's DNSKEY records
+
+    Returns:
+        dns.rrset.RRset: The keys a DS record matches (empty when none do)
+    """
+    matched = dns.rrset.RRset(zone_name, dns.rdataclass.IN, dns.rdatatype.DNSKEY)
+    for ds in ds_rrset:
+        for key in dnskey_rrset:
+            try:
+                computed = dns.dnssec.make_ds(
+                    zone_name, key, DSDigest(ds.digest_type), validating=True
+                )
+            except (
+                # An undefined digest type number
+                ValueError,
+                # A digest type dnspython cannot compute (e.g. GOST)
+                dns.exception.UnsupportedAlgorithm,
+                # A digest type policy forbids validating with (NULL)
+                dns.exception.DeniedByPolicy,
+            ) as e:
+                logger.debug(f"Skipping DS digest comparison for {zone_name}: {e}")
+                continue
+            if computed == ds:
+                matched.add(key)
+    return matched
+
+
 def get_dnskey(
     domain: str,
     *,
@@ -206,7 +296,35 @@ def check_dnssec(
     cache: ExpiringDict | None = None,
 ) -> bool:
     """
-    Check for DNSSEC on the given domain
+    Check that DNSSEC protects the given domain's records
+
+    ``True`` means the chain from the parent zone held together when this
+    function checked it directly:
+
+    - The parent zone publishes a DS record for the domain's zone (the
+      domain itself, or its base domain when the domain is not a zone apex)
+    - The zone's DNSKEY record set contains a key whose digest matches that
+      DS record (RFC 4034 section 5)
+    - The signature over the DNSKEY record set verifies against a DS-matched
+      key (RFC 4035 section 5)
+    - For a domain below the zone apex, a record set at the domain itself
+      carries a signature that verifies against those keys
+
+    ``False`` covers every other outcome, and the log tells them apart: an
+    unsigned zone (no DS record at the parent — including a zone that
+    publishes a DNSKEY anyway, which validating resolvers treat as unsigned
+    per RFC 4033 section 4.3), a broken zone whose parent publishes a DS
+    record that its keys or signatures do not live up to (logged as a
+    warning, because mail from such a domain is rejected by receivers that
+    validate), and a lookup that could not complete (not cached).
+
+    Trust assumptions: the DS record itself arrives over an unauthenticated
+    channel unless the configured resolver validates (the AD flag on its
+    answers, logged at debug level, says whether it claims to). This is a
+    one-level chain check anchored at the DS record the resolver reports,
+    not a full validator walking signatures down from the root, so a
+    resolver — or an attacker able to spoof its answers — that forges the DS
+    record along with everything below it would not be caught.
 
     Args:
         domain (str): The domain to check
@@ -220,43 +338,158 @@ def check_dnssec(
     if nameservers is None:
         nameservers = dns.resolver.Resolver().nameservers
     nameservers = _nameservers_to_resolver_input(nameservers)
+    # get_dnskey keeps its own module-level cache; only hand it a cache the
+    # caller supplied, so caller-isolated caches stay isolated.
+    dnskey_cache = cache
     if cache is None:
         cache = DNSSEC_CACHE
 
+    domain = normalize_domain(domain)
     if domain in cache:
         cached_result = cache[domain]
         if isinstance(cached_result, bool):
             return cached_result
 
-    key = get_dnskey(domain, nameservers=nameservers, timeout=timeout)
-    if key is None:
+    # Find the zone the parent vouches for: the domain itself when a DS
+    # record exists there, otherwise the base domain.
+    zone = domain
+    logger.debug(f"Checking for DS records at {zone}")
+    ds_rrset, _, ds_response = _query_rrset(zone, RdataType.DS, nameservers, timeout)
+    if ds_rrset is None:
+        base_domain = get_base_domain(domain)
+        if base_domain != domain:
+            zone = base_domain
+            logger.debug(f"Checking for DS records at {zone}")
+            ds_rrset, _, ds_response = _query_rrset(
+                zone, RdataType.DS, nameservers, timeout
+            )
+    if ds_response is None:
+        logger.warning(
+            f"Could not check DNSSEC for {domain}: no nameserver answered the DS query"
+        )
         return False
+    if ds_rrset is None:
+        if ds_response.rcode() == dns.rcode.SERVFAIL:
+            logger.warning(
+                f"Could not check DNSSEC for {domain}: "
+                f"the DS query for {zone} failed with SERVFAIL"
+            )
+            return False
+        # A clean empty answer: the parent does not vouch for this zone, so
+        # it is unsigned/insecure no matter what keys it publishes
+        # (RFC 4033 section 4.3).
+        key = get_dnskey(
+            domain, nameservers=nameservers, timeout=timeout, cache=dnskey_cache
+        )
+        if key is not None:
+            logger.warning(
+                f"{zone} publishes a DNSKEY record, but its parent zone "
+                f"publishes no DS record for it, so validating resolvers "
+                f"treat the zone as unsigned (RFC 4033 section 4.3)"
+            )
+        else:
+            logger.debug(
+                f"{zone} is not signed: no DS record at its parent and no DNSKEY record"
+            )
+        cache[domain] = False
+        return False
+
+    zone_name = dns.name.from_text(zone)
+    logger.debug(f"Found DS records for {zone}; checking its DNSKEY against them")
+    dnskey_rrset, dnskey_rrsig, key_response = _query_rrset(
+        zone, RdataType.DNSKEY, nameservers, timeout
+    )
+    if key_response is None:
+        logger.warning(
+            f"Could not check DNSSEC for {domain}: "
+            f"no nameserver answered the DNSKEY query"
+        )
+        return False
+    if key_response.rcode() == dns.rcode.SERVFAIL:
+        logger.warning(
+            f"DNSSEC for {zone} is broken: its parent zone publishes a DS "
+            f"record, but the DNSKEY query failed with SERVFAIL — a "
+            f"validating resolver rejected the zone as bogus"
+        )
+        cache[domain] = False
+        return False
+    if dnskey_rrset is None or dnskey_rrsig is None:
+        logger.warning(
+            f"DNSSEC for {zone} is broken: its parent zone publishes a DS "
+            f"record, but {zone} did not answer with a signed DNSKEY "
+            f"record set"
+        )
+        cache[domain] = False
+        return False
+    if key_response.flags & dns.flags.AD:
+        logger.debug(
+            f"The resolver set the AD flag on the {zone} DNSKEY answer: "
+            f"it validated the answer itself"
+        )
+
+    matched_keys = _ds_matched_keys(zone_name, ds_rrset, dnskey_rrset)
+    if len(matched_keys) == 0:
+        logger.warning(
+            f"DNSSEC for {zone} is broken: no key in its DNSKEY record set "
+            f"matches a DS record at its parent"
+        )
+        cache[domain] = False
+        return False
+    try:
+        dns.dnssec.validate(dnskey_rrset, dnskey_rrsig, {zone_name: matched_keys})
+    except dns.exception.ValidationFailure as e:
+        logger.warning(
+            f"DNSSEC for {zone} is broken: the signature over its DNSKEY "
+            f"record set does not verify against the DS-matched key: {e}"
+        )
+        cache[domain] = False
+        return False
+    logger.debug(
+        f"The {zone} DNSKEY record set matches a DS record at its parent "
+        f"and its signature verifies"
+    )
+
+    if zone == domain:
+        # The domain is the zone apex, and its DNSKEY record set — one of
+        # the zone's own record sets — just validated against the parent's
+        # DS record.
+        cache[domain] = True
+        return True
+
+    # The domain sits below the zone apex, so DNSSEC only covers it if its
+    # own records carry signatures that verify against the zone's keys.
+    keyring = {zone_name: dnskey_rrset}
     rdatatypes = [
-        dns.rdatatype.DNSKEY,
         dns.rdatatype.MX,
         dns.rdatatype.A,
         dns.rdatatype.NS,
         dns.rdatatype.CNAME,
     ]
-    name = dns.name.from_text(domain)
     for rdatatype in rdatatypes:
-        request = dns.message.make_query(domain, rdatatype, want_dnssec=True)
-        for nameserver in nameservers:
-            try:
-                response = _query_nameserver(request, nameserver, timeout)
-                if response is not None:
-                    rrset, rrsig = _find_record_and_signature(
-                        response.answer, name, rdatatype
-                    )
-                    if rrset is None or rrsig is None:
-                        continue
-                    dns.dnssec.validate(rrset, rrsig, key)
-                    logger.debug(f"Found a signed {rdatatype.name} record")
-                    cache[domain] = True
-                    return True
-            except _TRANSPORT_ERRORS as e:
-                logger.debug(f"DNSSEC query error: {e}")
+        rrset, rrsig, response = _query_rrset(domain, rdatatype, nameservers, timeout)
+        if response is not None and response.rcode() == dns.rcode.SERVFAIL:
+            logger.warning(
+                f"DNSSEC for {domain} is broken: the {rdatatype.name} query "
+                f"failed with SERVFAIL below the signed zone {zone} — a "
+                f"validating resolver rejected the answer as bogus"
+            )
+            cache[domain] = False
+            return False
+        if rrset is None or rrsig is None:
+            continue
+        try:
+            dns.dnssec.validate(rrset, rrsig, keyring)
+        except dns.exception.ValidationFailure as e:
+            logger.warning(
+                f"The signature over the {rdatatype.name} record set at "
+                f"{domain} does not verify against the {zone} keys: {e}"
+            )
+            continue
+        logger.debug(f"Found a signed {rdatatype.name} record")
+        cache[domain] = True
+        return True
 
+    logger.debug(f"{zone} is signed, but no signed records were found at {domain}")
     cache[domain] = False
     return False
 
@@ -304,6 +537,9 @@ def get_tlsa_records(
         nameservers = dns.resolver.Resolver().nameservers
     nameservers = _nameservers_to_resolver_input(nameservers)
     protocol = protocol.lower()
+    # get_dnskey keeps its own module-level cache; only hand it a cache the
+    # caller supplied, so caller-isolated caches stay isolated.
+    dnskey_cache = cache
     if cache is None:
         cache = TLSA_CACHE
 
@@ -331,7 +567,10 @@ def get_tlsa_records(
                 if rrset is None or rrsig is None:
                     return tlsa_records
                 dnskey = get_dnskey(
-                    domain=hostname, nameservers=nameservers, timeout=timeout
+                    domain=hostname,
+                    nameservers=nameservers,
+                    timeout=timeout,
+                    cache=dnskey_cache,
                 )
                 if dnskey is None:
                     logger.debug(

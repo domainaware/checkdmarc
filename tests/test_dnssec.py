@@ -4,11 +4,15 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
+import dns.dnssec
 import dns.exception
 import dns.name
+import dns.rcode
 import dns.rdatatype
 import dns.rrset
 import httpx
+from cryptography.hazmat.primitives.asymmetric import ec
+from dns.dnssectypes import Algorithm
 from expiringdict import ExpiringDict
 
 import checkdmarc.dnssec
@@ -43,11 +47,49 @@ def _rrsig(
     )
 
 
-def _response(*rrsets: dns.rrset.RRset) -> MagicMock:
-    """A stand-in DNS response; only its answer section is read"""
+def _response(*rrsets: dns.rrset.RRset, rcode: int = dns.rcode.NOERROR) -> MagicMock:
+    """A stand-in DNS response; its answer section, response code, and
+    flags are read"""
     response = MagicMock()
     response.answer = list(rrsets)
+    response.rcode.return_value = rcode
+    response.flags = 0
     return response
+
+
+def _matching_ds(zone: str) -> dns.rrset.RRset:
+    """A DS record set whose digest really matches DNSKEY_RDATA at the zone
+
+    Computed with the same dns.dnssec.make_ds call the code under test uses,
+    so the DS-to-DNSKEY comparison in check_dnssec exercises real hashing.
+    """
+    key_rrset = dns.rrset.from_text(zone, 300, "IN", "DNSKEY", DNSKEY_RDATA)
+    ds = dns.dnssec.make_ds(dns.name.from_text(zone), next(iter(key_rrset)), "SHA256")
+    return dns.rrset.from_text(zone, 300, "IN", "DS", ds.to_text())
+
+
+# A DS record with a well-formed but wrong digest: no DNSKEY hashes to it
+MISMATCHED_DS_RDATA = "12345 13 2 " + "ab" * 32
+
+
+def _signed_zone(zone: str) -> tuple[dns.rrset.RRset, dns.rrset.RRset, dns.rrset.RRset]:
+    """A freshly generated zone key with a real signature and matching DS
+
+    Returns the DS, DNSKEY, and RRSIG(DNSKEY) record sets. Everything
+    verifies cryptographically, so tests built on this need no patch on
+    dns.dnssec.validate.
+    """
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    name = dns.name.from_text(zone)
+    dnskey = dns.dnssec.make_dnskey(
+        private_key.public_key(), Algorithm.ECDSAP256SHA256, flags=257
+    )
+    key_rrset = dns.rrset.from_rdata(name, 300, dnskey)
+    rrsig = dns.dnssec.sign(key_rrset, private_key, name, dnskey, lifetime=3600)
+    sig_rrset = dns.rrset.from_rdata(name, 300, rrsig)
+    ds = dns.dnssec.make_ds(name, dnskey, "SHA256")
+    ds_rrset = dns.rrset.from_text(zone, 300, "IN", "DS", ds.to_text())
+    return ds_rrset, key_rrset, sig_rrset
 
 
 def _cname_chain() -> tuple[dns.rrset.RRset, dns.rrset.RRset]:
@@ -122,6 +164,30 @@ class Test(unittest.TestCase):
         self.assertEqual(checkdmarc.dnssec.check_dnssec("fbi.gov"), True)
 
     @network_test
+    def testDNSSECKnownGood(self):
+        """A zone with a valid DS-to-DNSKEY chain reports True"""
+        self.assertEqual(checkdmarc.dnssec.check_dnssec("ietf.org"), True)
+
+    @network_test
+    def testDNSSECUnsignedDomain(self):
+        """A well-known unsigned zone reports False"""
+        self.assertEqual(checkdmarc.dnssec.check_dnssec("amazon.com"), False)
+
+    @network_test
+    def testDNSSECDeliberatelyBrokenDomain(self):
+        """dnssec-failed.org is deliberately broken and must report False
+
+        This is the chain-of-trust check: the zone's own answers are
+        internally consistent, so only comparing its DNSKEY against the DS
+        record its parent publishes exposes the break. It must fail through
+        any resolver, validating or not, and say why in a warning.
+        """
+        with self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs:
+            result = checkdmarc.dnssec.check_dnssec("dnssec-failed.org")
+        self.assertFalse(result)
+        self.assertTrue(any("dnssec-failed.org" in line for line in logs.output))
+
+    @network_test
     def testDNSSECNameChainDoesNotRaise(self):
         """A name that points at an unsigned name reports no DNSSEC
 
@@ -135,19 +201,12 @@ class Test(unittest.TestCase):
 
     @mocked_only
     def testDNSSECMocked(self):
-        """test_dnssec returns True when a record/RRSIG pair validates (mocked)
-
-        The signature check itself is stubbed out; what is under test is that
-        test_dnssec finds the record and its signature and reports success.
-        """
-        response = _response(
-            dns.rrset.from_text("example.com.", 300, "IN", "A", "192.0.2.1"),
-            _rrsig("example.com.", "A"),
-        )
-        with (
-            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
-            patch("dns.query.tcp", return_value=response),
-            patch("dns.dnssec.validate", return_value=None),
+        """check_dnssec returns True when the DS, DNSKEY, and signature all
+        line up (mocked network, real cryptography)"""
+        ds, key, sig = _signed_zone("example.com.")
+        with patch(
+            "dns.query.tcp",
+            side_effect=[_response(ds), _response(key, sig)],
         ):
             result = checkdmarc.dnssec.check_dnssec(
                 "example.com", cache=_fresh_cache(), nameservers=["192.0.2.1"]
@@ -155,11 +214,12 @@ class Test(unittest.TestCase):
         self.assertTrue(result)
 
     def testDnssecFalseWhenNoKey(self):
-        """test_dnssec returns False when no DNSKEY found"""
-        with patch("checkdmarc.dnssec.get_dnskey") as mock_key:
-            mock_key.return_value = None
-            result = checkdmarc.dnssec.check_dnssec("example.com")
-            self.assertFalse(result)
+        """check_dnssec returns False when the zone has no DS and no DNSKEY"""
+        with patch("dns.query.tcp", return_value=_response()):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", cache=_fresh_cache(), nameservers=["192.0.2.1"]
+            )
+        self.assertFalse(result)
 
     def testGetDnskeyCache(self):
         """get_dnskey uses cache"""
@@ -252,14 +312,21 @@ class TestGetDnskey(unittest.TestCase):
         self.assertIsNone(cache["example.com"])
 
 
-class TestTestDnssec(unittest.TestCase):
+class TestCheckDnssec(unittest.TestCase):
+    """check_dnssec unit tests with the network mocked out
+
+    The query order under test: DS at the domain (falling back to the base
+    domain), then DNSKEY at the zone the DS anchors, then — for names below
+    the zone apex — MX, A, NS, and CNAME at the domain itself.
+    """
+
     def testCacheHitTrue(self):
         cache = _fresh_cache()
         cache["example.com"] = True
-        with patch("checkdmarc.dnssec.get_dnskey") as mock_key:
+        with patch("dns.query.tcp") as query:
             result = checkdmarc.dnssec.check_dnssec("example.com", cache=cache)
         self.assertTrue(result)
-        mock_key.assert_not_called()
+        self.assertFalse(query.called)
 
     def testCacheHitFalse(self):
         cache = _fresh_cache()
@@ -267,66 +334,280 @@ class TestTestDnssec(unittest.TestCase):
         result = checkdmarc.dnssec.check_dnssec("example.com", cache=cache)
         self.assertFalse(result)
 
-    def testNoSignedRecordsReturnsFalse(self):
-        """If no signed records validate across all rdatatypes, return False"""
+    def testValidChainReturnsTrue(self):
+        """DS present, a DNSKEY matching it, and a verifying signature: True
+
+        Real cryptography end to end; nothing but the network is mocked.
+        """
+        cache = _fresh_cache()
+        ds, key, sig = _signed_zone("example.com.")
+        with patch("dns.query.tcp", side_effect=[_response(ds), _response(key, sig)]):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertTrue(result)
+        self.assertIs(cache["example.com"], True)
+
+    def testIslandOfSecurityReturnsFalse(self):
+        """A self-consistent signed DNSKEY with no DS at the parent: False
+
+        The zone signs itself, but nothing vouches for it, so it is insecure
+        per RFC 4033 section 4.3 — this is the self-signed false positive the
+        old implementation reported as True.
+        """
+        cache = _fresh_cache()
+        _, key, sig = _signed_zone("example.com.")
         with (
-            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
-            patch("dns.query.tcp", return_value=_response()),
+            patch("dns.query.tcp", side_effect=[_response(), _response(key, sig)]),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
         ):
             result = checkdmarc.dnssec.check_dnssec(
-                "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+                "example.com", nameservers=["192.0.2.1"], cache=cache
             )
         self.assertFalse(result)
+        self.assertIs(cache["example.com"], False)
+        self.assertTrue(any("no DS record" in line for line in logs.output))
+
+    def testNoDsNoDnskeyReturnsFalse(self):
+        """No DS and no DNSKEY: an ordinary unsigned zone"""
+        with (
+            patch("dns.query.tcp", return_value=_response()),
+            self.assertLogs("checkdmarc.dnssec", level="DEBUG") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
+            )
+        self.assertFalse(result)
+        self.assertTrue(any("is not signed" in line for line in logs.output))
+
+    def testDsMismatchReturnsFalse(self):
+        """A DS that matches no key in the DNSKEY record set: broken, False"""
+        ds = dns.rrset.from_text("example.com.", 300, "IN", "DS", MISMATCHED_DS_RDATA)
+        _, key, sig = _signed_zone("example.com.")
+        with (
+            patch("dns.query.tcp", side_effect=[_response(ds), _response(key, sig)]),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
+            )
+        self.assertFalse(result)
+        self.assertTrue(any("matches a DS record" in line for line in logs.output))
+
+    def testBadDnskeySignatureReturnsFalse(self):
+        """A DNSKEY that matches the DS but whose signature does not verify:
+        broken, False"""
+        ds = _matching_ds("example.com.")
+        key = dns.rrset.from_text("example.com.", 300, "IN", "DNSKEY", DNSKEY_RDATA)
+        with (
+            patch(
+                "dns.query.tcp",
+                side_effect=[
+                    _response(ds),
+                    _response(key, _rrsig("example.com.", "DNSKEY")),
+                ],
+            ),
+            patch(
+                "dns.dnssec.validate",
+                side_effect=dns.exception.ValidationFailure("bad signature"),
+            ),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
+            )
+        self.assertFalse(result)
+        self.assertTrue(any("does not verify" in line for line in logs.output))
+
+    def testUnsignedDnskeyWithDsReturnsFalse(self):
+        """A DS at the parent but a DNSKEY answer with no signature: broken"""
+        ds = _matching_ds("example.com.")
+        key = dns.rrset.from_text("example.com.", 300, "IN", "DNSKEY", DNSKEY_RDATA)
+        with (
+            patch("dns.query.tcp", side_effect=[_response(ds), _response(key)]),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
+            )
+        self.assertFalse(result)
+        self.assertTrue(any("signed DNSKEY record set" in line for line in logs.output))
+
+    def testDnskeyServfailWithDsIsReportedAsBogus(self):
+        """DS at the parent but SERVFAIL on the DNSKEY query: a validating
+        resolver rejected the zone, which is a broken zone, not an unsigned
+        one — the warning must say so"""
+        ds = _matching_ds("example.com.")
+        with (
+            patch(
+                "dns.query.tcp",
+                side_effect=[
+                    _response(ds),
+                    _response(rcode=dns.rcode.SERVFAIL),
+                ],
+            ),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
+            )
+        self.assertFalse(result)
+        self.assertTrue(any("bogus" in line for line in logs.output))
+
+    def testDsServfailIsNotCached(self):
+        """SERVFAIL on the DS query itself: the check could not run, so the
+        result is False but nothing is cached"""
+        cache = _fresh_cache()
+        with (
+            patch(
+                "dns.query.tcp",
+                return_value=_response(rcode=dns.rcode.SERVFAIL),
+            ),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertFalse(result)
+        self.assertNotIn("example.com", cache)
+        self.assertTrue(any("SERVFAIL" in line for line in logs.output))
+
+    def testTransportFailureIsNotCached(self):
+        """No nameserver reachable: False, not cached, and logged"""
+        cache = _fresh_cache()
+        with (
+            patch("dns.query.tcp", side_effect=OSError("boom")),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertFalse(result)
+        self.assertNotIn("example.com", cache)
+        self.assertTrue(any("no nameserver answered" in line for line in logs.output))
 
     def testNameChainReturnsFalseInsteadOfRaising(self):
         """A chain of names is reported as unsigned rather than crashing
 
-        Regression test for issue #265. The signature check is deliberately
-        left unpatched: passing it a missing signature is exactly the bug, and
-        would surface here as an AttributeError.
+        Regression test for issue #265: every query answers with the CNAME
+        chain, so no DS and no DNSKEY is ever found.
         """
-        with (
-            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
-            patch("dns.query.tcp", return_value=_response(*_cname_chain())),
-        ):
+        with patch("dns.query.tcp", return_value=_response(*_cname_chain())):
             result = checkdmarc.dnssec.check_dnssec(
                 "aws.amazon.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
 
-    def testUnsignedRecordReturnsFalse(self):
-        """A record with no signature alongside it is reported as unsigned"""
-        response = _response(
-            dns.rrset.from_text("example.com.", 300, "IN", "A", "192.0.2.1")
-        )
-        with (
-            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
-            patch("dns.query.tcp", return_value=response),
-        ):
-            result = checkdmarc.dnssec.check_dnssec(
-                "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
-            )
-        self.assertFalse(result)
-
-    def testInvalidSignatureReturnsFalse(self):
-        """A bad signature (ValidationFailure) at every rdatatype reports
-        DNSSEC as not validated, rather than propagating the exception."""
-        response = _response(
-            dns.rrset.from_text("example.com.", 300, "IN", "A", "192.0.2.1"),
-            _rrsig("example.com.", "A"),
-        )
-        with (
-            patch("checkdmarc.dnssec.get_dnskey", return_value=MagicMock()),
-            patch("dns.query.tcp", return_value=response),
-            patch(
-                "dns.dnssec.validate",
-                side_effect=dns.exception.ValidationFailure("bad signature"),
+    def testSubdomainWithSignedRecordReturnsTrue(self):
+        """A name below a signed zone apex whose own records verify: True"""
+        ds, key, sig = _signed_zone("example.com.")
+        mx_response = _response(
+            dns.rrset.from_text(
+                "sub.example.com.", 300, "IN", "MX", "10 mail.example.com."
             ),
+            _rrsig("sub.example.com.", "MX"),
+        )
+        with (
+            patch(
+                "dns.query.tcp",
+                side_effect=[
+                    _response(),  # DS sub.example.com: none
+                    _response(ds),  # DS example.com
+                    _response(key, sig),  # DNSKEY example.com
+                    mx_response,  # MX sub.example.com
+                ],
+            ),
+            # The MX signature is synthetic, so signature verification is
+            # patched out; the DS-to-DNSKEY digest comparison still runs for
+            # real. testValidChainReturnsTrue covers real verification.
+            patch("dns.dnssec.validate", return_value=None),
         ):
             result = checkdmarc.dnssec.check_dnssec(
-                "example.com", nameservers=["1.1.1.1"], cache=_fresh_cache()
+                "sub.example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
+            )
+        self.assertTrue(result)
+
+    def testSubdomainWithUnsignedRecordsReturnsFalse(self):
+        """A name below a signed zone apex with no signed records: False"""
+        ds, key, sig = _signed_zone("example.com.")
+        a_response = _response(
+            dns.rrset.from_text("sub.example.com.", 300, "IN", "A", "192.0.2.1")
+        )
+        with (
+            patch(
+                "dns.query.tcp",
+                side_effect=[
+                    _response(),  # DS sub.example.com: none
+                    _response(ds),  # DS example.com
+                    _response(key, sig),  # DNSKEY example.com
+                    _response(),  # MX
+                    a_response,  # A record without a signature
+                    _response(),  # NS
+                    _response(),  # CNAME
+                ],
+            ),
+            self.assertLogs("checkdmarc.dnssec", level="DEBUG") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "sub.example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
             )
         self.assertFalse(result)
+        self.assertTrue(
+            any("no signed records were found" in line for line in logs.output)
+        )
+
+    def testSubdomainBadRecordSignatureIsWarnedAndSkipped(self):
+        """A record signature below the apex that fails to verify is warned
+        about and does not count as signed"""
+        ds, key, sig = _signed_zone("example.com.")
+        mx_response = _response(
+            dns.rrset.from_text(
+                "sub.example.com.", 300, "IN", "MX", "10 mail.example.com."
+            ),
+            _rrsig("sub.example.com.", "MX"),
+        )
+        with (
+            patch(
+                "dns.query.tcp",
+                side_effect=[
+                    _response(),  # DS sub.example.com: none
+                    _response(ds),  # DS example.com
+                    _response(key, sig),  # DNSKEY example.com
+                    mx_response,  # MX with a signature that will not verify
+                    _response(),  # A
+                    _response(),  # NS
+                    _response(),  # CNAME
+                ],
+            ),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "sub.example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
+            )
+        self.assertFalse(result)
+        self.assertTrue(any("does not verify" in line for line in logs.output))
+
+    def testSubdomainServfailBelowSignedZoneReturnsFalse(self):
+        """SERVFAIL on a record query below a signed zone is warned about as
+        a broken zone rather than treated as an unsigned record"""
+        ds, key, sig = _signed_zone("example.com.")
+        with (
+            patch(
+                "dns.query.tcp",
+                side_effect=[
+                    _response(),  # DS sub.example.com: none
+                    _response(ds),  # DS example.com
+                    _response(key, sig),  # DNSKEY example.com
+                    _response(rcode=dns.rcode.SERVFAIL),  # MX
+                ],
+            ),
+            self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "sub.example.com", nameservers=["192.0.2.1"], cache=_fresh_cache()
+            )
+        self.assertFalse(result)
+        self.assertTrue(any("bogus" in line for line in logs.output))
 
 
 class TestGetTlsaRecords(unittest.TestCase):

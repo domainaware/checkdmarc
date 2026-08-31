@@ -9,7 +9,6 @@ import logging
 import re
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
-from sys import getsizeof
 from typing import Any, TypedDict
 from xml.parsers.expat import ExpatError
 
@@ -52,7 +51,6 @@ from checkdmarc._constants import (
 )
 from checkdmarc.dmarc import DMARCErrorResults, DMARCResults
 from checkdmarc.utils import (
-    HTTPS_REGEX,
     WSP_REGEX,
     get_base_domain,
     normalize_domain,
@@ -165,11 +163,37 @@ BIMI_LPS_VALUE_REGEX = (
     rf"{BIMI_LPS_LOCAL_PART_REGEX}"
     rf"(?:{WSP_REGEX}*,{WSP_REGEX}*{BIMI_LPS_LOCAL_PART_REGEX})*"
 )
-BIMI_TAG_VALUE_REGEX_STRING = (
-    rf"([a-z]{{1,3}}){WSP_REGEX}*={WSP_REGEX}*"
-    rf"(bimi1|{HTTPS_REGEX}|personal|brand|{BIMI_LPS_VALUE_REGEX})?"
-)
+# A tag is a name, "=", and a value. The name and value are kept loose on
+# purpose: unknown tags must be ignored rather than rejected (see the
+# BIMI draft, section 4.3), so any tag name of any length must lex, and
+# each known tag's value is checked individually in parse_bimi_record.
+BIMI_TAG_VALUE_REGEX_STRING = rf"([a-z][a-z0-9_\-.]*){WSP_REGEX}*={WSP_REGEX}*([^;]*)"
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+
+# Matches a record that starts with a v= tag identifying the current BIMI
+# version, used when deciding whether a TXT record is a BIMI record at all
+# (BIMI draft, section 7.2, steps 4 and 7). The record grammar allows
+# spaces or tabs around the "=", so the same tolerance applies here.
+_BIMI_VERSION_PREFIX_REGEX = re.compile(
+    rf"v{WSP_REGEX}*={WSP_REGEX}*BIMI1{WSP_REGEX}*(?:;|$)"
+)
+
+# Anchored check for the l= and a= tag values. Per the bimi-uri definition
+# in the BIMI draft, section 4.3, the value must be a single HTTPS URI
+# whose host is a fully qualified domain name, and any comma inside the
+# URI must be percent-encoded. Raw spaces are not legal in a URI, so the
+# character set below excludes both spaces and commas.
+_BIMI_URI_REGEX = re.compile(
+    r"https://"
+    r"(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+"  # host labels before the last dot
+    r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"  # final host label
+    r"(?::\d{1,5})?"  # optional port
+    r"(?:[/?#][a-z0-9\-._~:/?#\[\]@!$&'()*+=%]*)?",  # path/query/fragment
+    re.IGNORECASE,
+)
+
+# Anchored (via fullmatch) check for a non-empty lps= tag value.
+_BIMI_LPS_VALUE_REGEX = re.compile(BIMI_LPS_VALUE_REGEX)
 
 # Heuristic for SVG <title> elements that look like generator/template
 # placeholders rather than a brand-descriptive title (e.g. the SVG Tiny PS
@@ -495,8 +519,14 @@ class _BIMIGrammar(pyleri.Grammar):
 
 def get_svg_metadata(raw_xml: str | bytes) -> dict[str, Any]:
     metadata = {}
+    # Keep the original bytes for the size and hash below. The decoded text
+    # is only used for XML parsing; decoding can drop bytes, so measuring or
+    # hashing it would not describe the file actually served.
     if isinstance(raw_xml, bytes):
+        raw_bytes = raw_xml
         raw_xml = raw_xml.decode(errors="ignore")
+    else:
+        raw_bytes = raw_xml.encode("utf-8")
     try:
         xml = xmltodict.parse(raw_xml)
         svg = xml["svg"]
@@ -522,10 +552,12 @@ def get_svg_metadata(raw_xml: str | bytes) -> dict[str, Any]:
             metadata["description"] = description
         metadata["width"] = width
         metadata["height"] = height
-        metadata["filesize"] = f"{getsizeof(raw_xml) / 1000} KB"
-        metadata["sha256"] = hashlib.sha256(
-            raw_xml.encode("utf-8")  # pyright: ignore[reportAttributeAccessIssue]
-        ).hexdigest()  # pyright: ignore[reportAttributeAccessIssue]
+        # The size that counts against the 32 KB cap is the size of the
+        # file as served, i.e. the length of the raw bytes.
+        metadata["filesize"] = f"{len(raw_bytes) / 1000} KB"
+        # Hash the raw bytes so the value can be compared against the
+        # certificate's embedded logotype hash byte for byte.
+        metadata["sha256"] = hashlib.sha256(raw_bytes).hexdigest()
         return metadata
     except (ExpatError, KeyError, ValueError, IndexError, TypeError) as e:
         raise ValueError(f"Not an SVG file: {e!s}")
@@ -563,7 +595,9 @@ def extract_logo_from_certificate(
 ) -> bytes | None:
     try:
         if not isinstance(cert, x509.Certificate):
-            cert = load_pem_x509_certificates(cert)[1]
+            # PEM bundles list the leaf (end-entity) certificate first,
+            # followed by intermediates, so the leaf is the first one.
+            cert = load_pem_x509_certificates(cert)[0]
 
         ext = cert.extensions.get_extension_for_oid(OID_LOGOTYPE)
 
@@ -821,6 +855,7 @@ def _query_bimi_record(
     resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
+    warnings: list[str] | None = None,
 ):
     """
     Queries DNS for a BIMI record
@@ -833,16 +868,16 @@ def _query_bimi_record(
                                           requests
         timeout (float): number of seconds to wait for an answer from DNS
         retries (int): The number of times to retry on timeout or other transient errors
+        warnings (list): A list that warning messages are appended to
 
     Returns:
         str: A record string or None
     """
     domain = normalize_domain(domain)
     target = f"{selector}._bimi.{domain}"
-    txt_prefix = "v=BIMI1"
     bimi_record = None
-    bimi_record_count = 0
-    unrelated_records = []
+    if warnings is None:
+        warnings = []
 
     try:
         records = query_dns(
@@ -853,23 +888,29 @@ def _query_bimi_record(
             timeout=timeout,
             retries=retries,
         )
+        bimi_records = []
+        unrelated_records = []
         for record in records:
-            if record.startswith(txt_prefix):
-                bimi_record_count += 1
+            if _BIMI_VERSION_PREFIX_REGEX.match(record):
+                bimi_records.append(record)
             else:
                 unrelated_records.append(record)
 
-        if bimi_record_count > 1:
+        if len(bimi_records) > 1:
             raise MultipleBIMIRecords("Multiple BIMI records are not permitted.")
         if len(unrelated_records) > 0:
+            # TXT records that are not BIMI records are ignored, not fatal:
+            # section 7.2 step 4 of the BIMI draft says records that do not
+            # start with the BIMI version tag must be discarded. Warn so the
+            # domain owner can clean them up.
             ur_str = "\n\n".join(unrelated_records)
-            raise UnrelatedTXTRecordFoundAtBIMI(
-                "Unrelated TXT records were discovered. These should be "
-                "removed, as some receivers may not expect to find "
-                "unrelated TXT records "
-                f"at {target}\n\n{ur_str}"
+            warnings.append(
+                f"Unrelated TXT records were found at {target} and ignored. "
+                "These should be removed, as some receivers may not expect "
+                f"to find unrelated TXT records there:\n\n{ur_str}"
             )
-        bimi_record = records[0]
+        if len(bimi_records) == 1:
+            bimi_record = bimi_records[0]
 
     except dns.resolver.NoAnswer:
         try:
@@ -881,7 +922,7 @@ def _query_bimi_record(
                 timeout=timeout,
             )
             for record in records:
-                if record.startswith(txt_prefix):
+                if _BIMI_VERSION_PREFIX_REGEX.match(record):
                     raise BIMIRecordInWrongLocation(
                         f"The BIMI record must be located at {target}, not {domain}."
                     )
@@ -899,10 +940,9 @@ def _query_bimi_record(
     except dns.resolver.NXDOMAIN:
         pass
     except BIMIError:
-        # MultipleBIMIRecords and UnrelatedTXTRecordFoundAtBIMI are raised in
-        # the try-body above; propagate them so callers can act on the specific
-        # type instead of catching the broad BIMIRecordNotFound this clause
-        # used to convert everything to.
+        # MultipleBIMIRecords is raised in the try-body above; propagate it
+        # so callers can act on the specific type instead of catching the
+        # broad BIMIRecordNotFound this clause used to convert everything to.
         raise
     except dns.exception.DNSException as error:
         raise BIMIRecordNotFound(error)
@@ -941,7 +981,6 @@ def query_bimi_record(
         :exc:`checkdmarc.bimi.BIMIRecordNotFound`
         :exc:`checkdmarc.bimi.BIMIRecordInWrongLocation`
         :exc:`checkdmarc.bimi.MultipleBIMIRecords`
-        :exc:`checkdmarc.bimi.UnrelatedTXTRecordFoundAtBIMI`
 
     """
     domain = normalize_domain(domain)
@@ -956,6 +995,7 @@ def query_bimi_record(
         resolver=resolver,
         timeout=timeout,
         retries=retries,
+        warnings=warnings,
     )
     try:
         root_records = query_dns(
@@ -967,7 +1007,7 @@ def query_bimi_record(
             retries=retries,
         )
         for root_record in root_records:
-            if root_record.startswith("v=BIMI1"):
+            if _BIMI_VERSION_PREFIX_REGEX.match(root_record):
                 warnings.append(f"A BIMI record at the root of {domain} has no effect.")
     except dns.resolver.NXDOMAIN:
         raise BIMIRecordNotFound("The domain does not exist.")
@@ -975,12 +1015,18 @@ def query_bimi_record(
         pass
 
     if record is None and domain != base_domain:
+        # Fall back to the organizational domain while keeping the caller's
+        # selector: per section 7.2 step 6 of the BIMI draft, a custom
+        # selector that does not exist falls back to
+        # <selector>._bimi.<organizational domain>.
         record = _query_bimi_record(
             base_domain,
+            selector=selector,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
             retries=retries,
+            warnings=warnings,
         )
         location = base_domain
     if record is None:
@@ -1088,7 +1134,13 @@ def parse_bimi_record(
         tag = pair[0].lower().strip()
         tag_value = str(pair[1].strip())
         if tag not in BIMI_TAGS:
-            raise InvalidBIMITag(f"{tag} is not a valid BIMI record tag.")
+            # Unknown tags must be ignored, not treated as errors, per
+            # section 4.3 of the BIMI draft. Warn so typos are still visible.
+            warnings.append(
+                f"Unknown BIMI record tag {tag} was ignored. Unknown tags "
+                "are ignored per section 4.3 of the BIMI draft."
+            )
+            continue
         # Check for duplicate tags
         if tag in seen_tags:
             if tag not in duplicate_tags:
@@ -1104,67 +1156,109 @@ def parse_bimi_record(
         if include_tag_descriptions:
             tags[tag]["name"] = BIMI_TAGS[tag]["name"]
             tags[tag]["description"] = BIMI_TAGS[tag]["description"]
-        if tag == "l" and tag_value != "":
-            raw_xml = None
-            try:
-                response = session.get(tag_value, timeout=http_timeout)
-                response.raise_for_status()
-                raw_xml = response.content
-            except requests.RequestException as e:
-                results["image"] = {
-                    "error": f"Failed to download BIMI image at {tag_value} - {e!s}"
-                }
-            if raw_xml is not None:
-                try:
-                    svg_metadata = get_svg_metadata(raw_xml)
-                    if svg_metadata["width"] != svg_metadata["height"]:
-                        warnings.append(
-                            f"It is recommended that the BIMI SVG image be square (equal width and height), not {svg_metadata['width']}x{svg_metadata['height']}."
-                        )
-                    title = svg_metadata.get("title")
-                    if isinstance(title, dict):
-                        title_text = str(title.get("#text", "") or "")
-                    else:
-                        title_text = str(title or "")
-                    if title_text and GENERIC_SVG_TITLE_REGEX.match(title_text):
-                        warnings.append(
-                            f"The SVG title '{title_text}' looks like a generator/template placeholder. The <title> should be a short, human-readable name for the brand or mark — typically the organization name (e.g. the value of the certificate subject's organizationName field)."
-                        )
-                    svg_validation_errors = check_svg_requirements(svg_metadata)
-                    if len(svg_validation_errors) > 0:
-                        svg_metadata["validation_errors"] = svg_validation_errors
-                except (ValueError, KeyError) as e:
-                    results["image"] = {
-                        "error": f"Failed to process BIMI image at {tag_value} - {e!s}"
-                    }
-        elif tag == "a" and tag_value != "":
-            cert_metadata = None
-            try:
-                response = session.get(tag_value, timeout=http_timeout)
-                response.raise_for_status()
-                pem_bytes = response.content
-                cert_metadata = get_certificate_metadata(pem_bytes, domain=domain)
-                if svg_metadata is not None:
-                    if svg_metadata["sha256"] == cert_metadata["logotype_sha256"]:
-                        hash_match = True
-                    else:
-                        warnings.append(
-                            "The image at the l= tag URL does not match the image embedded in the certificate."
-                        )
-            except (requests.RequestException, ValueError, KeyError) as e:
-                results["certificate"] = {
-                    "error": f"Failed to download the mark certificate at {tag_value} - {e!s}"
-                }
+        if tag in ("l", "a") and tag_value != "":
+            if not _BIMI_URI_REGEX.fullmatch(tag_value):
+                message = (
+                    f"The {tag} tag value must be empty or a single HTTPS "
+                    "URI containing a fully qualified domain name, with any "
+                    "commas percent-encoded, per section 4.3 of the BIMI "
+                    f"draft: {tag_value}"
+                )
+                if tag == "l":
+                    raise InvalidBIMIIndicatorURI(message)
+                raise InvalidBIMITagValue(message)
         elif tag == "avp":
             if tag_value not in ["brand", "personal"]:
                 raise BIMISyntaxError(
                     f"Acceptable avp tag values are personal or brand, not {tag_value}"
                 )
         elif tag == "lps":
-            # Comma-separated local-parts; strip whitespace and lowercase
-            # for case-insensitive matching at delivery time.
-            local_part_prefixes = [s.strip().lower() for s in tag_value.split(",")]
-            tags[tag]["value"] = local_part_prefixes
+            if tag_value == "":
+                # An empty list is allowed: "The value of this tag is zero,
+                # one or more local-part string prefixes" (section 4.3 of
+                # the BIMI draft). With no prefixes, the local-part always
+                # matches.
+                tags[tag]["value"] = []
+            elif not _BIMI_LPS_VALUE_REGEX.fullmatch(tag_value):
+                raise InvalidBIMITagValue(
+                    "The lps tag value must be a comma-separated list of "
+                    "prefixes containing only letters, digits, and hyphens, "
+                    f"per section 4.3 of the BIMI draft: {tag_value}"
+                )
+            else:
+                # Comma-separated local-parts; strip whitespace and lowercase
+                # for case-insensitive matching at delivery time.
+                local_part_prefixes = [s.strip().lower() for s in tag_value.split(",")]
+                tags[tag]["value"] = local_part_prefixes
+
+    if "l" not in tags:
+        # The l= tag is required by section 4.3 of the BIMI draft. Declining
+        # to participate is expressed with an empty value (section 4.3.1),
+        # not by leaving the tag out.
+        raise BIMISyntaxError(
+            "The BIMI record is missing the required l tag. To decline "
+            "BIMI participation, publish the l tag with an empty value (l=;)."
+        )
+
+    l_tag_value = tags["l"]["value"]
+    if l_tag_value != "":
+        raw_xml = None
+        try:
+            response = session.get(l_tag_value, timeout=http_timeout)
+            response.raise_for_status()
+            raw_xml = response.content
+        except requests.RequestException as e:
+            results["image"] = {
+                "error": f"Failed to download BIMI image at {l_tag_value} - {e!s}"
+            }
+        if raw_xml is not None:
+            try:
+                svg_metadata = get_svg_metadata(raw_xml)
+                if svg_metadata["width"] != svg_metadata["height"]:
+                    warnings.append(
+                        f"It is recommended that the BIMI SVG image be square (equal width and height), not {svg_metadata['width']}x{svg_metadata['height']}."
+                    )
+                title = svg_metadata.get("title")
+                if isinstance(title, dict):
+                    title_text = str(title.get("#text", "") or "")
+                else:
+                    title_text = str(title or "")
+                if title_text and GENERIC_SVG_TITLE_REGEX.match(title_text):
+                    warnings.append(
+                        f"The SVG title '{title_text}' looks like a generator/template placeholder. The <title> should be a short, human-readable name for the brand or mark — typically the organization name (e.g. the value of the certificate subject's organizationName field)."
+                    )
+                svg_validation_errors = check_svg_requirements(svg_metadata)
+                if len(svg_validation_errors) > 0:
+                    svg_metadata["validation_errors"] = svg_validation_errors
+            except (ValueError, KeyError) as e:
+                results["image"] = {
+                    "error": f"Failed to process BIMI image at {l_tag_value} - {e!s}"
+                }
+
+    a_tag_value = tags.get("a", {}).get("value", "")
+    if a_tag_value != "":
+        try:
+            response = session.get(a_tag_value, timeout=http_timeout)
+            response.raise_for_status()
+            pem_bytes = response.content
+            cert_metadata = get_certificate_metadata(pem_bytes, domain=domain)
+        except (requests.RequestException, ValueError, KeyError) as e:
+            results["certificate"] = {
+                "error": f"Failed to download the mark certificate at {a_tag_value} - {e!s}"
+            }
+
+    # Compare the downloaded image against the logo embedded in the
+    # certificate only after all tags have been processed, so the outcome
+    # is the same whether a= appears before or after l= in the record
+    # (tags other than v= may appear in any order per section 4.3 of the
+    # BIMI draft).
+    if svg_metadata is not None and cert_metadata is not None:
+        if svg_metadata["sha256"] == cert_metadata["logotype_sha256"]:
+            hash_match = True
+        else:
+            warnings.append(
+                "The image at the l= tag URL does not match the image embedded in the certificate."
+            )
 
     if parsed_dmarc_record and tags.get("l", {}).get("value", "") != "":
         if parsed_dmarc_record["valid"] is False:
@@ -1186,17 +1280,23 @@ def parse_bimi_record(
                 warnings.append(
                     "The DMARC subdomain policy (sp tag) must be set to quarantine or reject if it is used."
                 )
-            # The pct tag was removed in RFC 9989; pre-9989 BIMI guidance
-            # required pct=100, so flag any leftover pct that isn't 100.
+            # BIMI only constrains pct when the policy is quarantine:
+            # section 7.1 step 9 of the BIMI draft requires pct=100 when
+            # p=quarantine and a pct tag is present. p=reject with any pct
+            # satisfies BIMI. (The pct tag itself was removed in RFC 9989.)
             pct_tag = parsed_dmarc_record["tags"].get("pct")
-            if pct_tag is not None and pct_tag["value"] != 100:
+            if (
+                pct_tag is not None
+                and pct_tag["value"] != 100
+                and parsed_dmarc_record["tags"]["p"]["value"] == "quarantine"
+            ):
                 warnings.append(
-                    "The DMARC pct tag was removed in RFC 9989; pre-9989 "
-                    "BIMI guidance required pct=100 when it was present."
+                    "When the DMARC policy is p=quarantine, the pct tag "
+                    "must be 100 (or absent) for BIMI to be displayed. "
+                    "The pct tag was removed in RFC 9989."
                 )
     if cert_metadata:
         valid_cert = hash_match and cert_metadata["valid"]
-    l_tag_value = tags.get("l", {}).get("value", "")
     if l_tag_value != "" and not valid_cert:
         warnings.append(
             "Most email providers will not display a BIMI image without a valid mark certificate."

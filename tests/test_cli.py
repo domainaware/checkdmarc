@@ -80,11 +80,11 @@ class TestCLI(unittest.TestCase):
         self.assertIn(",", printed)
 
     def testFlagsForwardedToCheckDomains(self):
-        """--parked, --skip-tls, --descriptions, --wait, --retries, --timeout, --bimi-selector all forward"""
+        """--parked, --check-mx-tls, --descriptions, --wait, --retries, --timeout, --bimi-selector all forward"""
         mock_check = _run_cli(
             [
                 "--parked",
-                "--skip-tls",
+                "--check-mx-tls",
                 "--descriptions",
                 "--wait",
                 "0.5",
@@ -99,12 +99,19 @@ class TestCLI(unittest.TestCase):
         )
         kwargs = mock_check.call_args.kwargs
         self.assertTrue(kwargs["parked"])
-        self.assertTrue(kwargs["skip_tls"])
+        self.assertTrue(kwargs["check_mx_tls"])
         self.assertTrue(kwargs["include_tag_descriptions"])
         self.assertEqual(kwargs["wait"], 0.5)
         self.assertEqual(kwargs["retries"], 7)
         self.assertEqual(kwargs["timeout"], 3.5)
         self.assertEqual(kwargs["bimi_selector"], "marketing")
+
+    def testSkipTlsIsNoOp(self):
+        """--skip-tls still parses but is not forwarded to check_domains"""
+        mock_check = _run_cli(["--skip-tls", "example.com"])
+        kwargs = mock_check.call_args.kwargs
+        self.assertNotIn("skip_tls", kwargs)
+        self.assertFalse(kwargs["check_mx_tls"])
 
     def testApprovedNameserversAndMx(self):
         """--ns and --mx forward as lists"""

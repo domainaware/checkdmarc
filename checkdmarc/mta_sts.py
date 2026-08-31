@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import re
 from collections.abc import Sequence
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, cast
 
 import dns.exception
 import dns.resolver
@@ -39,12 +39,32 @@ limitations under the License."""
 logger = logging.getLogger(__name__)
 
 
-MTA_STS_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*STSv1{WSP_REGEX}*;"
-MTA_STS_TAG_VALUE_REGEX_STRING = rf"([a-z]{{1,2}}){WSP_REGEX}*={WSP_REGEX}*([\
-a-z0-9]+)"
+# RFC 8461 section 3.1: the record must begin with the case-sensitive
+# literal "v=STSv1;" — no spaces around the equals sign. The trailing
+# whitespace here is the start of the field delimiter (*WSP ";" *WSP).
+MTA_STS_VERSION_REGEX_STRING = rf"v=STSv1;{WSP_REGEX}*"
+# RFC 8461 section 3.1: a field name is 1-32 letters, digits, underscores,
+# hyphens, or dots (starting with a letter or digit), followed directly by
+# "=" (no surrounding spaces) and a value of any visible ASCII characters
+# except "=" and ";". This is wide enough to accept extension fields,
+# which are ignored with a warning rather than rejected.
+MTA_STS_TAG_VALUE_REGEX_STRING = (
+    r"([A-Za-z0-9][A-Za-z0-9_\-.]{0,31})=([\x21-\x3A\x3C\x3E-\x7E]+)"
+)
 
-MTA_STS_MX_REGEX_STRING = r"[a-z0-9\-*.]+"
-MTA_STS_MX_REGEX = re.compile(MTA_STS_MX_REGEX_STRING, re.IGNORECASE)
+# RFC 8461 section 3.2: an mx value is ["*."] Domain, where Domain is
+# dot-separated labels of letters, digits, and interior hyphens (RFC 5321
+# section 4.1.2). A wildcard is only allowed as the complete left-most
+# label, so "mail.*.example.com" and "*example.com" are invalid.
+MTA_STS_MX_REGEX_STRING = (
+    r"(?:\*\.)?"
+    r"[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?"
+    r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?)*"
+)
+MTA_STS_MX_REGEX = re.compile(MTA_STS_MX_REGEX_STRING)
+
+# RFC 8461 section 3.1: an id value is 1-32 letters or digits
+MTA_STS_ID_REGEX = re.compile(r"[A-Za-z0-9]{1,32}")
 
 
 class MTASTSError(Exception):
@@ -73,7 +93,12 @@ class MTASTSRecordSyntaxError(MTASTSError):
 
 
 class InvalidMTASTSTag(MTASTSRecordSyntaxError):
-    """Raised when an invalid MTA-STS tag is found"""
+    """Raised when an invalid MTA-STS tag is found
+
+    .. note::
+        No longer raised: RFC 8461 sections 3.1-3.2 say unknown fields
+        are ignored, so parsing now warns instead. The class remains
+        defined for backwards compatibility."""
 
 
 class InvalidSTSTagValue(MTASTSRecordSyntaxError):
@@ -181,10 +206,15 @@ MTASTSCheckResults = MTASTSCheckResult
 
 
 class _STSGrammar(pyleri.Grammar):
-    """Defines Pyleri grammar for MTA-STS records"""
+    """Defines Pyleri grammar for MTA-STS records
 
-    version_tag = pyleri.Regex(MTA_STS_VERSION_REGEX_STRING, re.IGNORECASE)
-    tag_value = pyleri.Regex(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    RFC 8461 section 3.1 defines the record as a case-sensitive
+    "v=STSv1" version tag followed by semicolon-delimited fields, with
+    an optional trailing semicolon. No IGNORECASE flag: the field names
+    and the version value are case-sensitive literals in the ABNF."""
+
+    version_tag = pyleri.Regex(MTA_STS_VERSION_REGEX_STRING)
+    tag_value = pyleri.Regex(MTA_STS_TAG_VALUE_REGEX_STRING)
     START = pyleri.Sequence(
         version_tag,
         pyleri.List(
@@ -215,7 +245,15 @@ MTA_STS_TAGS = {
 # Deprecated alias for MTA_STS_TAGS
 mta_sts_tags = MTA_STS_TAGS
 
-STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+STS_TAG_VALUE_REGEX = re.compile(MTA_STS_TAG_VALUE_REGEX_STRING)
+
+_SPF_IN_MTA_STS_ERROR_MSG = (
+    "Found an SPF record where an MTA-STS record "
+    "should be; most likely, the _mta-sts "
+    "subdomain record does not actually exist, "
+    "and the request for TXT records was "
+    "redirected to the base domain."
+)
 
 
 def query_mta_sts_record(
@@ -254,9 +292,11 @@ def query_mta_sts_record(
     logger.debug(f"Checking for an MTA-STS record on {domain}")
     warnings = []
     target = f"_mta-sts.{domain}"
-    txt_prefix = "v=STSv1"
+    # RFC 8461 section 3.1: records that do not begin with the exact
+    # string "v=STSv1;" are discarded, not treated as errors
+    txt_prefix = "v=STSv1;"
     sts_record = None
-    sts_record_count = 0
+    sts_records = []
     unrelated_records = []
 
     try:
@@ -270,21 +310,33 @@ def query_mta_sts_record(
         )
         for record in records:
             if record.startswith(txt_prefix):
-                sts_record_count += 1
+                sts_records.append(record)
             else:
                 unrelated_records.append(record)
 
-        if sts_record_count > 1:
+        if len(sts_records) > 1:
             raise MultipleMTASTSRecords("Multiple MTA-STS records are not permitted.")
+        if len(sts_records) == 0:
+            # No MTA-STS record here at all. An SPF record at _mta-sts
+            # usually means the query was redirected to the base domain,
+            # so give that specific diagnostic.
+            for record in unrelated_records:
+                if record.lower().startswith("v=spf1"):
+                    raise SPFRecordFoundWhereMTASTSRecordShouldBe(
+                        _SPF_IN_MTA_STS_ERROR_MSG
+                    )
+            raise MTASTSRecordNotFound("An MTA-STS DNS record does not exist.")
+        # Exactly one MTA-STS record: RFC 8461 section 3.1 says unrelated
+        # TXT records are discarded, so they only warrant a warning
         if len(unrelated_records) > 0:
             ur_str = "\n\n".join(unrelated_records)
-            raise UnrelatedTXTRecordFoundAtMTASTS(
-                "Unrelated TXT records were discovered. These should be "
-                "removed, as some receivers may not expect to find "
-                "unrelated TXT records "
+            warnings.append(
+                "Unrelated TXT records were discovered and ignored. "
+                "These should be removed, as some receivers may not "
+                "expect to find unrelated TXT records "
                 f"at {target}\n\n{ur_str}"
             )
-        sts_record = records[0]
+        sts_record = sts_records[0]
 
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
         try:
@@ -344,23 +396,15 @@ def parse_mta_sts_record(
 
     Raises:
         :exc:`checkdmarc.mta_sts.MTASTSRecordSyntaxError`
-        :exc:`checkdmarc.mta_sts.InvalidMTASTSTag`
         :exc:`checkdmarc.mta_sts.InvalidSTSTagValue`
         :exc:`checkdmarc.mta_sts.SPFRecordFoundWhereMTASTSRecordShouldBe`
 
     """
     logger.debug("Parsing the MTA-STS record")
-    spf_in_mta_sts_error_msg = (
-        "Found an SPF record where an MTA-STS record "
-        "should be; most likely, the _mta-sts "
-        "subdomain record does not actually exist, "
-        "and the request for TXT records was "
-        "redirected to the base domain."
-    )
     warnings = []
     record = record.strip('"')
     if record.lower().startswith("v=spf1"):
-        raise SPFRecordFoundWhereMTASTSRecordShouldBe(spf_in_mta_sts_error_msg)
+        raise SPFRecordFoundWhereMTASTSRecordShouldBe(_SPF_IN_MTA_STS_ERROR_MSG)
     sts_syntax_checker = _STSGrammar()
     grammar_result = sts_syntax_checker.parse(record)
     if not grammar_result.is_valid:
@@ -381,24 +425,35 @@ def parse_mta_sts_record(
     pairs: list[tuple[str, str]] = STS_TAG_VALUE_REGEX.findall(record)
     tags = {}
 
-    seen_tags: list[str] = []
-    duplicate_tags: list[str] = []
     for pair in pairs:
-        tag = pair[0].lower().strip()
-        tag_value = str(pair[1].strip())
+        # Tag names are case-sensitive in the RFC 8461 section 3.1
+        # grammar, so do not lowercase them
+        tag = pair[0]
+        tag_value = pair[1]
         if tag not in MTA_STS_TAGS:
-            raise InvalidMTASTSTag(f"{tag} is not a valid MTA-STS record tag.")
-        # Check for duplicate tags
-        if tag in seen_tags:
-            if tag not in duplicate_tags:
-                duplicate_tags.append(tag)
-        else:
-            seen_tags.append(tag)
-            tags[tag] = tag_value
-        if len(duplicate_tags):
-            duplicate_tags_str = ",".join(duplicate_tags)
-            raise InvalidMTASTSTag(
-                f"Duplicate {duplicate_tags_str} tags are not permitted."
+            # RFC 8461 sections 3.1 and 3.2: unknown fields (such as
+            # extension fields) SHALL be ignored, not rejected
+            warnings.append(f"Unknown MTA-STS tag {tag} was ignored.")
+            continue
+        if tag in tags:
+            # RFC 8461 section 3.2: when a non-repeated field is
+            # duplicated, all entries except the first SHALL be ignored
+            warnings.append(
+                f"The MTA-STS record has duplicate {tag} tags. "
+                "Only the first value is used."
+            )
+            continue
+        if tag == "id" and MTA_STS_ID_REGEX.fullmatch(tag_value) is None:
+            raise InvalidSTSTagValue(
+                "The id value must be 1-32 letters or digits (RFC 8461 section 3.1)."
+            )
+        tags[tag] = tag_value
+
+    # RFC 8461 section 3.1: the v and id fields are required
+    for tag_name, tag_info in MTA_STS_TAGS.items():
+        if tag_info["required"] and tag_name not in tags:
+            raise MTASTSRecordSyntaxError(
+                f"The MTA-STS record is missing the required {tag_name} tag."
             )
 
     results: ParsedMTASTSRecord = {"tags": tags, "warnings": warnings}
@@ -432,8 +487,15 @@ def download_mta_sts_policy(
     url = f"https://mta-sts.{domain}/.well-known/mta-sts.txt"
     logger.debug(f"Attempting to download MTA-STS policy from {url}")
     try:
-        response = session.get(url, timeout=http_timeout)
-        response.raise_for_status()
+        # RFC 8461 section 3.3: HTTP 3xx redirects MUST NOT be followed,
+        # and the policy is only valid if the response code is exactly 200
+        response = session.get(url, timeout=http_timeout, allow_redirects=False)
+        if response.status_code != 200:
+            raise MTASTSPolicyDownloadError(
+                "The MTA-STS policy fetch returned HTTP "
+                f"{response.status_code}. RFC 8461 section 3.3 requires "
+                "an HTTP 200 response, and redirects must not be followed."
+            )
         if "Content-Type" in response.headers:
             content_type = response.headers["Content-Type"].split(";")[0]
             content_type = content_type.strip()
@@ -471,36 +533,43 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
     Raises:
         :exc:`checkdmarc.mta_sts.MTASTSPolicySyntaxError`
     """
-    parsed_policy: ParsedMTASTSPolicy = {
-        "version": "STSv1",  # Will be verified below
-        "mode": "none",  # Will be set below
-        "max_age": 0,  # Will be set below
-        "mx": [],  # Will be set below
-    }
     warnings = []
     mx = []
     versions = ["STSv1"]
     modes = ["enforce", "testing", "none"]
     required_keys = ["version", "mode", "max_age"]
-    acceptable_keys = required_keys.copy()
-    acceptable_keys.append("mx")
+    known_keys = required_keys + ["mx"]
+    # Collected values; required keys are checked against seen_keys after
+    # the loop, so a missing key is reported instead of silently defaulted
+    values: dict[str, str | int] = {}
     seen_keys: set[str] = set()
-    if "\n" in policy and "\r\n" not in policy:
-        policy = policy.replace("\n", "\r\n")
-    lines = policy.split("\r\n")
+    # RFC 8461 section 3.2: each line may end with either LF or CRLF, so
+    # mixed line endings within one policy file are acceptable
+    lines = policy.splitlines()
     for i in range(len(lines)):
         line_number = i + 1
         if lines[i] == "":
             continue
-        key_value = lines[i].split(":")
+        # Split on the first colon only, so values containing colons
+        # (allowed in extension values) still form a key: value pair
+        key_value = lines[i].split(":", 1)
         if len(key_value) != 2:
             raise MTASTSPolicySyntaxError(f"Line {line_number}: Not a key: value pair.")
         key = key_value[0].strip()
         value = key_value[1].strip()
-        if key not in acceptable_keys:
-            raise MTASTSPolicySyntaxError(f"Line {line_number}: Unexpected key: {key}")
+        if key not in known_keys:
+            # RFC 8461 section 3.2: unknown fields (such as extension
+            # fields) SHALL be ignored, not rejected
+            warnings.append(f"Line {line_number}: Unknown key {key} was ignored.")
+            continue
         if key in seen_keys and key != "mx":
-            raise MTASTSPolicySyntaxError(f"Line {line_number}: Duplicate key: {key}")
+            # RFC 8461 section 3.2: when a non-repeated field is
+            # duplicated, all entries except the first SHALL be ignored
+            warnings.append(
+                f"Line {line_number}: Duplicate {key} key. "
+                "Only the first value is used."
+            )
+            continue
         seen_keys.add(key)
         if key == "version" and value not in versions:
             raise MTASTSPolicySyntaxError(
@@ -509,35 +578,51 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
         elif key == "mode" and value not in modes:
             raise MTASTSPolicySyntaxError(f"Line {line_number}: Invalid mode: {value}")
         elif key == "max_age":
-            error_msg = "max_age must be an integer value between 0 and 31557600."
-            if "." in value:
+            error_msg = (
+                f"Line {line_number}: max_age must be an integer value "
+                "between 0 and 31557600."
+            )
+            # RFC 8461 section 3.2: max_age is 1-10 plain digits, so
+            # values int() would accept, like "1_000" or "+5", are invalid
+            if re.fullmatch(r"[0-9]{1,10}", value) is None:
                 raise MTASTSPolicySyntaxError(error_msg)
-            try:
-                value = int(value)
-                if value < 0 or value > 31557600:
-                    raise MTASTSPolicySyntaxError(error_msg)
-            except ValueError:
+            max_age = int(value)
+            if max_age > 31557600:
                 raise MTASTSPolicySyntaxError(error_msg)
+            values[key] = max_age
+            continue
         if key != "mx":
-            parsed_policy[key] = value
+            values[key] = value
         else:
-            value = str(value)
-            # fullmatch, not findall: an unanchored search accepts any value
+            # fullmatch against the ["*."] Domain pattern from RFC 8461
+            # section 3.2; an unanchored search accepts any value
             # containing a single legal character, e.g. "not a hostname!"
             if MTA_STS_MX_REGEX.fullmatch(value) is None:
                 raise MTASTSPolicySyntaxError(
                     f"Line {line_number}: Invalid mx value: {value}"
                 )
             mx.append(value)
+    # RFC 8461 section 3.2: version, mode, and max_age are each required
+    # exactly once
     for required_key in required_keys:
-        if required_key not in parsed_policy:
+        if required_key not in seen_keys:
             raise MTASTSPolicySyntaxError(f"Missing required key: {required_key}.")
 
-    if parsed_policy["mode"] != "none" and len(mx) == 0:
+    if values["mode"] != "none" and len(mx) == 0:
         raise MTASTSPolicySyntaxError(
-            f"{parsed_policy['mode']} mode requires at least one mx value."
+            f"{values['mode']} mode requires at least one mx value."
         )
-    parsed_policy["mx"] = mx
+    # The loop above validated each value against its allowed literals,
+    # so this narrowing from plain str/int values is safe
+    parsed_policy = cast(
+        ParsedMTASTSPolicy,
+        {
+            "version": values["version"],
+            "mode": values["mode"],
+            "max_age": values["max_age"],
+            "mx": mx,
+        },
+    )
 
     results: MTASTSPolicyParsingResults = {
         "policy": parsed_policy,
@@ -591,6 +676,7 @@ def check_mta_sts(
         )
         warnings = query_results["warnings"]
         parsed_record = parse_mta_sts_record(query_results["record"])
+        warnings += parsed_record["warnings"]
         id_value = parsed_record["tags"]["id"]
         # The timeout parameter is the DNS timeout; the policy download uses
         # its own HTTP default, as the BIMI check does for its downloads
@@ -626,8 +712,16 @@ def mx_in_mta_sts_patterns(mx_hostname: str, mta_sts_mx_patterns: list[str]) -> 
     Returns: True if the MX hostname is included, False if not
     """
     for pattern in mta_sts_mx_patterns:
-        regex_pattern = pattern.replace(r".", r"\.")
-        regex_pattern = regex_pattern.replace(r"*", r"[a-z0-9\-.]+")
-        if len(re.findall(regex_pattern, mx_hostname, re.IGNORECASE)) > 0:
+        # RFC 8461 section 4.1: a wildcard may only match the entire
+        # left-most label, so "*.example.com" matches "mail.example.com"
+        # but not "example.com" or "foo.bar.example.com". The whole
+        # hostname must match the whole pattern (fullmatch, not a
+        # substring search), so "example.com" does not match
+        # "bad-example.com" or "mail.example.com.evil.com".
+        if pattern.startswith("*."):
+            regex_pattern = r"[A-Za-z0-9\-]+" + re.escape(pattern[1:])
+        else:
+            regex_pattern = re.escape(pattern)
+        if re.fullmatch(regex_pattern, mx_hostname, re.IGNORECASE) is not None:
             return True
     return False

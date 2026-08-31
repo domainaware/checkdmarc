@@ -223,14 +223,147 @@ class Test(unittest.TestCase):
         ):
             mock_root_dns.return_value = []
             # First call for sub.example.com returns None
-            # Walk: example.com returns a record
+            # Walk: example.com returns a record, then the walk continues
+            # to the TLD per RFC 9989 section 4.10 step 7
             mock_query.side_effect = [
                 None,  # _dmarc.sub.example.com
                 "v=DMARC1; p=reject",  # _dmarc.example.com
+                None,  # _dmarc.com
             ]
             result = checkdmarc.dmarc.query_dmarc_record("sub.example.com")
             self.assertEqual(result["location"], "example.com")
             self.assertEqual(result["record"], "v=DMARC1; p=reject")
+
+    def testDMARCBareVersionTagIsValid(self):
+        """A bare v=DMARC1 record is valid per the RFC 9989 section 4.8
+        ABNF (zero tags), with p defaulting to none"""
+        for record in ("v=DMARC1", "v=DMARC1;"):
+            result = checkdmarc.dmarc.parse_dmarc_record(record, "example.com")
+            self.assertEqual(result["tags"]["p"]["value"], "none")
+            self.assertFalse(result["tags"]["p"]["explicit"])
+
+    def testDMARCVersionValueCaseSensitive(self):
+        """The DMARC1 version value is case sensitive per RFC 9989
+        section 4.7, so v=dmarc1 is a syntax error"""
+        self.assertRaises(
+            checkdmarc.dmarc.DMARCSyntaxError,
+            checkdmarc.dmarc.parse_dmarc_record,
+            "v=dmarc1; p=reject",
+            "example.com",
+        )
+
+    def testDMARCPercentEncodedReportURI(self):
+        """A percent-encoded mailto URI (mandatory encoding for commas per
+        RFC 9989 section 4.8) parses instead of failing the grammar"""
+        with patch(
+            "checkdmarc.dmarc.get_mx_records",
+            return_value=[{"preference": 10, "hostname": "mx.example.com"}],
+        ):
+            result = checkdmarc.dmarc.parse_dmarc_record(
+                "v=DMARC1; p=none; rua=mailto:a%2Cb@example.com",
+                "example.com",
+            )
+        rua = cast(Any, result["tags"]["rua"]["value"])
+        self.assertEqual(rua[0]["scheme"], "mailto")
+        self.assertEqual(rua[0]["address"], "a%2cb@example.com")
+
+    def testDMARCLongUnknownTagIgnored(self):
+        """An unknown tag name longer than five letters (1*ALPHA in the
+        RFC 9989 section 4.8 ABNF) lexes and is ignored with a warning"""
+        result = checkdmarc.dmarc.parse_dmarc_record(
+            "v=DMARC1; p=reject; foobar=baz", "example.com"
+        )
+        self.assertNotIn("foobar", result["tags"])
+        self.assertTrue(
+            any("Unknown DMARC tag 'foobar'" in w for w in result["warnings"])
+        )
+
+    def testDMARCNonMailtoReportURIKeptWithWarning(self):
+        """A non-mailto report URI is valid per RFC 9989 section 4.7; it is
+        kept in the parsed output with a warning that mailto-only receivers
+        will ignore it"""
+        result = checkdmarc.dmarc.parse_dmarc_record(
+            "v=DMARC1; p=none; rua=https://dmarc.example.com/submit",
+            "example.com",
+        )
+        rua = cast(Any, result["tags"]["rua"]["value"])
+        self.assertEqual(rua[0]["scheme"], "https")
+        self.assertEqual(rua[0]["address"], "https://dmarc.example.com/submit")
+        self.assertTrue(
+            any("only required to support mailto" in w for w in result["warnings"])
+        )
+
+    def testDMARCParseNonMailtoReportURI(self):
+        """parse_dmarc_report_uri returns the scheme and full URI for a
+        non-mailto URI instead of raising"""
+        uri = checkdmarc.dmarc.parse_dmarc_report_uri(
+            "https://dmarc.example.com/submit"
+        )
+        self.assertEqual(uri["scheme"], "https")
+        self.assertEqual(uri["address"], "https://dmarc.example.com/submit")
+        self.assertIsNone(uri["size_limit"])
+
+    def testDMARCInvalidAlignmentModeFallsBack(self):
+        """Invalid adkim/aspf values fall back to the default r with a
+        warning, per the RFC 9989 section 4.8 discard rule"""
+        result = checkdmarc.dmarc.parse_dmarc_record(
+            "v=DMARC1; p=reject; adkim=x; aspf=q", "example.com"
+        )
+        self.assertEqual(result["tags"]["adkim"]["value"], "r")
+        self.assertFalse(result["tags"]["adkim"]["explicit"])
+        self.assertEqual(result["tags"]["aspf"]["value"], "r")
+        self.assertFalse(result["tags"]["aspf"]["explicit"])
+        self.assertTrue(
+            any("not a valid adkim tag value" in w for w in result["warnings"])
+        )
+        self.assertTrue(
+            any("not a valid aspf tag value" in w for w in result["warnings"])
+        )
+
+    def testDMARCValidAlignmentModesAccepted(self):
+        """Valid adkim/aspf values (r and s) are kept as-is"""
+        result = checkdmarc.dmarc.parse_dmarc_record(
+            "v=DMARC1; p=reject; adkim=s; aspf=s", "example.com"
+        )
+        self.assertEqual(result["tags"]["adkim"]["value"], "s")
+        self.assertEqual(result["tags"]["aspf"]["value"], "s")
+
+    def testDMARCDNSFilterToleratesWhitespaceAndCase(self):
+        """The DNS-stage filter accepts whitespace around = and an
+        uppercase V, consistent with the parser and the RFC 9989
+        section 4.8 ABNF"""
+        for record in ("v = DMARC1; p=reject", "V=DMARC1; p=reject"):
+            with patch("checkdmarc.dmarc.query_dns", return_value=[record]):
+                result = checkdmarc.dmarc._query_dmarc_record("example.com")
+            self.assertEqual(result, record)
+
+    def testDMARCDNSFilterRejectsWrongVersionValue(self):
+        """A record with a case-mangled or extended version value is not a
+        DMARC record and is treated as unrelated"""
+        for record in ("v=dmarc1; p=reject", "v=DMARC10; p=reject"):
+            with patch("checkdmarc.dmarc.query_dns", return_value=[record]):
+                self.assertRaises(
+                    checkdmarc.dmarc.UnrelatedTXTRecordFoundAtDMARC,
+                    checkdmarc.dmarc._query_dmarc_record,
+                    "example.com",
+                )
+
+    def testDMARCApexNXDOMAINKeepsFoundRecord(self):
+        """An NXDOMAIN on the courtesy apex TXT query does not discard a
+        DMARC record that was already found at _dmarc"""
+        with (
+            patch(
+                "checkdmarc.dmarc._query_dmarc_record",
+                return_value="v=DMARC1; p=reject",
+            ),
+            patch(
+                "checkdmarc.dmarc.query_dns",
+                side_effect=dns.resolver.NXDOMAIN(),
+            ),
+        ):
+            result = checkdmarc.dmarc.query_dmarc_record("example.com")
+        self.assertEqual(result["record"], "v=DMARC1; p=reject")
+        self.assertEqual(result["location"], "example.com")
 
     def testDMARCGrammarSyntaxError(self):
         """A record the grammar cannot parse raises DMARCSyntaxError
@@ -304,12 +437,25 @@ class Test(unittest.TestCase):
             any("ri tag was removed in RFC 9989" in w for w in result["warnings"])
         )
 
-    def testDMARCFoRedundancy(self):
-        """fo=0:1 produces a warning about redundancy"""
+    def testDMARCFoMutuallyExclusive(self):
+        """fo=0:1 is invalid (0 and 1 are mutually exclusive per RFC 9989
+        section 4.7) and falls back to the default fo=0 with a warning"""
         dmarc_record = "v=DMARC1; p=reject; fo=0:1"
         domain = "example.com"
         result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
-        self.assertTrue(any("redundant" in w.lower() for w in result["warnings"]))
+        self.assertEqual(result["tags"]["fo"]["value"], "0")
+        self.assertFalse(result["tags"]["fo"]["explicit"])
+        self.assertTrue(any("mutually exclusive" in w for w in result["warnings"]))
+
+    def testDMARCFoDuplicateValues(self):
+        """Duplicate fo values are invalid (RFC 9989 section 4.8 allows each
+        value at most once) and fall back to the default fo=0 with a warning"""
+        dmarc_record = "v=DMARC1; p=reject; fo=d:d"
+        domain = "example.com"
+        result = checkdmarc.dmarc.parse_dmarc_record(dmarc_record, domain)
+        self.assertEqual(result["tags"]["fo"]["value"], "0")
+        self.assertFalse(result["tags"]["fo"]["explicit"])
+        self.assertTrue(any("at most once" in w for w in result["warnings"]))
 
     def testDMARCInvalidFoValue(self):
         """Invalid fo tag value raises InvalidDMARCTagValue"""
@@ -688,6 +834,7 @@ class TestQueryDmarcRecordTreeWalk(unittest.TestCase):
             mock_query.side_effect = [
                 None,  # sub.example.com
                 "v=DMARC1; p=reject",  # example.com
+                None,  # com (the walk continues to the TLD)
             ]
             result = checkdmarc.dmarc.query_dmarc_record("sub.example.com")
         self.assertEqual(result["location"], "example.com")
@@ -702,6 +849,7 @@ class TestQueryDmarcRecordTreeWalk(unittest.TestCase):
                 None,  # original
                 checkdmarc.dmarc.DMARCRecordNotFound("nope"),  # first parent
                 "v=DMARC1; p=reject",  # second parent
+                None,  # third parent (the walk continues to the TLD)
             ]
             result = checkdmarc.dmarc.query_dmarc_record("a.b.example.com")
         self.assertIsNotNone(result["record"])
@@ -758,6 +906,122 @@ class TestQueryDmarcRecordTreeWalk(unittest.TestCase):
         ):
             checkdmarc.dmarc.query_dmarc_record("sub.example.com")
         self.assertIn("parent domains", str(ctx.exception))
+
+    def testWalkAfterTransientApexError(self):
+        """A transient DNS error on the apex queries doesn't stop the tree
+        walk, and NoAnswer at a walked parent means no record there"""
+
+        def fake_query_dns(target, rdtype, **kwargs):
+            if target == "_dmarc.sub.example.com":
+                raise dns.resolver.NoAnswer()
+            if target == "sub.example.com":
+                raise dns.exception.DNSException("timeout")
+            if target == "_dmarc.example.com":
+                return ["v=DMARC1; p=reject"]
+            if target == "_dmarc.com":
+                raise dns.resolver.NoAnswer()
+            return []
+
+        with patch("checkdmarc.dmarc.query_dns", side_effect=fake_query_dns):
+            result = checkdmarc.dmarc.query_dmarc_record("sub.example.com")
+        self.assertEqual(result["location"], "example.com")
+        self.assertEqual(result["record"], "v=DMARC1; p=reject")
+
+
+class TestTreeWalkOrganizationalDomainSelection(unittest.TestCase):
+    """RFC 9989 section 4.10.2 Organizational Domain selection during the
+    section 4.10 DNS tree walk, verified against the RFC's own worked
+    examples for the starting domain a.mail.example.com"""
+
+    @staticmethod
+    def _fake_query_dns(answers):
+        """Builds a query_dns replacement serving DMARC records from
+        ``answers`` (keyed by _dmarc target name), NXDOMAIN for other
+        _dmarc names, and an empty answer for apex TXT queries"""
+
+        def fake_query_dns(target, rdtype, **kwargs):
+            if target in answers:
+                return answers[target]
+            if target.startswith("_dmarc."):
+                raise dns.resolver.NXDOMAIN()
+            return []
+
+        return fake_query_dns
+
+    def testFewestLabelsSelected(self):
+        """With records at both mail.example.com and example.com and no psd
+        tags, the record at the name with the fewest labels is selected
+        (the first worked example in RFC 9989 section 4.10.2)"""
+        answers = {
+            "_dmarc.mail.example.com": ["v=DMARC1; p=none"],
+            "_dmarc.example.com": ["v=DMARC1; p=reject"],
+        }
+        with patch(
+            "checkdmarc.dmarc.query_dns",
+            side_effect=self._fake_query_dns(answers),
+        ) as mock_dns:
+            result = checkdmarc.dmarc.query_dmarc_record("a.mail.example.com")
+        self.assertEqual(result["location"], "example.com")
+        self.assertEqual(result["record"], "v=DMARC1; p=reject")
+        # The walk must have continued to the TLD before selecting
+        queried = [c.args[0] for c in mock_dns.call_args_list]
+        self.assertIn("_dmarc.com", queried)
+
+    def testPsdNStopsWalkAndWins(self):
+        """A psd=n record marks the Organizational Domain and stops the
+        walk (the second worked example in RFC 9989 section 4.10.2)"""
+        answers = {
+            "_dmarc.mail.example.com": ["v=DMARC1; p=quarantine; psd=n"],
+            "_dmarc.example.com": ["v=DMARC1; p=reject"],
+        }
+        with patch(
+            "checkdmarc.dmarc.query_dns",
+            side_effect=self._fake_query_dns(answers),
+        ) as mock_dns:
+            result = checkdmarc.dmarc.query_dmarc_record("a.mail.example.com")
+        self.assertEqual(result["location"], "mail.example.com")
+        self.assertEqual(result["record"], "v=DMARC1; p=quarantine; psd=n")
+        # The walk stops at the psd=n record (RFC 9989 section 4.10 step 6)
+        queried = [c.args[0] for c in mock_dns.call_args_list]
+        self.assertNotIn("_dmarc.example.com", queried)
+        self.assertNotIn("_dmarc.com", queried)
+
+    def testPsdYWithoutOrgRecordAppliesPsdRecord(self):
+        """With only a psd=y record at the PSD, the Organizational Domain
+        is one label below it and, having no record of its own, the PSD
+        record applies (the third worked example in RFC 9989
+        section 4.10.2)"""
+        answers = {
+            "_dmarc.com": ["v=DMARC1; p=reject; psd=y"],
+        }
+        with patch(
+            "checkdmarc.dmarc.query_dns",
+            side_effect=self._fake_query_dns(answers),
+        ):
+            result = checkdmarc.dmarc.query_dmarc_record("a.mail.example.com")
+        self.assertEqual(result["location"], "com")
+        self.assertEqual(result["record"], "v=DMARC1; p=reject; psd=y")
+        self.assertTrue(
+            any(
+                "Organizational Domain" in w and "example.com" in w
+                for w in result["warnings"]
+            )
+        )
+
+    def testPsdYSelectsRecordOneLabelBelow(self):
+        """A psd=y record puts the Organizational Domain one label below;
+        the record found there is the one that applies"""
+        answers = {
+            "_dmarc.example.com": ["v=DMARC1; p=reject"],
+            "_dmarc.com": ["v=DMARC1; p=none; psd=y"],
+        }
+        with patch(
+            "checkdmarc.dmarc.query_dns",
+            side_effect=self._fake_query_dns(answers),
+        ):
+            result = checkdmarc.dmarc.query_dmarc_record("a.mail.example.com")
+        self.assertEqual(result["location"], "example.com")
+        self.assertEqual(result["record"], "v=DMARC1; p=reject")
 
 
 class TestCheckWildcardDmarcReportAuthorization(unittest.TestCase):
@@ -857,8 +1121,9 @@ class TestVerifyDmarcReportDestination(unittest.TestCase):
                 "other.example.org",
             )
 
-    def testUnrelatedRecordsBecomeUnverifiedDestination(self):
-        """Unrelated TXT records at the authorization location are wrapped in the catch-all"""
+    def testUnrelatedRecordsBesideAuthorizationDiscarded(self):
+        """Unrelated TXT records beside a valid authorization record are
+        discarded per RFC 9990 section 4 steps 6-8, so verification passes"""
         with (
             patch(
                 "checkdmarc.dmarc.check_wildcard_dmarc_report_authorization",
@@ -866,12 +1131,47 @@ class TestVerifyDmarcReportDestination(unittest.TestCase):
             ),
             patch(
                 "checkdmarc.dmarc.query_dns",
-                return_value=["v=DMARC1", "unrelated txt"],
+                return_value=["unrelated txt", "v=DMARC1"],
             ),
         ):
-            # The unrelated-records branch raises UnrelatedTXTRecordFoundAtDMARC,
-            # which is then caught by the broad `except Exception` and re-raised
-            # as UnverifiedDMARCURIDestination.
+            # No exception => verification passed despite the unrelated record
+            checkdmarc.dmarc.verify_dmarc_report_destination(
+                "example.com", "other.example.org"
+            )
+
+    def testDnsErrorBecomesUnverifiedDestination(self):
+        """A DNS failure querying the authorization record means the
+        destination can't be confirmed"""
+        with (
+            patch(
+                "checkdmarc.dmarc.check_wildcard_dmarc_report_authorization",
+                return_value=False,
+            ),
+            patch(
+                "checkdmarc.dmarc.query_dns",
+                side_effect=dns.exception.DNSException("dns down"),
+            ),
+        ):
+            self.assertRaises(
+                checkdmarc.dmarc.UnverifiedDMARCURIDestination,
+                checkdmarc.dmarc.verify_dmarc_report_destination,
+                "example.com",
+                "other.example.org",
+            )
+
+    def testOnlyUnrelatedRecordsRaisesNotFound(self):
+        """Only unrelated TXT records at the authorization location means
+        the authorization record was not found"""
+        with (
+            patch(
+                "checkdmarc.dmarc.check_wildcard_dmarc_report_authorization",
+                return_value=False,
+            ),
+            patch(
+                "checkdmarc.dmarc.query_dns",
+                return_value=["unrelated txt"],
+            ),
+        ):
             self.assertRaises(
                 checkdmarc.dmarc.UnverifiedDMARCURIDestination,
                 checkdmarc.dmarc.verify_dmarc_report_destination,
@@ -1077,6 +1377,15 @@ class TestDmarcRecordNotFound(unittest.TestCase):
         )
         self.assertEqual(str(error), "A DMARC record does not exist for this domain")
         self.assertIsNone(error.data)
+
+    def testTimeoutIsRounded(self):
+        """A DNS timeout value is rounded to one decimal place in the
+        DMARCRecordNotFound message"""
+        error = checkdmarc.dmarc.DMARCRecordNotFound(
+            dns.exception.Timeout(timeout=5.6789)
+        )
+        self.assertIn("5.7", str(error))
+        self.assertNotIn("5.6789", str(error))
 
 
 if __name__ == "__main__":

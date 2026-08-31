@@ -41,17 +41,33 @@ limitations under the License."""
 
 logger = logging.getLogger(__name__)
 
-SMTPTLSREPORTING_VERSION_REGEX_STRING = (
-    rf"v{WSP_REGEX}*=" rf"{WSP_REGEX}*TLSRPTv1{WSP_REGEX}*;"
-)
+# The RFC 8460 section 3 grammar uses RFC 7405 %s (case-sensitive) strings,
+# so "v=TLSRPTv1" must appear exactly, with no whitespace around the "=".
+SMTPTLSREPORTING_VERSION_REGEX_STRING = r"v=TLSRPTv1"
 SMTPTLSREPORTING_URI_REGEX_STRING = rf"({MAILTO_REGEX_STRING}|{HTTPS_REGEX})"
 
+# One tag=value field. The name side covers both the "rua" tag and RFC 8460
+# section 3 extension names: a letter or digit followed by up to 31 more
+# letters, digits, underscores, hyphens, or dots (digits may come first).
+# The value side is any run of characters up to the next ";", starting with
+# something other than whitespace, ";", or "=". Field names are
+# case-sensitive per the RFC 7405 %s strings in the grammar, so this regex
+# is compiled without re.IGNORECASE.
 SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING = (
-    rf"([a-z]{{1,3}}){WSP_REGEX}*={WSP_REGEX}*" rf"([^\s;]+)"
+    r"([A-Za-z0-9][A-Za-z0-9_.\-]{0,31})=" r"([^\s;=][^;]*)"
 )
-SMTPTLSREPORTING_TAG_VALUE_REGEX = re.compile(
-    SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING, re.IGNORECASE
+SMTPTLSREPORTING_TAG_VALUE_REGEX = re.compile(SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING)
+
+# Fields are separated by ";" with optional whitespace on either side
+# (RFC 8460 section 3: field-delim = *WSP ";" *WSP)
+SMTPTLSREPORTING_FIELD_DELIMITER_REGEX_STRING = rf"{WSP_REGEX}*;{WSP_REGEX}*"
+SMTPTLSREPORTING_FIELD_DELIMITER_REGEX = re.compile(
+    SMTPTLSREPORTING_FIELD_DELIMITER_REGEX_STRING
 )
+
+# URIs in a rua value are separated by commas with optional whitespace on
+# either side (RFC 8460 section 3: tlsrpt-uri *(*WSP "," *WSP tlsrpt-uri))
+SMTPTLSREPORTING_URI_DELIMITER_REGEX = re.compile(rf"{WSP_REGEX}*,{WSP_REGEX}*")
 
 SMTPTLSREPORTING_URI_REGEX = re.compile(
     SMTPTLSREPORTING_URI_REGEX_STRING, re.IGNORECASE
@@ -84,7 +100,12 @@ class SMTPTLSReportingSyntaxError(SMTPTLSReportingError):
 
 
 class InvalidSMTPTLSReportingTag(SMTPTLSReportingSyntaxError):
-    """Raised when an invalid SMTP TLS Reporting tag is found"""
+    """Raised when an invalid SMTP TLS Reporting tag is found
+
+    .. deprecated::
+        No longer raised. RFC 8460 section 3 requires parsers to ignore
+        unknown fields, so they now produce a warning instead. Kept for
+        backwards compatibility with code that catches it."""
 
 
 class InvalidSMTPTLSReportingTagValue(SMTPTLSReportingSyntaxError):
@@ -92,7 +113,14 @@ class InvalidSMTPTLSReportingTagValue(SMTPTLSReportingSyntaxError):
 
 
 class UnrelatedTXTRecordFoundAtTLSRPT(SMTPTLSReportingError):
-    """Raised when a TXT record unrelated to SMTP TLS Reporting is found"""
+    """Raised when a TXT record unrelated to SMTP TLS Reporting is found
+
+    .. deprecated::
+        No longer raised during DNS queries. RFC 8460 section 3.1 says
+        non-matching TXT records are discarded, so they now produce a
+        warning instead. Kept because
+        :exc:`SPFRecordFoundWhereTLSRPTShouldBe` subclasses it and for
+        backwards compatibility with code that catches it."""
 
 
 class SPFRecordFoundWhereTLSRPTShouldBe(UnrelatedTXTRecordFoundAtTLSRPT):
@@ -115,12 +143,20 @@ class MultipleSMTPTLSReportingRecords(SMTPTLSReportingError):
 class _SMTPTLSReportingGrammar(pyleri.Grammar):
     """Defines Pyleri grammar for SMTP TLS Reporting records"""
 
+    # RFC 8460 section 3:
+    # tlsrpt-record = tlsrpt-version 1*(field-delim tlsrpt-field) [field-delim]
+    # The version tag must come first, at least one field must follow, and a
+    # trailing delimiter is allowed (List with opt=True).
     version_tag = pyleri.Regex(SMTPTLSREPORTING_VERSION_REGEX_STRING)
-    tag_value = pyleri.Regex(SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+    tag_value = pyleri.Regex(SMTPTLSREPORTING_TAG_VALUE_REGEX_STRING)
     START = pyleri.Sequence(
         version_tag,
+        pyleri.Regex(SMTPTLSREPORTING_FIELD_DELIMITER_REGEX_STRING),
         pyleri.List(
-            tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
+            tag_value,
+            delimiter=pyleri.Regex(SMTPTLSREPORTING_FIELD_DELIMITER_REGEX_STRING),
+            mi=1,
+            opt=True,
         ),
     )
 
@@ -219,16 +255,19 @@ def query_smtp_tls_reporting_record(
         :exc:`checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordNotFound`
         :exc:`checkdmarc.smtp_tls_reporting.SMTPTLSReportingRecordInWrongLocation`
         :exc:`checkdmarc.smtp_tls_reporting.MultipleSMTPTLSReportingRecords`
-        :exc:`checkdmarc.smtp_tls_reporting.UnrelatedTXTRecordFoundAtTLSRPT`
 
     """
     domain = normalize_domain(domain)
     logger.debug(f"Checking for an SMTP TLS Reporting record on {domain}")
     warnings = []
     target = f"_smtp._tls.{domain}"
-    txt_prefix = "v=TLSRPTv1"
+    # RFC 8460 section 3.1: records that do not begin with "v=TLSRPTv1;" are
+    # discarded. The trailing ";" is part of the rule, and the section 3
+    # grammar requires at least one field after the version tag, so a record
+    # that is exactly "v=TLSRPTv1" is not a TLSRPT record either.
+    txt_prefix = "v=TLSRPTv1;"
     tlsrpt_record = None
-    tlsrpt_record_count = 0
+    tlsrpt_records = []
     unrelated_records = []
 
     try:
@@ -242,23 +281,27 @@ def query_smtp_tls_reporting_record(
         )
         for record in records:
             if record.startswith(txt_prefix):
-                tlsrpt_record_count += 1
+                tlsrpt_records.append(record)
             else:
                 unrelated_records.append(record)
 
-        if tlsrpt_record_count > 1:
+        # RFC 8460 section 3.1: non-matching records are discarded, not
+        # fatal, so warn about them and move on. If exactly one TLSRPT
+        # record remains, the domain supports TLSRPT.
+        if len(unrelated_records) > 0:
+            ur_str = "\n\n".join(unrelated_records)
+            warnings.append(
+                "Unrelated TXT records were discovered and ignored. "
+                "These should be removed, as some receivers may not "
+                "expect to find unrelated TXT records "
+                f"at {target}\n\n{ur_str}"
+            )
+        if len(tlsrpt_records) > 1:
             raise MultipleSMTPTLSReportingRecords(
                 "Multiple SMTP TLS Reporting records are not permitted."
             )
-        if len(unrelated_records) > 0:
-            ur_str = "\n\n".join(unrelated_records)
-            raise UnrelatedTXTRecordFoundAtTLSRPT(
-                "Unrelated TXT records were discovered. These should be "
-                "removed, as some receivers may not expect to find "
-                "unrelated TXT records "
-                f"at {target}\n\n{ur_str}"
-            )
-        tlsrpt_record = records[0]
+        if len(tlsrpt_records) == 1:
+            tlsrpt_record = tlsrpt_records[0]
 
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
         try:
@@ -327,8 +370,6 @@ def parse_smtp_tls_reporting_record(
 
     Raises:
         :exc:`checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError`
-        :exc:`checkdmarc.smtp_tls_reporting.InvalidSMTPTLSReportingTag`
-        :exc:`checkdmarc.smtp_tls_reporting.InvalidSMTPTLSReportingTagValue`
         :exc:`checkdmarc.smtp_tls_reporting.SPFRecordFoundWhereTLSRPTShouldBe`
     """
     logger.debug("Parsing the SMTP TLS Reporting record")
@@ -340,7 +381,7 @@ def parse_smtp_tls_reporting_record(
         "redirected to the base domain."
     )
     warnings = []
-    record = record.strip('"')
+    record = record.strip('"').strip()
     if record.lower().startswith("v=spf1"):
         raise SPFRecordFoundWhereTLSRPTShouldBe(spf_in_tlsrpt_error_msg)
     smtp_tls_syntax_checker = _SMTPTLSReportingGrammar()
@@ -361,37 +402,50 @@ def parse_smtp_tls_reporting_record(
             f"in: {marked_record}"
         )
 
-    pairs: list[tuple[str, str]] = SMTPTLSREPORTING_TAG_VALUE_REGEX.findall(record)
-    tags = {}
-
-    seen_tags: list[str] = []
-    duplicate_tags: list[str] = []
-    for pair in pairs:
-        tag = pair[0].lower().strip()
-        tag_value = str(pair[1].strip())
-        if tag not in SMTP_TLS_REPORTING_TAGS:
-            raise InvalidSMTPTLSReportingTag(
-                f"{tag} is not a valid SMTP TLS Reporting record tag."
-            )
-        # Check for duplicate tags
-        if tag in seen_tags:
-            if tag not in duplicate_tags:
-                duplicate_tags.append(tag)
+    # The grammar has already validated the record's shape, so split it into
+    # fields on the RFC 8460 section 3 field delimiter. The first field is
+    # always the version tag.
+    fields = SMTPTLSREPORTING_FIELD_DELIMITER_REGEX.split(record)
+    # description is an optional key, so this type also covers plain tag
+    # values when include_tag_descriptions is False
+    tags: SMTPTLSReportingTagsWithDescription = {"v": {"value": "TLSRPTv1"}}
+    if include_tag_descriptions:
+        tags["v"]["description"] = SMTP_TLS_REPORTING_TAGS["v"]["description"]
+    for field in fields[1:]:
+        if field == "":
+            # A trailing delimiter leaves an empty final field
+            continue
+        tag, _, tag_value = field.partition("=")
+        if tag in SMTP_TLS_REPORTING_TAGS:
+            if tag in tags:
+                # RFC 8460 does not forbid repeating a tag, so keep the
+                # record valid; use the first value and warn.
+                warnings.append(
+                    f"The record contains more than one {tag} tag. Only "
+                    f"the first {tag} value is used; the duplicates "
+                    "should be removed."
+                )
+                continue
+            tags[tag] = {"value": tag_value}
+            if include_tag_descriptions:
+                tags[tag]["description"] = SMTP_TLS_REPORTING_TAGS[tag]["description"]
         else:
-            seen_tags.append(tag)
-        if len(duplicate_tags):
-            duplicate_tags_str = ",".join(duplicate_tags)
-            raise InvalidSMTPTLSReportingTag(
-                f"Duplicate {duplicate_tags_str} tags are not permitted."
+            # RFC 8460 section 3: parsers MUST accept records with unknown
+            # fields, which SHALL be ignored. Field names are
+            # case-sensitive, so this also covers e.g. RUA=.
+            warnings.append(
+                f"Unknown tag {tag} was ignored, as required by RFC 8460 section 3."
             )
-        tags[tag] = {"value": tag_value}
-        if include_tag_descriptions:
-            tags[tag]["description"] = SMTP_TLS_REPORTING_TAGS[tag]["description"]
     if "rua" not in tags:
         raise SMTPTLSReportingSyntaxError("The record is missing the required rua tag.")
-    tags["rua"]["value"] = tags["rua"]["value"].split(",")
-    for uri in tags["rua"]["value"]:
-        if len(SMTPTLSREPORTING_URI_REGEX.findall(uri)) != 1:
+    # RFC 8460 section 3 allows whitespace around the commas that separate
+    # rua URIs: tlsrpt-uri *(*WSP "," *WSP tlsrpt-uri)
+    uris = SMTPTLSREPORTING_URI_DELIMITER_REGEX.split(str(tags["rua"]["value"]))
+    tags["rua"]["value"] = uris
+    for uri in uris:
+        # fullmatch anchors the check so that a URI with a bogus prefix
+        # (e.g. xhttps://...) does not pass on a partial match
+        if SMTPTLSREPORTING_URI_REGEX.fullmatch(uri) is None:
             raise SMTPTLSReportingSyntaxError(
                 f"{uri} is not a valid SMTP TLS Reporting URI."
             )

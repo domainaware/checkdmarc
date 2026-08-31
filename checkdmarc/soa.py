@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
 from typing import TypedDict
 
@@ -41,13 +40,47 @@ SOARecordResults = SOARecordSuccessful | SOARecordError
 def soa_rname_to_email(rname: str) -> str:
     """
     Converts a SOA RNAME domain-style name into an RFC 822 email address.
+
+    The first label of the RNAME is the local part of the address and the
+    rest is the domain. The label boundary is the first *unescaped* dot,
+    found by walking the string and consuming RFC 1035 section 5.1 escapes
+    as we go: ``\\X`` stands for the literal character ``X`` (so ``\\.`` is
+    a dot inside the local part and ``\\\\`` is a literal backslash), and
+    ``\\DDD`` (exactly three decimal digits) stands for the byte with that
+    value. A simple regex lookbehind gets ``a\\\\.b.example.com.`` wrong:
+    the dot there follows an *escaped* backslash, so it is a real label
+    boundary (local part ``a\\``, domain ``b.example.com``).
     """
     s = rname.rstrip(".")
-    m = re.search(r"(?<!\\)\.", s)
-    if not m:
+    local_chars: list[str] = []
+    domain: str | None = None
+    i = 0
+    while i < len(s):
+        char = s[i]
+        if char == "\\":
+            digits = s[i + 1 : i + 4]
+            if len(digits) == 3 and digits.isdigit():
+                value = int(digits)
+                if value > 255:
+                    raise ValueError(
+                        f"Invalid SOA RNAME (escape value over 255): {rname!r}"
+                    )
+                local_chars.append(chr(value))
+                i += 4
+            elif i + 1 < len(s):
+                local_chars.append(s[i + 1])
+                i += 2
+            else:
+                raise ValueError(f"Invalid SOA RNAME (trailing backslash): {rname!r}")
+        elif char == ".":
+            domain = s[i + 1 :]
+            break
+        else:
+            local_chars.append(char)
+            i += 1
+    if domain is None:
         raise ValueError(f"Invalid SOA RNAME (no unescaped dot): {rname!r}")
-    local = s[: m.start()].replace(r"\.", ".")
-    domain = s[m.start() + 1 :]
+    local = "".join(local_chars)
     if not local or not domain:
         raise ValueError(f"Invalid SOA RNAME split: {rname!r}")
     return f"{local}@{domain}"

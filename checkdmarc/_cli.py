@@ -127,7 +127,14 @@ def _main():
         default=0.0,
     )
     arg_parser.add_argument(
-        "--skip-tls", action="store_true", help="skip TLS/SSL testing"
+        "--check-mx-tls",
+        action="store_true",
+        help="test MX hosts for STARTTLS and TLS support",
+    )
+    arg_parser.add_argument(
+        "--skip-tls",
+        action="store_true",
+        help="deprecated, no effect: TLS testing is off unless --check-mx-tls is given",
     )
     arg_parser.add_argument(
         "--debug", action="store_true", help="enable debugging output"
@@ -154,9 +161,14 @@ def _main():
             for domain in not_domains:
                 domains.remove(domain)
 
+    if args.skip_tls:
+        logger.warning(
+            "--skip-tls is deprecated and has no effect; "
+            "TLS testing is off unless --check-mx-tls is given"
+        )
     results = check_domains(
         domains,
-        skip_tls=args.skip_tls,
+        check_mx_tls=args.check_mx_tls,
         parked=args.parked,
         approved_nameservers=args.ns,
         approved_mx_hostnames=args.mx,

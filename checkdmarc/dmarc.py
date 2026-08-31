@@ -43,12 +43,49 @@ limitations under the License."""
 
 logger = logging.getLogger(__name__)
 
-DMARC_VERSION_REGEX_STRING = rf"v{WSP_REGEX}*={WSP_REGEX}*DMARC1{WSP_REGEX}*;"
+# RFC 9989 §4.8: the tag name "v" is case-insensitive, but the value
+# "DMARC1" is case sensitive (%s"DMARC1" in the ABNF), and whitespace is
+# allowed around the equals sign.
+DMARC_VERSION_REGEX_STRING = rf"[vV]{WSP_REGEX}*={WSP_REGEX}*DMARC1"
+# RFC 9989 §4.8: a tag name is 1*ALPHA (any length), and a tag value may
+# contain any printing character except a semicolon (%x20-3A / %x3C-7E).
 DMARC_TAG_VALUE_REGEX_STRING = (
-    rf"([a-z]{{1,5}}){WSP_REGEX}*={WSP_REGEX}*([\w.:@/+!,_\- ]+)"
+    rf"([a-z]+){WSP_REGEX}*={WSP_REGEX}*([\x20-\x3a\x3c-\x7e]+)"
 )
+DMARC_SEPARATOR_REGEX_STRING = rf"{WSP_REGEX}*;{WSP_REGEX}*"
 
 DMARC_TAG_VALUE_REGEX = re.compile(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
+
+# Used to decide whether a TXT record is a DMARC record before parsing it.
+# The version tag must come first and must be followed by a separator or
+# the end of the record, matching the ABNF in RFC 9989 §4.8 (which allows
+# whitespace around the equals sign and an upper- or lowercase tag name).
+_DMARC_RECORD_REGEX = re.compile(rf"^{DMARC_VERSION_REGEX_STRING}{WSP_REGEX}*(?:;|$)")
+
+# Extracts the value of the psd tag from a raw record string during the
+# RFC 9989 §4.10 tree walk, before the record is fully parsed. The v tag
+# must come first, so a psd tag is always preceded by a separator, and a
+# valid psd value is a single letter followed by a separator or the end
+# of the record.
+_PSD_TAG_REGEX = re.compile(
+    rf";{WSP_REGEX}*psd{WSP_REGEX}*={WSP_REGEX}*([a-z]){WSP_REGEX}*(?:;|$)",
+    re.IGNORECASE,
+)
+
+
+def _is_dmarc_record(record: str) -> bool:
+    """Returns True if a TXT record string is a DMARC record, per the
+    RFC 9989 §4.8 ABNF for the version tag"""
+    return _DMARC_RECORD_REGEX.match(record) is not None
+
+
+def _get_psd_tag_value(record: str) -> str | None:
+    """Returns the lowercase value of the psd tag in a raw DMARC record
+    string, or None if the tag is not present"""
+    match = _PSD_TAG_REGEX.search(record)
+    if match is None:
+        return None
+    return match.group(1).lower()
 
 
 class _DMARCWarning(Exception):
@@ -129,19 +166,32 @@ class UnverifiedDMARCURIDestination(_DMARCWarning):
 
 
 class MultipleDMARCRecords(DMARCError):
-    """Raised when multiple DMARC records are found, in violation of
-    RFC 9989 § 5.6.1 (and previously RFC 7489 § 6.6.3)"""
+    """Raised when multiple DMARC records are found. RFC 9989 § 4.10
+    (steps 2 and 6) requires receivers to discard all of the records
+    when more than one is returned for a name, so publishing multiple
+    records disables DMARC (previously RFC 7489 § 6.6.3)"""
 
 
 class _DMARCGrammar(pyleri.Grammar):
-    """Defines Pyleri grammar for DMARC records"""
+    """Defines Pyleri grammar for DMARC records, following the RFC 9989
+    §4.8 ABNF: dmarc-record = dmarc-version *(dmarc-sep dmarc-tag)
+    [dmarc-sep]. A bare ``v=DMARC1`` record is valid (p defaults to
+    none), and the DMARC1 version value is case sensitive (so no
+    re.IGNORECASE on the version tag)."""
 
-    version_tag = pyleri.Regex(DMARC_VERSION_REGEX_STRING, re.IGNORECASE)
+    version_tag = pyleri.Regex(DMARC_VERSION_REGEX_STRING)
     tag_value = pyleri.Regex(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
     START = pyleri.Sequence(
         version_tag,
-        pyleri.List(
-            tag_value, delimiter=pyleri.Regex(f"{WSP_REGEX}*;{WSP_REGEX}*"), opt=True
+        pyleri.Optional(
+            pyleri.Sequence(
+                pyleri.Regex(DMARC_SEPARATOR_REGEX_STRING),
+                pyleri.List(
+                    tag_value,
+                    delimiter=pyleri.Regex(DMARC_SEPARATOR_REGEX_STRING),
+                    opt=True,
+                ),
+            )
         ),
     )
 
@@ -676,7 +726,6 @@ def _query_dmarc_record(
     """
     domain = normalize_domain(domain)
     target = f"_dmarc.{domain}"
-    txt_prefix = "v=DMARC1"
     dmarc_record = None
     dmarc_records = []
     unrelated_records = []
@@ -691,9 +740,12 @@ def _query_dmarc_record(
             retries=retries,
         )
         for record in records:
-            if record.startswith(txt_prefix):
+            # The RFC 9989 §4.8 ABNF allows whitespace around the equals
+            # sign and a lowercase or uppercase v, so tolerate the same
+            # variations here that parse_dmarc_record accepts.
+            if _is_dmarc_record(record):
                 dmarc_records.append(record)
-            elif record.strip().startswith(txt_prefix):
+            elif _is_dmarc_record(record.strip()):
                 raise DMARCRecordStartsWithWhitespace(
                     f"Found a DMARC record at {target} that starts with whitespace. "
                     "Please remove the whitespace, as some implementations "
@@ -705,7 +757,7 @@ def _query_dmarc_record(
         if len(dmarc_records) > 1:
             raise MultipleDMARCRecords(
                 "Multiple DMARC policy records are not permitted - "
-                "https://www.rfc-editor.org/rfc/rfc9989.html#section-5.6.1"
+                "https://www.rfc-editor.org/rfc/rfc9989.html#section-4.10"
             )
         if len(unrelated_records) > 0 and not ignore_unrelated_records:
             ur_str = "\n\n".join(unrelated_records)
@@ -731,7 +783,7 @@ def _query_dmarc_record(
                 retries=retries,
             )
             for record in records:
-                if record.startswith(txt_prefix):
+                if _is_dmarc_record(record):
                     raise DMARCRecordInWrongLocation(
                         f"The DMARC record must be located at {target}, not {domain}."
                     )
@@ -825,16 +877,21 @@ def query_dmarc_record(
             retries=retries,
         )
         for root_record in root_records:
-            if root_record.startswith("v=DMARC1"):
+            if _is_dmarc_record(root_record):
                 warnings.append(
                     f"A DMARC record at the root of {domain} has no effect."
                 )
     except dns.resolver.NXDOMAIN:
-        raise DMARCRecordNotFound("The domain does not exist.")
+        # Some DNS servers mishandle names that only exist as parents of
+        # other names, and return NXDOMAIN for the apex even though
+        # _dmarc.{domain} answered above. A record that was already found
+        # must not be discarded because of this courtesy query.
+        if record is None:
+            raise DMARCRecordNotFound("The domain does not exist.")
     except dns.exception.DNSException:
         pass
 
-    # RFC 9989 DNS tree walk for DMARC policy discovery
+    # RFC 9989 §4.10 DNS tree walk for DMARC policy discovery
     if record is None:
         labels = domain.split(".")
         num_labels = len(labels)
@@ -847,12 +904,16 @@ def query_dmarc_record(
                 # Skip to 7 labels remaining so that initial query + walk
                 # stays within the RFC 9989 8-query budget.
                 start = num_labels - 7
-            # Walk up the tree, including single-label parents: a PSO may
-            # publish ``_dmarc.<tld>`` with ``psd=y`` (RFC 9989 §4.10).
+            # Walk up the tree collecting records as we go, including
+            # single-label parents: a PSO may publish ``_dmarc.<tld>``
+            # with ``psd=y`` (RFC 9989 §4.10). Per §4.10 steps 6-7 the
+            # walk continues after finding a record, and stops early only
+            # when a record carries psd=n or psd=y.
+            walked: list[tuple[int, str, str]] = []
             for i in range(start, num_labels):
                 parent = ".".join(labels[i:])
                 try:
-                    record = _query_dmarc_record(
+                    parent_record = _query_dmarc_record(
                         parent,
                         nameservers=nameservers,
                         resolver=resolver,
@@ -861,9 +922,6 @@ def query_dmarc_record(
                         ignore_unrelated_records=ignore_unrelated_records,
                         apex_fallback=False,
                     )
-                    if record is not None:
-                        location = parent
-                        break
                 except DMARCRecordNotFound:
                     # No DMARC record at this parent; continue walking up the tree
                     continue
@@ -871,6 +929,36 @@ def query_dmarc_record(
                     # A DMARC record exists but is invalid or otherwise problematic;
                     # re-raise so the caller can surface the actual configuration error.
                     raise
+                if parent_record is None:
+                    continue
+                walked.append((i, parent, parent_record))
+                if _get_psd_tag_value(parent_record) in ("n", "y"):
+                    break
+            if walked:
+                # RFC 9989 §4.10.2 Organizational Domain selection. Because
+                # the walk goes from the longest name to the shortest and
+                # stops at the first psd=n or psd=y record, only the last
+                # collected record can carry a psd tag, so:
+                # 1. psd=n: that record's domain is the Organizational
+                #    Domain (last collected).
+                # 2. psd=y: the Organizational Domain is one label below
+                #    the psd=y domain; the record found there (if any)
+                #    applies, otherwise the PSD record itself does.
+                # 3. Otherwise: the record at the name with the fewest
+                #    labels applies (also the last collected).
+                index, location, record = walked[-1]
+                if _get_psd_tag_value(record) == "y":
+                    org_domain = ".".join(labels[index - 1 :])
+                    if len(walked) > 1 and walked[-2][0] == index - 1:
+                        index, location, record = walked[-2]
+                    else:
+                        warnings.append(
+                            f"The Organizational Domain of {domain} is "
+                            f"{org_domain} (the domain one label below the "
+                            f"psd=y record at {location}), but no DMARC "
+                            "record was found there, so the Public Suffix "
+                            f"Domain record at {location} applies."
+                        )
 
     if record is None:
         error_str = "A DMARC record does not exist"
@@ -929,7 +1017,10 @@ def parse_dmarc_report_uri(uri: str) -> ParsedDMARCReportURI:
     Parses a DMARC Reporting (i.e. ``rua``/``ruf``) URI
 
     .. note::
-        ``mailto`` is the only reporting URI scheme supported in DMARC1
+        RFC 9989 § 4.7 allows any valid URI, but ``mailto`` is the only
+        scheme mail receivers are required to support. For a non-mailto
+        URI, ``address`` contains the full URI and ``size_limit`` is
+        ``None``.
 
     Args:
         uri: A DMARC URI
@@ -946,6 +1037,17 @@ def parse_dmarc_report_uri(uri: str) -> ParsedDMARCReportURI:
     uri = uri.strip()
     mailto_matches = MAILTO_REGEX.findall(uri)
     if len(mailto_matches) != 1:
+        # RFC 9989 §4.7: any valid URI can be specified, and receivers
+        # ignore URIs with schemes they do not support. Keep a URI with a
+        # recognizable non-mailto scheme in the parsed output; only a URI
+        # with no scheme at all (or a malformed mailto URI) is an error.
+        scheme_match = re.match(r"([a-z][a-z0-9+.\-]*):", uri, re.IGNORECASE)
+        if scheme_match is not None and scheme_match.group(1).lower() != "mailto":
+            return {
+                "scheme": scheme_match.group(1).lower(),
+                "address": uri,
+                "size_limit": None,
+            }
         raise InvalidDMARCReportURI(
             f"{uri} is not a valid DMARC report URI"
             + (
@@ -1011,7 +1113,7 @@ def check_wildcard_dmarc_report_authorization(
         )
 
         for record in records:
-            if record.startswith("v=DMARC1"):
+            if _is_dmarc_record(record):
                 dmarc_record_count += 1
             else:
                 unrelated_records.append(record)
@@ -1046,7 +1148,7 @@ def verify_dmarc_report_destination(
 ) -> None:
     """
     Checks if the report destination accepts reports for the source domain
-    per RFC 9990, § 3.2.3 (the authorization-record check, previously in
+    per RFC 9990, § 4 (the authorization-record check, previously in
     RFC 7489 § 7.1). Raises
     `checkdmarc.dmarc.UnverifiedDMARCURIDestination` if it doesn't accept.
 
@@ -1069,6 +1171,13 @@ def verify_dmarc_report_destination(
     source_domain = source_domain.lower()
     destination_domain = destination_domain.lower()
 
+    # RFC 9990 §4 defines "external" by comparing the tree-walk
+    # Organizational Domains of the policy domain and the report
+    # destination. Determining those exactly would cost up to eight extra
+    # DNS queries per domain for every report URI, so the Public Suffix
+    # List is used as an approximation here. The two can disagree for
+    # domains whose published psd tags draw the organizational boundary
+    # somewhere other than where the PSL does.
     if get_base_domain(source_domain) != get_base_domain(destination_domain):
         if check_wildcard_dmarc_report_authorization(
             destination_domain,
@@ -1086,8 +1195,6 @@ def verify_dmarc_report_destination(
             "Authorization record not found: "
             f'{source_domain}._report._dmarc.{destination_domain} IN TXT "v=DMARC1"'
         )
-        dmarc_record_count = 0
-        unrelated_records = []
         try:
             records = query_dns(
                 target,
@@ -1097,29 +1204,122 @@ def verify_dmarc_report_destination(
                 timeout=timeout,
                 retries=retries,
             )
-
-            for record in records:
-                if record.startswith("v=DMARC1"):
-                    dmarc_record_count += 1
-                else:
-                    unrelated_records.append(record)
-
-            if len(unrelated_records) > 0 and not ignore_unrelated_records:
-                ur_str = "\n\n".join(unrelated_records)
-                raise UnrelatedTXTRecordFoundAtDMARC(
-                    "Unrelated TXT records were discovered. "
-                    "These should be removed, as some "
-                    "receivers may not expect to find unrelated TXT records "
-                    f"at {target}\n\n{ur_str}",
-                    data={"target": target},
-                )
-
-            if dmarc_record_count < 1:
-                raise UnverifiedDMARCURIDestination(message)
-        except (dns.exception.DNSException, UnrelatedTXTRecordFoundAtDMARC):
-            # A DNS failure or unrelated TXT records at the authorization
-            # location both mean the destination can't be confirmed.
+        except dns.exception.DNSException:
+            # A DNS failure means the destination can't be confirmed.
             raise UnverifiedDMARCURIDestination(message)
+
+        # RFC 9990 §4 steps 6-8: discard TXT records that are not DMARC
+        # authorization records; if at least one record remains, the
+        # external reporting arrangement is authorized. Unrelated records
+        # coexisting with a valid authorization record do not undo it.
+        for record in records:
+            if _is_dmarc_record(record):
+                return
+
+        raise UnverifiedDMARCURIDestination(message)
+
+
+def _parse_report_uris(
+    tag_name: str,
+    value: str,
+    domain: str,
+    warnings: list[str],
+    *,
+    nameservers: Sequence[str | Nameserver] | None,
+    ignore_unrelated_records: bool,
+    resolver: dns.resolver.Resolver | None,
+    timeout: float,
+    retries: int,
+) -> list[ParsedDMARCReportURI]:
+    """
+    Parses and checks the comma-separated URI list of a ``rua`` or ``ruf``
+    tag, appending any warning messages found to ``warnings``
+
+    Args:
+        tag_name (str): ``rua`` or ``ruf``, used in warning messages
+        value (str): The raw tag value
+        domain (str): The domain where the DMARC record was found
+        warnings (list): The warnings list to append to
+        nameservers (list): A list of nameservers to query
+        ignore_unrelated_records (bool): Ignore unrelated TXT records
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+        retries (int): The number of times to retry on timeout or other transient errors
+
+    Returns:
+        list: The parsed report URIs
+
+    Raises:
+        :exc:`checkdmarc.dmarc.InvalidDMARCReportURI`
+    """
+    parsed_uris: list[ParsedDMARCReportURI] = []
+    for uri in value.split(","):
+        try:
+            parsed_uri = parse_dmarc_report_uri(uri)
+            parsed_uris.append(parsed_uri)
+            if parsed_uri["scheme"] != "mailto":
+                # RFC 9989 §4.7: any valid URI is allowed, but mail
+                # receivers are only required to support mailto, and they
+                # ignore URIs with schemes they do not support.
+                warnings.append(
+                    f"The {tag_name} URI {parsed_uri['address']} uses the "
+                    f"{parsed_uri['scheme']} scheme. That is valid per "
+                    "RFC 9989 § 4.7, but mail receivers are only required "
+                    "to support mailto URIs, so most will ignore it."
+                )
+                continue
+            email_address = parsed_uri["address"]
+            if parsed_uri["size_limit"]:
+                warnings.append(
+                    f"The size limit (`!size`) on {tag_name} URI for "
+                    f"{email_address} is obsolete in RFC 9989 "
+                    "(reporters MUST ignore it); pre-9989 readers may "
+                    "still honor it and produce incomplete reports."
+                )
+            email_domain = email_address.split("@")[-1]
+            if email_domain.lower() != domain:
+                verify_dmarc_report_destination(
+                    domain,
+                    email_domain,
+                    nameservers=nameservers,
+                    ignore_unrelated_records=ignore_unrelated_records,
+                    resolver=resolver,
+                    timeout=timeout,
+                    retries=retries,
+                )
+            try:
+                hosts = get_mx_records(
+                    email_domain,
+                    nameservers=nameservers,
+                    resolver=resolver,
+                    timeout=timeout,
+                    retries=retries,
+                )
+                if len(hosts) == 0:
+                    raise DMARCReportEmailAddressMissingMXRecords(
+                        f"The domain for {tag_name} email address "
+                        f"{email_address} has no MX records."
+                    )
+            except DNSException as warning:
+                raise DMARCReportEmailAddressMissingMXRecords(
+                    "Failed to retrieve MX records for the domain of "
+                    f"{tag_name} email address "
+                    f"{email_address} - {warning}"
+                )
+        except _DMARCWarning as warning:
+            warnings.append(str(warning))
+
+    if len(parsed_uris) > 2:
+        warnings.append(
+            str(
+                _DMARCBestPracticeWarning(
+                    "Some DMARC reporters might not send to more than "
+                    f"two {tag_name} URIs."
+                )
+            )
+        )
+    return parsed_uris
 
 
 @overload
@@ -1322,17 +1522,40 @@ def parse_dmarc_record(
             warnings.append(
                 f"An sp tag value of none makes DMARC unenforced on email sent as a subdomain of {domain}."
             )
-        if tag == "fo":
+        if tag in ("adkim", "aspf") and tag_value not in ("r", "s"):
+            # RFC 9989 §4.8: syntax errors in a tag value are discarded in
+            # favor of the default value, so an invalid alignment mode
+            # falls back to relaxed (r) rather than failing the record.
+            warnings.append(
+                f"{tag_value} is not a valid {tag} tag value (must be r "
+                "or s); the default value r was used instead, because "
+                "RFC 9989 § 4.8 requires discarding an invalid value in "
+                "favor of the default."
+            )
+            tags[tag] = {"value": "r", "explicit": False}
+        elif tag == "fo":
             fo_options = tag_value.split(":")
-            if "0" in fo_options and "1" in fo_options:
-                warnings.append(
-                    "When 1 is present in the fo tag, also including 0 is redundant."
-                )
             for value in fo_options:
                 if value not in allowed_values:
                     raise InvalidDMARCTagValue(
                         f"{value} is not a valid option for the DMARC fo tag."
                     )
+            # RFC 9989 §4.7: "0" and "1" are mutually exclusive, and the
+            # §4.8 ABNF allows each value to appear at most once, so a
+            # list that breaks either rule is a syntax error. Per §4.8 the
+            # invalid value is discarded in favor of the default ("0").
+            invalid_fo_reason = None
+            if "0" in fo_options and "1" in fo_options:
+                invalid_fo_reason = "the 0 and 1 values are mutually exclusive"
+            elif len(fo_options) != len(set(fo_options)):
+                invalid_fo_reason = "each value may appear at most once"
+            if invalid_fo_reason is not None:
+                warnings.append(
+                    f"fo={tag_value} is invalid ({invalid_fo_reason} per "
+                    "RFC 9989 § 4.7); the default value fo=0 was used "
+                    "instead."
+                )
+                tags["fo"] = {"value": "0", "explicit": False}
         elif allowed_values and tag_value not in allowed_values:
             allowed_values_str = ",".join(allowed_values)
             raise InvalidDMARCTagValue(
@@ -1341,62 +1564,17 @@ def parse_dmarc_record(
             )
 
     if "rua" in tags:
-        parsed_uris = []
-        uris = tags["rua"]["value"].split(",")
-        for uri in uris:
-            try:
-                parsed_uri = parse_dmarc_report_uri(uri)
-                parsed_uris.append(parsed_uri)
-                email_address = parsed_uri["address"]
-                if parsed_uri["size_limit"]:
-                    warnings.append(
-                        "The size limit (`!size`) on rua URI for "
-                        f"{email_address} is obsolete in RFC 9989 "
-                        "(reporters MUST ignore it); pre-9989 readers may "
-                        "still honor it and produce incomplete reports."
-                    )
-                email_domain = email_address.split("@")[-1]
-                if email_domain.lower() != domain:
-                    verify_dmarc_report_destination(
-                        domain,
-                        email_domain,
-                        nameservers=nameservers,
-                        ignore_unrelated_records=ignore_unrelated_records,
-                        resolver=resolver,
-                        timeout=timeout,
-                        retries=retries,
-                    )
-                try:
-                    hosts = get_mx_records(
-                        email_domain,
-                        nameservers=nameservers,
-                        resolver=resolver,
-                        timeout=timeout,
-                        retries=retries,
-                    )
-                    if len(hosts) == 0:
-                        raise DMARCReportEmailAddressMissingMXRecords(
-                            "The domain for rua email address "
-                            f"{email_address} has no MX records."
-                        )
-                except DNSException as warning:
-                    raise DMARCReportEmailAddressMissingMXRecords(
-                        "Failed to retrieve MX records for the domain of "
-                        "rua email address "
-                        f"{email_address} - {warning}"
-                    )
-            except _DMARCWarning as warning:
-                warnings.append(str(warning))
-
-        tags["rua"]["value"] = parsed_uris
-        if len(parsed_uris) > 2:
-            warnings.append(
-                str(
-                    _DMARCBestPracticeWarning(
-                        "Some DMARC reporters might not send to more than two rua URIs."
-                    )
-                )
-            )
+        tags["rua"]["value"] = _parse_report_uris(
+            "rua",
+            tags["rua"]["value"],
+            domain,
+            warnings,
+            nameservers=nameservers,
+            ignore_unrelated_records=ignore_unrelated_records,
+            resolver=resolver,
+            timeout=timeout,
+            retries=retries,
+        )
     else:
         warnings.append(
             str(
@@ -1407,63 +1585,17 @@ def parse_dmarc_record(
         )
 
     if "ruf" in tags:
-        parsed_uris = []
-        uris = tags["ruf"]["value"].split(",")
-        for uri in uris:
-            try:
-                parsed_uri = parse_dmarc_report_uri(uri)
-                parsed_uris.append(parsed_uri)
-                email_address = parsed_uri["address"]
-                if parsed_uri["size_limit"]:
-                    warnings.append(
-                        "The size limit (`!size`) on ruf URI for "
-                        f"{email_address} is obsolete in RFC 9989 "
-                        "(reporters MUST ignore it); pre-9989 readers may "
-                        "still honor it and produce incomplete reports."
-                    )
-                email_domain = email_address.split("@")[-1]
-                if email_domain.lower() != domain:
-                    verify_dmarc_report_destination(
-                        domain,
-                        email_domain,
-                        nameservers=nameservers,
-                        ignore_unrelated_records=ignore_unrelated_records,
-                        resolver=resolver,
-                        timeout=timeout,
-                        retries=retries,
-                    )
-                try:
-                    hosts = get_mx_records(
-                        email_domain,
-                        nameservers=nameservers,
-                        resolver=resolver,
-                        timeout=timeout,
-                        retries=retries,
-                    )
-                    if len(hosts) == 0:
-                        raise DMARCReportEmailAddressMissingMXRecords(
-                            "The domain for ruf email address "
-                            f"{email_address} has no MX records."
-                        )
-                except DNSException as warning:
-                    raise DMARCReportEmailAddressMissingMXRecords(
-                        "Failed to retrieve MX records for the domain of "
-                        "ruf email address "
-                        f"{email_address} - {warning}"
-                    )
-
-            except _DMARCWarning as warning:
-                warnings.append(str(warning))
-
-        tags["ruf"]["value"] = parsed_uris
-        if len(parsed_uris) > 2:
-            warnings.append(
-                str(
-                    _DMARCBestPracticeWarning(
-                        "Some DMARC reporters might not send to more than two ruf URIs."
-                    )
-                )
-            )
+        tags["ruf"]["value"] = _parse_report_uris(
+            "ruf",
+            tags["ruf"]["value"],
+            domain,
+            warnings,
+            nameservers=nameservers,
+            ignore_unrelated_records=ignore_unrelated_records,
+            resolver=resolver,
+            timeout=timeout,
+            retries=retries,
+        )
 
     if parked and tags["p"]["value"] != "reject":
         warning_msg = "Policy (p=) should be reject for parked domains."
