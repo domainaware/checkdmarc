@@ -453,6 +453,31 @@ class TestQueryMtaStsRecord(unittest.TestCase):
                 "example.com",
             )
 
+    def testPolicyExtensionFieldsValidated(self):
+        """Unknown policy fields are ignored only when they fit the
+        RFC 8461 section 3.2 extension grammar; malformed names or empty
+        values invalidate the policy"""
+        base = "version: STSv1\nmode: none\nmax_age: 86400\n"
+        # A valid extension: warned about, policy stays valid
+        result = checkdmarc.mta_sts.parse_mta_sts_policy(
+            base + "ext_1: some value with spaces\n"
+        )
+        self.assertTrue(
+            any("ext_1" in w for w in result["warnings"]), result["warnings"]
+        )
+        # A name with a space is not a valid sts-policy-ext-name
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            base + "bad key: value\n",
+        )
+        # An empty value is not a valid sts-policy-ext-value
+        self.assertRaises(
+            checkdmarc.mta_sts.MTASTSPolicySyntaxError,
+            checkdmarc.mta_sts.parse_mta_sts_policy,
+            base + "x:\n",
+        )
+
 
 class TestDownloadMtaStsPolicy(unittest.TestCase):
     @staticmethod

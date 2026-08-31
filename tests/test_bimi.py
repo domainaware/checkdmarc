@@ -490,6 +490,15 @@ class TestParseBimiRecord(unittest.TestCase):
             result["warnings"],
         )
 
+    def testUriMalformedPercentEscapeRejected(self):
+        """A non-hex percent escape like %zz is not valid RFC 3986
+        percent-encoding, so the l= URI is rejected"""
+        self.assertRaises(
+            checkdmarc.bimi.InvalidBIMIIndicatorURI,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=https://example.com/logo%zz.svg",
+        )
+
     def testLogoProcessingFailure(self):
         """A ValueError while parsing a fetched image produces an image error
         entry, not a raised exception"""

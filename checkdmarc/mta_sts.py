@@ -69,6 +69,16 @@ MTA_STS_MX_REGEX = re.compile(MTA_STS_MX_REGEX_STRING)
 # RFC 8461 section 3.1: an id value is 1-32 letters or digits
 MTA_STS_ID_REGEX = re.compile(r"[A-Za-z0-9]{1,32}")
 
+# RFC 8461 section 3.2: a policy extension field name is 1-32 letters,
+# digits, underscores, hyphens, or dots, starting with a letter or digit
+# (sts-policy-ext-name)
+MTA_STS_POLICY_EXT_NAME_REGEX = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.\-]{0,31}")
+# RFC 8461 section 3.2: a policy extension value is one or more visible or
+# UTF-8 characters, with interior spaces allowed but no control characters
+# and no leading/trailing spaces (sts-policy-ext-value; the parser strips
+# surrounding whitespace before this check)
+MTA_STS_POLICY_EXT_VALUE_REGEX = re.compile(r"[^\x00-\x1F\x7F]+")
+
 
 class MTASTSError(Exception):
     """Raised when a fatal MTA-STS error occurs"""
@@ -576,8 +586,21 @@ def parse_mta_sts_policy(policy: str) -> MTASTSPolicyParsingResults:
         key = key_value[0].strip()
         value = key_value[1].strip()
         if key not in known_keys:
-            # RFC 8461 section 3.2: unknown fields (such as extension
-            # fields) SHALL be ignored, not rejected
+            # RFC 8461 section 3.2: unknown fields SHALL be ignored, not
+            # rejected — but only when they are syntactically valid
+            # extension fields. A name or value outside the
+            # sts-policy-extension grammar makes the line, and so the
+            # policy, invalid.
+            if MTA_STS_POLICY_EXT_NAME_REGEX.fullmatch(key) is None:
+                raise MTASTSPolicySyntaxError(
+                    f"Line {line_number}: {key} is not a valid extension "
+                    "field name (RFC 8461 section 3.2)."
+                )
+            if MTA_STS_POLICY_EXT_VALUE_REGEX.fullmatch(value) is None:
+                raise MTASTSPolicySyntaxError(
+                    f"Line {line_number}: The value of the extension field "
+                    f"{key} is not valid (RFC 8461 section 3.2)."
+                )
             warnings.append(f"Line {line_number}: Unknown key {key} was ignored.")
             continue
         if key in seen_keys and key != "mx":

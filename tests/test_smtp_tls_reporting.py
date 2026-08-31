@@ -172,6 +172,47 @@ class Test(unittest.TestCase):
             "v=TLSRPTv1; rua=https://example.com/a b",
         )
 
+    def testExtensionValueGrammarEnforced(self):
+        """Unknown fields are ignored only when their value fits the
+        RFC 8460 section 3 tlsrpt-ext-value grammar (no spaces, "=", or
+        control characters)"""
+        base = "v=TLSRPTv1; rua=mailto:tlsrpt@example.com; "
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            base + "ext=ok-1"
+        )
+        self.assertTrue(any("ext" in w for w in result["warnings"]))
+        for bad in ("x=a b", "x=a=b"):
+            self.assertRaises(
+                checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError,
+                checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+                base + bad,
+            )
+
+    def testMailtoUriTlsrptEncodingRules(self):
+        """RFC 8460 section 3 requires "!" in URIs to be percent-encoded and
+        defines no DMARC-style size suffix"""
+        for bad in (
+            "v=TLSRPTv1; rua=mailto:a!b@example.com",
+            "v=TLSRPTv1; rua=mailto:a@example.com!10m",
+        ):
+            self.assertRaises(
+                checkdmarc.smtp_tls_reporting.SMTPTLSReportingSyntaxError,
+                checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record,
+                bad,
+            )
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            "v=TLSRPTv1; rua=mailto:a%21b@example.com"
+        )
+        self.assertIn("mailto:a%21b@example.com", result["tags"]["rua"]["value"])
+
+    def testHttpsUriIpv6Literal(self):
+        """An https report URI with a bracketed IPv6 literal authority is a
+        valid RFC 3986 URI and must be accepted"""
+        result = checkdmarc.smtp_tls_reporting.parse_smtp_tls_reporting_record(
+            "v=TLSRPTv1; rua=https://[2001:db8::1]/tlsrpt"
+        )
+        self.assertIn("https://[2001:db8::1]/tlsrpt", result["tags"]["rua"]["value"])
+
 
 class TestQuerySmtpTlsReportingRecord(unittest.TestCase):
     def testDiscoveryAcceptsWspBeforeDelimiter(self):

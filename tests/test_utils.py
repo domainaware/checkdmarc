@@ -589,6 +589,20 @@ class TestGetMxRecords(unittest.TestCase):
             checkdmarc.utils.get_mx_records("example.com", resolver=resolver), []
         )
 
+    def testNullMXAlongsideAnotherRootTarget(self):
+        """A null MX coexisting with any additional MX record — even another
+        root-target record like '10 .' — is an RFC 7505 section 3 violation,
+        not a null MX"""
+        resolver = _fake_mx_resolver(["0 .", "10 ."])
+        result = checkdmarc.utils.get_mx_record_set("example.com", resolver=resolver)
+        self.assertFalse(result["null_mx"])
+        self.assertEqual(result["hosts"], [])
+        self.assertEqual(result["record_count"], 2)
+        self.assertTrue(
+            any("RFC 7505 section 3 requires" in w for w in result["warnings"]),
+            result["warnings"],
+        )
+
     def testNullMXAlongsideOtherRecords(self):
         """A null MX coexisting with real MX records violates RFC 7505
         section 3: warn, and never emit an empty-hostname host entry"""

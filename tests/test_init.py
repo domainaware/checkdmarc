@@ -6,6 +6,8 @@ import unittest
 from typing import Any, cast
 from unittest.mock import patch
 
+import dns.resolver
+
 import checkdmarc
 import checkdmarc.utils
 
@@ -223,6 +225,79 @@ def _full_result(domain="example.com", *, with_bimi=False, with_errors=False):
         }
         result["smtp_tls_reporting"] = {"valid": False, "error": "not found"}
     return result
+
+
+class TestCheckMxTlsEndToEnd(unittest.TestCase):
+    """check_mx_tls must flow through the public check_domains path down to
+    the per-host TLS probe, and stay off by default."""
+
+    def _check(self, **kwargs):
+        from contextlib import ExitStack
+
+        with ExitStack() as stack:
+            # Silence the checks that are not under test with minimal
+            # results; check_mx and get_mx_hosts run for real.
+            for name, value in [
+                ("check_dnssec", False),
+                ("check_soa", {}),
+                ("check_ns", {"hostnames": [], "warnings": []}),
+                ("check_mta_sts", {"valid": False, "error": "none"}),
+                ("check_spf", {"valid": False, "error": "none"}),
+                ("check_dmarc", {"valid": False, "error": "none"}),
+                ("check_smtp_tls_reporting", {"valid": False, "error": "none"}),
+                ("check_bimi", {"warnings": []}),
+            ]:
+                stack.enter_context(patch(f"checkdmarc.{name}", return_value=value))
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_mx_record_set",
+                    return_value={
+                        "hosts": [{"preference": 10, "hostname": "mail.example.com"}],
+                        "warnings": [],
+                        "null_mx": False,
+                        "record_count": 1,
+                    },
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.check_dnssec", return_value=False)
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_a_records", return_value=["192.0.2.1"])
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_reverse_dns",
+                    return_value=["mail.example.com"],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.test_starttls", return_value=True)
+            )
+            return checkdmarc.check_domains(["example.com"], **kwargs)
+
+    def testEnabledReachesTlsProbe(self):
+        """check_domains(check_mx_tls=True) produces per-host TLS results"""
+        result = cast(Any, self._check(check_mx_tls=True))
+        host = result["mx"]["hosts"][0]
+        self.assertTrue(host["starttls"])
+        self.assertTrue(host["tls"])
+
+    def testDefaultLeavesTlsUntested(self):
+        """By default no TLS probe runs and no tls/starttls keys appear"""
+        result = cast(Any, self._check())
+        host = result["mx"]["hosts"][0]
+        self.assertNotIn("starttls", host)
+        self.assertNotIn("tls", host)
 
 
 class TestSkipTlsDeprecation(unittest.TestCase):

@@ -879,9 +879,10 @@ def get_mx_record_set(
                 "which must use preference 0 (RFC 7505 section 3)"
             )
     if any(preference == 0 for (preference, _) in root_target_records):
-        if named_records:
+        if len(answers) > 1:
             # RFC 7505 section 3: "A domain that advertises a null MX
-            # MUST NOT advertise any other MX RR."
+            # MUST NOT advertise any other MX RR." Any additional record —
+            # named or another root target — invalidates the null MX.
             warnings.append(
                 f"{domain} advertises a null MX record (0 .) alongside "
                 "other MX records; RFC 7505 section 3 requires the null MX "

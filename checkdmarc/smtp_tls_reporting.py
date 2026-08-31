@@ -18,7 +18,6 @@ from checkdmarc._constants import (
     SYNTAX_ERROR_MARKER,
 )
 from checkdmarc.utils import (
-    MAILTO_REGEX_STRING,
     WSP_REGEX,
     normalize_domain,
     query_dns,
@@ -44,16 +43,29 @@ logger = logging.getLogger(__name__)
 # so "v=TLSRPTv1" must appear exactly, with no whitespace around the "=".
 SMTPTLSREPORTING_VERSION_REGEX_STRING = r"v=TLSRPTv1"
 # RFC 8460 section 3: a tlsrpt-uri is an RFC 3986 URI in which ",", "!",
-# and ";" must be percent-encoded. This local https pattern accepts
-# RFC 3986 path/query characters minus those three — and no raw spaces,
-# which the shared utils.HTTPS_REGEX would allow.
+# and ";" must be percent-encoded. These local patterns accept RFC 3986
+# characters minus those three, with "%" only as a two-hex-digit escape.
+# The shared utils regexes are unsuitable here: HTTPS_REGEX allows raw
+# spaces, and MAILTO_REGEX_STRING allows raw "!" plus the DMARC-only
+# "!size" suffix, which RFC 8460 does not define.
+TLSRPT_MAILTO_REGEX_STRING = (
+    r"mailto:(?:[A-Za-z0-9\-._~$&'()*+=]|%[0-9A-Fa-f]{2})+"
+    r"@(?:[A-Za-z0-9\-]+\.)*[A-Za-z0-9\-]+"
+)
+# The https authority may be a hostname (one or more labels) or a
+# bracketed IPv6 literal, per the RFC 3986 authority grammar.
 TLSRPT_HTTPS_REGEX_STRING = (
-    r"https://(?:[A-Za-z0-9\-]+\.)+[A-Za-z0-9\-]+(?::[0-9]{1,5})?"
-    r"(?:[/?#](?:[A-Za-z0-9\-._~$&'()*+=:@/?#]|%[0-9A-Fa-f]{2})*)?"
+    r"https://(?:\[[0-9A-Fa-f:.]+\]|(?:[A-Za-z0-9\-]+\.)*[A-Za-z0-9\-]+)"
+    r"(?::[0-9]{1,5})?"
+    r"(?:[/?#](?:[A-Za-z0-9\-._~$&'()*+=:@/?#\[\]]|%[0-9A-Fa-f]{2})*)?"
 )
 SMTPTLSREPORTING_URI_REGEX_STRING = (
-    rf"({MAILTO_REGEX_STRING}|{TLSRPT_HTTPS_REGEX_STRING})"
+    rf"({TLSRPT_MAILTO_REGEX_STRING}|{TLSRPT_HTTPS_REGEX_STRING})"
 )
+
+# RFC 8460 section 3: tlsrpt-ext-value = 1*(%x21-3A / %x3C / %x3E-7E) —
+# visible ASCII excluding "=", ";", spaces, and control characters
+TLSRPT_EXT_VALUE_REGEX = re.compile(r"[\x21-\x3A\x3C\x3E-\x7E]+")
 
 # One tag=value field. The name side covers both the "rua" tag and RFC 8460
 # section 3 extension names: a letter or digit followed by up to 31 more
@@ -453,8 +465,16 @@ def parse_smtp_tls_reporting_record(
                 tags[tag]["description"] = SMTP_TLS_REPORTING_TAGS[tag]["description"]
         else:
             # RFC 8460 section 3: parsers MUST accept records with unknown
-            # fields, which SHALL be ignored. Field names are
-            # case-sensitive, so this also covers e.g. RUA=.
+            # fields, which SHALL be ignored — but only when they are
+            # syntactically valid extensions. A value outside the
+            # tlsrpt-ext-value grammar (raw spaces, "=", control
+            # characters) makes the record invalid. Field names are
+            # case-sensitive, so this branch also covers e.g. RUA=.
+            if TLSRPT_EXT_VALUE_REGEX.fullmatch(tag_value) is None:
+                raise SMTPTLSReportingSyntaxError(
+                    f"The value of the extension field {tag} is not valid "
+                    "(RFC 8460 section 3)."
+                )
             warnings.append(
                 f"Unknown tag {tag} was ignored, as required by RFC 8460 section 3."
             )

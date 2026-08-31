@@ -188,7 +188,9 @@ _BIMI_URI_REGEX = re.compile(
     r"(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+"  # host labels before the last dot
     r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"  # final host label
     r"(?::\d{1,5})?"  # optional port
-    r"(?:[/?#][a-z0-9\-._~:/?#\[\]@!$&'()*+=%]*)?",  # path/query/fragment
+    # path/query/fragment: RFC 3986 characters, with "%" only as a valid
+    # two-hex-digit percent-escape (a bare "%" or "%zz" is malformed)
+    r"(?:[/?#](?:[a-z0-9\-._~:/?#\[\]@!$&'()*+=]|%[0-9a-f]{2})*)?",
     re.IGNORECASE,
 )
 
