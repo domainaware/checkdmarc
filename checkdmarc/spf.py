@@ -858,7 +858,9 @@ def parse_spf_record(
     # modifier placed there is still honored.
     items_after_all: list[str] = AFTER_ALL_REGEX.findall(record)
     if len(items_after_all) > 0:
-        if items_after_all[0].startswith("exp="):
+        # Modifier names are case-insensitive (RFC 7208 section 4.6.1), so
+        # EXP= and Exp= must be recognized here too.
+        if items_after_all[0][:4].lower() == "exp=":
             # RFC 7208 § 6.2 (exp modifier): The explanation string is
             # evaluated at runtime (after result == fail) and may contain
             # macros. It MUST NOT contribute to DNS lookup counting and

@@ -934,6 +934,18 @@ class TestSPFExpModifier(unittest.TestCase):
             "Too many TXT records at exp value exp.example", result["warnings"]
         )
 
+    def testExpAfterAllCaseInsensitiveName(self):
+        """Modifier names are case-insensitive (RFC 7208 section 4.6.1), so
+        EXP= after all is honored the same as exp="""
+        with patch("checkdmarc.spf.get_txt_records", return_value=["explanation"]):
+            result = checkdmarc.spf.parse_spf_record(
+                "v=spf1 -all EXP=exp.example", "example.com"
+            )
+        self.assertEqual(result["parsed"]["exp"], "exp.example")
+        self.assertFalse(
+            any("is ignored" in w for w in result["warnings"]), result["warnings"]
+        )
+
     def testExpAfterAllNoTxtRecords(self):
         with patch("checkdmarc.spf.get_txt_records", return_value=[]):
             result = checkdmarc.spf.parse_spf_record(

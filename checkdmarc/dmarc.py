@@ -66,8 +66,14 @@ _DMARC_RECORD_REGEX = re.compile(rf"^{DMARC_VERSION_REGEX_STRING}{WSP_REGEX}*(?:
 # This is not the full grammar: it requires a scheme followed by RFC 3986
 # unreserved and reserved characters or valid percent-escapes, which is
 # enough to reject raw spaces, control characters, and malformed escapes.
+# "#" is kept out of the repeated classes because RFC 3986 allows it only
+# once, as the fragment delimiter; "[" and "]" stay in because this
+# pattern does not parse the authority separately, and they are legal
+# there in an IP-literal host.
+_URI_CHAR_REGEX_STRING = r"(?:[a-z0-9\-._~!$&'()*+,;=:@/?\[\]]|%[0-9a-f]{2})"
 _URI_REGEX = re.compile(
-    r"[a-z][a-z0-9+.\-]*:(?:[a-z0-9\-._~!$&'()*+,;=:@/?#\[\]]|%[0-9a-f]{2})+",
+    rf"[a-z][a-z0-9+.\-]*:{_URI_CHAR_REGEX_STRING}+"
+    rf"(?:#{_URI_CHAR_REGEX_STRING}*)?",
     re.IGNORECASE,
 )
 

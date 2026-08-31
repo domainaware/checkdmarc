@@ -526,16 +526,18 @@ class _BIMIGrammar(pyleri.Grammar):
 
 def get_svg_metadata(raw_xml: str | bytes) -> dict[str, Any]:
     metadata = {}
-    # Keep the original bytes for the size and hash below. The decoded text
-    # is only used for XML parsing; decoding can drop bytes, so measuring or
-    # hashing it would not describe the file actually served.
+    # Keep the original bytes for the size and hash below, and hand those
+    # same bytes to the XML parser. Decoding with errors="ignore" would
+    # drop malformed bytes, so a sanitized version of the document could
+    # validate as XML while the hash describes the unsanitized file; the
+    # parser also reads the XML declaration itself, so non-UTF-8 encodings
+    # are handled instead of being garbled by a forced UTF-8 decode.
     if isinstance(raw_xml, bytes):
         raw_bytes = raw_xml
-        raw_xml = raw_xml.decode(errors="ignore")
     else:
         raw_bytes = raw_xml.encode("utf-8")
     try:
-        xml = xmltodict.parse(raw_xml)
+        xml = xmltodict.parse(raw_bytes)
         svg = xml["svg"]
         metadata["svg_version"] = svg["@version"]
         if "@baseProfile" in svg:

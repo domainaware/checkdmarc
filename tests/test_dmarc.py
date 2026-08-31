@@ -303,6 +303,20 @@ class Test(unittest.TestCase):
         self.assertEqual(uri["address"], "https://dmarc.example.com/submit")
         self.assertIsNone(uri["size_limit"])
 
+    def testDMARCReportURIFragmentRules(self):
+        """RFC 3986 allows "#" exactly once, as the fragment delimiter, so
+        a report URI with a second "#" is rejected while a single-fragment
+        URI parses"""
+        uri = checkdmarc.dmarc.parse_dmarc_report_uri(
+            "https://dmarc.example.com/submit#reports"
+        )
+        self.assertEqual(uri["address"], "https://dmarc.example.com/submit#reports")
+        self.assertRaises(
+            checkdmarc.dmarc.InvalidDMARCReportURI,
+            checkdmarc.dmarc.parse_dmarc_report_uri,
+            "https://dmarc.example.com/submit#one#two",
+        )
+
     def testDMARCInvalidAlignmentModeFallsBack(self):
         """Invalid adkim/aspf values fall back to the default r with a
         warning, per the RFC 9989 section 4.8 discard rule"""

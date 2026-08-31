@@ -267,13 +267,30 @@ class TestGetSvgMetadata(unittest.TestCase):
     def testSha256HashesRawBytes(self):
         """sha256 is computed over the raw response bytes, so it can be
         compared byte for byte against the certificate's embedded logotype
-        hash. A byte that a lossy decode would drop must not change it."""
+        hash. Multibyte UTF-8 must be hashed as served, not re-encoded."""
         import hashlib
 
-        # \xff is not valid UTF-8; a decode with errors="ignore" drops it
-        svg_bytes = VALID_SVG.encode("utf-8").replace(b"<title>", b"<!--\xff--><title>")
+        svg_bytes = VALID_SVG.replace("Example Brand", "Exämple Bränd").encode("utf-8")
         metadata = checkdmarc.bimi.get_svg_metadata(svg_bytes)
         self.assertEqual(metadata["sha256"], hashlib.sha256(svg_bytes).hexdigest())
+
+    def testMalformedBytesAreNotSanitized(self):
+        """The exact bytes that get hashed are the bytes that must validate
+        as XML: a byte no decode could keep must fail parsing instead of
+        being silently dropped so that a sanitized document validates while
+        the hash describes the unsanitized file"""
+        svg_bytes = VALID_SVG.encode("utf-8").replace(b"<title>", b"<!--\xff--><title>")
+        self.assertRaises(ValueError, checkdmarc.bimi.get_svg_metadata, svg_bytes)
+
+    def testUtf16SvgParses(self):
+        """The XML parser reads the declared encoding from the raw bytes, so
+        a UTF-16 SVG parses instead of being garbled by a forced UTF-8
+        decode"""
+        svg_bytes = (
+            '<?xml version="1.0" encoding="utf-16"?>' + VALID_SVG.split("?>", 1)[1]
+        ).encode("utf-16")
+        metadata = checkdmarc.bimi.get_svg_metadata(svg_bytes)
+        self.assertEqual(metadata["svg_version"], "1.2")
 
 
 class TestCheckSvgRequirements(unittest.TestCase):
