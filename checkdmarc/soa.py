@@ -14,11 +14,13 @@ from checkdmarc.utils import DNSException, get_soa_record
 
 U32_MAX = 2**32 - 1
 
-# RFC 5322 section 3.2.3 dot-atom-text: runs of atext separated by single
-# dots. A local part that matches this needs no quoting.
-_DOT_ATOM_TEXT_REGEX = re.compile(
-    r"[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~]+(?:\.[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~]+)*"
-)
+# RFC 5322 section 3.2.3 atext, one atom (no dots), and dot-atom-text
+# (runs of atext separated by single dots). A local part that matches the
+# dot-atom form needs no quoting; each decoded domain label must be a
+# single atom.
+_ATEXT_CLASS = r"[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~]"
+_ATOM_TEXT_REGEX = re.compile(rf"{_ATEXT_CLASS}+")
+_DOT_ATOM_TEXT_REGEX = re.compile(rf"{_ATEXT_CLASS}+(?:\.{_ATEXT_CLASS}+)*")
 
 
 class ParsedSOARecord(TypedDict):
@@ -63,9 +65,11 @@ def soa_rname_to_email(rname: str) -> str:
     the result is always a syntactically valid address; a local part
     holding a character no valid address can carry (a control character or
     a byte outside ASCII) raises ``ValueError``. Escapes in the domain
-    labels are decoded the same way, and because a domain has no quoted
-    form to fall back to, a domain that does not decode to a plain
-    dot-atom raises ``ValueError``.
+    labels are decoded the same way, and each label is validated on its
+    own before the labels are joined with dots: a domain has no quoted
+    form to fall back to, so a label that decodes to something an email
+    domain label cannot carry — including a literal dot, which would
+    silently move the label boundary — raises ``ValueError``.
     """
     s = rname.rstrip(".")
     # Decode the whole name into labels, not just the first one: the
@@ -103,17 +107,22 @@ def soa_rname_to_email(rname: str) -> str:
     if len(labels) < 2:
         raise ValueError(f"Invalid SOA RNAME (no unescaped dot): {rname!r}")
     local = labels[0]
-    domain = ".".join(labels[1:])
-    if not local or not domain:
+    if not local:
         raise ValueError(f"Invalid SOA RNAME split: {rname!r}")
-    # The decoded domain must itself read as a valid email domain (a
-    # dot-atom, RFC 5322 section 3.4.1); unlike the local part, there is
-    # no quoted form to fall back to.
-    if _DOT_ATOM_TEXT_REGEX.fullmatch(domain) is None:
-        raise ValueError(
-            f"Invalid SOA RNAME (the domain part does not decode to a "
-            f"valid email domain): {rname!r}"
-        )
+    # Validate each decoded domain label before joining them with dots:
+    # an escape like ex\.ample decodes to ONE DNS label that contains a
+    # literal dot, and joining it would silently move the label boundary
+    # (host@ex.ample.com names a different mailbox domain). Each label
+    # must be a single atom (RFC 5322 section 3.2.3) — nonempty, no dots,
+    # and no characters an email domain cannot carry; unlike the local
+    # part, a domain has no quoted form to fall back to.
+    for label in labels[1:]:
+        if _ATOM_TEXT_REGEX.fullmatch(label) is None:
+            raise ValueError(
+                f"Invalid SOA RNAME (a domain label does not decode to a "
+                f"valid email domain label): {rname!r}"
+            )
+    domain = ".".join(labels[1:])
     if _DOT_ATOM_TEXT_REGEX.fullmatch(local) is None:
         # Decoded escapes can produce characters an unquoted local part
         # cannot carry (e.g. "\@" -> "@", "\032" -> a space). RFC 5322

@@ -392,6 +392,21 @@ class TestParseBimiRecord(unittest.TestCase):
             any("Unknown BIMI record tag longtagname" in w for w in result["warnings"])
         )
 
+    def testUnknownTagGrammarEnforced(self):
+        """Only unknown tags inside the DKIM tag-value grammar the draft
+        imports (RFC 6376 section 3.2) are ignored: a "." is not legal in
+        a tag name, while interior whitespace in a value is significant
+        and allowed"""
+        result = checkdmarc.bimi.parse_bimi_record("v=BIMI1; l=; foo=a b")
+        self.assertTrue(
+            any("Unknown BIMI record tag foo" in w for w in result["warnings"])
+        )
+        self.assertRaises(
+            checkdmarc.bimi.BIMISyntaxError,
+            checkdmarc.bimi.parse_bimi_record,
+            "v=BIMI1; l=; foo.bar=x",
+        )
+
     def testDuplicateTag(self):
         """Duplicate l= tags raise InvalidBIMITag"""
         self.assertRaises(

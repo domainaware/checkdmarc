@@ -164,11 +164,20 @@ BIMI_LPS_VALUE_REGEX = (
     rf"{BIMI_LPS_LOCAL_PART_REGEX}"
     rf"(?:{WSP_REGEX}*,{WSP_REGEX}*{BIMI_LPS_LOCAL_PART_REGEX})*"
 )
-# A tag is a name, "=", and a value. The name and value are kept loose on
-# purpose: unknown tags must be ignored rather than rejected (see the
-# BIMI draft, section 4.3), so any tag name of any length must lex, and
-# each known tag's value is checked individually in parse_bimi_record.
-BIMI_TAG_VALUE_REGEX_STRING = rf"([a-z][a-z0-9_\-.]*){WSP_REGEX}*={WSP_REGEX}*([^;]*)"
+# BIMI records use the DKIM tag-value syntax (BIMI draft section 4.3;
+# RFC 6376 section 3.2): tag-name = ALPHA *(ALPHA / DIGIT / "_"), and a
+# tag-value is runs of printable characters other than ";", with interior
+# whitespace significant but leading and trailing whitespace not part of
+# the value. Unknown tags must be ignored rather than rejected (draft
+# section 4.3), so any name and value inside that grammar must lex; input
+# outside it (a "." in a tag name, a control character in a value) fails
+# the record instead. Each known tag's value is checked individually in
+# parse_bimi_record.
+_BIMI_TVAL = r"[\x21-\x3a\x3c-\x7e]+"
+BIMI_TAG_VALUE_REGEX_STRING = (
+    rf"([a-z][a-z0-9_]*){WSP_REGEX}*={WSP_REGEX}*"
+    rf"((?:{_BIMI_TVAL}(?:{WSP_REGEX}+{_BIMI_TVAL})*)?){WSP_REGEX}*"
+)
 BIMI_TAG_VALUE_REGEX = re.compile(BIMI_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 
 # Matches a record that starts with a v= tag identifying the current BIMI

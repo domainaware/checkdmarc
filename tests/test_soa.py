@@ -62,6 +62,17 @@ class Test(unittest.TestCase):
         email = checkdmarc.soa.soa_rname_to_email(r"host.ex\097mple.com.")
         self.assertEqual(email, "host@example.com")
 
+    def testSoaRnameToEmailEscapedDotInDomainLabel(self):
+        """An escaped dot in a domain label (ex\\.ample is ONE DNS label
+        holding a literal dot) cannot be represented in an email domain;
+        joining it with dots would silently move the label boundary to
+        name a different mailbox domain"""
+        self.assertRaises(
+            ValueError,
+            checkdmarc.soa.soa_rname_to_email,
+            r"host.ex\.ample.com.",
+        )
+
     def testSoaRnameToEmailInvalidDomainEscape(self):
         """A domain label that decodes to something no email domain can
         carry (here a space) is invalid; unlike the local part, a domain
