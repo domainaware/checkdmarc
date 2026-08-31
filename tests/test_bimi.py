@@ -516,13 +516,42 @@ class TestParseBimiRecord(unittest.TestCase):
             "v=BIMI1; l=https://example.com/logo%zz.svg",
         )
 
-    def testUriIpv4LiteralRejected(self):
-        """A dotted-quad host satisfies the label grammar, but section 4.3
-        of the BIMI draft requires a fully qualified domain name"""
+    def testUriIpv4LiteralRejectedForAuthorityEvidence(self):
+        """Section 4.3 of the BIMI draft says the a= URI MUST contain a
+        fully qualified domain name, so an IP literal is invalid there"""
+        fake_session = MagicMock()
+        fake_session.get.return_value = _fake_response(VALID_SVG.encode("utf-8"))
+        with patch("checkdmarc.bimi.requests.Session", return_value=fake_session):
+            self.assertRaises(
+                checkdmarc.bimi.InvalidBIMITagValue,
+                checkdmarc.bimi.parse_bimi_record,
+                "v=BIMI1; l=https://example.com/logo.svg; a=https://192.0.2.1/cert.pem",
+            )
+
+    def testUriIpLiteralAllowedForIndicatorLocation(self):
+        """Unlike a=, the l= tag has no FQDN requirement — its value is
+        the imported RFC 3986 URI grammar with HTTPS transport (BIMI
+        draft section 4.3) — so IPv4 and bracketed IPv6 hosts are
+        syntactically valid indicator locations"""
+        for uri in ("https://192.0.2.1/logo.svg", "https://[2001:db8::1]/logo.svg"):
+            with self.subTest(uri=uri):
+                fake_session = MagicMock()
+                fake_session.get.return_value = _fake_response(
+                    VALID_SVG.encode("utf-8")
+                )
+                with patch(
+                    "checkdmarc.bimi.requests.Session", return_value=fake_session
+                ):
+                    result = checkdmarc.bimi.parse_bimi_record(f"v=BIMI1; l={uri}")
+                self.assertEqual(result["tags"]["l"]["value"], uri)
+
+    def testUriInvalidIpv6LiteralRejected(self):
+        """A bracketed host that is not a real RFC 4291 IPv6 address is
+        not a valid RFC 3986 authority"""
         self.assertRaises(
             checkdmarc.bimi.InvalidBIMIIndicatorURI,
             checkdmarc.bimi.parse_bimi_record,
-            "v=BIMI1; l=https://192.0.2.1/logo.svg",
+            "v=BIMI1; l=https://[::::]/logo.svg",
         )
 
     def testUriMultipleFragmentDelimitersRejected(self):

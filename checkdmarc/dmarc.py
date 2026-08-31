@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import re
 from collections.abc import Sequence
@@ -63,19 +64,51 @@ DMARC_TAG_VALUE_REGEX = re.compile(DMARC_TAG_VALUE_REGEX_STRING, re.IGNORECASE)
 _DMARC_RECORD_REGEX = re.compile(rf"^{DMARC_VERSION_REGEX_STRING}{WSP_REGEX}*(?:;|$)")
 
 # RFC 9989 section 4.7 imports the RFC 3986 URI grammar for report URIs.
-# This is not the full grammar: it requires a scheme followed by RFC 3986
-# unreserved and reserved characters or valid percent-escapes, which is
-# enough to reject raw spaces, control characters, and malformed escapes.
-# "#" is kept out of the repeated classes because RFC 3986 allows it only
-# once, as the fragment delimiter; "[" and "]" stay in because this
-# pattern does not parse the authority separately, and they are legal
-# there in an IP-literal host.
-_URI_CHAR_REGEX_STRING = r"(?:[a-z0-9\-._~!$&'()*+,;=:@/?\[\]]|%[0-9a-f]{2})"
+# This follows the RFC 3986 section 3 ABNF structurally: a scheme, then a
+# hier-part that is either "//" authority (userinfo, host, port) with a
+# path or a path alone, then an optional query and at most one fragment.
+# A bracketed IPv6 host is captured so _is_rfc3986_uri can check it is a
+# real RFC 4291 address, which a regular expression cannot practically
+# express.
+_URI_SUB_DELIMS = r"!$&'()*+,;="
+_URI_UNRESERVED = r"a-z0-9\-._~"
+_URI_PCT = r"%[0-9a-f]{2}"
+_URI_PCHAR = rf"(?:[{_URI_UNRESERVED}{_URI_SUB_DELIMS}:@]|{_URI_PCT})"
 _URI_REGEX = re.compile(
-    rf"[a-z][a-z0-9+.\-]*:{_URI_CHAR_REGEX_STRING}+"
-    rf"(?:#{_URI_CHAR_REGEX_STRING}*)?",
+    r"[a-z][a-z0-9+.\-]*:"  # scheme
+    r"(?:"
+    r"//"  # hier-part with an authority
+    rf"(?:(?:[{_URI_UNRESERVED}{_URI_SUB_DELIMS}:]|{_URI_PCT})*@)?"  # userinfo
+    r"(?:"
+    rf"\[(?P<ipv6>[0-9a-f:.]+)\]"  # IP-literal, IPv6 form
+    rf"|\[v[0-9a-f]+\.[{_URI_UNRESERVED}{_URI_SUB_DELIMS}:]+\]"  # IPvFuture
+    rf"|(?:[{_URI_UNRESERVED}{_URI_SUB_DELIMS}]|{_URI_PCT})*"  # reg-name / IPv4
+    r")"
+    r"(?::[0-9]*)?"  # port
+    rf"(?:/{_URI_PCHAR}*)*"  # path-abempty
+    rf"|/(?:{_URI_PCHAR}+(?:/{_URI_PCHAR}*)*)?"  # path-absolute
+    rf"|{_URI_PCHAR}+(?:/{_URI_PCHAR}*)*"  # path-rootless
+    r")?"  # or path-empty
+    rf"(?:\?(?:{_URI_PCHAR}|[/?])*)?"  # query
+    rf"(?:#(?:{_URI_PCHAR}|[/?])*)?",  # fragment
     re.IGNORECASE,
 )
+
+
+def _is_rfc3986_uri(uri: str) -> bool:
+    """Returns True when the string is a syntactically valid RFC 3986 URI,
+    with a bracketed IPv6 host required to be a real RFC 4291 address"""
+    match = _URI_REGEX.fullmatch(uri)
+    if match is None:
+        return False
+    ipv6_host = match.group("ipv6")
+    if ipv6_host is not None:
+        try:
+            ipaddress.IPv6Address(ipv6_host)
+        except ValueError:
+            return False
+    return True
+
 
 # Extracts the value of the psd tag from a raw record string during the
 # RFC 9989 §4.10 tree walk, before the record is fully parsed. The v tag
@@ -1060,7 +1093,7 @@ def parse_dmarc_report_uri(uri: str) -> ParsedDMARCReportURI:
         if (
             scheme_match is not None
             and scheme_match.group(1).lower() != "mailto"
-            and _URI_REGEX.fullmatch(uri) is not None
+            and _is_rfc3986_uri(uri)
         ):
             return {
                 "scheme": scheme_match.group(1).lower(),
@@ -1491,7 +1524,14 @@ def parse_dmarc_record(
         if tag in removed_tags:
             warnings.append(f"Support for the {tag} tag was removed in RFC 9989")
             continue
-        value = pair[1].lower().strip()
+        value = pair[1].strip()
+        if tag not in ("rua", "ruf"):
+            # Every defined tag value except the report URI lists is a
+            # case-insensitive ABNF literal (RFC 5234 section 2.3), so
+            # normalize those to lowercase. RFC 3986 makes only a URI's
+            # scheme and host case-insensitive; lowercasing a whole rua/ruf
+            # value would corrupt paths, queries, and mailto local parts.
+            value = value.lower()
         tags[tag] = {"value": value, "explicit": True}
 
     # Include implicit tags and their defaults

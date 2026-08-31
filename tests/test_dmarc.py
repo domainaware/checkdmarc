@@ -265,7 +265,9 @@ class Test(unittest.TestCase):
             )
         rua = cast(Any, result["tags"]["rua"]["value"])
         self.assertEqual(rua[0]["scheme"], "mailto")
-        self.assertEqual(rua[0]["address"], "a%2cb@example.com")
+        # The value keeps the case it was published with; percent-escape
+        # hex digits are not lowercased along with other tag values
+        self.assertEqual(rua[0]["address"], "a%2Cb@example.com")
 
     def testDMARCLongUnknownTagIgnored(self):
         """An unknown tag name longer than five letters (1*ALPHA in the
@@ -316,6 +318,35 @@ class Test(unittest.TestCase):
             checkdmarc.dmarc.parse_dmarc_report_uri,
             "https://dmarc.example.com/submit#one#two",
         )
+
+    def testDMARCReportURICasePreserved(self):
+        """RFC 3986 makes only a URI's scheme and host case-insensitive,
+        so a rua mailto local part or https path keeps its case while
+        other tag values are still normalized to lowercase"""
+        result = checkdmarc.dmarc.parse_dmarc_record(
+            "v=DMARC1; p=REJECT; rua=mailto:DMARC-Reports@example.com",
+            "example.com",
+        )
+        self.assertEqual(result["tags"]["p"]["value"], "reject")
+        rua = cast(Any, result["tags"]["rua"]["value"])
+        self.assertEqual(rua[0]["address"], "DMARC-Reports@example.com")
+        uri = checkdmarc.dmarc.parse_dmarc_report_uri(
+            "https://dmarc.example.com/Submit"
+        )
+        self.assertEqual(uri["address"], "https://dmarc.example.com/Submit")
+
+    def testDMARCReportURIAuthorityStructure(self):
+        """The RFC 3986 authority structure is enforced for non-mailto
+        report URIs: a real bracketed IPv6 host is valid, while an
+        unterminated or bogus IP-literal is not"""
+        uri = checkdmarc.dmarc.parse_dmarc_report_uri("https://[2001:db8::1]/reports")
+        self.assertEqual(uri["scheme"], "https")
+        for bad in ("https://[", "https://[::::]/reports"):
+            self.assertRaises(
+                checkdmarc.dmarc.InvalidDMARCReportURI,
+                checkdmarc.dmarc.parse_dmarc_report_uri,
+                bad,
+            )
 
     def testDMARCInvalidAlignmentModeFallsBack(self):
         """Invalid adkim/aspf values fall back to the default r with a

@@ -181,17 +181,21 @@ _BIMI_VERSION_PREFIX_REGEX = re.compile(
 
 # Anchored check for the l= and a= tag values. Per the bimi-uri definition
 # in the BIMI draft, section 4.3, the value must be a single HTTPS URI
-# whose host is a fully qualified domain name, and any comma inside the
-# URI must be percent-encoded. Raw spaces are not legal in a URI, so the
-# character set below excludes both spaces and commas.
+# with any comma inside it percent-encoded. Raw spaces are not legal in a
+# URI, so the character set below excludes both spaces and commas. The
+# host is captured because the two tags diverge in parse_bimi_record: the
+# a= prose additionally requires a fully qualified domain name, while l=
+# has no such requirement, so l= may use an IP-literal or single-label
+# host.
 _BIMI_URI_REGEX = re.compile(
     r"https://"
-    # The host: labels before the last dot, then the final label. Captured
-    # so parse_bimi_record can reject a dotted-quad IPv4 literal, which
-    # satisfies the label grammar but is not the fully qualified domain
-    # name the draft requires.
-    r"(?P<host>(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+"
-    r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)"
+    r"(?P<host>"
+    # one or more dot-separated LDH labels (also matches an IPv4 literal)
+    r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*"
+    # or a bracketed IPv6 literal, checked as a real RFC 4291 address in
+    # parse_bimi_record
+    r"|\[(?P<ipv6>[0-9a-f:.]+)\]"
+    r")"
     r"(?::\d{1,5})?"  # optional port
     # path and query: RFC 3986 characters, with "%" only as a valid
     # two-hex-digit percent-escape (a bare "%" or "%zz" is malformed).
@@ -1173,27 +1177,46 @@ def parse_bimi_record(
         if tag in ("l", "a") and tag_value != "":
             uri_match = _BIMI_URI_REGEX.fullmatch(tag_value)
             valid_uri = uri_match is not None
-            if uri_match is not None:
+            ipv6_host = uri_match.group("ipv6") if uri_match is not None else None
+            if ipv6_host is not None:
+                # The regex only checks the bracket shape; the address
+                # itself must be a real RFC 4291 IPv6 address.
                 try:
-                    # A dotted-quad like 192.0.2.1 satisfies the label
-                    # grammar, but section 4.3 of the BIMI draft requires
-                    # the host to be a fully qualified domain name, so an
-                    # IPv4 literal is invalid. (An IPv6 literal cannot
-                    # match: ":" is not a label character.)
-                    ipaddress.IPv4Address(uri_match.group("host"))
-                    valid_uri = False
+                    ipaddress.IPv6Address(ipv6_host)
                 except ValueError:
-                    pass
+                    valid_uri = False
+            if valid_uri and uri_match is not None and tag == "a":
+                # Section 4.3 of the BIMI draft: the a= URI "MUST contain
+                # a fully qualified domain name (FQDN)", so an IP literal
+                # or a single-label host is invalid for a= — but not for
+                # l=, whose prose imposes no FQDN requirement on the
+                # RFC 3986 URI grammar it imports.
+                host = uri_match.group("host")
+                is_fqdn = ipv6_host is None and "." in host
+                if is_fqdn:
+                    try:
+                        # A dotted-quad like 192.0.2.1 satisfies the
+                        # label grammar but is an IPv4 literal, not an
+                        # FQDN.
+                        ipaddress.IPv4Address(host)
+                        is_fqdn = False
+                    except ValueError:
+                        pass
+                if not is_fqdn:
+                    valid_uri = False
             if not valid_uri:
-                message = (
-                    f"The {tag} tag value must be empty or a single HTTPS "
-                    "URI containing a fully qualified domain name, with any "
+                if tag == "l":
+                    raise InvalidBIMIIndicatorURI(
+                        "The l tag value must be empty or a single HTTPS "
+                        "URI, with any commas percent-encoded, per "
+                        f"section 4.3 of the BIMI draft: {tag_value}"
+                    )
+                raise InvalidBIMITagValue(
+                    "The a tag value must be empty or a single HTTPS URI "
+                    "containing a fully qualified domain name, with any "
                     "commas percent-encoded, per section 4.3 of the BIMI "
                     f"draft: {tag_value}"
                 )
-                if tag == "l":
-                    raise InvalidBIMIIndicatorURI(message)
-                raise InvalidBIMITagValue(message)
         elif tag == "avp":
             if tag_value not in ["brand", "personal"]:
                 raise BIMISyntaxError(
