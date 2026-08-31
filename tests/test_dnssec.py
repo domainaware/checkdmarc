@@ -304,15 +304,59 @@ class TestGetDnskey(unittest.TestCase):
         )
         self.assertNotIn("example.com", checkdmarc.dnssec.DNSKEY_CACHE)
 
-    def testQueryExceptionCachedAsNone(self):
-        """Network exceptions cache None and let the function return None"""
+    def testQueryExceptionIsNotCached(self):
+        """A lookup that never completed says nothing about whether the
+        zone is signed, so it returns None without caching a negative
+        result that would stick for the life of the cache entry"""
         cache = _fresh_cache()
         with patch("dns.query.tcp", side_effect=OSError("boom")):
             result = checkdmarc.dnssec.get_dnskey(
                 "example.com", nameservers=["1.1.1.1"], cache=cache
             )
         self.assertIsNone(result)
-        self.assertIsNone(cache["example.com"])
+        self.assertNotIn("example.com", cache)
+
+    def testUnusableRcodeTriesTheNextNameserver(self):
+        """A nameserver answering REFUSED could not answer; it does not
+        mean the zone publishes no key, so the next nameserver is tried
+        and its answer is the one that counts"""
+        key_response = _response(
+            dns.rrset.from_text("example.com.", 300, "IN", "DNSKEY", DNSKEY_RDATA)
+        )
+        answers = [_response(rcode=dns.rcode.REFUSED), key_response]
+        cache = _fresh_cache()
+        with patch("checkdmarc.dnssec._query_nameserver", side_effect=answers):
+            result = checkdmarc.dnssec.get_dnskey(
+                "example.com", nameservers=["192.0.2.1", "192.0.2.2"], cache=cache
+            )
+        self.assertIsNotNone(result)
+        self.assertIn("example.com", cache)
+
+    def testAllNameserversRefusedIsNotCached(self):
+        """When every nameserver refuses, the result is a failed lookup
+        rather than an unsigned zone, and nothing is cached"""
+        cache = _fresh_cache()
+        answers = [
+            _response(rcode=dns.rcode.REFUSED),
+            _response(rcode=dns.rcode.FORMERR),
+        ]
+        with patch("checkdmarc.dnssec._query_nameserver", side_effect=answers):
+            result = checkdmarc.dnssec.get_dnskey(
+                "example.com", nameservers=["192.0.2.1", "192.0.2.2"], cache=cache
+            )
+        self.assertIsNone(result)
+        self.assertNotIn("example.com", cache)
+
+    def testServfailIsNotCached(self):
+        """SERVFAIL means a validating resolver rejected the zone; the key
+        lookup could not complete, so it is not cached as unsigned"""
+        cache = _fresh_cache()
+        with patch("dns.query.tcp", return_value=_response(rcode=dns.rcode.SERVFAIL)):
+            result = checkdmarc.dnssec.get_dnskey(
+                "example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertIsNone(result)
+        self.assertNotIn("example.com", cache)
 
 
 class TestCheckDnssec(unittest.TestCase):
@@ -763,6 +807,99 @@ class TestGetTlsaRecords(unittest.TestCase):
             nameservers=[],
             cache=_fresh_cache(),
         )
+
+    def testTransportFailureTriesTheNextNameserver(self):
+        """One unreachable nameserver must not end the lookup: the next
+        one is tried, and its TLSA records are returned"""
+        tlsa = dns.rrset.from_text(
+            "_25._tcp.mail.example.com.", 300, "IN", "TLSA", TLSA_RDATA
+        )
+        sig = _rrsig("_25._tcp.mail.example.com.", "TLSA")
+        cache = _fresh_cache()
+        with (
+            patch(
+                "checkdmarc.dnssec._query_nameserver",
+                side_effect=[OSError("unreachable"), _response(tlsa, sig)],
+            ),
+            patch(
+                "checkdmarc.dnssec.get_dnskey",
+                return_value={dns.name.from_text("mail.example.com."): "key"},
+            ),
+            patch("dns.dnssec.validate", return_value=None),
+        ):
+            result = checkdmarc.dnssec.get_tlsa_records(
+                "mail.example.com", nameservers=["192.0.2.1", "192.0.2.2"], cache=cache
+            )
+        self.assertEqual(result, [TLSA_RDATA])
+
+    def testUnusableRcodeTriesTheNextNameserver(self):
+        """A REFUSED answer is a nameserver that could not answer, not a
+        host without TLSA records"""
+        tlsa = dns.rrset.from_text(
+            "_25._tcp.mail.example.com.", 300, "IN", "TLSA", TLSA_RDATA
+        )
+        sig = _rrsig("_25._tcp.mail.example.com.", "TLSA")
+        with (
+            patch(
+                "checkdmarc.dnssec._query_nameserver",
+                side_effect=[
+                    _response(rcode=dns.rcode.REFUSED),
+                    _response(tlsa, sig),
+                ],
+            ),
+            patch(
+                "checkdmarc.dnssec.get_dnskey",
+                return_value={dns.name.from_text("mail.example.com."): "key"},
+            ),
+            patch("dns.dnssec.validate", return_value=None),
+        ):
+            result = checkdmarc.dnssec.get_tlsa_records(
+                "mail.example.com",
+                nameservers=["192.0.2.1", "192.0.2.2"],
+                cache=_fresh_cache(),
+            )
+        self.assertEqual(result, [TLSA_RDATA])
+
+    def testServfailReturnsNoRecords(self):
+        """A validating resolver answers SERVFAIL for a bogus answer; that
+        is a lookup that could not produce trustworthy records, so none are
+        returned and nothing is cached"""
+        cache = _fresh_cache()
+        with (
+            patch("dns.query.tcp", return_value=_response(rcode=dns.rcode.SERVFAIL)),
+            self.assertLogs("checkdmarc.dnssec", level="DEBUG") as logs,
+        ):
+            result = checkdmarc.dnssec.get_tlsa_records(
+                "mail.example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertEqual(result, [])
+        self.assertNotIn("_25._tcp.mail.example.com", cache)
+        self.assertTrue(any("SERVFAIL" in line for line in logs.output))
+
+    def testRecordsThatDoNotVerifyAreNotReturned(self):
+        """TLSA records whose signature fails validation are not returned
+        and are not cached"""
+        tlsa = dns.rrset.from_text(
+            "_25._tcp.mail.example.com.", 300, "IN", "TLSA", TLSA_RDATA
+        )
+        sig = _rrsig("_25._tcp.mail.example.com.", "TLSA")
+        cache = _fresh_cache()
+        with (
+            patch("dns.query.tcp", return_value=_response(tlsa, sig)),
+            patch(
+                "checkdmarc.dnssec.get_dnskey",
+                return_value={dns.name.from_text("mail.example.com."): "key"},
+            ),
+            patch(
+                "dns.dnssec.validate",
+                side_effect=dns.exception.ValidationFailure("bad signature"),
+            ),
+        ):
+            result = checkdmarc.dnssec.get_tlsa_records(
+                "mail.example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertEqual(result, [])
+        self.assertNotIn("_25._tcp.mail.example.com", cache)
 
     def testCacheHit(self):
         """A cached result is returned from the cache the caller passed in

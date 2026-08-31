@@ -797,6 +797,27 @@ class TestCheckBimi(unittest.TestCase):
         self.assertFalse(cast(Any, result)["valid"])
         self.assertIn("error", cast(Any, result))
 
+    def testQueryWarningsAreKept(self):
+        """Warnings raised while locating the record — an unrelated TXT
+        record beside it, or a record at the root of the domain — must
+        survive into the check result instead of being replaced by the
+        parser's own warnings, as check_mta_sts already does."""
+        with patch(
+            "checkdmarc.bimi.query_bimi_record",
+            return_value={
+                "record": "v=BIMI1; l=;",
+                "selector": "default",
+                "location": "default._bimi.example.com",
+                "warnings": ["Unrelated TXT records were found and ignored."],
+            },
+        ):
+            result = cast(Any, checkdmarc.bimi.check_bimi("example.com"))
+        self.assertTrue(result["valid"])
+        self.assertTrue(
+            any("Unrelated TXT records" in w for w in result["warnings"]),
+            result["warnings"],
+        )
+
 
 class TestSvgMetadataForbiddenAttributes(unittest.TestCase):
     """SVG x/y attributes on the root <svg> are forbidden by BIMI; they

@@ -58,10 +58,11 @@ Some tests require network access and are skipped when `GITHUB_ACTIONS` env var 
 
 ## Key Dependencies
 
-- `dnspython` for DNS queries
+- `dnspython[doh]` for DNS queries, including DNS over HTTPS and DNS over TLS
+- `httpx` for the shared DoH client
 - `pyleri` for grammar parsing
 - `publicsuffixlist` for base domain extraction
-- `cryptography`/`pyopenssl`/`pem` for certificate handling
+- `cryptography`/`pem` for certificate handling
 - `expiringdict` for DNS result caching
 
 ## Code Style

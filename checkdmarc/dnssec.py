@@ -279,37 +279,38 @@ def get_dnskey(
             return cached_result
 
     logger.debug(f"Checking for DNSKEY records at {domain}")
-    request = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec=True)
-    for nameserver in nameservers:
-        try:
-            response = _query_nameserver(request, nameserver, timeout)
-            if response is not None:
-                name = dns.name.from_text(domain)
-                rrset, _ = _find_record_and_signature(
-                    response.answer, name, RdataType.DNSKEY
-                )
-                # An answer that holds no DNSKEY for this name means the same
-                # thing as an empty answer: the name is not the apex of a
-                # signed zone. A name that points at another name answers with
-                # that chain rather than with a key, so check the base domain.
-                if rrset is None:
-                    logger.debug(f"No DNSKEY records found at {domain}")
-                    base_domain = get_base_domain(domain)
-                    if domain != base_domain:
-                        return get_dnskey(
-                            base_domain,
-                            nameservers=nameservers,
-                            timeout=timeout,
-                            cache=cache,
-                        )
-                    cache[domain] = None
-                    return None
-                key = {name: rrset}
-                cache[domain] = key
-                return key
-        except _TRANSPORT_ERRORS as e:
-            cache[domain] = None
-            logger.debug(f"DNSKEY query error: {e}")
+    rrset, _, response = _query_rrset(domain, RdataType.DNSKEY, nameservers, timeout)
+    # A lookup that could not complete says nothing about whether the zone
+    # is signed, so it is reported as "no key" without being cached — a
+    # later call can still get a real answer.
+    if response is None:
+        logger.debug(f"No nameserver answered the DNSKEY query for {domain}")
+        return None
+    if response.rcode() == dns.rcode.SERVFAIL:
+        logger.debug(
+            f"The DNSKEY query for {domain} failed with SERVFAIL: "
+            f"a validating resolver rejected the zone as bogus"
+        )
+        return None
+    # An answer that holds no DNSKEY for this name means the same thing as
+    # an empty answer: the name is not the apex of a signed zone. A name
+    # that points at another name answers with that chain rather than with
+    # a key, so check the base domain.
+    if rrset is None:
+        logger.debug(f"No DNSKEY records found at {domain}")
+        base_domain = get_base_domain(domain)
+        if domain != base_domain:
+            return get_dnskey(
+                base_domain,
+                nameservers=nameservers,
+                timeout=timeout,
+                cache=cache,
+            )
+        cache[domain] = None
+        return None
+    key = {dns.name.from_text(domain): rrset}
+    cache[domain] = key
+    return key
 
 
 def check_dnssec(
@@ -596,40 +597,39 @@ def get_tlsa_records(
         if isinstance(cached_results, list):
             return cached_results
     tlsa_records: list[str] = []
-    logger.debug(f"Checking for TLSA records at {query_hostname}")
-    request = dns.message.make_query(
-        query_hostname, dns.rdatatype.TLSA, want_dnssec=True
-    )
     if len(nameservers) == 0:
         raise ValueError("At least one nameserver is required")
-    for nameserver in nameservers:
-        try:
-            response = _query_nameserver(request, nameserver, timeout)
-            if response is not None:
-                rrset, rrsig = _find_record_and_signature(
-                    response.answer,
-                    dns.name.from_text(query_hostname),
-                    RdataType.TLSA,
-                )
-                if rrset is None or rrsig is None:
-                    return tlsa_records
-                dnskey = get_dnskey(
-                    domain=hostname,
-                    nameservers=nameservers,
-                    timeout=timeout,
-                    cache=dnskey_cache,
-                )
-                if dnskey is None:
-                    logger.debug(
-                        f"Found TLSA records at {hostname} but not "
-                        f"a DNSKEY record to verify them"
-                    )
-                    return tlsa_records
-                dns.dnssec.validate(rrset, rrsig, dnskey)
-                tlsa_records = [str(x) for x in list(rrset.items.keys())]
-                cache[query_hostname] = tlsa_records
-                return tlsa_records
-        except _TRANSPORT_ERRORS as e:
-            logger.debug(f"TLSA query error: {e}")
-            return tlsa_records
+    logger.debug(f"Checking for TLSA records at {query_hostname}")
+    rrset, rrsig, response = _query_rrset(
+        query_hostname, RdataType.TLSA, nameservers, timeout
+    )
+    if response is None:
+        logger.debug(f"No nameserver answered the TLSA query for {query_hostname}")
+        return tlsa_records
+    if response.rcode() == dns.rcode.SERVFAIL:
+        logger.debug(
+            f"The TLSA query for {query_hostname} failed with SERVFAIL: "
+            f"a validating resolver rejected the answer as bogus"
+        )
+        return tlsa_records
+    if rrset is None or rrsig is None:
+        return tlsa_records
+    dnskey = get_dnskey(
+        domain=hostname,
+        nameservers=nameservers,
+        timeout=timeout,
+        cache=dnskey_cache,
+    )
+    if dnskey is None:
+        logger.debug(
+            f"Found TLSA records at {hostname} but not a DNSKEY record to verify them"
+        )
+        return tlsa_records
+    try:
+        dns.dnssec.validate(rrset, rrsig, dnskey)
+    except dns.exception.ValidationFailure as e:
+        logger.debug(f"The TLSA records at {query_hostname} do not verify: {e}")
+        return tlsa_records
+    tlsa_records = [str(x) for x in list(rrset.items.keys())]
+    cache[query_hostname] = tlsa_records
     return tlsa_records

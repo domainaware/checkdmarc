@@ -1451,7 +1451,7 @@ def check_bimi(
             bimi_results["image"] = parsed_bimi["image"]
         if "certificate" in parsed_bimi:
             bimi_results["certificate"] = parsed_bimi["certificate"]
-        bimi_results["warnings"] = parsed_bimi["warnings"]
+        bimi_results["warnings"] = bimi_query["warnings"] + parsed_bimi["warnings"]
     except BIMIError as error:
         bimi_results["selector"] = selector
         bimi_results["valid"] = False
