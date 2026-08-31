@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import dns.dnssec
 import dns.exception
+import dns.flags
 import dns.name
 import dns.rcode
 import dns.rdatatype
@@ -647,6 +648,23 @@ class TestCheckDnssec(unittest.TestCase):
                 "example.com", nameservers=["192.0.2.1"], cache=cache
             )
         self.assertFalse(result)
+
+    def testAdFlagLogged(self):
+        """A resolver-validated (AD-flagged) DNSKEY answer is noted in the
+        debug log and the chain still validates"""
+        cache = _fresh_cache()
+        ds, key, sig = _signed_zone("example.com.")
+        key_response = _response(key, sig)
+        key_response.flags = dns.flags.AD
+        with (
+            patch("dns.query.tcp", side_effect=[_response(ds), key_response]),
+            self.assertLogs("checkdmarc.dnssec", level="DEBUG") as logs,
+        ):
+            result = checkdmarc.dnssec.check_dnssec(
+                "example.com", nameservers=["192.0.2.1"], cache=cache
+            )
+        self.assertTrue(result)
+        self.assertTrue(any("AD flag" in line for line in logs.output), logs.output)
 
 
 class TestGetTlsaRecords(unittest.TestCase):
