@@ -1274,8 +1274,7 @@ class TestRFC7208Conformance(unittest.TestCase):
                         modifier in w and "RFC 6652" in w and "RFC 7208" in w
                         for w in warnings
                     ),
-                    f"expected a deprecation warning for {modifier}=, got "
-                    f"{warnings}",
+                    f"expected a deprecation warning for {modifier}=, got {warnings}",
                 )
                 self.assertFalse(
                     any(f"unknown modifier {modifier}" in w for w in warnings)
