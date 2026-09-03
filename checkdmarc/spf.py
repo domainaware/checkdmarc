@@ -75,6 +75,12 @@ SPF_MECHANISM_NAMES = frozenset(
     {"all", "include", "a", "mx", "ptr", "ip4", "ip6", "exists"}
 )
 
+# Modifiers defined by RFC 6652 (SPF authorization for the PRA identity) that
+# were removed when RFC 7208 superseded it. They are still ignored like any
+# unknown modifier, but with a deprecation warning pointing to the spec
+# change.
+DEPRECATED_SPF_MODIFIERS = frozenset({"ra", "rp", "rr"})
+
 # toplabel per RFC 7208 section 12: letters and digits with at least one
 # letter, or a hyphenated label that starts and ends with a letter or digit.
 TOPLABEL_REGEX = re.compile(r"[a-z0-9]*[a-z][a-z0-9]*|[a-z0-9]+-[a-z0-9\-]*[a-z0-9]")
@@ -930,6 +936,17 @@ def parse_spf_record(
             elif name == "exp":
                 if value == "":
                     raise SPFSyntaxError("The exp modifier is missing a value")
+            elif name in DEPRECATED_SPF_MODIFIERS:
+                # ra=, rp=, and rr= were defined by RFC 6652 (SPF
+                # authorization for the PRA identity) but were dropped when
+                # RFC 7208 replaced RFC 4408. They are no longer defined SPF
+                # modifiers, so like any other unknown modifier they are
+                # ignored per RFC 7208 section 6 - with a specific warning
+                warnings.append(
+                    f"The {name} modifier was defined by RFC 6652 and removed "
+                    f"in RFC 7208. It was ignored (RFC 7208 § 6)."
+                )
+                continue
             else:
                 # RFC 7208 section 6: "Unrecognized modifiers MUST be
                 # ignored no matter where, or how often, they appear in a

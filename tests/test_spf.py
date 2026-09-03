@@ -1259,6 +1259,30 @@ class TestRFC7208Conformance(unittest.TestCase):
         mechanisms = [m["mechanism"] for m in result["parsed"]["mechanisms"]]
         self.assertIn("ip4", mechanisms)
 
+    def testRFC6652ModifiersDeprecatedWarning(self):
+        """ra=, rp=, rr= were valid under RFC 6652 but removed in RFC 7208;
+        they are ignored with a deprecation warning rather than the generic
+        unknown-modifier warning."""
+        for modifier in ("ra", "rp", "rr"):
+            with self.subTest(modifier=modifier):
+                result = checkdmarc.spf.parse_spf_record(
+                    f"v=spf1 {modifier}=x ip4:192.0.2.1 -all", "example.com"
+                )
+                warnings = result["warnings"]
+                self.assertTrue(
+                    any(
+                        modifier in w and "RFC 6652" in w and "RFC 7208" in w
+                        for w in warnings
+                    ),
+                    f"expected a deprecation warning for {modifier}=, got "
+                    f"{warnings}",
+                )
+                self.assertFalse(
+                    any(f"unknown modifier {modifier}" in w for w in warnings)
+                )
+                self.assertEqual(result["dns_lookups"], 0)
+                self.assertEqual(result["parsed"]["all"], "fail")
+
     def testQualifierOnModifierIsSyntaxError(self):
         """A qualifier on a modifier does not match the RFC 7208 section 12
         ABNF and raises SPFSyntaxError"""
