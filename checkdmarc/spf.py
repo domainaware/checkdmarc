@@ -258,7 +258,7 @@ class ParsedSPFRecord(TypedDict):
     redirect: SPFRedirect | None
     exp: str | None
     ra: str | None
-    rp: str | None
+    rp: int | None
     rr: list[str] | None
     all: str
 
@@ -887,15 +887,19 @@ def parse_spf_record(
 
     def _parse_rfc6652_value(
         name: str, raw_value: str
-    ) -> tuple[str | list[str] | None, str | None]:
+    ) -> tuple[str | int | list[str] | None, str | None]:
         """Validate an RFC 6652 § 3 modifier value.
 
         Returns ``(parsed_value, error_message)``. ``parsed_value`` is the
-        normalized value (a string for ra/rp, a list of tokens for rr), or
-        None when the value is malformed. ``error_message`` is None when the
-        value is valid.
+        normalized value (a string for ra, an integer for rp, a list of
+        tokens for rr), or None when the value is malformed.
+        ``error_message`` is None when the value is valid.
 
-        A malformed value is reported as a warning, not an ``SPFSyntaxError``:
+        A malformed value is reported as a warning, not an
+        ``SPFSyntaxError``, because no specification makes it a permanent
+        error: RFC 6652 does not, and to an implementation that does not know
+        RFC 6652 these are unknown modifiers, which RFC 7208 § 6 requires to
+        be ignored.
         """
         if name == "ra":
             # RFC 6652 § 3: ra= is a local-part (RFC 5322 § 3.4.1). The
@@ -922,7 +926,7 @@ def parse_spf_record(
                     f"The rp modifier value {raw_value} is not an integer "
                     "from 0 to 100 (RFC 6652 § 3, erratum 6579); it was ignored."
                 )
-            return value, None
+            return int(value), None
         value = raw_value.lower()
         if value == "":
             return None, (
@@ -939,8 +943,9 @@ def parse_spf_record(
     def _record_rfc6652_modifier(name: str, raw_value: str) -> None:
         """Validate an RFC 6652 modifier and store its parsed value.
 
-        A malformed value is warned about and ignored. A repeat modifier is
-        warned about and the first occurrence is kept.
+        Call this in the order the modifiers appear in the record: a malformed
+        value is warned about and ignored, and when the same modifier appears
+        more than once the first occurrence is the one that is kept.
         """
         nonlocal ra_seen
         parsed_value, error = _parse_rfc6652_value(name, raw_value)
@@ -948,9 +953,14 @@ def parse_spf_record(
             warnings.append(error)
             return
         if parsed[name] is not None:
+            # RFC 6652 says nothing about a reporting modifier appearing more
+            # than once, and RFC 7208 § 6 makes only redirect and exp a
+            # permerror when repeated; every other modifier is ignored "no
+            # matter where, or how often" it appears. So keep the first value,
+            # ignore the rest, and warn.
             warnings.append(
                 f"The {name} modifier appeared more than once; only the first "
-                "value is kept (RFC 6652 § 3)."
+                "value is kept."
             )
             return
         parsed[name] = parsed_value
@@ -977,63 +987,71 @@ def parse_spf_record(
 
     # Handle the text after the first all mechanism. Evaluation stops at the
     # first matching mechanism (RFC 7208 section 4.6.2), so terms after all
-    # are never used and are not processed, counted, or listed; only an exp
-    # modifier placed there is still honored.
+    # are never used and are not processed, counted, or listed. Modifiers may
+    # appear anywhere in a record (RFC 7208 section 6), so each token here is
+    # looked at on its own, in the order it was written: another all
+    # mechanism only feeds the "multiple all mechanisms" warning, an exp
+    # modifier is honored, an RFC 6652 reporting modifier is set aside and
+    # recorded once the first pass has read the terms before all, and
+    # anything else is reported as ignored text.
+    deferred_rfc6652_modifiers: list[tuple[str, str]] = []
     items_after_all: list[str] = AFTER_ALL_REGEX.findall(record)
     if len(items_after_all) > 0:
-        # Modifier names are case-insensitive (RFC 7208 section 4.6.1), so
-        # EXP= and Exp= must be recognized here too.
-        if items_after_all[0][:4].lower() == "exp=":
-            # RFC 7208 § 6.2 (exp modifier): The explanation string is
-            # evaluated at runtime (after result == fail) and may contain
-            # macros. It MUST NOT contribute to DNS lookup counting and
-            # SHOULD NOT be resolved during static parsing.
-            exp_value = items_after_all[0].split("=", 1)[1]
-            if exp_value.strip() == "":
-                raise SPFSyntaxError("The exp modifier is missing a value")
-            exp_tokens = exp_value.split(" ")
-            if len(exp_tokens) > 1:
-                warnings.append("No text should exist after the exp modifier value.")
-            exp_value = exp_tokens[0]
-            parsed["exp"] = exp_value
-            exp_seen = True
-            _check_exp_value(exp_value)
-        else:
-            after_tokens = items_after_all[0].split()
-            extra_all_tokens = [
-                token
-                for token in after_tokens
-                if ALL_TERM_REGEX.fullmatch(token) is not None
-            ]
-            if extra_all_tokens:
-                # RFC 7208 places no uniqueness constraint on all; the first
-                # match simply wins (section 4.6.2).
-                warnings.append(
-                    "The record contains multiple all mechanisms; only the "
-                    "first one is used (RFC 7208 § 4.6.2)."
-                )
-            # RFC 6652 § 3 reporting modifiers may appear after all, so honor them like
-            # any other modifier. Anything else after all is ignored.
-            unknown_after_all: list[str] = []
-            for token in after_tokens:
-                if ALL_TERM_REGEX.fullmatch(token) is not None:
-                    continue
-                term_match = SPF_MECHANISM_REGEX.fullmatch(token)
-                if (
-                    term_match is not None
-                    and term_match.group(3) == "="
-                    and (term_match.group(1) or "") == ""
-                    and term_match.group(2).lower() in RFC6652_MODIFIERS
-                ):
-                    _record_rfc6652_modifier(
-                        term_match.group(2).lower(), term_match.group(4) or ""
-                    )
-                else:
-                    unknown_after_all.append(token)
-            if unknown_after_all:
-                warnings.append(
-                    "Any text after the all mechanism other than an exp modifier is ignored."
-                )
+        extra_all_tokens: list[str] = []
+        ignored_after_all: list[str] = []
+        for token in items_after_all[0].split():
+            if ALL_TERM_REGEX.fullmatch(token) is not None:
+                extra_all_tokens.append(token)
+                continue
+            term_match = SPF_MECHANISM_REGEX.fullmatch(token)
+            if (
+                term_match is None
+                or term_match.group(3) != "="
+                or (term_match.group(1) or "") != ""
+            ):
+                # Not a modifier: a mechanism, a qualified modifier (which
+                # the RFC 7208 section 12 ABNF does not allow), or junk.
+                ignored_after_all.append(token)
+                continue
+            # Modifier names are case-insensitive (RFC 7208 section 4.6.1), so
+            # EXP= and Exp= must be recognized here too.
+            modifier_name = term_match.group(2).lower()
+            modifier_value = term_match.group(4) or ""
+            if modifier_name == "exp":
+                # RFC 7208 § 6.2 (exp modifier): The explanation string is
+                # evaluated at runtime (after result == fail) and may contain
+                # macros. It MUST NOT contribute to DNS lookup counting and
+                # SHOULD NOT be resolved during static parsing.
+                if modifier_value == "":
+                    raise SPFSyntaxError("The exp modifier is missing a value")
+                if exp_seen:
+                    # RFC 7208 § 6: an exp modifier that appears more than
+                    # once is a permerror, wherever the copies are.
+                    raise SPFSyntaxError("Multiple exp values are not permitted")
+                # The exp value keeps its original case because uppercase
+                # macro letters change how macros expand (RFC 7208 § 7.3).
+                parsed["exp"] = modifier_value
+                exp_seen = True
+                _check_exp_value(modifier_value)
+            elif modifier_name in RFC6652_MODIFIERS:
+                # Held back so that a modifier written both before and after
+                # all is recorded in the order the record lists it, and the
+                # earlier value wins.
+                deferred_rfc6652_modifiers.append((modifier_name, modifier_value))
+            else:
+                ignored_after_all.append(token)
+        if extra_all_tokens:
+            # RFC 7208 places no uniqueness constraint on all; the first
+            # match simply wins (section 4.6.2).
+            warnings.append(
+                "The record contains multiple all mechanisms; only the "
+                "first one is used (RFC 7208 § 4.6.2)."
+            )
+        if ignored_after_all:
+            warnings.append(
+                "Any text after the all mechanism other than an exp modifier "
+                "or an RFC 6652 reporting modifier is ignored."
+            )
 
     # Split the record into terms. Everything after the first all mechanism
     # was trimmed from grammar_record above.
@@ -1168,6 +1186,11 @@ def parse_spf_record(
                 if "%" not in value and value != "":
                     _maybe_warn_domain_spec(name, value)
         prepared_terms.append((qualifier, name, sep, value, raw_value))
+
+    # The RFC 6652 modifiers written after all come last in the record, so
+    # they are recorded after the first pass has read the ones before it.
+    for deferred_name, deferred_value in deferred_rfc6652_modifiers:
+        _record_rfc6652_modifier(deferred_name, deferred_value)
 
     # Second pass: process the validated terms, resolving DNS where needed
     # and enforcing the RFC 7208 section 4.6.4 lookup limits after every

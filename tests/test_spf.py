@@ -8,7 +8,11 @@ from unittest.mock import patch
 import dns.exception
 
 import checkdmarc.spf
-from checkdmarc.spf import ParsedSPFMXMechanism, SPFAMechanism
+from checkdmarc.spf import (
+    ParsedSPFMXMechanism,
+    SPFAMechanism,
+    SPFIncludeMechanism,
+)
 
 OFFLINE_MODE = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
 
@@ -50,7 +54,8 @@ class Test(unittest.TestCase):
         rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"
         domain = "avd.dk"
         warning = (
-            "Any text after the all mechanism other than an exp modifier is ignored."
+            "Any text after the all mechanism other than an exp modifier or an "
+            "RFC 6652 reporting modifier is ignored."
         )
 
         parsed_record = checkdmarc.spf.parse_spf_record(rec, domain)
@@ -692,7 +697,8 @@ class Test(unittest.TestCase):
         rec = "v=spf1 ip4:213.5.39.110 -all MS=83859DAEBD1978F9A7A67D3"
         domain = "avd.dk"
         warning = (
-            "Any text after the all mechanism other than an exp modifier is ignored."
+            "Any text after the all mechanism other than an exp modifier or an "
+            "RFC 6652 reporting modifier is ignored."
         )
 
         with patch("checkdmarc.spf.query_dns", return_value=[]):
@@ -980,16 +986,29 @@ class TestSPFExpModifier(unittest.TestCase):
         )
 
     def testTextAfterExpValueWarns(self):
+        """Junk after an exp modifier that follows all is ignored text: the
+        exp value itself is still honored."""
         with patch("checkdmarc.spf.get_txt_records", return_value=["explanation"]):
             result = checkdmarc.spf.parse_spf_record(
                 "v=spf1 -all exp=exp.example extra", "example.com"
             )
-        self.assertTrue(
-            any(
-                "No text should exist after the exp modifier value" in w
-                for w in result["warnings"]
-            )
+        self.assertEqual(result["parsed"]["exp"], "exp.example")
+        self.assertIn(
+            "Any text after the all mechanism other than an exp modifier or an "
+            "RFC 6652 reporting modifier is ignored.",
+            result["warnings"],
         )
+
+    def testTwoExpModifiersAfterAllIsSyntaxError(self):
+        """RFC 7208 § 6: an exp modifier that appears more than once is a
+        permanent error, including when both copies follow the all
+        mechanism, where the second one used to be ignored as trailing
+        text."""
+        with self.assertRaises(checkdmarc.spf.SPFSyntaxError) as ctx:
+            checkdmarc.spf.parse_spf_record(
+                "v=spf1 -all exp=exp.example exp=other.example", "example.com"
+            )
+        self.assertIn("Multiple exp values are not permitted", str(ctx.exception))
 
 
 class TestSPFMacroValidation(unittest.TestCase):
@@ -1268,7 +1287,7 @@ class TestRFC7208Conformance(unittest.TestCase):
             "v=spf1 ip4:192.0.2.1 -all ra=postmaster rp=10 rr=e", "example.com"
         )
         self.assertEqual(result["parsed"]["ra"], "postmaster")
-        self.assertEqual(result["parsed"]["rp"], "10")
+        self.assertEqual(result["parsed"]["rp"], 10)
         self.assertEqual(result["parsed"]["rr"], ["e"])
         self.assertEqual(result["dns_lookups"], 0)
         self.assertEqual(result["parsed"]["all"], "fail")
@@ -1302,13 +1321,13 @@ class TestRFC7208Conformance(unittest.TestCase):
     def testRFC6652RpIntegerRange(self):
         """rp= is an integer 0-100 per the erratum 6579 corrected ABNF; any
         other value is warned about and ignored, not a syntax error."""
-        # Boundary values that are valid.
+        # Boundary values that are valid. They are surfaced as integers.
         for value in ("0", "100", "50"):
             with self.subTest(value=value):
                 result = checkdmarc.spf.parse_spf_record(
                     f"v=spf1 ra=postmaster rp={value} -all", "example.com"
                 )
-                self.assertEqual(result["parsed"]["rp"], value)
+                self.assertEqual(result["parsed"]["rp"], int(value))
                 self.assertEqual(result["warnings"], [])
         # Out-of-range / malformed values are ignored with a warning.
         for value in ("101", "-1", "abc", "1000"):
@@ -1354,7 +1373,7 @@ class TestRFC7208Conformance(unittest.TestCase):
             "v=spf1 rp=10 rr=e ip4:192.0.2.1 -all", "example.com"
         )
         # The values are still surfaced (they exist in the record)...
-        self.assertEqual(result["parsed"]["rp"], "10")
+        self.assertEqual(result["parsed"]["rp"], 10)
         self.assertEqual(result["parsed"]["rr"], ["e"])
         self.assertIsNone(result["parsed"]["ra"])
         # ...but a warning explains they have no effect.
@@ -1374,9 +1393,8 @@ class TestRFC7208Conformance(unittest.TestCase):
             result = checkdmarc.spf.parse_spf_record(
                 "v=spf1 include:other.example -all", "example.com"
             )
-        included = result["parsed"]["mechanisms"][0]
+        included = cast(SPFIncludeMechanism, result["parsed"]["mechanisms"][0])
         self.assertEqual(included["mechanism"], "include")
-        self.assertEqual(included["parsed"]["ra"], "postmaster")
         self.assertTrue(
             any(
                 "ra modifier was ignored" in w and "include mechanism" in w
@@ -1384,9 +1402,11 @@ class TestRFC7208Conformance(unittest.TestCase):
             ),
             f"expected an include-ignore warning for ra=, got {result['warnings']}",
         )
+        included_parsed = included["parsed"]
+        assert included_parsed is not None
         # The ra= value is surfaced for visibility even though it is ignored
         # by report generators.
-        self.assertEqual(included["parsed"]["ra"], "postmaster")
+        self.assertEqual(included_parsed["ra"], "postmaster")
 
     def testRFC6652RaNotIgnoredInRedirect(self):
         """A redirect target (not reached via include) keeps its ra= honored:
@@ -1419,6 +1439,72 @@ class TestRFC7208Conformance(unittest.TestCase):
                 )
                 self.assertEqual(result["dns_lookups"], 0)
                 self.assertEqual(result["parsed"]["all"], "fail")
+
+    def testRFC6652ModifiersWithNoValue(self):
+        """An RFC 6652 modifier with an empty value is warned about and
+        ignored; unlike redirect= and exp= it is not a permanent error,
+        because no specification makes one of it."""
+        result = checkdmarc.spf.parse_spf_record(
+            "v=spf1 ra= rp= rr= ip4:192.0.2.1 -all", "example.com"
+        )
+        self.assertIsNone(result["parsed"]["ra"])
+        self.assertIsNone(result["parsed"]["rp"])
+        self.assertIsNone(result["parsed"]["rr"])
+        self.assertEqual(
+            result["warnings"],
+            [
+                "The ra modifier is missing a value; it was ignored (RFC 6652 § 3).",
+                "The rp modifier is missing a value; it was ignored (RFC 6652 § 3).",
+                "The rr modifier is missing a value; it was ignored (RFC 6652 § 3).",
+            ],
+        )
+        self.assertNotIn("error", result)
+
+    def testRFC6652RepeatedModifierKeepsTheFirstValue(self):
+        """RFC 6652 says nothing about a repeated reporting modifier, and
+        RFC 7208 § 6 makes only redirect and exp a permerror when repeated,
+        so the first value is kept, the rest are ignored, and a warning
+        says so."""
+        result = checkdmarc.spf.parse_spf_record("v=spf1 ra=a ra=b -all", "example.com")
+        self.assertEqual(result["parsed"]["ra"], "a")
+        self.assertIn(
+            "The ra modifier appeared more than once; only the first value is kept.",
+            result["warnings"],
+        )
+        self.assertNotIn("error", result)
+
+    def testRFC6652RepeatedModifierAcrossAllKeepsTheFirstValue(self):
+        """The first value in the record wins even when the repeat is on the
+        other side of the all mechanism: the modifiers written after all are
+        recorded after the ones before it."""
+        result = checkdmarc.spf.parse_spf_record(
+            "v=spf1 ra=first -all ra=second", "example.com"
+        )
+        self.assertEqual(result["parsed"]["ra"], "first")
+        self.assertIn(
+            "The ra modifier appeared more than once; only the first value is kept.",
+            result["warnings"],
+        )
+
+    def testRFC6652ModifiersAndExpAfterAllInAnyOrder(self):
+        """An exp modifier and an RFC 6652 reporting modifier after the all
+        mechanism are both honored, whichever one comes first."""
+        for record in (
+            "v=spf1 -all exp=exp.example ra=postmaster",
+            "v=spf1 -all ra=postmaster exp=exp.example",
+        ):
+            with self.subTest(record=record):
+                with patch(
+                    "checkdmarc.spf.get_txt_records", return_value=["explanation"]
+                ):
+                    result = checkdmarc.spf.parse_spf_record(record, "example.com")
+                self.assertEqual(result["parsed"]["exp"], "exp.example")
+                self.assertEqual(result["parsed"]["ra"], "postmaster")
+                self.assertEqual(
+                    result["warnings"],
+                    [],
+                    f"nothing should be reported as ignored: {result['warnings']}",
+                )
 
     def testQualifierOnModifierIsSyntaxError(self):
         """A qualifier on a modifier does not match the RFC 7208 section 12

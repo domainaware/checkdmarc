@@ -282,6 +282,9 @@ checkdmarc proton.me
                   ],
                   "redirect": null,
                   "exp": null,
+                  "ra": null,
+                  "rp": null,
+                  "rr": null,
                   "all": "softfail"
                 },
                 "warnings": []
@@ -289,6 +292,9 @@ checkdmarc proton.me
             ],
             "redirect": null,
             "exp": null,
+            "ra": null,
+            "rp": null,
+            "rr": null,
             "all": "softfail"
           },
           "warnings": []
@@ -296,6 +302,9 @@ checkdmarc proton.me
       ],
       "redirect": null,
       "exp": null,
+      "ra": null,
+      "rp": null,
+      "rr": null,
       "all": "softfail"
     }
   },
