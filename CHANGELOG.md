@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- SPF: the RFC 6652 reporting modifiers `ra=`, `rp=`, and `rr=`, added in 5.8.0 and removed later, are recognized again; their values are validated against RFC 6652 §3 (`rp=` per erratum 6579) and surfaced in the parsed result as `ra`, `rp`, and `rr` next to `exp`, and a malformed value is warned about and ignored instead of failing the record. Warnings also cover the two RFC 6652 §3 semantic rules — `rp=` and `rr=` do nothing without `ra=`, and `ra=` is ignored in a record reached through an `include` — and `exp=` and these modifiers are now honored after `all` in any order
+
 ## 6.0.0
 
 An RFC conformance audit compared every module line-by-line against its
