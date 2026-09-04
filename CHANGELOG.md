@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- SPF: the RFC 6652 reporting modifiers `ra=`, `rp=`, and `rr=` are once again added as valid modifiers. Their values are validated against RFC 6652 §3: `ra=` is a local-part (RFC 5322 §3.4.1), `rp=` is an integer 0–100 per erratum 6579's corrected ABNF, and `rr=` is a colon-separated list of `all`/`e`/`f`/`s`/`n`. They are detected as modifiers and their syntax is checked as per spec.
+
 ## 6.0.0
 
 An RFC conformance audit compared every module line-by-line against its
