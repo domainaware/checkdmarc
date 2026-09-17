@@ -1098,6 +1098,34 @@ class TestNameserverFailover(unittest.TestCase):
         self.assertEqual(wrapped.answer_port(), 5353)
         self.assertEqual(failed, [])
 
+    def test_tracking_wrapper_records_only_transport_errors(self):
+        """A timeout is recorded against the wrapped server; a programming
+        error from a caller-built nameserver is re-raised unrecorded, so it
+        cannot demote the server."""
+        request = dns.message.make_query("a.test", "MX")
+
+        class Broken(dns.nameserver.Do53Nameserver):
+            def query(self, *args, **kwargs):
+                raise TypeError("bad nameserver")
+
+        class Dead(dns.nameserver.Do53Nameserver):
+            def query(self, *args, **kwargs):
+                raise dns.exception.Timeout(timeout=1.0)
+
+        failed: list = []
+        broken = Broken(self.DEAD)
+        dead = Dead(self.LIVE)
+        with self.assertRaises(TypeError):
+            checkdmarc.utils._FailureTrackingNameserver(broken, failed).query(
+                request, 1.0, None, 0, False
+            )
+        self.assertEqual(failed, [])
+        with self.assertRaises(dns.exception.Timeout):
+            checkdmarc.utils._FailureTrackingNameserver(dead, failed).query(
+                request, 1.0, None, 0, False
+            )
+        self.assertEqual(failed, [dead])
+
     def test_next_query_tries_the_nameserver_that_answered_first(self):
         """The first query falls through from the dead nameserver to the live
         one; the next query goes straight to the live one."""

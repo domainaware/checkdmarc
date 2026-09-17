@@ -17,7 +17,6 @@ import dns.rdataclass
 import dns.rdatatype
 import dns.resolver
 import dns.rrset
-import httpx
 from dns.dnssectypes import DSDigest
 from dns.nameserver import Nameserver
 from dns.rdatatype import RdataType
@@ -29,6 +28,7 @@ from checkdmarc._constants import (
     DNSSEC_CACHE_MAX_LEN,
 )
 from checkdmarc.utils import (
+    _TRANSPORT_ERRORS,
     _nameservers_to_resolver_input,
     _note_nameserver_failure,
     _order_nameservers,
@@ -61,13 +61,6 @@ DNSKEY_CACHE = ExpiringDict(
 TLSA_CACHE = ExpiringDict(
     max_len=DNSSEC_CACHE_MAX_LEN, max_age_seconds=DNSSEC_CACHE_MAX_AGE_SECONDS
 )
-
-
-# Errors that mean one nameserver could not answer and the next one should be
-# tried. ssl.SSLError is an OSError subclass, so DNS over TLS handshake
-# failures are covered; httpx.HTTPError covers DNS over HTTPS transport
-# failures (connection, proxy, and timeout errors).
-_TRANSPORT_ERRORS = (dns.exception.DNSException, OSError, EOFError, httpx.HTTPError)
 
 
 def _query_nameserver(

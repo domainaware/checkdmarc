@@ -64,6 +64,14 @@ _RETRYABLE_DNS_ERRORS = (
     OSError,
 )
 
+# Errors that mean one nameserver could not answer and the next one should be
+# tried. ssl.SSLError is an OSError subclass, so DNS over TLS handshake
+# failures are covered; httpx.HTTPError covers DNS over HTTPS transport
+# failures (connection, proxy, and timeout errors). Anything else raised by
+# a nameserver's query() — a TypeError from a caller-built Nameserver, say —
+# is a programming error, not a sign the server is down.
+_TRANSPORT_ERRORS = (dns.exception.DNSException, OSError, EOFError, httpx.HTTPError)
+
 # Nameservers that recently failed to answer, keyed by _nameserver_key().
 # Entries expire after DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS. See
 # _order_nameservers() and _note_nameserver_failure().
@@ -429,7 +437,8 @@ class _FailureTrackingNameserver(Nameserver):
 
     A truncated UDP reply is not a failure: dnspython retries it over TCP on
     the same server, so ``dns.message.Truncated`` is passed through without
-    being recorded.
+    being recorded. So is anything outside ``_TRANSPORT_ERRORS``, such as a
+    programming error in a caller-built ``Nameserver``.
     """
 
     def __init__(self, nameserver: Nameserver, failed: list[Nameserver]):
@@ -474,7 +483,7 @@ class _FailureTrackingNameserver(Nameserver):
             )
         except dns.message.Truncated:
             raise
-        except Exception:
+        except _TRANSPORT_ERRORS:
             # Not handled here — only observed. dnspython's resolve() loop
             # catches every exception from query() and decides what to do
             # with it; this just notes which server it came from.
