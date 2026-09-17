@@ -370,12 +370,19 @@ class _DMARCErrorResultsOptionalFields(TypedDict, total=False):
 
 
 class DMARCErrorResults(_DMARCErrorResultsOptionalFields):
-    """Error return type for check_dmarc"""
+    """Error return type for check_dmarc
+
+    ``warnings`` holds the warnings gathered before the error — from the
+    record lookup when the record was found but failed to parse — so that,
+    for example, a ``_dmarc`` name that has both a TXT record and a CNAME
+    record is still reported when its TXT record is malformed.
+    """
 
     record: str | None
     location: str | None
     valid: Literal[False]
     error: str
+    warnings: list[str]
 
 
 class DMARCErrorData(TypedDict, total=False):
@@ -861,6 +868,118 @@ def _query_dmarc_record(
     return dmarc_record
 
 
+def _dmarc_cname_conflict_warning(
+    location: str,
+    record: str,
+    *,
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
+) -> str | None:
+    """
+    Builds a warning when ``_dmarc.{location}`` holds both the DMARC TXT
+    record that was found and a CNAME record.
+
+    RFC 1034 section 3.6.2: "If a CNAME RR is present at a node, no other
+    data should be present ... This rule also insures that a cached CNAME
+    can be used without checking with an authoritative server for other RR
+    types." A DNS provider that serves a TXT record for TXT queries and a
+    CNAME record for CNAME queries at the same name (seen in the wild)
+    breaks that rule. A resolver that asks for TXT directly gets the local
+    record; one holding the CNAME in its cache follows it to the target's
+    record instead; and one returning both leaves the receiver with two
+    DMARC records for one name, which RFC 9989 section 4.10 step 2 says to
+    discard. Which policy applies therefore depends on the receiver.
+
+    A CNAME on its own is fine: the resolver follows it and the target's
+    TXT record is the DMARC record. That case is told apart by comparing
+    the record that was found with the DMARC records at the CNAME target;
+    when the record came through the CNAME, the target holds exactly that
+    one record. A local record identical to the target's single record is
+    not reported either, since whichever one a resolver picks, the policy
+    is the same. A target holding the matching record plus another DMARC
+    record is still a conflict: following the CNAME yields several records
+    and therefore no policy.
+
+    Args:
+        location (str): The domain the DMARC record was found for
+        record (str): The DMARC record that was found
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+        retries (int): The number of times to retry on timeout or other transient errors
+
+    Returns:
+        str: The warning text, or ``None`` when there is no conflict or the
+        lookups needed to tell could not be completed
+    """
+    target = f"_dmarc.{location}"
+    try:
+        cnames = query_dns(
+            target,
+            "CNAME",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            retries=retries,
+        )
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        return None  # Not an alias
+    except (dns.exception.DNSException, OSError) as error:
+        # query_dns() re-raises socket-level OSErrors once its retries are
+        # used up; this probe is a diagnostic and must not fail the check
+        logger.debug(f"CNAME check for {target} failed: {error}")
+        return None
+    if len(cnames) == 0:
+        return None
+    cname_target = cnames[0]
+    try:
+        target_records = query_dns(
+            cname_target,
+            "TXT",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            retries=retries,
+        )
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        target_records = []
+    except (dns.exception.DNSException, OSError) as error:
+        logger.debug(
+            f"TXT lookup at {cname_target}, the CNAME target of {target}, "
+            f"failed: {error}"
+        )
+        return None
+    target_dmarc_records = [r for r in target_records if _is_dmarc_record(r)]
+    if target_dmarc_records == [record]:
+        # Following the CNAME yields exactly the record that was found: an
+        # ordinary alias, or a duplicate that changes nothing
+        return None
+    if len(target_dmarc_records) > 1:
+        # A receiver that follows the CNAME sees several DMARC records at
+        # one name and discards them all (RFC 9989 section 4.10 step 2),
+        # so it ends up with no policy while the local record gives one
+        via_cname = (
+            f"no applicable policy at all, because {cname_target} publishes "
+            f"{len(target_dmarc_records)} DMARC records, which a receiver "
+            "discards"
+        )
+    elif len(target_dmarc_records) == 1:
+        via_cname = f"the DMARC record at {cname_target}"
+    else:
+        via_cname = f"no DMARC record at all, because {cname_target} has none"
+    return (
+        f"{target} has both a TXT record and a CNAME record pointing to "
+        f"{cname_target}. A name with a CNAME record must have no other "
+        "records (RFC 1034 section 3.6.2), so which DMARC policy a receiver "
+        f"applies depends on its resolver: the TXT record at {target}, "
+        f"{via_cname}, or none if both records are returned and discarded "
+        "(RFC 9989 section 4.10). Remove one of the two records."
+    )
+
+
 def query_dmarc_record(
     domain: str,
     *,
@@ -1016,6 +1135,17 @@ def query_dmarc_record(
         else:
             error_str += " for this domain or its parent domains."
         raise DMARCRecordNotFound(error_str)
+
+    cname_warning = _dmarc_cname_conflict_warning(
+        location,
+        record,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        retries=retries,
+    )
+    if cname_warning is not None:
+        warnings.append(cname_warning)
 
     return {"record": record, "location": location, "warnings": warnings}
 
@@ -1818,6 +1948,7 @@ def check_dmarc(
 
                   - ``error``  - An error message
                   - ``valid`` - False
+                  - ``warnings`` - warning conditions found before the error
 
     """
     try:
@@ -1835,6 +1966,7 @@ def check_dmarc(
             "location": None,
             "valid": False,
             "error": str(error),
+            "warnings": [],
         }
         return error_results
     try:
@@ -1864,6 +1996,10 @@ def check_dmarc(
             "location": dmarc_query["location"],
             "valid": False,
             "error": str(error),
+            # The record was found but is unusable; what the lookup noticed
+            # along the way (a CNAME next to it, a record at the apex) still
+            # matters to whoever fixes it
+            "warnings": dmarc_query["warnings"],
         }
         # error.data only contains a "target" key based on codebase analysis
         if hasattr(error, "data") and error.data and "target" in error.data:

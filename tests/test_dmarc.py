@@ -1459,5 +1459,204 @@ class TestDmarcRecordNotFound(unittest.TestCase):
         self.assertNotIn("5.6789", str(error))
 
 
+class TestDmarcCnameConflict(unittest.TestCase):
+    """A ``_dmarc`` name that has both a TXT record and a CNAME record
+    (RFC 1034 section 3.6.2 forbids other data next to a CNAME) gets a
+    warning, while an ordinary CNAME that the resolver followed does not."""
+
+    LOCAL = "v=DMARC1; p=quarantine"
+    REMOTE = "v=DMARC1; p=none"
+    TARGET = "_dmarc.vendor.example"
+
+    def _fake_query_dns(self, answers):
+        """Builds a query_dns stand-in answering from ``answers``, keyed by
+        (name, record type). A list is returned, an exception raised; any
+        other name has no answer. The names queried are recorded."""
+        queried = []
+
+        def fake(target, rdtype, **kwargs):
+            queried.append((target, rdtype))
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        return fake, queried
+
+    def _query(self, answers, domain="example.com"):
+        fake, queried = self._fake_query_dns(answers)
+        with patch("checkdmarc.dmarc.query_dns", side_effect=fake):
+            result = checkdmarc.dmarc.query_dmarc_record(domain)
+        return result, queried
+
+    def testTxtAndCnameConflictWarns(self):
+        """A local TXT record next to a CNAME whose target holds a different
+        record is reported, and the local record is the one returned"""
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): [self.REMOTE],
+            }
+        )
+        self.assertEqual(result["record"], self.LOCAL)
+        self.assertEqual(len(result["warnings"]), 1)
+        warning = result["warnings"][0]
+        self.assertIn("_dmarc.example.com has both a TXT record and a CNAME", warning)
+        self.assertIn(f"the DMARC record at {self.TARGET}", warning)
+        self.assertIn("RFC 1034 section 3.6.2", warning)
+
+    def testCnameTargetWithoutRecordWarns(self):
+        """A local TXT record next to a CNAME whose target has no DMARC
+        record is reported, naming that outcome"""
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+            }
+        )
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertIn(f"because {self.TARGET} has none", result["warnings"][0])
+
+    def testCnameFollowedByTheResolverIsNotAConflict(self):
+        """When the record that was found is the CNAME target's own record,
+        the name is an ordinary alias and nothing is reported"""
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.REMOTE],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): ["unrelated", self.REMOTE],
+            }
+        )
+        self.assertEqual(result["record"], self.REMOTE)
+        self.assertEqual(result["warnings"], [])
+
+    def testNoCnameNoWarning(self):
+        result, _ = self._query({("_dmarc.example.com", "TXT"): [self.LOCAL]})
+        self.assertEqual(result["warnings"], [])
+
+    def testCnameLookupFailureIsIgnored(self):
+        """A DNS failure on the CNAME lookup neither warns nor fails the check"""
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): dns.exception.Timeout(),
+            }
+        )
+        self.assertEqual(result["record"], self.LOCAL)
+        self.assertEqual(result["warnings"], [])
+
+    def testTargetLookupFailureIsIgnored(self):
+        """A DNS failure looking up the CNAME target's TXT records means the
+        comparison cannot be made, so nothing is reported"""
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): dns.exception.Timeout(),
+            }
+        )
+        self.assertEqual(result["warnings"], [])
+
+    def testConflictIsCheckedWhereTheRecordWasFound(self):
+        """After a tree walk the check runs at the parent's _dmarc name, not
+        the subdomain's"""
+        result, queried = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): [self.REMOTE],
+            },
+            domain="sub.example.com",
+        )
+        self.assertEqual(result["location"], "example.com")
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertIn("_dmarc.example.com has both", result["warnings"][0])
+        self.assertNotIn(("_dmarc.sub.example.com", "CNAME"), queried)
+
+    def testTargetWithMatchingAndExtraRecordIsStillAConflict(self):
+        """When the target publishes the matching record plus a second DMARC
+        record, following the CNAME yields no policy (RFC 9989 section 4.10
+        discards multiple records), so the conflict is reported"""
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): [self.LOCAL, self.REMOTE],
+            }
+        )
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertIn("publishes 2 DMARC records", result["warnings"][0])
+
+    def testSocketErrorOnCnameLookupIsIgnored(self):
+        """query_dns re-raises OSError once retries are used up; the probe
+        must swallow it like any other lookup failure"""
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): OSError("socket closed"),
+            }
+        )
+        self.assertEqual(result["record"], self.LOCAL)
+        self.assertEqual(result["warnings"], [])
+
+    def testSocketErrorOnTargetLookupIsIgnored(self):
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): OSError("socket closed"),
+            }
+        )
+        self.assertEqual(result["warnings"], [])
+
+    def testWarningKeptWhenTheRecordFailsToParse(self):
+        """A malformed local record next to a CNAME whose target holds a valid
+        policy is the resolver-dependent case the check exists for, so the
+        warning must survive the parse failure"""
+        fake, _ = self._fake_query_dns(
+            {
+                ("_dmarc.example.com", "TXT"): ["v=DMARC1; p=bogus"],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): [self.REMOTE],
+            }
+        )
+        with patch("checkdmarc.dmarc.query_dns", side_effect=fake):
+            result = cast(dict[str, Any], checkdmarc.dmarc.check_dmarc("example.com"))
+        self.assertFalse(result["valid"])
+        self.assertIn("error", result)
+        self.assertEqual(result["record"], "v=DMARC1; p=bogus")
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in result["warnings"])
+        )
+
+    def testLookupFailureErrorHasEmptyWarnings(self):
+        """An error result from a failed lookup still has the warnings key,
+        so consumers can rely on it"""
+        with patch(
+            "checkdmarc.dmarc.query_dmarc_record",
+            side_effect=checkdmarc.dmarc.DMARCRecordNotFound("nope"),
+        ):
+            result = cast(dict[str, Any], checkdmarc.dmarc.check_dmarc("example.com"))
+        self.assertFalse(result["valid"])
+        self.assertEqual(result["warnings"], [])
+
+    def testWarningReachesCheckDmarcResults(self):
+        """The conflict warning is part of the check_dmarc() output"""
+        fake, _ = self._fake_query_dns(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): [self.REMOTE],
+            }
+        )
+        with patch("checkdmarc.dmarc.query_dns", side_effect=fake):
+            result = cast(dict[str, Any], checkdmarc.dmarc.check_dmarc("example.com"))
+        self.assertTrue(result["valid"])
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in result["warnings"])
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

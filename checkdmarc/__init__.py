@@ -430,6 +430,7 @@ def results_to_csv_rows(
         row["dmarc_valid"] = _dmarc["valid"]
         if "error" in _dmarc:
             row["dmarc_error"] = _dmarc["error"]
+            row["dmarc_warnings"] = "|".join(_dmarc.get("warnings", []))
         else:
             row["dmarc_adkim"] = _dmarc["tags"]["adkim"]["value"]
             row["dmarc_aspf"] = _dmarc["tags"]["aspf"]["value"]
