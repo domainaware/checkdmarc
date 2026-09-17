@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- DMARC: `check_dmarc()` dropped the warnings gathered while looking up the record (a record at the apex, a `psd=y` parent, and now the TXT-plus-CNAME conflict) whenever the record then failed to parse. Error results now carry a `warnings` list, and the CSV output fills `dmarc_warnings` for those rows too
 - DNS: a nameserver that fails to answer (a timeout or other transport error) is now tried after the other configured nameservers for the next 60 seconds (`DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS`), in both the resolver-based lookups and the direct DNSSEC/TLSA queries. Failover between nameservers already happened within each query, but nothing remembered the failure, so checking many domains with an unreachable first nameserver paid its full timeout on every query
 - MX: the A/AAAA lookup of each reverse DNS hostname used the system resolver instead of the configured nameservers
 - DNS: a retried query (`retries`) dropped `quoted_txt_segments` and the caller's cache

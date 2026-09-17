@@ -370,12 +370,19 @@ class _DMARCErrorResultsOptionalFields(TypedDict, total=False):
 
 
 class DMARCErrorResults(_DMARCErrorResultsOptionalFields):
-    """Error return type for check_dmarc"""
+    """Error return type for check_dmarc
+
+    ``warnings`` holds the warnings gathered before the error — from the
+    record lookup when the record was found but failed to parse — so that,
+    for example, a ``_dmarc`` name that has both a TXT record and a CNAME
+    record is still reported when its TXT record is malformed.
+    """
 
     record: str | None
     location: str | None
     valid: Literal[False]
     error: str
+    warnings: list[str]
 
 
 class DMARCErrorData(TypedDict, total=False):
@@ -1924,6 +1931,7 @@ def check_dmarc(
 
                   - ``error``  - An error message
                   - ``valid`` - False
+                  - ``warnings`` - warning conditions found before the error
 
     """
     try:
@@ -1941,6 +1949,7 @@ def check_dmarc(
             "location": None,
             "valid": False,
             "error": str(error),
+            "warnings": [],
         }
         return error_results
     try:
@@ -1970,6 +1979,10 @@ def check_dmarc(
             "location": dmarc_query["location"],
             "valid": False,
             "error": str(error),
+            # The record was found but is unusable; what the lookup noticed
+            # along the way (a CNAME next to it, a record at the apex) still
+            # matters to whoever fixes it
+            "warnings": dmarc_query["warnings"],
         }
         # error.data only contains a "target" key based on codebase analysis
         if hasattr(error, "data") and error.data and "target" in error.data:

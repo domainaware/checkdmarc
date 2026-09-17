@@ -1574,6 +1574,37 @@ class TestDmarcCnameConflict(unittest.TestCase):
         self.assertIn("_dmarc.example.com has both", result["warnings"][0])
         self.assertNotIn(("_dmarc.sub.example.com", "CNAME"), queried)
 
+    def testWarningKeptWhenTheRecordFailsToParse(self):
+        """A malformed local record next to a CNAME whose target holds a valid
+        policy is the resolver-dependent case the check exists for, so the
+        warning must survive the parse failure"""
+        fake, _ = self._fake_query_dns(
+            {
+                ("_dmarc.example.com", "TXT"): ["v=DMARC1; p=bogus"],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): [self.REMOTE],
+            }
+        )
+        with patch("checkdmarc.dmarc.query_dns", side_effect=fake):
+            result = cast(dict[str, Any], checkdmarc.dmarc.check_dmarc("example.com"))
+        self.assertFalse(result["valid"])
+        self.assertIn("error", result)
+        self.assertEqual(result["record"], "v=DMARC1; p=bogus")
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in result["warnings"])
+        )
+
+    def testLookupFailureErrorHasEmptyWarnings(self):
+        """An error result from a failed lookup still has the warnings key,
+        so consumers can rely on it"""
+        with patch(
+            "checkdmarc.dmarc.query_dmarc_record",
+            side_effect=checkdmarc.dmarc.DMARCRecordNotFound("nope"),
+        ):
+            result = cast(dict[str, Any], checkdmarc.dmarc.check_dmarc("example.com"))
+        self.assertFalse(result["valid"])
+        self.assertEqual(result["warnings"], [])
+
     def testWarningReachesCheckDmarcResults(self):
         """The conflict warning is part of the check_dmarc() output"""
         fake, _ = self._fake_query_dns(
