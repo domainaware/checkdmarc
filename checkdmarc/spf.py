@@ -1438,6 +1438,12 @@ def parse_spf_record(
                         _include_cache=_include_cache,
                         _included=_included,
                     )
+                    # What the lookup of the redirect target noticed (a
+                    # TXT-plus-CNAME conflict, SPF-type records, size
+                    # warnings) belongs with the parser's warnings for it
+                    redirected_spf["warnings"] = (
+                        redirect_query["warnings"] + redirected_spf["warnings"]
+                    )
                     parsed["all"] = redirected_spf["parsed"]["all"]
                     mechanism_dns_lookups += redirected_spf["dns_lookups"]
                     mechanism_void_dns_lookups += redirected_spf["void_dns_lookups"]
@@ -1565,6 +1571,10 @@ def parse_spf_record(
                     _include_cache=_include_cache,
                     _included=True,
                 )
+                # What the lookup of the include target noticed belongs with
+                # the parser's warnings for it, in the cache too so a repeat
+                # include reports the same
+                include["warnings"] = include_query["warnings"] + include["warnings"]
                 _include_cache[value] = include
                 _count_dns_lookups(include["dns_lookups"])
                 _count_void_dns_lookups(include["void_dns_lookups"])

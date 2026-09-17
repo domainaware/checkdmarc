@@ -1995,6 +1995,65 @@ class TestTxtCnameConflictWiring(unittest.TestCase):
         result = self._query([self.LOCAL])
         self.assertFalse(any("CNAME" in w for w in result["warnings"]))
 
+    def _parse_with_nested_conflict(self, record):
+        """Parses ``record`` for example.com where its include/redirect
+        target _spf.vendor.example has a conflicting CNAME."""
+        answers = {
+            ("_spf.vendor.example", "TXT"): ["v=spf1 ip4:192.0.2.0/24 -all"],
+            ("_spf.vendor.example", "CNAME"): ["_spf.other.example"],
+            ("_spf.other.example", "TXT"): ["v=spf1 -all"],
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake):
+            return checkdmarc.spf.parse_spf_record(record, "example.com")
+
+    def testIncludeTargetConflictReachesTheResults(self):
+        """A conflict at an include target is reported both on the include
+        mechanism and in the overall warnings"""
+        result = self._parse_with_nested_conflict(
+            "v=spf1 include:_spf.vendor.example -all"
+        )
+        conflicts = [
+            w for w in result["warnings"] if "both a TXT record and a CNAME" in w
+        ]
+        self.assertEqual(len(conflicts), 1)
+        self.assertIn("_spf.vendor.example has both", conflicts[0])
+        include = cast(dict[str, Any], result["parsed"]["mechanisms"][0])
+        self.assertEqual(include["mechanism"], "include")
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in include["warnings"])
+        )
+
+    def testRepeatedIncludeCarriesTheConflictToo(self):
+        """The cached result of a repeated include keeps the lookup warnings"""
+        result = self._parse_with_nested_conflict(
+            "v=spf1 include:_spf.vendor.example include:_spf.vendor.example -all"
+        )
+        for mechanism in result["parsed"]["mechanisms"][:2]:
+            include = cast(dict[str, Any], mechanism)
+            self.assertTrue(
+                any("both a TXT record and a CNAME" in w for w in include["warnings"])
+            )
+
+    def testRedirectTargetConflictReachesTheResults(self):
+        result = self._parse_with_nested_conflict("v=spf1 redirect=_spf.vendor.example")
+        conflicts = [
+            w for w in result["warnings"] if "both a TXT record and a CNAME" in w
+        ]
+        self.assertEqual(len(conflicts), 1)
+        self.assertIn("_spf.vendor.example has both", conflicts[0])
+        redirect = result["parsed"]["redirect"]
+        assert redirect is not None
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in redirect["warnings"])
+        )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
