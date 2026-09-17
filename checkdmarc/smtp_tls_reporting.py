@@ -380,7 +380,9 @@ def query_smtp_tls_reporting_record(
         tlsrpt_record,
         record_kind="SMTP TLS Reporting",
         is_record=lambda r: txt_prefix.match(r) is not None,
-        multiple_records_rule="RFC 8460 section 3",
+        multiple_records_outcome=(
+            "assumes the domain does not implement TLSRPT (RFC 8460 section 3)"
+        ),
         lookup=query_dns,
         nameservers=nameservers,
         resolver=resolver,

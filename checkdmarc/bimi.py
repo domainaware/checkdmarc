@@ -1069,15 +1069,18 @@ def query_bimi_record(
             )
 
     # The BIMI draft (section 6.3) recommends CNAMEs for sharing indicators,
-    # but a TXT record next to the CNAME is a DNS-level conflict. The draft
-    # does not say what a receiver does with several BIMI records at one
-    # name, so the warning does not claim an outcome for that case.
+    # but a TXT record next to the CNAME is a DNS-level conflict. Section
+    # 7.2 step 9: when several BIMI records remain, Assertion Record
+    # Discovery terminates and BIMI processing MUST NOT be performed.
     cname_warning = _txt_cname_conflict_warning(
         f"{selector}._bimi.{location}",
         record,
         record_kind="BIMI",
         is_record=lambda r: _BIMI_VERSION_PREFIX_REGEX.match(r) is not None,
-        multiple_records_rule=None,
+        multiple_records_outcome=(
+            "performs no BIMI processing for the message "
+            "(BIMI draft section 7.2 step 9)"
+        ),
         lookup=query_dns,
         nameservers=nameservers,
         resolver=resolver,

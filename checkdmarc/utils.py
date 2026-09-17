@@ -573,7 +573,7 @@ def _txt_cname_conflict_warning(
     *,
     record_kind: str,
     is_record: Callable[[str], bool],
-    multiple_records_rule: str | None,
+    multiple_records_outcome: str | None,
     lookup: Callable[..., list[str]],
     nameservers: Sequence[str | Nameserver] | None = None,
     resolver: dns.resolver.Resolver | None = None,
@@ -592,9 +592,10 @@ def _txt_cname_conflict_warning(
     ``_dmarc`` names) breaks that rule. A resolver that asks for TXT
     directly gets the local record; one holding the CNAME in its cache
     follows it to the target's record instead; and one returning both
-    leaves the receiver with two records for one name, which each
-    protocol's multiple-record rule usually says to discard. Which record
-    applies therefore depends on the receiver. The same holds for every
+    leaves the receiver with two records for one name, where each
+    protocol's multiple-record rule decides the outcome (permerror for
+    SPF, no record or no policy for the others). Which record applies
+    therefore depends on the receiver. The same holds for every
     TXT-based record this package checks (DMARC, SPF, MTA-STS, SMTP TLS
     Reporting, BIMI); MTA-STS and BIMI even recommend CNAME delegation
     (RFC 8461 section 8.2, BIMI draft section 6.3), so they are the most
@@ -617,9 +618,10 @@ def _txt_cname_conflict_warning(
         record (str): The record that was found there
         record_kind (str): How to call the record in the warning, e.g. "DMARC"
         is_record (callable): Tells whether a TXT record is one of this kind
-        multiple_records_rule (str): The spec section that says what a
-            receiver does with several records of this kind at one name,
-            or ``None`` when the spec does not say
+        multiple_records_outcome (str): What a receiver does when several
+            records of this kind remain at one name, as a verb phrase with
+            its citation, e.g. ``"returns permerror (RFC 7208 section
+            4.5)"``; ``None`` when the spec does not say
         lookup (callable): The caller's ``query_dns``; passing it keeps the
             probe on the same lookup path (and the same test double) as
             the caller's own record lookup
@@ -682,14 +684,13 @@ def _txt_cname_conflict_warning(
         # Following the CNAME yields exactly the record that was found: an
         # ordinary alias, or a duplicate that changes nothing
         return None
-    if len(matching) > 1 and multiple_records_rule is not None:
+    if len(matching) > 1 and multiple_records_outcome is not None:
         # A receiver that follows the CNAME sees several records at one
-        # name and, under this spec's rule, discards them all, so it ends
-        # up with none while the local record gives one
+        # name, and this spec says what it does then (never "use one of
+        # them"), while the local record gives it exactly one
         via_cname = (
-            f"no usable {record_kind} record at all, because {cname_target} "
-            f"publishes {len(matching)} {record_kind} records, which a "
-            "receiver discards"
+            f"whatever follows when {cname_target} publishes {len(matching)} "
+            f"{record_kind} records: a receiver {multiple_records_outcome}"
         )
     elif len(matching) > 1:
         # The spec does not say what a receiver does with several records,
@@ -702,12 +703,13 @@ def _txt_cname_conflict_warning(
         via_cname = f"the {record_kind} record at {cname_target}"
     else:
         via_cname = f"no {record_kind} record at all, because {cname_target} has none"
-    if multiple_records_rule is None:
+    if multiple_records_outcome is None:
         both_returned = "or an unpredictable result if both records are returned"
     else:
         both_returned = (
-            "or none if both records are returned and discarded "
-            f"({multiple_records_rule})"
+            "or, if both records are returned, the same as for several "
+            f"{record_kind} records at one name, where a receiver "
+            f"{multiple_records_outcome}"
         )
     return (
         f"{name} has both a TXT record and a CNAME record pointing to "

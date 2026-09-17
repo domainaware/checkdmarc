@@ -133,6 +133,10 @@ class SPFError(Exception):
             data (dict): A dictionary of data to include in the output
         """
         self.data = data
+        # Warnings gathered before the error that would otherwise be lost,
+        # such as what the lookup of an include target noticed before its
+        # record failed to parse; check_spf() adds them to its error result
+        self.warnings: list[str] = []
         Exception.__init__(self, msg)
 
 
@@ -154,6 +158,8 @@ class SPFRecordNotFound(SPFError):
     def __init__(self, error: Exception | str, domain: str):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+        # Set up data and warnings like every other SPFError
+        SPFError.__init__(self, str(error))
         self.error = error
         self.domain = domain
 
@@ -647,7 +653,7 @@ def query_spf_record(
         spf_record,
         record_kind="SPF",
         is_record=_is_spf_record,
-        multiple_records_rule="RFC 7208 section 4.5",
+        multiple_records_outcome="returns permerror (RFC 7208 section 4.5)",
         lookup=query_dns,
         nameservers=nameservers,
         resolver=resolver,
@@ -1426,18 +1432,24 @@ def parse_spf_record(
                         retries=retries,
                     )
                     redirect_record = redirect_query["record"]
-                    redirected_spf = parse_spf_record(
-                        redirect_record,
-                        value,
-                        seen=seen,
-                        recursion=recursion + [value],
-                        nameservers=nameservers,
-                        resolver=resolver,
-                        timeout=timeout,
-                        retries=retries,
-                        _include_cache=_include_cache,
-                        _included=_included,
-                    )
+                    try:
+                        redirected_spf = parse_spf_record(
+                            redirect_record,
+                            value,
+                            seen=seen,
+                            recursion=recursion + [value],
+                            nameservers=nameservers,
+                            resolver=resolver,
+                            timeout=timeout,
+                            retries=retries,
+                            _include_cache=_include_cache,
+                            _included=_included,
+                        )
+                    except SPFError as fatal:
+                        # The redirect target's record is unusable; what its
+                        # lookup noticed must still reach the results
+                        fatal.warnings = redirect_query["warnings"] + fatal.warnings
+                        raise
                     # What the lookup of the redirect target noticed (a
                     # TXT-plus-CNAME conflict, SPF-type records, size
                     # warnings) belongs with the parser's warnings for it
@@ -1559,18 +1571,24 @@ def parse_spf_record(
                         value,
                     )
                 include_record = include_query["record"]
-                include = parse_spf_record(
-                    include_record,
-                    value,
-                    seen=seen,
-                    recursion=recursion + [value],
-                    nameservers=nameservers,
-                    resolver=resolver,
-                    timeout=timeout,
-                    retries=retries,
-                    _include_cache=_include_cache,
-                    _included=True,
-                )
+                try:
+                    include = parse_spf_record(
+                        include_record,
+                        value,
+                        seen=seen,
+                        recursion=recursion + [value],
+                        nameservers=nameservers,
+                        resolver=resolver,
+                        timeout=timeout,
+                        retries=retries,
+                        _include_cache=_include_cache,
+                        _included=True,
+                    )
+                except SPFError as fatal:
+                    # The include target's record is unusable; what its
+                    # lookup noticed must still reach the results
+                    fatal.warnings = include_query["warnings"] + fatal.warnings
+                    raise
                 # What the lookup of the include target noticed belongs with
                 # the parser's warnings for it, in the cache too so a repeat
                 # include reports the same
@@ -1637,6 +1655,7 @@ def parse_spf_record(
 
         except (SPFTooManyDNSLookups, SPFTooManyVoidDNSLookups) as e:
             if ignore_too_many_lookups:
+                warnings += e.warnings
                 error = str(e)
             else:
                 raise
@@ -1813,6 +1832,7 @@ def check_spf(
         spf_results["error"] = str(error.args[0])
         del spf_results["dns_lookups"]
         spf_results["valid"] = False
+        spf_results["warnings"] = spf_results.get("warnings", []) + error.warnings
         if hasattr(error, "data") and error.data:
             for key in error.data:
                 spf_results[key] = error.data[key]

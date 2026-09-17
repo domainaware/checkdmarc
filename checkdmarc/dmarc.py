@@ -902,7 +902,7 @@ def _dmarc_cname_conflict_warning(
         record,
         record_kind="DMARC",
         is_record=_is_dmarc_record,
-        multiple_records_rule="RFC 9989 section 4.10",
+        multiple_records_outcome="discards them all (RFC 9989 section 4.10 step 2)",
         lookup=query_dns,
         nameservers=nameservers,
         resolver=resolver,

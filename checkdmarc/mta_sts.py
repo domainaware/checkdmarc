@@ -396,7 +396,9 @@ def query_mta_sts_record(
         sts_record,
         record_kind="MTA-STS",
         is_record=lambda r: txt_prefix.match(r) is not None,
-        multiple_records_rule="RFC 8461 section 3.1",
+        multiple_records_outcome=(
+            "assumes the domain has no MTA-STS policy (RFC 8461 section 3.1)"
+        ),
         lookup=query_dns,
         nameservers=nameservers,
         resolver=resolver,

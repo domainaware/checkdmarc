@@ -2041,6 +2041,47 @@ class TestTxtCnameConflictWiring(unittest.TestCase):
                 any("both a TXT record and a CNAME" in w for w in include["warnings"])
             )
 
+    def _check_with_nested_conflict(self, record, nested_record):
+        """Runs check_spf() for example.com where its include/redirect
+        target _spf.vendor.example publishes ``nested_record`` next to a
+        conflicting CNAME."""
+        answers = {
+            ("example.com", "TXT"): [record],
+            ("_spf.vendor.example", "TXT"): [nested_record],
+            ("_spf.vendor.example", "CNAME"): ["_spf.other.example"],
+            ("_spf.other.example", "TXT"): ["v=spf1 -all"],
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake):
+            return checkdmarc.spf.check_spf("example.com")
+
+    def testInvalidIncludeRecordKeepsItsLookupWarnings(self):
+        """When the include target's record fails to parse, the check fails,
+        but what the target's lookup noticed still reaches the error result"""
+        result = self._check_with_nested_conflict(
+            "v=spf1 include:_spf.vendor.example -all", "v=spf1 ip4:not-an-ip -all"
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("not a valid IPv4 value", result["error"])
+        self.assertTrue(
+            any("_spf.vendor.example has both" in w for w in result["warnings"])
+        )
+
+    def testInvalidRedirectRecordKeepsItsLookupWarnings(self):
+        result = self._check_with_nested_conflict(
+            "v=spf1 redirect=_spf.vendor.example", "v=spf1 ip4:not-an-ip -all"
+        )
+        self.assertFalse(result["valid"])
+        self.assertTrue(
+            any("_spf.vendor.example has both" in w for w in result["warnings"])
+        )
+
     def testRedirectTargetConflictReachesTheResults(self):
         result = self._parse_with_nested_conflict("v=spf1 redirect=_spf.vendor.example")
         conflicts = [

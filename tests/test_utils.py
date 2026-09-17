@@ -1352,13 +1352,13 @@ class TestTxtCnameConflictWarning(unittest.TestCase):
 
         return lookup
 
-    def _probe(self, answers, rule: str | None = "RFC 0 section 1"):
+    def _probe(self, answers, outcome: str | None = "gives up (RFC 0 section 1)"):
         return checkdmarc.utils._txt_cname_conflict_warning(
             self.NAME,
             self.LOCAL,
             record_kind="THING",
             is_record=lambda r: r.startswith("v=THING1"),
-            multiple_records_rule=rule,
+            multiple_records_outcome=outcome,
             lookup=self._lookup(answers),
         )
 
@@ -1382,7 +1382,7 @@ class TestTxtCnameConflictWarning(unittest.TestCase):
         assert warning is not None
         self.assertIn(f"{self.NAME} has both a TXT record and a CNAME", warning)
         self.assertIn(f"the THING record at {self.TARGET}", warning)
-        self.assertIn("discarded (RFC 0 section 1)", warning)
+        self.assertIn("a receiver gives up (RFC 0 section 1)", warning)
 
     def test_target_without_a_record_is_a_conflict(self):
         warning = self._probe({(self.NAME, "CNAME"): [self.TARGET]})
@@ -1398,6 +1398,7 @@ class TestTxtCnameConflictWarning(unittest.TestCase):
         )
         assert warning is not None
         self.assertIn("publishes 2 THING records", warning)
+        self.assertIn("a receiver gives up (RFC 0 section 1)", warning)
 
     def test_multiple_cname_records_are_a_conflict_even_if_one_target_matches(self):
         """RFC 2181 section 10.1: an alias may have only one CNAME record, so
@@ -1421,7 +1422,7 @@ class TestTxtCnameConflictWarning(unittest.TestCase):
                 (self.NAME, "CNAME"): [self.TARGET],
                 (self.TARGET, "TXT"): [self.LOCAL, self.REMOTE],
             },
-            rule=None,
+            outcome=None,
         )
         assert warning is not None
         self.assertIn("publishes 2 THING records", warning)
@@ -1431,7 +1432,7 @@ class TestTxtCnameConflictWarning(unittest.TestCase):
     def test_no_multiple_record_rule_gives_the_neutral_wording(self):
         warning = self._probe(
             {(self.NAME, "CNAME"): [self.TARGET], (self.TARGET, "TXT"): [self.REMOTE]},
-            rule=None,
+            outcome=None,
         )
         assert warning is not None
         self.assertIn("unpredictable result if both records are returned", warning)
