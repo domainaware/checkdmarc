@@ -45,6 +45,12 @@ class TestEnvironmentOverrideBranches(unittest.TestCase):
 
         importlib.reload(constants)
 
+    def testNameserverFailureCooldownOverride(self):
+        constants = self._reload_with_env(
+            {"DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS": "5"}
+        )
+        self.assertEqual(constants.DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS, 5.0)
+
     def testCacheMaxLenOverride(self):
         constants = self._reload_with_env({"CACHE_MAX_LEN": "42"})
         self.assertEqual(constants.CACHE_MAX_LEN, 42)

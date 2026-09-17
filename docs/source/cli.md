@@ -60,6 +60,13 @@ incompatible with a given authoritative server (e.g. Cloudflare's QNAME
 minimization with certain auth servers), the query falls through to the
 next provider within ~1 second instead of timing out.
 
+A nameserver that fails to answer — a timeout or other transport error — is
+moved behind the other configured nameservers for the next 60 seconds (set
+the `DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS` environment variable to change
+this), so when checking many domains an unreachable resolver costs one
+timeout per minute rather than one per query. It is still tried when the
+others fail, and gets another turn in front once the cool-down expires.
+
 On the CLI:
 
 ```bash

@@ -1041,6 +1041,54 @@ class TestGetMxHostsEdgeCases(unittest.TestCase):
             result = checkdmarc.smtp.get_mx_hosts("example.com")
         self.assertTrue(any("do not resolve to" in w for w in result["warnings"]))
 
+    def testReverseHostnameLookupUsesConfiguredNameservers(self):
+        """The A/AAAA lookup of a reverse DNS hostname goes to the configured
+        nameservers, not the system resolver"""
+        from contextlib import ExitStack
+
+        lookups = []
+
+        def fake_get_a_records(hostname, **kwargs):
+            lookups.append((hostname, kwargs.get("nameservers")))
+            return ["192.0.2.1"]
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_mx_record_set",
+                    return_value=_mx_record_set([self._mx("mail.example.com")]),
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.check_dnssec", return_value=False)
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_a_records", side_effect=fake_get_a_records)
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.get_reverse_dns",
+                    return_value=["ptr.example.com"],
+                )
+            )
+            stack.enter_context(
+                patch("checkdmarc.smtp.get_tlsa_records", return_value=[])
+            )
+            stack.enter_context(
+                patch(
+                    "checkdmarc.smtp.query_dns",
+                    side_effect=dns.resolver.NoAnswer(),
+                )
+            )
+            result = checkdmarc.smtp.get_mx_hosts(
+                "example.com", nameservers=["9.9.9.9"]
+            )
+        self.assertEqual(
+            lookups,
+            [("mail.example.com", ["9.9.9.9"]), ("ptr.example.com", ["9.9.9.9"])],
+        )
+        self.assertFalse(any("do not resolve to" in w for w in result["warnings"]))
+
     def testReverseDnsAResolutionFails(self):
         """A DNSException when re-resolving the PTR hostname becomes a warning"""
         from contextlib import ExitStack

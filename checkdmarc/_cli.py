@@ -54,10 +54,18 @@ def _main():
         default=False,
     )
     arg_parser.add_argument(
-        "--ns", "--approved-ns", nargs="+", help="approved nameserver substrings"
+        "--ns",
+        "--approved-ns",
+        nargs="+",
+        action="extend",
+        help="approved nameserver substrings",
     )
     arg_parser.add_argument(
-        "--mx", "--approved-mx", nargs="+", help="approved MX hostname substrings"
+        "--mx",
+        "--approved-mx",
+        nargs="+",
+        action="extend",
+        help="approved MX hostname substrings",
     )
     arg_parser.add_argument(
         "-d",
@@ -84,6 +92,7 @@ def _main():
         "--nameserver",
         "--nameservers",
         nargs="+",
+        action="extend",
         help=(
             "nameservers to query: IP addresses, https:// URLs (DNS over "
             "HTTPS), and/or tls://ip[:port][#hostname] (DNS over TLS) "

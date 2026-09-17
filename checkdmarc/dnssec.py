@@ -30,6 +30,8 @@ from checkdmarc._constants import (
 )
 from checkdmarc.utils import (
     _nameservers_to_resolver_input,
+    _note_nameserver_failure,
+    _order_nameservers,
     get_base_domain,
     normalize_domain,
 )
@@ -145,10 +147,11 @@ def _query_rrset(
     """
     Query one record type at one name, asking for DNSSEC signatures
 
-    Nameservers are tried in order until one gives a usable answer; a
-    transport failure, or a response code such as REFUSED or FORMERR that
-    means the server could not answer rather than that the records are
-    absent, moves on to the next entry. The raw response is returned
+    Nameservers are tried in the configured order — with any that recently
+    failed to answer moved last, see ``checkdmarc.utils._order_nameservers``
+    — until one gives a usable answer; a transport failure, or a response
+    code such as REFUSED or FORMERR that means the server could not answer
+    rather than that the records are absent, moves on to the next entry. The raw response is returned
     alongside the record set and its signature so the caller can inspect the
     response code and flags — a SERVFAIL from a validating resolver carries
     meaning that an empty answer does not, so a SERVFAIL response is
@@ -168,11 +171,12 @@ def _query_rrset(
     request = dns.message.make_query(domain, rdatatype, want_dnssec=True)
     name = dns.name.from_text(domain)
     servfail_response = None
-    for nameserver in nameservers:
+    for nameserver in _order_nameservers(nameservers):
         try:
             response = _query_nameserver(request, nameserver, timeout)
         except _TRANSPORT_ERRORS as e:
             logger.debug(f"{rdatatype.name} query error at {domain}: {e}")
+            _note_nameserver_failure(nameserver)
             continue
         if response is None:
             continue

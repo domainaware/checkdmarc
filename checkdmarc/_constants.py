@@ -19,7 +19,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
-__version__ = "6.0.1"
+__version__ = "6.0.2"
 
 OS = platform.system()
 OS_RELEASE = platform.release()
@@ -66,3 +66,12 @@ if "SMTP_CACHE_MAX_LEN" in env:
 SMTP_CACHE_MAX_AGE_SECONDS = CACHE_MAX_AGE_SECONDS
 if "SMTP_CACHE_MAX_AGE_SECONDS" in env:
     SMTP_CACHE_MAX_AGE_SECONDS = int(env["SMTP_CACHE_MAX_AGE_SECONDS"])
+
+# How long a nameserver that failed to answer is tried after the other
+# configured nameservers before it gets another turn in front (see
+# checkdmarc.utils._order_nameservers)
+DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS = 60.0
+if "DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS" in env:
+    DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS = float(
+        env["DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS"]
+    )
