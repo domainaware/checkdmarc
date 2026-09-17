@@ -161,6 +161,12 @@ class TestCLI(unittest.TestCase):
         kwargs = mock_check.call_args.kwargs
         self.assertEqual(kwargs["nameservers"], ["1.1.1.1", "8.8.8.8"])
 
+    def testRepeatedNameserverFlagsAccumulate(self):
+        """Repeating -n adds to the nameserver list instead of replacing it"""
+        mock_check = _run_cli(["-n", "1.1.1.1", "-n", "8.8.8.8", "--", "example.com"])
+        kwargs = mock_check.call_args.kwargs
+        self.assertEqual(kwargs["nameservers"], ["1.1.1.1", "8.8.8.8"])
+
     def testDebugFlagEnablesDebugLogging(self):
         """--debug raises the root logger to DEBUG"""
         import logging

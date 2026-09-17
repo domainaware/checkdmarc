@@ -1,13 +1,17 @@
 """Tests for checkdmarc.utils"""
 
 import os
+import time
 import unittest
 from typing import cast
 from unittest.mock import MagicMock, patch
 
 import dns.exception
+import dns.flags
 import dns.message
+import dns.name
 import dns.nameserver
+import dns.rcode
 import dns.rdata
 import dns.rdataclass
 import dns.rdatatype
@@ -16,6 +20,7 @@ import dns.rrset
 import httpx
 from expiringdict import ExpiringDict
 
+import checkdmarc.dnssec
 import checkdmarc.utils
 
 
@@ -240,8 +245,9 @@ class TestQueryDns(unittest.TestCase):
                 cache=ExpiringDict(10, 60),
             )
         self.assertEqual(result, ["ns.example.com"])
-        # nameservers was assigned to the Resolver instance
-        self.assertEqual(instance.nameservers, ["1.1.1.1"])
+        # nameservers was assigned to the Resolver instance, as plain-DNS
+        # nameserver objects
+        self.assertEqual([str(ns) for ns in instance.nameservers], ["Do53:1.1.1.1@53"])
 
     def testMultiNameserverLifetimeScaling(self):
         """Multiple nameservers extend the resolver lifetime"""
@@ -733,7 +739,10 @@ class TestGetMxRecords(unittest.TestCase):
                 nameservers=["192.0.2.53", "192.0.2.54"],
             )
         self.assertEqual([h["hostname"] for h in result["hosts"]], ["mail.example.com"])
-        self.assertEqual(fake_resolver.nameservers, ["192.0.2.53", "192.0.2.54"])
+        self.assertEqual(
+            [str(ns) for ns in fake_resolver.nameservers],
+            ["Do53:192.0.2.53@53", "Do53:192.0.2.54@53"],
+        )
         # DEFAULT_DNS_TIMEOUT (2.0s) scaled by two nameservers
         self.assertEqual(fake_resolver.lifetime, 4.0)
 
@@ -786,14 +795,18 @@ class TestEncryptedDnsNameservers(unittest.TestCase):
 
         return responder
 
-    def test_plain_ip_entries_are_passed_through_untouched(self):
-        """An IP address is handed to dnspython as the same string object,
-        leaving its own Do53 enrichment (and port defaulting) in charge."""
+    def test_plain_ip_entries_become_do53_nameservers(self):
+        """An IP address becomes the same plain-DNS nameserver object
+        dnspython would build from it, so every valid entry has one stable
+        text form for failure tracking (see _nameserver_key)."""
         entries = ["1.1.1.1", "2606:4700:4700::1111"]
         mapped = checkdmarc.utils._nameservers_to_resolver_input(entries)
         self.assertEqual(len(mapped), 2)
         for original, result in zip(entries, mapped):
-            self.assertIs(result, original)
+            self.assertIsInstance(result, dns.nameserver.Do53Nameserver)
+            assert isinstance(result, dns.nameserver.Do53Nameserver)
+            self.assertEqual(result.address, original)
+            self.assertEqual(result.port, 53)
 
     def test_nameserver_objects_are_passed_through_untouched(self):
         """A caller-built dns.nameserver.Nameserver object — allowed by the
@@ -859,7 +872,8 @@ class TestEncryptedDnsNameservers(unittest.TestCase):
                 "tls://9.9.9.9#dns.quad9.net",
             ]
         )
-        self.assertEqual(mapped[0], "1.1.1.1")
+        self.assertIsInstance(mapped[0], dns.nameserver.Do53Nameserver)
+        self.assertEqual(str(mapped[0]), "Do53:1.1.1.1@53")
         self.assertIsInstance(mapped[1], checkdmarc.utils._SessionDoHNameserver)
         self.assertIsInstance(mapped[2], dns.nameserver.DoTNameserver)
 
@@ -993,6 +1007,329 @@ class TestDnsCacheConfiguration(unittest.TestCase):
             importlib.reload(checkdmarc._constants)
             importlib.reload(checkdmarc.utils)
             self.assertEqual(checkdmarc.utils.DNS_CACHE.max_age, 123)
+
+
+def _do53_responder(
+    captured: list[str],
+    failing: set[str],
+    servfail: set[str] | None = None,
+    rdtype: str = "MX",
+    rdata: str = "10 mail.example.com.",
+):
+    """Builds a stand-in for ``dns.nameserver.Do53Nameserver.query`` that
+    raises a timeout for the addresses in ``failing``, answers SERVFAIL for
+    those in ``servfail``, and answers every other query with one record,
+    recording the address each query went to."""
+    servfail = servfail or set()
+
+    def query(
+        self,
+        request,
+        timeout,
+        source,
+        source_port,
+        max_size=False,
+        one_rr_per_rrset=False,
+        ignore_trailing=False,
+    ):
+        captured.append(self.address)
+        if self.address in failing:
+            raise dns.exception.Timeout(timeout=timeout)
+        response = dns.message.make_response(request)
+        if self.address in servfail:
+            response.set_rcode(dns.rcode.SERVFAIL)
+            return response
+        rrset = response.find_rrset(
+            response.answer,
+            request.question[0].name,
+            dns.rdataclass.IN,
+            dns.rdatatype.from_text(rdtype),
+            create=True,
+        )
+        rrset.add(dns.rdata.from_text("IN", rdtype, rdata), 300)
+        return response
+
+    return query
+
+
+class TestNameserverFailover(unittest.TestCase):
+    """A nameserver that fails to answer is remembered, and the other
+    configured nameservers are tried before it on later queries. The
+    query_dns tests mock at the dnspython transport boundary
+    (``Do53Nameserver.query``) so the resolver's own nameserver rotation, the
+    answer parsing, and the failure bookkeeping are all exercised for real;
+    the assertions are on which servers each query went to and what it
+    returned."""
+
+    DEAD = "192.0.2.1"
+    LIVE = "192.0.2.2"
+    OTHER = "192.0.2.3"
+
+    def setUp(self):
+        self._use_failure_store(ExpiringDict(max_len=10, max_age_seconds=60))
+
+    def _use_failure_store(self, store: ExpiringDict):
+        old = checkdmarc.utils._NAMESERVER_FAILURES
+        checkdmarc.utils._NAMESERVER_FAILURES = store
+        self.addCleanup(setattr, checkdmarc.utils, "_NAMESERVER_FAILURES", old)
+
+    def _query(self, captured, failing, nameservers=None, servfail=None, name="a.test"):
+        responder = _do53_responder(captured, failing, servfail)
+        with patch.object(dns.nameserver.Do53Nameserver, "query", responder):
+            return checkdmarc.utils.query_dns(
+                name,
+                "MX",
+                nameservers=nameservers or [self.DEAD, self.LIVE],
+                timeout=0.2,
+                cache=ExpiringDict(10, 60),
+            )
+
+    def test_tracking_wrapper_is_transparent_to_dnspython(self):
+        """The wrapper that observes transport errors presents the wrapped
+        nameserver's identity and transport choices unchanged, so dnspython
+        treats it exactly like the original."""
+        inner = dns.nameserver.Do53Nameserver(self.DEAD, 5353)
+        failed: list = []
+        wrapped = checkdmarc.utils._FailureTrackingNameserver(inner, failed)
+        self.assertEqual(str(wrapped), str(inner))
+        self.assertEqual(wrapped.kind(), inner.kind())
+        self.assertEqual(wrapped.is_always_max_size(), inner.is_always_max_size())
+        self.assertEqual(wrapped.answer_nameserver(), self.DEAD)
+        self.assertEqual(wrapped.answer_port(), 5353)
+        self.assertEqual(failed, [])
+
+    def test_tracking_wrapper_records_only_transport_errors(self):
+        """A timeout is recorded against the wrapped server; a programming
+        error from a caller-built nameserver is re-raised unrecorded, so it
+        cannot demote the server."""
+        request = dns.message.make_query("a.test", "MX")
+
+        class Broken(dns.nameserver.Do53Nameserver):
+            def query(self, *args, **kwargs):
+                raise TypeError("bad nameserver")
+
+        class Dead(dns.nameserver.Do53Nameserver):
+            def query(self, *args, **kwargs):
+                raise dns.exception.Timeout(timeout=1.0)
+
+        failed: list = []
+        broken = Broken(self.DEAD)
+        dead = Dead(self.LIVE)
+        with self.assertRaises(TypeError):
+            checkdmarc.utils._FailureTrackingNameserver(broken, failed).query(
+                request, 1.0, None, 0, False
+            )
+        self.assertEqual(failed, [])
+        with self.assertRaises(dns.exception.Timeout):
+            checkdmarc.utils._FailureTrackingNameserver(dead, failed).query(
+                request, 1.0, None, 0, False
+            )
+        self.assertEqual(failed, [dead])
+
+    def test_next_query_tries_the_nameserver_that_answered_first(self):
+        """The first query falls through from the dead nameserver to the live
+        one; the next query goes straight to the live one."""
+        captured: list[str] = []
+        self.assertEqual(self._query(captured, {self.DEAD}), ["10 mail.example.com"])
+        self.assertEqual(captured, [self.DEAD, self.LIVE])
+        captured.clear()
+        self.assertEqual(
+            self._query(captured, {self.DEAD}, name="b.test"), ["10 mail.example.com"]
+        )
+        self.assertEqual(captured, [self.LIVE])
+
+    def test_dead_nameserver_regains_its_place_after_the_cooldown(self):
+        """Once the cool-down expires the configured order applies again, so
+        a nameserver that only blipped is not sidelined for good."""
+        self._use_failure_store(ExpiringDict(max_len=10, max_age_seconds=0.05))
+        captured: list[str] = []
+        self._query(captured, {self.DEAD})
+        self.assertEqual(captured, [self.DEAD, self.LIVE])
+        time.sleep(0.1)
+        captured.clear()
+        self._query(captured, {self.DEAD}, name="b.test")
+        self.assertEqual(captured, [self.DEAD, self.LIVE])
+
+    def test_total_failure_records_every_nameserver_that_timed_out(self):
+        """When every nameserver times out the query fails, and a later
+        query with a nameserver that has not failed tries that one first."""
+        captured: list[str] = []
+        with self.assertRaises(dns.resolver.LifetimeTimeout):
+            self._query(captured, {self.DEAD, self.LIVE})
+        self.assertIn(self.DEAD, captured)
+        self.assertIn(self.LIVE, captured)
+        captured.clear()
+        self._query(
+            captured, {self.DEAD, self.LIVE}, [self.LIVE, self.OTHER], name="b.test"
+        )
+        self.assertEqual(captured, [self.OTHER])
+
+    def test_servfail_from_every_nameserver_does_not_demote_any(self):
+        """A response code says something about the name, not the server:
+        after every nameserver answers SERVFAIL the configured order is
+        unchanged."""
+        captured: list[str] = []
+        with self.assertRaises(dns.resolver.NoNameservers):
+            self._query(captured, set(), servfail={self.DEAD, self.LIVE})
+        captured.clear()
+        self._query(captured, set(), name="b.test")
+        self.assertEqual(captured, [self.DEAD])
+
+    def test_servfail_before_a_real_answer_does_not_demote_the_server(self):
+        """When the first nameserver answers SERVFAIL and the second gives a
+        real answer, the first is not blamed: it did answer, just not with
+        what the name needed. The next query still tries it first."""
+        captured: list[str] = []
+        self.assertEqual(
+            self._query(captured, set(), servfail={self.DEAD}),
+            ["10 mail.example.com"],
+        )
+        self.assertEqual(captured, [self.DEAD, self.LIVE])
+        captured.clear()
+        self._query(captured, set(), servfail={self.DEAD}, name="b.test")
+        self.assertEqual(captured, [self.DEAD, self.LIVE])
+
+    def test_truncated_udp_reply_is_not_a_failure(self):
+        """A truncated UDP reply makes dnspython retry the same server over
+        TCP; the server is not demoted for it."""
+        captured: list[tuple[str, bool]] = []
+        inner = _do53_responder([], set())
+
+        def query(self, request, timeout, source, source_port, max_size=False, **kw):
+            captured.append((self.address, max_size))
+            if not max_size:
+                response = dns.message.make_response(request)
+                response.flags |= dns.flags.TC
+                raise dns.message.Truncated(message=response)
+            return inner(self, request, timeout, source, source_port, max_size, **kw)
+
+        with patch.object(dns.nameserver.Do53Nameserver, "query", query):
+            result = checkdmarc.utils.query_dns(
+                "a.test",
+                "MX",
+                nameservers=[self.DEAD, self.LIVE],
+                cache=ExpiringDict(10, 60),
+            )
+        self.assertEqual(result, ["10 mail.example.com"])
+        self.assertEqual(captured, [(self.DEAD, False), (self.DEAD, True)])
+        ordered = checkdmarc.utils._order_nameservers(
+            checkdmarc.utils._nameservers_to_resolver_input([self.DEAD, self.LIVE])
+        )
+        self.assertEqual(
+            [str(ns) for ns in ordered],
+            [f"Do53:{self.DEAD}@53", f"Do53:{self.LIVE}@53"],
+        )
+
+    def test_nxdomain_still_records_the_servers_that_timed_out(self):
+        """A transport failure is recorded even when the query then ends in
+        NXDOMAIN from the next server."""
+        captured: list[str] = []
+
+        def query(self, request, timeout, source, source_port, max_size=False, **kw):
+            captured.append(self.address)
+            if self.address == TestNameserverFailover.DEAD:
+                raise dns.exception.Timeout(timeout=timeout)
+            response = dns.message.make_response(request)
+            response.set_rcode(dns.rcode.NXDOMAIN)
+            return response
+
+        with patch.object(dns.nameserver.Do53Nameserver, "query", query):
+            with self.assertRaises(dns.resolver.NXDOMAIN):
+                checkdmarc.utils.query_dns(
+                    "a.test",
+                    "MX",
+                    nameservers=[self.DEAD, self.LIVE],
+                    cache=ExpiringDict(10, 60),
+                )
+            captured.clear()
+            with self.assertRaises(dns.resolver.NXDOMAIN):
+                checkdmarc.utils.query_dns(
+                    "b.test",
+                    "MX",
+                    nameservers=[self.DEAD, self.LIVE],
+                    cache=ExpiringDict(10, 60),
+                )
+        self.assertEqual(captured, [self.LIVE])
+
+    def test_mx_lookups_share_the_failure_record(self):
+        """MX records have their own query path; it uses the same ordering
+        and records failures the same way."""
+        captured: list[str] = []
+        responder = _do53_responder(captured, {self.DEAD})
+        with patch.object(dns.nameserver.Do53Nameserver, "query", responder):
+            first = checkdmarc.utils.get_mx_records(
+                "mx-failover-a.test", nameservers=[self.DEAD, self.LIVE]
+            )
+            self.assertEqual(captured, [self.DEAD, self.LIVE])
+            captured.clear()
+            second = checkdmarc.utils.get_mx_records(
+                "mx-failover-b.test", nameservers=[self.DEAD, self.LIVE]
+            )
+        self.assertEqual(captured, [self.LIVE])
+        self.assertEqual(first, second)
+        self.assertEqual(first[0]["hostname"], "mail.example.com")
+
+    def test_failure_seen_by_dnssec_queries_reorders_resolver_queries(self):
+        """Both query paths share one failure record, keyed the same way, so
+        a timeout during a DNSSEC query makes query_dns skip ahead too."""
+        nameservers = checkdmarc.utils._nameservers_to_resolver_input(
+            [self.DEAD, self.LIVE]
+        )
+        asked: list[str] = []
+
+        def fake_query(request, nameserver, timeout):
+            asked.append(nameserver.address)
+            if nameserver.address == self.DEAD:
+                raise dns.exception.Timeout(timeout=timeout)
+            response = dns.message.make_response(request)
+            return response
+
+        with patch("checkdmarc.dnssec._query_nameserver", side_effect=fake_query):
+            checkdmarc.dnssec._query_rrset(
+                "example.com", dns.rdatatype.DS, nameservers, 2.0
+            )
+        self.assertEqual(asked, [self.DEAD, self.LIVE])
+        captured: list[str] = []
+        self._query(captured, set())
+        self.assertEqual(captured, [self.LIVE])
+
+    def test_retry_keeps_quoted_segments_and_cache(self):
+        """A retried TXT query still honors quoted_txt_segments and stores
+        its result in the caller's cache."""
+        qname = dns.name.from_text("example.com")
+        request = dns.message.make_query(qname, "TXT")
+        response = dns.message.make_response(request)
+        rrset = response.find_rrset(
+            response.answer, qname, dns.rdataclass.IN, dns.rdatatype.TXT, create=True
+        )
+        rrset.add(dns.rdata.from_text("IN", "TXT", '"v=spf1 " "-all"'), 300)
+        answer = dns.resolver.Answer(
+            qname,
+            dns.rdatatype.TXT,
+            dns.rdataclass.IN,
+            cast(dns.message.QueryMessage, response),
+            self.LIVE,
+            53,
+        )
+        cache = ExpiringDict(10, 60)
+        with patch.object(
+            dns.resolver.Resolver,
+            "resolve",
+            side_effect=[
+                dns.resolver.LifetimeTimeout(timeout=1.0, errors=[]),
+                answer,
+            ],
+        ):
+            result = checkdmarc.utils.query_dns(
+                "example.com",
+                "TXT",
+                quoted_txt_segments=True,
+                nameservers=[self.DEAD, self.LIVE],
+                retries=1,
+                cache=cache,
+            )
+        self.assertEqual(result, ['"v=spf1 ""-all"'])
+        self.assertEqual(cache.get("example.com_TXT_True"), result)
 
 
 if __name__ == "__main__":

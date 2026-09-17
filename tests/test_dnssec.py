@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import dns.dnssec
 import dns.exception
 import dns.flags
+import dns.message
 import dns.name
 import dns.rcode
 import dns.rdatatype
@@ -1199,6 +1200,55 @@ class TestDeprecatedTestDnssecAlias(unittest.TestCase):
                 cache=ExpiringDict(max_len=10, max_age_seconds=60),
             )
         self.assertFalse(result)
+
+
+class TestQueryRrsetFailover(unittest.TestCase):
+    """A nameserver whose query raised a transport error is tried after the
+    others on the next query (see checkdmarc.utils._order_nameservers)."""
+
+    def setUp(self):
+        old = checkdmarc.utils._NAMESERVER_FAILURES
+        checkdmarc.utils._NAMESERVER_FAILURES = ExpiringDict(
+            max_len=10, max_age_seconds=60
+        )
+        self.addCleanup(setattr, checkdmarc.utils, "_NAMESERVER_FAILURES", old)
+
+    def testPlainStringEntryIsQueriedOverTcpDirectly(self):
+        """A bare address string (rather than a nameserver object) is sent
+        straight to dns.query.tcp, since DNSSEC answers routinely overflow a
+        UDP datagram"""
+        request = dns.message.make_query("example.com", dns.rdatatype.DS)
+        response = dns.message.make_response(request)
+        with patch("dns.query.tcp", return_value=response) as tcp:
+            result = checkdmarc.dnssec._query_nameserver(request, "192.0.2.1", 2.0)
+        self.assertIs(result, response)
+        self.assertEqual(tcp.call_args.args[:2], (request, "192.0.2.1"))
+        self.assertEqual(tcp.call_args.kwargs["timeout"], 2.0)
+
+    def testTimedOutNameserverIsTriedLastNextTime(self):
+        dead, live = "192.0.2.1", "192.0.2.2"
+        ds = dns.rrset.from_text("example.com.", 300, "IN", "DS", MISMATCHED_DS_RDATA)
+        answer = _response(ds, _rrsig("example.com.", "DS"))
+        asked: list[str] = []
+
+        def fake_query(request, nameserver, timeout):
+            asked.append(nameserver)
+            if nameserver == dead:
+                raise dns.exception.Timeout(timeout=timeout)
+            return answer
+
+        with patch("checkdmarc.dnssec._query_nameserver", side_effect=fake_query):
+            rrset, _, _ = checkdmarc.dnssec._query_rrset(
+                "example.com", dns.rdatatype.DS, [dead, live], 2.0
+            )
+            self.assertIsNotNone(rrset)
+            self.assertEqual(asked, [dead, live])
+            asked.clear()
+            rrset, _, _ = checkdmarc.dnssec._query_rrset(
+                "example.com", dns.rdatatype.DS, [dead, live], 2.0
+            )
+            self.assertIsNotNone(rrset)
+            self.assertEqual(asked, [live])
 
 
 if __name__ == "__main__":
