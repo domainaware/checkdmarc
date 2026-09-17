@@ -682,14 +682,21 @@ def _txt_cname_conflict_warning(
         # Following the CNAME yields exactly the record that was found: an
         # ordinary alias, or a duplicate that changes nothing
         return None
-    if len(matching) > 1:
+    if len(matching) > 1 and multiple_records_rule is not None:
         # A receiver that follows the CNAME sees several records at one
-        # name and (under every spec here that says) discards them all, so
-        # it ends up with none while the local record gives one
+        # name and, under this spec's rule, discards them all, so it ends
+        # up with none while the local record gives one
         via_cname = (
             f"no usable {record_kind} record at all, because {cname_target} "
             f"publishes {len(matching)} {record_kind} records, which a "
             "receiver discards"
+        )
+    elif len(matching) > 1:
+        # The spec does not say what a receiver does with several records,
+        # so do not claim an outcome
+        via_cname = (
+            f"an unpredictable result, because {cname_target} publishes "
+            f"{len(matching)} {record_kind} records"
         )
     elif len(matching) == 1:
         via_cname = f"the {record_kind} record at {cname_target}"

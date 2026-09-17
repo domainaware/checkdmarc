@@ -1413,6 +1413,21 @@ class TestTxtCnameConflictWarning(unittest.TestCase):
         self.assertIn("RFC 2181 section 10.1", warning)
         self.assertIn("_thing.other.example", warning)
 
+    def test_no_rule_with_several_target_records_claims_no_outcome(self):
+        """Without a spec rule for several records, the warning must not say
+        a receiver discards them."""
+        warning = self._probe(
+            {
+                (self.NAME, "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): [self.LOCAL, self.REMOTE],
+            },
+            rule=None,
+        )
+        assert warning is not None
+        self.assertIn("publishes 2 THING records", warning)
+        self.assertIn("an unpredictable result", warning)
+        self.assertNotIn("discard", warning)
+
     def test_no_multiple_record_rule_gives_the_neutral_wording(self):
         warning = self._probe(
             {(self.NAME, "CNAME"): [self.TARGET], (self.TARGET, "TXT"): [self.REMOTE]},
