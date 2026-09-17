@@ -23,6 +23,7 @@ from checkdmarc.utils import (
     DNSException,
     DNSExceptionNXDOMAIN,
     MXHost,
+    _txt_cname_conflict_warning,
     get_a_records,
     get_mx_records,
     get_reverse_dns,
@@ -132,6 +133,10 @@ class SPFError(Exception):
             data (dict): A dictionary of data to include in the output
         """
         self.data = data
+        # Warnings gathered before the error that would otherwise be lost,
+        # such as what the lookup of an include target noticed before its
+        # record failed to parse; check_spf() adds them to its error result
+        self.warnings: list[str] = []
         Exception.__init__(self, msg)
 
 
@@ -153,6 +158,8 @@ class SPFRecordNotFound(SPFError):
     def __init__(self, error: Exception | str, domain: str):
         if isinstance(error, dns.exception.Timeout):
             error.kwargs["timeout"] = round(error.kwargs["timeout"], 1)
+        # Set up data and warnings like every other SPFError
+        SPFError.__init__(self, str(error))
         self.error = error
         self.domain = domain
 
@@ -449,6 +456,24 @@ def _validate_spf_macros(
         i = close + 1
 
 
+def _is_spf_record(record: str) -> bool:
+    """
+    Tells whether a TXT record is an SPF record: RFC 7208 section 4.5 keeps
+    only records that begin with a version section of exactly ``v=spf1``,
+    terminated by a space or the end of the record. Surrounding quotes are
+    ignored; the version is matched case-insensitively (section 12 ABNF
+    terminals are case-insensitive).
+
+    Args:
+        record (str): A TXT record
+
+    Returns:
+        bool: Whether the record is an SPF record
+    """
+    lowered = record.strip('"').lower()
+    return lowered == "v=spf1" or lowered.startswith("v=spf1 ")
+
+
 def query_spf_record(
     domain: str,
     *,
@@ -484,6 +509,15 @@ def query_spf_record(
     warnings = []
     spf_type_records = []
     spf_txt_records = []
+
+    def _not_found(error: Exception | str) -> SPFRecordNotFound:
+        # A lookup that ends without a usable record may still have noticed
+        # things worth reporting (SPF-type records, discarded lookalikes);
+        # keep them on the error so check_spf() can surface them
+        not_found = SPFRecordNotFound(error, domain)
+        not_found.warnings = list(warnings)
+        return not_found
+
     try:
         spf_type_records += query_dns(
             domain,
@@ -553,9 +587,7 @@ def query_spf_record(
                 )
                 continue
 
-            if cleaned_record_lower == txt_prefix or cleaned_record_lower.startswith(
-                f"{txt_prefix} "
-            ):
+            if _is_spf_record(cleaned_record):
                 spf_txt_records.append(record)
             elif cleaned_record_lower.startswith(txt_prefix):
                 # RFC 7208 section 4.5: discard records that do not begin
@@ -573,13 +605,15 @@ def query_spf_record(
         if spf_record is None:
             raise SPFRecordNotFound("An SPF record does not exist.", domain)
     except dns.resolver.NoAnswer:
-        raise SPFRecordNotFound("An SPF record does not exist.", domain)
+        raise _not_found("An SPF record does not exist.")
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordNotFound("The domain does not exist.", domain)
-    except SPFRecordNotFound:
+        raise _not_found("The domain does not exist.")
+    except SPFRecordNotFound as not_found:
+        # Raised inside the try above; give it the warnings too
+        not_found.warnings = warnings + not_found.warnings
         raise
     except dns.exception.DNSException as error:
-        raise SPFRecordNotFound(error, domain)
+        raise _not_found(error)
 
     # Per RFC 7208 § 3.3: any single TXT "character-string" should be ≤255 bytes.
     # Per RFC 7208 § 3.4: keep overall SPF record small enough for UDP (advise ~450B, warn at >512B).
@@ -623,6 +657,22 @@ def query_spf_record(
         logger.debug(f"Skipped SPF size check for {domain}: {size_check_error}")
 
     spf_record = spf_record.replace('"', "")
+    # RFC 7208 section 4.5: a receiver that gets more than one SPF record
+    # for the name returns permerror
+    cname_warning = _txt_cname_conflict_warning(
+        domain,
+        spf_record,
+        record_kind="SPF",
+        is_record=_is_spf_record,
+        multiple_records_outcome="returns permerror (RFC 7208 section 4.5)",
+        lookup=query_dns,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        retries=retries,
+    )
+    if cname_warning is not None:
+        warnings.append(cname_warning)
     results: SPFQueryResults = {"record": spf_record, "warnings": warnings}
 
     return results
@@ -1393,18 +1443,32 @@ def parse_spf_record(
                         retries=retries,
                     )
                     redirect_record = redirect_query["record"]
-                    redirected_spf = parse_spf_record(
-                        redirect_record,
-                        value,
-                        seen=seen,
-                        recursion=recursion + [value],
-                        nameservers=nameservers,
-                        resolver=resolver,
-                        timeout=timeout,
-                        retries=retries,
-                        _include_cache=_include_cache,
-                        _included=_included,
+                    try:
+                        redirected_spf = parse_spf_record(
+                            redirect_record,
+                            value,
+                            seen=seen,
+                            recursion=recursion + [value],
+                            nameservers=nameservers,
+                            resolver=resolver,
+                            timeout=timeout,
+                            retries=retries,
+                            _include_cache=_include_cache,
+                            _included=_included,
+                        )
+                    except SPFError as fatal:
+                        # The redirect target's record is unusable; what its
+                        # lookup noticed must still reach the results
+                        fatal.warnings = redirect_query["warnings"] + fatal.warnings
+                        raise
+                    # What the lookup of the redirect target noticed (a
+                    # TXT-plus-CNAME conflict, SPF-type records, size
+                    # warnings) belongs with the parser's warnings for it
+                    redirected_spf["warnings"] = (
+                        redirect_query["warnings"] + redirected_spf["warnings"]
                     )
+                    # Merge before the lookup counters below, which can raise
+                    warnings += redirected_spf["warnings"]
                     parsed["all"] = redirected_spf["parsed"]["all"]
                     mechanism_dns_lookups += redirected_spf["dns_lookups"]
                     mechanism_void_dns_lookups += redirected_spf["void_dns_lookups"]
@@ -1419,8 +1483,6 @@ def parse_spf_record(
                         "warnings": redirected_spf["warnings"],
                     }
                     parsed["redirect"] = redirect
-
-                    warnings += redirected_spf["warnings"]
                 except DNSException as redirect_err:
                     # Local name distinct from the outer ``error`` accumulator;
                     # ``except ... as <name>`` deletes the name when the block
@@ -1508,30 +1570,48 @@ def parse_spf_record(
                         "warnings": [],
                     }
                     parsed["mechanisms"].append(failed_include_mechanism)
+                    # What the target's lookup noticed joins this level's
+                    # warnings first, so it survives whichever error leaves
+                    # this level: the void-lookup limit below, or the
+                    # permerror after it
+                    warnings += missing_include.warnings
                     _count_void_dns_lookups()
                     # RFC 7208 section 5.2: when the recursive evaluation of
                     # an include target returns "none" (no SPF record, or
                     # the domain does not exist), the whole record is a
                     # permanent error (permerror), not just a warning.
-                    raise SPFRecordNotFound(
+                    no_include = SPFRecordNotFound(
                         f"The include target {value} has no SPF record, "
                         "which RFC 7208 § 5.2 defines as a permanent error "
                         f"(permerror): {missing_include}",
                         value,
                     )
+                    raise no_include from missing_include
                 include_record = include_query["record"]
-                include = parse_spf_record(
-                    include_record,
-                    value,
-                    seen=seen,
-                    recursion=recursion + [value],
-                    nameservers=nameservers,
-                    resolver=resolver,
-                    timeout=timeout,
-                    retries=retries,
-                    _include_cache=_include_cache,
-                    _included=True,
-                )
+                try:
+                    include = parse_spf_record(
+                        include_record,
+                        value,
+                        seen=seen,
+                        recursion=recursion + [value],
+                        nameservers=nameservers,
+                        resolver=resolver,
+                        timeout=timeout,
+                        retries=retries,
+                        _include_cache=_include_cache,
+                        _included=True,
+                    )
+                except SPFError as fatal:
+                    # The include target's record is unusable; what its
+                    # lookup noticed must still reach the results
+                    fatal.warnings = include_query["warnings"] + fatal.warnings
+                    raise
+                # What the lookup of the include target noticed belongs with
+                # the parser's warnings for it, in the cache too so a repeat
+                # include reports the same
+                include["warnings"] = include_query["warnings"] + include["warnings"]
+                # Merge before the lookup counters below, which can raise
+                warnings += include["warnings"]
                 _include_cache[value] = include
                 _count_dns_lookups(include["dns_lookups"])
                 _count_void_dns_lookups(include["void_dns_lookups"])
@@ -1548,7 +1628,6 @@ def parse_spf_record(
                     "warnings": include["warnings"],
                 }
                 parsed["mechanisms"].append(include_mechanism)
-                warnings += include["warnings"]
 
             elif mechanism == "ptr":
                 _count_dns_lookups()
@@ -1594,9 +1673,18 @@ def parse_spf_record(
 
         except (SPFTooManyDNSLookups, SPFTooManyVoidDNSLookups) as e:
             if ignore_too_many_lookups:
+                warnings += e.warnings
                 error = str(e)
             else:
+                # This level's warnings would be lost with the raise; hand
+                # them to the caller on the exception
+                e.warnings = warnings + e.warnings
                 raise
+        except SPFError as fatal:
+            # Any other fatal error leaves this level too; take its warnings
+            # along so check_spf() can report them with the error
+            fatal.warnings = warnings + fatal.warnings
+            raise
 
         except (_SPFWarning, DNSException) as warning:
             if isinstance(warning, (_SPFMissingRecords, DNSExceptionNXDOMAIN)):
@@ -1770,6 +1858,7 @@ def check_spf(
         spf_results["error"] = str(error.args[0])
         del spf_results["dns_lookups"]
         spf_results["valid"] = False
+        spf_results["warnings"] = spf_results.get("warnings", []) + error.warnings
         if hasattr(error, "data") and error.data:
             for key in error.data:
                 spf_results[key] = error.data[key]

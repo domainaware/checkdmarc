@@ -20,6 +20,7 @@ from checkdmarc._constants import (
 )
 from checkdmarc.utils import (
     WSP_REGEX,
+    _txt_cname_conflict_warning,
     normalize_domain,
     query_dns,
 )
@@ -233,6 +234,8 @@ class ParsedSMTPTLSReportingRecord(TypedDict):
 class SMTPTLSReportingFailure(TypedDict):
     valid: Literal[False]
     error: str
+    # Warnings gathered before the error, from the record lookup
+    warnings: list[str]
 
 
 class SMTPTLSReportingSuccess(TypedDict):
@@ -372,6 +375,24 @@ def query_smtp_tls_reporting_record(
             "An SMTP TLS Reporting record does not exist."
         )
 
+    # RFC 8460 section 3: a sender that gets more than one TLSRPT record
+    # assumes the domain does not implement TLSRPT
+    cname_warning = _txt_cname_conflict_warning(
+        target,
+        tlsrpt_record,
+        record_kind="SMTP TLS Reporting",
+        is_record=lambda r: txt_prefix.match(r) is not None,
+        multiple_records_outcome=(
+            "assumes the domain does not implement TLSRPT (RFC 8460 section 3)"
+        ),
+        lookup=query_dns,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        retries=retries,
+    )
+    if cname_warning is not None:
+        warnings.append(cname_warning)
     results: SMTPTLSReportingQueryResult = {
         "record": tlsrpt_record,
         "warnings": warnings,
@@ -559,8 +580,10 @@ def check_smtp_tls_reporting(
 
                       - ``error`` - The error message
                       - ``valid`` - False
+                      - ``warnings`` - warning conditions found before the error
     """
     domain = normalize_domain(domain)
+    warnings: list[str] = []
     try:
         query_results = query_smtp_tls_reporting_record(
             domain,
@@ -581,7 +604,11 @@ def check_smtp_tls_reporting(
         smtp_tls_reporting_results["tags"] = tags
         smtp_tls_reporting_results["warnings"] = warnings
     except SMTPTLSReportingError as error:
-        failure: SMTPTLSReportingFailure = {"valid": False, "error": str(error)}
+        failure: SMTPTLSReportingFailure = {
+            "valid": False,
+            "error": str(error),
+            "warnings": warnings,
+        }
         return failure
 
     return smtp_tls_reporting_results

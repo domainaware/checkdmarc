@@ -6,7 +6,7 @@ import logging
 import os
 import re
 import unicodedata
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import TypedDict
 from urllib.parse import urlsplit
 
@@ -565,6 +565,161 @@ def _resolve_with_failover(
         finally:
             for nameserver in failed:
                 _note_nameserver_failure(nameserver)
+
+
+def _txt_cname_conflict_warning(
+    name: str,
+    record: str,
+    *,
+    record_kind: str,
+    is_record: Callable[[str], bool],
+    multiple_records_outcome: str | None,
+    lookup: Callable[..., list[str]],
+    nameservers: Sequence[str | Nameserver] | None = None,
+    resolver: dns.resolver.Resolver | None = None,
+    timeout: float = DEFAULT_DNS_TIMEOUT,
+    retries: int = DEFAULT_DNS_MAX_RETRIES,
+) -> str | None:
+    """
+    Builds a warning when ``name`` holds both the TXT record that was found
+    and a CNAME record.
+
+    RFC 1034 section 3.6.2: "If a CNAME RR is present at a node, no other
+    data should be present ... This rule also insures that a cached CNAME
+    can be used without checking with an authoritative server for other RR
+    types." A DNS provider that serves a TXT record for TXT queries and a
+    CNAME record for CNAME queries at the same name (seen in the wild at
+    ``_dmarc`` names) breaks that rule. A resolver that asks for TXT
+    directly gets the local record; one holding the CNAME in its cache
+    follows it to the target's record instead; and one returning both
+    leaves the receiver with two records for one name, where each
+    protocol's multiple-record rule decides the outcome (permerror for
+    SPF, no record or no policy for the others). Which record applies
+    therefore depends on the receiver. The same holds for every
+    TXT-based record this package checks (DMARC, SPF, MTA-STS, SMTP TLS
+    Reporting, BIMI); MTA-STS and BIMI even recommend CNAME delegation
+    (RFC 8461 section 8.2, BIMI draft section 6.3), so they are the most
+    exposed.
+
+    A CNAME on its own is fine: the resolver follows it and the target's
+    TXT record is the record. That case is told apart by comparing the
+    record that was found with the matching records at the CNAME target;
+    when the record came through the CNAME, the target holds exactly that
+    one record. A local record identical to the target's single record is
+    not reported either, since whichever one a resolver picks, the outcome
+    is the same. A target holding the matching record plus another matching
+    record is still a conflict: following the CNAME yields several records,
+    and each protocol's rule for that case applies instead of one of them
+    (``multiple_records_outcome``). More than one CNAME record is a conflict
+    outright,
+    whatever the targets hold: an alias may have only one canonical name
+    (RFC 2181 section 10.1), so no resolver behavior is predictable there.
+
+    Args:
+        name (str): The name the record was found at
+        record (str): The record that was found there
+        record_kind (str): How to call the record in the warning, e.g. "DMARC"
+        is_record (callable): Tells whether a TXT record is one of this kind
+        multiple_records_outcome (str): What a receiver does when several
+            records of this kind remain at one name, as a verb phrase with
+            its citation, e.g. ``"returns permerror (RFC 7208 section
+            4.5)"``; ``None`` when the spec does not say
+        lookup (callable): The caller's ``query_dns``; passing it keeps the
+            probe on the same lookup path (and the same test double) as
+            the caller's own record lookup
+        nameservers (list): A list of nameservers to query
+        resolver (dns.resolver.Resolver): A resolver object to use for DNS
+                                          requests
+        timeout (float): number of seconds to wait for an answer from DNS
+        retries (int): The number of times to retry on timeout or other transient errors
+
+    Returns:
+        str: The warning text, or ``None`` when there is no conflict or the
+        lookups needed to tell could not be completed
+    """
+    try:
+        cnames = lookup(
+            name,
+            "CNAME",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            retries=retries,
+        )
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        return None  # Not an alias
+    except (dns.exception.DNSException, OSError) as error:
+        # query_dns() re-raises socket-level OSErrors once its retries are
+        # used up; this probe is a diagnostic and must not fail the check
+        logger.debug(f"CNAME check for {name} failed: {error}")
+        return None
+    if len(cnames) == 0:
+        return None
+    if len(cnames) > 1:
+        return (
+            f"{name} has both a TXT record and {len(cnames)} CNAME records "
+            f"({', '.join(cnames)}). A name with a CNAME record must have no "
+            "other records (RFC 1034 section 3.6.2), and an alias may have "
+            "only one CNAME record (RFC 2181 section 10.1), so which "
+            f"{record_kind} record a receiver uses is unpredictable. Remove "
+            "the CNAME records or the TXT record."
+        )
+    cname_target = cnames[0]
+    try:
+        target_records = lookup(
+            cname_target,
+            "TXT",
+            nameservers=nameservers,
+            resolver=resolver,
+            timeout=timeout,
+            retries=retries,
+        )
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        target_records = []
+    except (dns.exception.DNSException, OSError) as error:
+        logger.debug(
+            f"TXT lookup at {cname_target}, the CNAME target of {name}, failed: {error}"
+        )
+        return None
+    matching = [r for r in target_records if is_record(r)]
+    if matching == [record]:
+        # Following the CNAME yields exactly the record that was found: an
+        # ordinary alias, or a duplicate that changes nothing
+        return None
+    if len(matching) > 1 and multiple_records_outcome is not None:
+        # A receiver that follows the CNAME sees several records at one
+        # name, and this spec says what it does then (never "use one of
+        # them"), while the local record gives it exactly one
+        via_cname = (
+            f"whatever follows when {cname_target} publishes {len(matching)} "
+            f"{record_kind} records: a receiver {multiple_records_outcome}"
+        )
+    elif len(matching) > 1:
+        # The spec does not say what a receiver does with several records,
+        # so do not claim an outcome
+        via_cname = (
+            f"an unpredictable result, because {cname_target} publishes "
+            f"{len(matching)} {record_kind} records"
+        )
+    elif len(matching) == 1:
+        via_cname = f"the {record_kind} record at {cname_target}"
+    else:
+        via_cname = f"no {record_kind} record at all, because {cname_target} has none"
+    if multiple_records_outcome is None:
+        both_returned = "or an unpredictable result if both records are returned"
+    else:
+        both_returned = (
+            "or, if both records are returned, the same as for several "
+            f"{record_kind} records at one name, where a receiver "
+            f"{multiple_records_outcome}"
+        )
+    return (
+        f"{name} has both a TXT record and a CNAME record pointing to "
+        f"{cname_target}. A name with a CNAME record must have no other "
+        f"records (RFC 1034 section 3.6.2), so which {record_kind} record a "
+        f"receiver uses depends on its resolver: the TXT record at {name}, "
+        f"{via_cname}, {both_returned}. Remove one of the two records."
+    )
 
 
 def query_dns(

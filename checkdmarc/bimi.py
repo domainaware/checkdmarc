@@ -53,6 +53,7 @@ from checkdmarc._constants import (
 from checkdmarc.dmarc import DMARCErrorResults, DMARCResults
 from checkdmarc.utils import (
     WSP_REGEX,
+    _txt_cname_conflict_warning,
     get_base_domain,
     normalize_domain,
     query_dns,
@@ -1067,6 +1068,27 @@ def query_bimi_record(
                 "this subdomain or its base domain."
             )
 
+    # The BIMI draft (section 6.3) recommends CNAMEs for sharing indicators,
+    # but a TXT record next to the CNAME is a DNS-level conflict. Section
+    # 7.2 step 9: when several BIMI records remain, Assertion Record
+    # Discovery terminates and BIMI processing MUST NOT be performed.
+    cname_warning = _txt_cname_conflict_warning(
+        f"{selector}._bimi.{location}",
+        record,
+        record_kind="BIMI",
+        is_record=lambda r: _BIMI_VERSION_PREFIX_REGEX.match(r) is not None,
+        multiple_records_outcome=(
+            "performs no BIMI processing for the message "
+            "(BIMI draft section 7.2 step 9)"
+        ),
+        lookup=query_dns,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        retries=retries,
+    )
+    if cname_warning is not None:
+        warnings.append(cname_warning)
     return {"record": record, "location": location, "warnings": warnings}
 
 
@@ -1424,8 +1446,11 @@ def check_bimi(
 
                       - ``error`` - The error message
                       - ``valid`` - False
+                      - ``warnings`` - warning conditions found before the error
     """
     bimi_results: BIMICheckResult = {"record": None, "valid": True}
+    # What the record lookup noticed, kept for the error result too
+    query_warnings: list[str] = []
     selector = selector.lower()
     try:
         bimi_query = query_bimi_record(
@@ -1439,6 +1464,7 @@ def check_bimi(
         bimi_results["selector"] = selector
         bimi_results["location"] = bimi_query["location"]
         bimi_results["record"] = bimi_query["record"]
+        query_warnings = bimi_query["warnings"]
         parsed_bimi = parse_bimi_record(
             bimi_results["record"],
             include_tag_descriptions=include_tag_descriptions,
@@ -1456,5 +1482,6 @@ def check_bimi(
         bimi_results["selector"] = selector
         bimi_results["valid"] = False
         bimi_results["error"] = str(error)
+        bimi_results["warnings"] = query_warnings
 
     return bimi_results

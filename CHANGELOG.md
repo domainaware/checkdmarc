@@ -4,12 +4,15 @@
 
 ### Added
 
-- DMARC: warn when `_dmarc.<domain>` has both a TXT record and a CNAME record. A name with a CNAME record must have no other records (RFC 1034 section 3.6.2), so which policy a receiver applies depends on its resolver: the local TXT record, the one at the CNAME target, or none at all. A CNAME whose target holds the record that was found is not a conflict (#276)
+- DMARC, SPF, MTA-STS, SMTP TLS Reporting, and BIMI: warn when the record's name has both a TXT record and a CNAME record. A name with a CNAME record must have no other records (RFC 1034 section 3.6.2), so which record a receiver uses depends on its resolver: the local TXT record, the one at the CNAME target, or none at all. A CNAME whose target holds exactly the record that was found is not a conflict; more than one CNAME record always is (RFC 2181 section 10.1) (#276)
 
 ### Fixed
 
 - DMARC: `check_dmarc()` dropped the warnings gathered while looking up the record (a record at the apex, a `psd=y` parent, and now the TXT-plus-CNAME conflict) whenever the record then failed to parse. Error results now carry a `warnings` list, and the CSV output fills `dmarc_warnings` for those rows too
 - DNS: a nameserver that fails to answer (a timeout or other transport error) is now tried after the other configured nameservers for the next 60 seconds (`DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS`), in both the resolver-based lookups and the direct DNSSEC/TLSA queries. Failover between nameservers already happened within each query, but nothing remembered the failure, so checking many domains with an unreachable first nameserver paid its full timeout on every query
+- SPF: warnings from looking up an `include:` or `redirect=` target's record (a TXT-plus-CNAME conflict, deprecated SPF-type records, oversized records) were dropped, also when that target's record then failed to parse; they are now part of the results next to the parser's warnings for the target, or of the error result when the check fails, including when the DNS lookup limit is exceeded or the lookup finds no usable record
+- MTA-STS, SMTP TLS Reporting, and BIMI: `check_mta_sts()`, `check_smtp_tls_reporting()`, and `check_bimi()` dropped the warnings gathered before a failure (from the record lookup, and for MTA-STS also from the record parse and policy download); their error results now carry a `warnings` list, and the CSV output fills the warnings columns for error rows
+- CSV: the `smtp_tls_reporting_warnings` column was written as a Python list instead of being `|`-joined like the other warning columns
 - MX: the A/AAAA lookup of each reverse DNS hostname used the system resolver instead of the configured nameservers
 - DNS: a retried query (`retries`) dropped `quoted_txt_segments` and the caller's cache
 - CLI: repeating `-n`/`--nameserver` (or `--ns`, `--mx`) adds to the list instead of silently replacing the earlier values

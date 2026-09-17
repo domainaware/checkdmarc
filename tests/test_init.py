@@ -335,6 +335,21 @@ class TestResultsToCsvRowsBranches(unittest.TestCase):
         self.assertEqual(rows[0]["dmarc_error"], "dmarc error")
         self.assertEqual(rows[0]["dmarc_warnings"], "one|two")
 
+    def testTlsrptWarningsAreJoinedLikeTheOtherColumns(self):
+        """smtp_tls_reporting_warnings is |-joined on success and error rows"""
+        result = _full_result()
+        result["smtp_tls_reporting"]["warnings"] = ["one", "two"]
+        rows = checkdmarc.results_to_csv_rows(
+            cast(checkdmarc.DomainCheckResult, result)
+        )
+        self.assertEqual(rows[0]["smtp_tls_reporting_warnings"], "one|two")
+        result = _full_result(with_errors=True)
+        result["smtp_tls_reporting"]["warnings"] = ["one", "two"]
+        rows = checkdmarc.results_to_csv_rows(
+            cast(checkdmarc.DomainCheckResult, result)
+        )
+        self.assertEqual(rows[0]["smtp_tls_reporting_warnings"], "one|two")
+
     def testFullSuccessRowWithBimi(self):
         rows = checkdmarc.results_to_csv_rows(
             cast(checkdmarc.DomainCheckResult, _full_result(with_bimi=True))

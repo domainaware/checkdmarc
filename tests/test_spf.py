@@ -6,6 +6,7 @@ from typing import Any, cast
 from unittest.mock import patch
 
 import dns.exception
+import dns.resolver
 
 import checkdmarc.spf
 from checkdmarc.spf import (
@@ -1953,6 +1954,277 @@ class TestRFC7208Conformance(unittest.TestCase):
         result = checkdmarc.spf.parse_spf_record("v=spf1 ~all -all", "example.com")
         self.assertEqual(result["parsed"]["all"], "softfail")
         self.assertTrue(any("multiple all mechanisms" in w for w in result["warnings"]))
+
+
+class TestTxtCnameConflictWiring(unittest.TestCase):
+    """The shared TXT-plus-CNAME conflict probe is wired into the record
+    lookup: a conflicting CNAME is reported, an ordinary alias is not."""
+
+    NAME = "example.com"
+    TARGET = "example.vendor.example"
+    LOCAL = "v=spf1 -all"
+    REMOTE = "v=spf1 include:_spf.vendor.example -all"
+
+    def _query(self, target_records):
+        answers = {
+            (self.NAME, "TXT"): [self.LOCAL],
+            (self.NAME, "CNAME"): [self.TARGET],
+            (self.TARGET, "TXT"): target_records,
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake):
+            return checkdmarc.spf.query_spf_record("example.com")
+
+    def testConflictIsReported(self):
+        result = self._query([self.REMOTE])
+        self.assertEqual(result["record"], self.LOCAL)
+        conflicts = [
+            w for w in result["warnings"] if "both a TXT record and a CNAME" in w
+        ]
+        self.assertEqual(len(conflicts), 1)
+        self.assertIn(self.NAME, conflicts[0])
+        self.assertIn(self.TARGET, conflicts[0])
+
+    def testFollowedAliasIsNotReported(self):
+        result = self._query([self.LOCAL])
+        self.assertFalse(any("CNAME" in w for w in result["warnings"]))
+
+    def _parse_with_nested_conflict(self, record):
+        """Parses ``record`` for example.com where its include/redirect
+        target _spf.vendor.example has a conflicting CNAME."""
+        answers = {
+            ("_spf.vendor.example", "TXT"): ["v=spf1 ip4:192.0.2.0/24 -all"],
+            ("_spf.vendor.example", "CNAME"): ["_spf.other.example"],
+            ("_spf.other.example", "TXT"): ["v=spf1 -all"],
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake):
+            return checkdmarc.spf.parse_spf_record(record, "example.com")
+
+    def testIncludeTargetConflictReachesTheResults(self):
+        """A conflict at an include target is reported both on the include
+        mechanism and in the overall warnings"""
+        result = self._parse_with_nested_conflict(
+            "v=spf1 include:_spf.vendor.example -all"
+        )
+        conflicts = [
+            w for w in result["warnings"] if "both a TXT record and a CNAME" in w
+        ]
+        self.assertEqual(len(conflicts), 1)
+        self.assertIn("_spf.vendor.example has both", conflicts[0])
+        include = cast(dict[str, Any], result["parsed"]["mechanisms"][0])
+        self.assertEqual(include["mechanism"], "include")
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in include["warnings"])
+        )
+
+    def testRepeatedIncludeCarriesTheConflictToo(self):
+        """The cached result of a repeated include keeps the lookup warnings"""
+        result = self._parse_with_nested_conflict(
+            "v=spf1 include:_spf.vendor.example include:_spf.vendor.example -all"
+        )
+        for mechanism in result["parsed"]["mechanisms"][:2]:
+            include = cast(dict[str, Any], mechanism)
+            self.assertTrue(
+                any("both a TXT record and a CNAME" in w for w in include["warnings"])
+            )
+
+    def _check_with_nested_conflict(self, record, nested_record):
+        """Runs check_spf() for example.com where its include/redirect
+        target _spf.vendor.example publishes ``nested_record`` next to a
+        conflicting CNAME."""
+        answers = {
+            ("example.com", "TXT"): [record],
+            ("_spf.vendor.example", "TXT"): [nested_record],
+            ("_spf.vendor.example", "CNAME"): ["_spf.other.example"],
+            ("_spf.other.example", "TXT"): ["v=spf1 -all"],
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake):
+            return checkdmarc.spf.check_spf("example.com")
+
+    def testInvalidIncludeRecordKeepsItsLookupWarnings(self):
+        """When the include target's record fails to parse, the check fails,
+        but what the target's lookup noticed still reaches the error result"""
+        result = self._check_with_nested_conflict(
+            "v=spf1 include:_spf.vendor.example -all", "v=spf1 ip4:not-an-ip -all"
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("not a valid IPv4 value", result["error"])
+        self.assertTrue(
+            any("_spf.vendor.example has both" in w for w in result["warnings"])
+        )
+
+    def _check_over_the_lookup_limit(self, record, extra_answers):
+        """Runs check_spf() for example.com with a: lookups answered, so a
+        record can cross the RFC 7208 ten-lookup limit deterministically."""
+        answers = {
+            ("example.com", "TXT"): [record],
+            ("_spf.vendor.example", "TXT"): ["v=spf1 ip4:192.0.2.0/24 -all"],
+            ("_spf.vendor.example", "CNAME"): ["_spf.other.example"],
+            ("_spf.other.example", "TXT"): ["v=spf1 -all"],
+            **extra_answers,
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with (
+            patch("checkdmarc.spf.query_dns", side_effect=fake),
+            patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]),
+        ):
+            return checkdmarc.spf.check_spf("example.com")
+
+    def testConflictKeptWhenAggregatingTheChildCrossesTheLimit(self):
+        """The child parses fine with ten lookups; adding them to the parent's
+        own include lookup crosses the limit in the parent's counter, after
+        the child's warnings exist but before they used to be merged"""
+        ten_lookups = " ".join(f"a:h{i}.example" for i in range(10))
+        result = self._check_over_the_lookup_limit(
+            "v=spf1 include:child.example -all",
+            {
+                ("child.example", "TXT"): [
+                    f"v=spf1 include:_spf.vendor.example {ten_lookups} -all"
+                ]
+            },
+        )
+        # child.example: 1 (its include) + 10 = 11, over the limit inside
+        # the child, which re-raises with its accumulated warnings
+        self.assertFalse(result["valid"])
+        self.assertIn("lookups", result["error"])
+        self.assertTrue(
+            any("_spf.vendor.example has both" in w for w in result["warnings"])
+        )
+
+    def testConflictKeptWhenTheParentCounterCrossesTheLimit(self):
+        """The child stays within the limit on its own; the parent's counter
+        crosses it when the child's lookups are added to the parent's"""
+        ten_lookups = " ".join(f"a:h{i}.example" for i in range(10))
+        result = self._check_over_the_lookup_limit(
+            "v=spf1 include:_spf.vendor.example -all",
+            {("_spf.vendor.example", "TXT"): [f"v=spf1 {ten_lookups} -all"]},
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("lookups", result["error"])
+        self.assertTrue(
+            any("_spf.vendor.example has both" in w for w in result["warnings"])
+        )
+
+    def _check(self, answers, a_records=None):
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with (
+            patch("checkdmarc.spf.query_dns", side_effect=fake),
+            patch("checkdmarc.spf.get_a_records", return_value=a_records or []),
+        ):
+            return checkdmarc.spf.check_spf("example.com")
+
+    def testParentWarningsKeptWhenAnIncludeIsMissing(self):
+        """The permerror for a missing include record carries both what the
+        parent had already noticed and what the target's lookup noticed"""
+        result = self._check(
+            {
+                ("example.com", "TXT"): [
+                    "v=spf1 a:h1.example include:_spf.vendor.example -all"
+                ],
+                ("_spf.vendor.example", "SPF"): ["v=spf1 -all"],
+            }
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("permerror", result["error"])
+        self.assertTrue(any("h1.example" in w for w in result["warnings"]))
+        self.assertTrue(
+            any("SPF type DNS records found" in w for w in result["warnings"])
+        )
+
+    def testIncludeLookupWarningsKeptWhenItIsTheThirdVoidLookup(self):
+        """Two void a: lookups, then a missing include: the void-lookup limit
+        fires before the permerror, and the target's warnings still arrive"""
+        result = self._check(
+            {
+                ("example.com", "TXT"): [
+                    "v=spf1 a:h1.example a:h2.example include:_spf.vendor.example -all"
+                ],
+                ("_spf.vendor.example", "SPF"): ["v=spf1 -all"],
+            }
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("void", result["error"].lower())
+        self.assertTrue(
+            any("SPF type DNS records found" in w for w in result["warnings"])
+        )
+
+    def testLookupWarningsKeptWhenNoRecordExists(self):
+        """A lookup that finds a deprecated SPF-type record but no SPF TXT
+        record fails, and the error result still reports the SPF-type record"""
+        result = self._check({("example.com", "SPF"): ["v=spf1 -all"]})
+        self.assertFalse(result["valid"])
+        self.assertEqual(result["error"], "An SPF record does not exist.")
+        self.assertTrue(
+            any("SPF type DNS records found" in w for w in result["warnings"])
+        )
+
+    def testIncludeTargetLookupWarningsKeptWhenItHasNoRecord(self):
+        """The same for an include target: its lookup's warnings survive the
+        permerror that a missing include record turns into"""
+        result = self._check(
+            {
+                ("example.com", "TXT"): ["v=spf1 include:_spf.vendor.example -all"],
+                ("_spf.vendor.example", "SPF"): ["v=spf1 -all"],
+            }
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("permerror", result["error"])
+        self.assertTrue(
+            any("SPF type DNS records found" in w for w in result["warnings"])
+        )
+
+    def testInvalidRedirectRecordKeepsItsLookupWarnings(self):
+        result = self._check_with_nested_conflict(
+            "v=spf1 redirect=_spf.vendor.example", "v=spf1 ip4:not-an-ip -all"
+        )
+        self.assertFalse(result["valid"])
+        self.assertTrue(
+            any("_spf.vendor.example has both" in w for w in result["warnings"])
+        )
+
+    def testRedirectTargetConflictReachesTheResults(self):
+        result = self._parse_with_nested_conflict("v=spf1 redirect=_spf.vendor.example")
+        conflicts = [
+            w for w in result["warnings"] if "both a TXT record and a CNAME" in w
+        ]
+        self.assertEqual(len(conflicts), 1)
+        self.assertIn("_spf.vendor.example has both", conflicts[0])
+        redirect = result["parsed"]["redirect"]
+        assert redirect is not None
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in redirect["warnings"])
+        )
 
 
 if __name__ == "__main__":

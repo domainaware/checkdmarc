@@ -20,7 +20,12 @@ from checkdmarc._constants import (
     SYNTAX_ERROR_MARKER,
     USER_AGENT,
 )
-from checkdmarc.utils import WSP_REGEX, normalize_domain, query_dns
+from checkdmarc.utils import (
+    WSP_REGEX,
+    _txt_cname_conflict_warning,
+    normalize_domain,
+    query_dns,
+)
 
 """Copyright 2019-2023 Sean Whalen
 
@@ -213,6 +218,9 @@ class MTASTSCheckSuccess(TypedDict):
 class MTASTSCheckFailure(TypedDict):
     valid: Literal[False]
     error: str
+    # Warnings gathered before the error: from the record lookup, and from
+    # the record parse and policy download when those succeeded first
+    warnings: list[str]
 
 
 MTASTSCheckResult = MTASTSCheckSuccess | MTASTSCheckFailure
@@ -383,6 +391,25 @@ def query_mta_sts_record(
     if sts_record is None:
         raise MTASTSRecordNotFound("An MTA-STS DNS record does not exist.")
 
+    # RFC 8461 section 3.1 lets _mta-sts be a CNAME (section 8.2 delegation),
+    # but a TXT record next to it is a DNS-level conflict; a sender that gets
+    # more than one MTA-STS record assumes there is no policy
+    cname_warning = _txt_cname_conflict_warning(
+        target,
+        sts_record,
+        record_kind="MTA-STS",
+        is_record=lambda r: txt_prefix.match(r) is not None,
+        multiple_records_outcome=(
+            "assumes the domain has no MTA-STS policy (RFC 8461 section 3.1)"
+        ),
+        lookup=query_dns,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        retries=retries,
+    )
+    if cname_warning is not None:
+        warnings.append(cname_warning)
     results: MTASTSQueryResult = {"record": sts_record, "warnings": warnings}
 
     return results
@@ -731,8 +758,10 @@ def check_mta_sts(
 
                       - ``error`` - The error message
                       - ``valid`` - False
+                      - ``warnings`` - warning conditions found before the error
     """
     domain = normalize_domain(domain)
+    warnings: list[str] = []
     try:
         query_results = query_mta_sts_record(
             domain,
@@ -763,6 +792,7 @@ def check_mta_sts(
         mta_sts_results_failure: MTASTSCheckFailure = {
             "valid": False,
             "error": str(error),
+            "warnings": warnings,
         }
         return mta_sts_results_failure
 
