@@ -20,6 +20,7 @@ from checkdmarc._constants import (
 )
 from checkdmarc.utils import (
     WSP_REGEX,
+    _txt_cname_conflict_warning,
     normalize_domain,
     query_dns,
 )
@@ -372,6 +373,22 @@ def query_smtp_tls_reporting_record(
             "An SMTP TLS Reporting record does not exist."
         )
 
+    # RFC 8460 section 3: a sender that gets more than one TLSRPT record
+    # assumes the domain does not implement TLSRPT
+    cname_warning = _txt_cname_conflict_warning(
+        target,
+        tlsrpt_record,
+        record_kind="SMTP TLS Reporting",
+        is_record=lambda r: txt_prefix.match(r) is not None,
+        multiple_records_rule="RFC 8460 section 3",
+        lookup=query_dns,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        retries=retries,
+    )
+    if cname_warning is not None:
+        warnings.append(cname_warning)
     results: SMTPTLSReportingQueryResult = {
         "record": tlsrpt_record,
         "warnings": warnings,

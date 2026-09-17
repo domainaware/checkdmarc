@@ -4,7 +4,7 @@
 
 ### Added
 
-- DMARC: warn when `_dmarc.<domain>` has both a TXT record and a CNAME record. A name with a CNAME record must have no other records (RFC 1034 section 3.6.2), so which policy a receiver applies depends on its resolver: the local TXT record, the one at the CNAME target, or none at all. A CNAME whose target holds the record that was found is not a conflict (#276)
+- DMARC, SPF, MTA-STS, SMTP TLS Reporting, and BIMI: warn when the record's name has both a TXT record and a CNAME record. A name with a CNAME record must have no other records (RFC 1034 section 3.6.2), so which record a receiver uses depends on its resolver: the local TXT record, the one at the CNAME target, or none at all. A CNAME whose target holds exactly the record that was found is not a conflict; more than one CNAME record always is (RFC 2181 section 10.1) (#276)
 
 ### Fixed
 

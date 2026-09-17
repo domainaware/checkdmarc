@@ -23,6 +23,7 @@ from checkdmarc.utils import (
     DNSException,
     DNSExceptionNXDOMAIN,
     MXHost,
+    _txt_cname_conflict_warning,
     get_a_records,
     get_mx_records,
     get_reverse_dns,
@@ -449,6 +450,24 @@ def _validate_spf_macros(
         i = close + 1
 
 
+def _is_spf_record(record: str) -> bool:
+    """
+    Tells whether a TXT record is an SPF record: RFC 7208 section 4.5 keeps
+    only records that begin with a version section of exactly ``v=spf1``,
+    terminated by a space or the end of the record. Surrounding quotes are
+    ignored; the version is matched case-insensitively (section 12 ABNF
+    terminals are case-insensitive).
+
+    Args:
+        record (str): A TXT record
+
+    Returns:
+        bool: Whether the record is an SPF record
+    """
+    lowered = record.strip('"').lower()
+    return lowered == "v=spf1" or lowered.startswith("v=spf1 ")
+
+
 def query_spf_record(
     domain: str,
     *,
@@ -553,9 +572,7 @@ def query_spf_record(
                 )
                 continue
 
-            if cleaned_record_lower == txt_prefix or cleaned_record_lower.startswith(
-                f"{txt_prefix} "
-            ):
+            if _is_spf_record(cleaned_record):
                 spf_txt_records.append(record)
             elif cleaned_record_lower.startswith(txt_prefix):
                 # RFC 7208 section 4.5: discard records that do not begin
@@ -623,6 +640,22 @@ def query_spf_record(
         logger.debug(f"Skipped SPF size check for {domain}: {size_check_error}")
 
     spf_record = spf_record.replace('"', "")
+    # RFC 7208 section 4.5: a receiver that gets more than one SPF record
+    # for the name returns permerror
+    cname_warning = _txt_cname_conflict_warning(
+        domain,
+        spf_record,
+        record_kind="SPF",
+        is_record=_is_spf_record,
+        multiple_records_rule="RFC 7208 section 4.5",
+        lookup=query_dns,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        retries=retries,
+    )
+    if cname_warning is not None:
+        warnings.append(cname_warning)
     results: SPFQueryResults = {"record": spf_record, "warnings": warnings}
 
     return results

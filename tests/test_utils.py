@@ -1332,5 +1332,119 @@ class TestNameserverFailover(unittest.TestCase):
         self.assertEqual(cache.get("example.com_TXT_True"), result)
 
 
+class TestTxtCnameConflictWarning(unittest.TestCase):
+    """The shared TXT-plus-CNAME conflict probe, driven by a fake lookup
+    keyed by (name, record type). Each protocol module wires it with its
+    own record predicate; the branches live here."""
+
+    NAME = "_thing.example.com"
+    TARGET = "_thing.vendor.example"
+    LOCAL = "v=THING1; a=1"
+    REMOTE = "v=THING1; a=2"
+
+    @staticmethod
+    def _lookup(answers):
+        def lookup(name, rdtype, **kwargs):
+            answer = answers.get((name, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        return lookup
+
+    def _probe(self, answers, rule: str | None = "RFC 0 section 1"):
+        return checkdmarc.utils._txt_cname_conflict_warning(
+            self.NAME,
+            self.LOCAL,
+            record_kind="THING",
+            is_record=lambda r: r.startswith("v=THING1"),
+            multiple_records_rule=rule,
+            lookup=self._lookup(answers),
+        )
+
+    def test_no_cname_is_no_conflict(self):
+        self.assertIsNone(self._probe({}))
+
+    def test_alias_whose_target_holds_exactly_the_record_is_no_conflict(self):
+        self.assertIsNone(
+            self._probe(
+                {
+                    (self.NAME, "CNAME"): [self.TARGET],
+                    (self.TARGET, "TXT"): ["unrelated", self.LOCAL],
+                }
+            )
+        )
+
+    def test_differing_target_record_is_a_conflict(self):
+        warning = self._probe(
+            {(self.NAME, "CNAME"): [self.TARGET], (self.TARGET, "TXT"): [self.REMOTE]}
+        )
+        assert warning is not None
+        self.assertIn(f"{self.NAME} has both a TXT record and a CNAME", warning)
+        self.assertIn(f"the THING record at {self.TARGET}", warning)
+        self.assertIn("discarded (RFC 0 section 1)", warning)
+
+    def test_target_without_a_record_is_a_conflict(self):
+        warning = self._probe({(self.NAME, "CNAME"): [self.TARGET]})
+        assert warning is not None
+        self.assertIn(f"because {self.TARGET} has none", warning)
+
+    def test_target_with_the_record_and_another_is_a_conflict(self):
+        warning = self._probe(
+            {
+                (self.NAME, "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): [self.LOCAL, self.REMOTE],
+            }
+        )
+        assert warning is not None
+        self.assertIn("publishes 2 THING records", warning)
+
+    def test_multiple_cname_records_are_a_conflict_even_if_one_target_matches(self):
+        """RFC 2181 section 10.1: an alias may have only one CNAME record, so
+        a matching first target must not switch the warning off."""
+        warning = self._probe(
+            {
+                (self.NAME, "CNAME"): [self.TARGET, "_thing.other.example"],
+                (self.TARGET, "TXT"): [self.LOCAL],
+            }
+        )
+        assert warning is not None
+        self.assertIn("2 CNAME records", warning)
+        self.assertIn("RFC 2181 section 10.1", warning)
+        self.assertIn("_thing.other.example", warning)
+
+    def test_no_multiple_record_rule_gives_the_neutral_wording(self):
+        warning = self._probe(
+            {(self.NAME, "CNAME"): [self.TARGET], (self.TARGET, "TXT"): [self.REMOTE]},
+            rule=None,
+        )
+        assert warning is not None
+        self.assertIn("unpredictable result if both records are returned", warning)
+        self.assertNotIn("discarded", warning)
+
+    def test_lookup_failures_are_ignored(self):
+        for failing in (
+            {(self.NAME, "CNAME"): dns.exception.Timeout()},
+            {(self.NAME, "CNAME"): OSError("socket closed")},
+            {(self.NAME, "CNAME"): [self.TARGET], (self.TARGET, "TXT"): OSError("x")},
+            {
+                (self.NAME, "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): dns.exception.Timeout(),
+            },
+        ):
+            with self.subTest(failing=failing):
+                self.assertIsNone(self._probe(failing))
+
+    def test_nxdomain_target_counts_as_no_record(self):
+        warning = self._probe(
+            {
+                (self.NAME, "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): dns.resolver.NXDOMAIN(),
+            }
+        )
+        assert warning is not None
+        self.assertIn("has none", warning)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

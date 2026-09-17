@@ -6,6 +6,7 @@ from typing import Any, cast
 from unittest.mock import patch
 
 import dns.exception
+import dns.resolver
 
 import checkdmarc.spf
 from checkdmarc.spf import (
@@ -1953,6 +1954,46 @@ class TestRFC7208Conformance(unittest.TestCase):
         result = checkdmarc.spf.parse_spf_record("v=spf1 ~all -all", "example.com")
         self.assertEqual(result["parsed"]["all"], "softfail")
         self.assertTrue(any("multiple all mechanisms" in w for w in result["warnings"]))
+
+
+class TestTxtCnameConflictWiring(unittest.TestCase):
+    """The shared TXT-plus-CNAME conflict probe is wired into the record
+    lookup: a conflicting CNAME is reported, an ordinary alias is not."""
+
+    NAME = "example.com"
+    TARGET = "example.vendor.example"
+    LOCAL = "v=spf1 -all"
+    REMOTE = "v=spf1 include:_spf.vendor.example -all"
+
+    def _query(self, target_records):
+        answers = {
+            (self.NAME, "TXT"): [self.LOCAL],
+            (self.NAME, "CNAME"): [self.TARGET],
+            (self.TARGET, "TXT"): target_records,
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake):
+            return checkdmarc.spf.query_spf_record("example.com")
+
+    def testConflictIsReported(self):
+        result = self._query([self.REMOTE])
+        self.assertEqual(result["record"], self.LOCAL)
+        conflicts = [
+            w for w in result["warnings"] if "both a TXT record and a CNAME" in w
+        ]
+        self.assertEqual(len(conflicts), 1)
+        self.assertIn(self.NAME, conflicts[0])
+        self.assertIn(self.TARGET, conflicts[0])
+
+    def testFollowedAliasIsNotReported(self):
+        result = self._query([self.LOCAL])
+        self.assertFalse(any("CNAME" in w for w in result["warnings"]))
 
 
 if __name__ == "__main__":
