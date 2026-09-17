@@ -2131,6 +2131,41 @@ class TestTxtCnameConflictWiring(unittest.TestCase):
             any("_spf.vendor.example has both" in w for w in result["warnings"])
         )
 
+    def _check(self, answers):
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake):
+            return checkdmarc.spf.check_spf("example.com")
+
+    def testLookupWarningsKeptWhenNoRecordExists(self):
+        """A lookup that finds a deprecated SPF-type record but no SPF TXT
+        record fails, and the error result still reports the SPF-type record"""
+        result = self._check({("example.com", "SPF"): ["v=spf1 -all"]})
+        self.assertFalse(result["valid"])
+        self.assertEqual(result["error"], "An SPF record does not exist.")
+        self.assertTrue(
+            any("SPF type DNS records found" in w for w in result["warnings"])
+        )
+
+    def testIncludeTargetLookupWarningsKeptWhenItHasNoRecord(self):
+        """The same for an include target: its lookup's warnings survive the
+        permerror that a missing include record turns into"""
+        result = self._check(
+            {
+                ("example.com", "TXT"): ["v=spf1 include:_spf.vendor.example -all"],
+                ("_spf.vendor.example", "SPF"): ["v=spf1 -all"],
+            }
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("permerror", result["error"])
+        self.assertTrue(
+            any("SPF type DNS records found" in w for w in result["warnings"])
+        )
+
     def testInvalidRedirectRecordKeepsItsLookupWarnings(self):
         result = self._check_with_nested_conflict(
             "v=spf1 redirect=_spf.vendor.example", "v=spf1 ip4:not-an-ip -all"

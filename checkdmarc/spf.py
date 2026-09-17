@@ -509,6 +509,15 @@ def query_spf_record(
     warnings = []
     spf_type_records = []
     spf_txt_records = []
+
+    def _not_found(error: Exception | str) -> SPFRecordNotFound:
+        # A lookup that ends without a usable record may still have noticed
+        # things worth reporting (SPF-type records, discarded lookalikes);
+        # keep them on the error so check_spf() can surface them
+        not_found = SPFRecordNotFound(error, domain)
+        not_found.warnings = list(warnings)
+        return not_found
+
     try:
         spf_type_records += query_dns(
             domain,
@@ -596,13 +605,15 @@ def query_spf_record(
         if spf_record is None:
             raise SPFRecordNotFound("An SPF record does not exist.", domain)
     except dns.resolver.NoAnswer:
-        raise SPFRecordNotFound("An SPF record does not exist.", domain)
+        raise _not_found("An SPF record does not exist.")
     except dns.resolver.NXDOMAIN:
-        raise SPFRecordNotFound("The domain does not exist.", domain)
-    except SPFRecordNotFound:
+        raise _not_found("The domain does not exist.")
+    except SPFRecordNotFound as not_found:
+        # Raised inside the try above; give it the warnings too
+        not_found.warnings = warnings + not_found.warnings
         raise
     except dns.exception.DNSException as error:
-        raise SPFRecordNotFound(error, domain)
+        raise _not_found(error)
 
     # Per RFC 7208 § 3.3: any single TXT "character-string" should be ≤255 bytes.
     # Per RFC 7208 § 3.4: keep overall SPF record small enough for UDP (advise ~450B, warn at >512B).
@@ -1564,12 +1575,15 @@ def parse_spf_record(
                     # an include target returns "none" (no SPF record, or
                     # the domain does not exist), the whole record is a
                     # permanent error (permerror), not just a warning.
-                    raise SPFRecordNotFound(
+                    no_include = SPFRecordNotFound(
                         f"The include target {value} has no SPF record, "
                         "which RFC 7208 § 5.2 defines as a permanent error "
                         f"(permerror): {missing_include}",
                         value,
                     )
+                    # Keep what the target's lookup noticed
+                    no_include.warnings = missing_include.warnings
+                    raise no_include from missing_include
                 include_record = include_query["record"]
                 try:
                     include = parse_spf_record(

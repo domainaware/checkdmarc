@@ -608,8 +608,10 @@ def _txt_cname_conflict_warning(
     one record. A local record identical to the target's single record is
     not reported either, since whichever one a resolver picks, the outcome
     is the same. A target holding the matching record plus another matching
-    record is still a conflict: following the CNAME yields several records
-    and therefore none. More than one CNAME record is a conflict outright,
+    record is still a conflict: following the CNAME yields several records,
+    and each protocol's rule for that case applies instead of one of them
+    (``multiple_records_outcome``). More than one CNAME record is a conflict
+    outright,
     whatever the targets hold: an alias may have only one canonical name
     (RFC 2181 section 10.1), so no resolver behavior is predictable there.
 
