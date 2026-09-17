@@ -1570,6 +1570,11 @@ def parse_spf_record(
                         "warnings": [],
                     }
                     parsed["mechanisms"].append(failed_include_mechanism)
+                    # What the target's lookup noticed joins this level's
+                    # warnings first, so it survives whichever error leaves
+                    # this level: the void-lookup limit below, or the
+                    # permerror after it
+                    warnings += missing_include.warnings
                     _count_void_dns_lookups()
                     # RFC 7208 section 5.2: when the recursive evaluation of
                     # an include target returns "none" (no SPF record, or
@@ -1581,8 +1586,6 @@ def parse_spf_record(
                         f"(permerror): {missing_include}",
                         value,
                     )
-                    # Keep what the target's lookup noticed
-                    no_include.warnings = missing_include.warnings
                     raise no_include from missing_include
                 include_record = include_query["record"]
                 try:
@@ -1677,6 +1680,11 @@ def parse_spf_record(
                 # them to the caller on the exception
                 e.warnings = warnings + e.warnings
                 raise
+        except SPFError as fatal:
+            # Any other fatal error leaves this level too; take its warnings
+            # along so check_spf() can report them with the error
+            fatal.warnings = warnings + fatal.warnings
+            raise
 
         except (_SPFWarning, DNSException) as warning:
             if isinstance(warning, (_SPFMissingRecords, DNSExceptionNXDOMAIN)):

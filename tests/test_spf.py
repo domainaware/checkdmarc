@@ -2131,15 +2131,53 @@ class TestTxtCnameConflictWiring(unittest.TestCase):
             any("_spf.vendor.example has both" in w for w in result["warnings"])
         )
 
-    def _check(self, answers):
+    def _check(self, answers, a_records=None):
         def fake(target, rdtype, **kwargs):
             answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
             if isinstance(answer, Exception):
                 raise answer
             return answer
 
-        with patch("checkdmarc.spf.query_dns", side_effect=fake):
+        with (
+            patch("checkdmarc.spf.query_dns", side_effect=fake),
+            patch("checkdmarc.spf.get_a_records", return_value=a_records or []),
+        ):
             return checkdmarc.spf.check_spf("example.com")
+
+    def testParentWarningsKeptWhenAnIncludeIsMissing(self):
+        """The permerror for a missing include record carries both what the
+        parent had already noticed and what the target's lookup noticed"""
+        result = self._check(
+            {
+                ("example.com", "TXT"): [
+                    "v=spf1 a:h1.example include:_spf.vendor.example -all"
+                ],
+                ("_spf.vendor.example", "SPF"): ["v=spf1 -all"],
+            }
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("permerror", result["error"])
+        self.assertTrue(any("h1.example" in w for w in result["warnings"]))
+        self.assertTrue(
+            any("SPF type DNS records found" in w for w in result["warnings"])
+        )
+
+    def testIncludeLookupWarningsKeptWhenItIsTheThirdVoidLookup(self):
+        """Two void a: lookups, then a missing include: the void-lookup limit
+        fires before the permerror, and the target's warnings still arrive"""
+        result = self._check(
+            {
+                ("example.com", "TXT"): [
+                    "v=spf1 a:h1.example a:h2.example include:_spf.vendor.example -all"
+                ],
+                ("_spf.vendor.example", "SPF"): ["v=spf1 -all"],
+            }
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("void", result["error"].lower())
+        self.assertTrue(
+            any("SPF type DNS records found" in w for w in result["warnings"])
+        )
 
     def testLookupWarningsKeptWhenNoRecordExists(self):
         """A lookup that finds a deprecated SPF-type record but no SPF TXT

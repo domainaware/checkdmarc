@@ -455,13 +455,17 @@ def results_to_csv_rows(
         if "error" in _smtp_tls_reporting:
             row["smtp_tls_reporting_valid"] = False
             row["smtp_tls_reporting_error"] = _smtp_tls_reporting["error"]
-            row["smtp_tls_reporting_warnings"] = _smtp_tls_reporting.get("warnings", [])
+            row["smtp_tls_reporting_warnings"] = "|".join(
+                _smtp_tls_reporting.get("warnings", [])
+            )
         else:
             row["smtp_tls_reporting_valid"] = True
             row["smtp_tls_reporting_rua"] = "|".join(
                 _smtp_tls_reporting["tags"]["rua"]["value"]
             )
-            row["smtp_tls_reporting_warnings"] = _smtp_tls_reporting["warnings"]
+            row["smtp_tls_reporting_warnings"] = "|".join(
+                _smtp_tls_reporting["warnings"]
+            )
         rows.append(row)
     return rows
 
