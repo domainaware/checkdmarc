@@ -2,6 +2,10 @@
 
 ## 6.0.2
 
+### Added
+
+- DMARC: warn when `_dmarc.<domain>` has both a TXT record and a CNAME record. A name with a CNAME record must have no other records (RFC 1034 section 3.6.2), so which policy a receiver applies depends on its resolver: the local TXT record, the one at the CNAME target, or none at all. A CNAME whose target holds the record that was found is not a conflict (#276)
+
 ### Fixed
 
 - DNS: a nameserver that fails to answer (a timeout or other transport error) is now tried after the other configured nameservers for the next 60 seconds (`DNS_NAMESERVER_FAILURE_COOLDOWN_SECONDS`), in both the resolver-based lookups and the direct DNSSEC/TLSA queries. Failover between nameservers already happened within each query, but nothing remembered the failure, so checking many domains with an unreachable first nameserver paid its full timeout on every query
