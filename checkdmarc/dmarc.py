@@ -894,10 +894,13 @@ def _dmarc_cname_conflict_warning(
 
     A CNAME on its own is fine: the resolver follows it and the target's
     TXT record is the DMARC record. That case is told apart by comparing
-    the record that was found with the TXT records at the CNAME target;
-    when the record came through the CNAME, the two match. A local record
-    identical to the target's is not reported either, since whichever one
-    a resolver picks, the policy is the same.
+    the record that was found with the DMARC records at the CNAME target;
+    when the record came through the CNAME, the target holds exactly that
+    one record. A local record identical to the target's single record is
+    not reported either, since whichever one a resolver picks, the policy
+    is the same. A target holding the matching record plus another DMARC
+    record is still a conflict: following the CNAME yields several records
+    and therefore no policy.
 
     Args:
         location (str): The domain the DMARC record was found for
@@ -924,7 +927,9 @@ def _dmarc_cname_conflict_warning(
         )
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         return None  # Not an alias
-    except dns.exception.DNSException as error:
+    except (dns.exception.DNSException, OSError) as error:
+        # query_dns() re-raises socket-level OSErrors once its retries are
+        # used up; this probe is a diagnostic and must not fail the check
         logger.debug(f"CNAME check for {target} failed: {error}")
         return None
     if len(cnames) == 0:
@@ -941,15 +946,27 @@ def _dmarc_cname_conflict_warning(
         )
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
         target_records = []
-    except dns.exception.DNSException as error:
+    except (dns.exception.DNSException, OSError) as error:
         logger.debug(
             f"TXT lookup at {cname_target}, the CNAME target of {target}, "
             f"failed: {error}"
         )
         return None
-    if record in target_records:
+    target_dmarc_records = [r for r in target_records if _is_dmarc_record(r)]
+    if target_dmarc_records == [record]:
+        # Following the CNAME yields exactly the record that was found: an
+        # ordinary alias, or a duplicate that changes nothing
         return None
-    if any(_is_dmarc_record(r) for r in target_records):
+    if len(target_dmarc_records) > 1:
+        # A receiver that follows the CNAME sees several DMARC records at
+        # one name and discards them all (RFC 9989 section 4.10 step 2),
+        # so it ends up with no policy while the local record gives one
+        via_cname = (
+            f"no applicable policy at all, because {cname_target} publishes "
+            f"{len(target_dmarc_records)} DMARC records, which a receiver "
+            "discards"
+        )
+    elif len(target_dmarc_records) == 1:
         via_cname = f"the DMARC record at {cname_target}"
     else:
         via_cname = f"no DMARC record at all, because {cname_target} has none"

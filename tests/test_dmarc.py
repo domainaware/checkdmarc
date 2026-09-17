@@ -1574,6 +1574,42 @@ class TestDmarcCnameConflict(unittest.TestCase):
         self.assertIn("_dmarc.example.com has both", result["warnings"][0])
         self.assertNotIn(("_dmarc.sub.example.com", "CNAME"), queried)
 
+    def testTargetWithMatchingAndExtraRecordIsStillAConflict(self):
+        """When the target publishes the matching record plus a second DMARC
+        record, following the CNAME yields no policy (RFC 9989 section 4.10
+        discards multiple records), so the conflict is reported"""
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): [self.LOCAL, self.REMOTE],
+            }
+        )
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertIn("publishes 2 DMARC records", result["warnings"][0])
+
+    def testSocketErrorOnCnameLookupIsIgnored(self):
+        """query_dns re-raises OSError once retries are used up; the probe
+        must swallow it like any other lookup failure"""
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): OSError("socket closed"),
+            }
+        )
+        self.assertEqual(result["record"], self.LOCAL)
+        self.assertEqual(result["warnings"], [])
+
+    def testSocketErrorOnTargetLookupIsIgnored(self):
+        result, _ = self._query(
+            {
+                ("_dmarc.example.com", "TXT"): [self.LOCAL],
+                ("_dmarc.example.com", "CNAME"): [self.TARGET],
+                (self.TARGET, "TXT"): OSError("socket closed"),
+            }
+        )
+        self.assertEqual(result["warnings"], [])
+
     def testWarningKeptWhenTheRecordFailsToParse(self):
         """A malformed local record next to a CNAME whose target holds a valid
         policy is the resolver-dependent case the check exists for, so the
