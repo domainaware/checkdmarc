@@ -1456,6 +1456,8 @@ def parse_spf_record(
                     redirected_spf["warnings"] = (
                         redirect_query["warnings"] + redirected_spf["warnings"]
                     )
+                    # Merge before the lookup counters below, which can raise
+                    warnings += redirected_spf["warnings"]
                     parsed["all"] = redirected_spf["parsed"]["all"]
                     mechanism_dns_lookups += redirected_spf["dns_lookups"]
                     mechanism_void_dns_lookups += redirected_spf["void_dns_lookups"]
@@ -1470,8 +1472,6 @@ def parse_spf_record(
                         "warnings": redirected_spf["warnings"],
                     }
                     parsed["redirect"] = redirect
-
-                    warnings += redirected_spf["warnings"]
                 except DNSException as redirect_err:
                     # Local name distinct from the outer ``error`` accumulator;
                     # ``except ... as <name>`` deletes the name when the block
@@ -1593,6 +1593,8 @@ def parse_spf_record(
                 # the parser's warnings for it, in the cache too so a repeat
                 # include reports the same
                 include["warnings"] = include_query["warnings"] + include["warnings"]
+                # Merge before the lookup counters below, which can raise
+                warnings += include["warnings"]
                 _include_cache[value] = include
                 _count_dns_lookups(include["dns_lookups"])
                 _count_void_dns_lookups(include["void_dns_lookups"])
@@ -1609,7 +1611,6 @@ def parse_spf_record(
                     "warnings": include["warnings"],
                 }
                 parsed["mechanisms"].append(include_mechanism)
-                warnings += include["warnings"]
 
             elif mechanism == "ptr":
                 _count_dns_lookups()
@@ -1658,6 +1659,9 @@ def parse_spf_record(
                 warnings += e.warnings
                 error = str(e)
             else:
+                # This level's warnings would be lost with the raise; hand
+                # them to the caller on the exception
+                e.warnings = warnings + e.warnings
                 raise
 
         except (_SPFWarning, DNSException) as warning:

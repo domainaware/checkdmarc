@@ -1635,6 +1635,35 @@ class TestTxtCnameConflictWiring(unittest.TestCase):
         result = self._query([self.LOCAL])
         self.assertFalse(any("CNAME" in w for w in result["warnings"]))
 
+    def testConflictSurvivesAParseFailure(self):
+        """A conflict found by the record lookup is still in check_bimi()'s
+        error result when the local record then fails to parse"""
+        answers = {
+            (self.NAME, "TXT"): [self.LOCAL],
+            (self.NAME, "CNAME"): [self.TARGET],
+            (self.TARGET, "TXT"): [self.REMOTE],
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with (
+            patch("checkdmarc.bimi.query_dns", side_effect=fake),
+            patch(
+                "checkdmarc.bimi.parse_bimi_record",
+                side_effect=checkdmarc.bimi.BIMIError("bad record"),
+            ),
+        ):
+            result = cast(dict[str, Any], checkdmarc.bimi.check_bimi("example.com"))
+        self.assertFalse(result["valid"])
+        self.assertEqual(result["error"], "bad record")
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in result["warnings"])
+        )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

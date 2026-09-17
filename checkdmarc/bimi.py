@@ -1446,8 +1446,11 @@ def check_bimi(
 
                       - ``error`` - The error message
                       - ``valid`` - False
+                      - ``warnings`` - warning conditions found before the error
     """
     bimi_results: BIMICheckResult = {"record": None, "valid": True}
+    # What the record lookup noticed, kept for the error result too
+    query_warnings: list[str] = []
     selector = selector.lower()
     try:
         bimi_query = query_bimi_record(
@@ -1461,6 +1464,7 @@ def check_bimi(
         bimi_results["selector"] = selector
         bimi_results["location"] = bimi_query["location"]
         bimi_results["record"] = bimi_query["record"]
+        query_warnings = bimi_query["warnings"]
         parsed_bimi = parse_bimi_record(
             bimi_results["record"],
             include_tag_descriptions=include_tag_descriptions,
@@ -1478,5 +1482,6 @@ def check_bimi(
         bimi_results["selector"] = selector
         bimi_results["valid"] = False
         bimi_results["error"] = str(error)
+        bimi_results["warnings"] = query_warnings
 
     return bimi_results

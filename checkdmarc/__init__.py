@@ -375,6 +375,7 @@ def results_to_csv_rows(
             row["ns_warnings"] = "|".join(ns["warnings"])
         if "error" in _mta_sts:
             row["mta_sts_error"] = _mta_sts["error"]
+            row["mta_sts_warnings"] = "|".join(_mta_sts.get("warnings", []))
         else:
             row["mta_sts_id"] = _mta_sts["id"]
             row["mta_sts_mode"] = _mta_sts["policy"]["mode"]
@@ -422,6 +423,7 @@ def results_to_csv_rows(
         row["spf_valid"] = _spf["valid"]
         if "error" in _spf:
             row["spf_error"] = _spf["error"]
+            row["spf_warnings"] = "|".join(_spf.get("warnings", []))
         else:
             row["spf_warnings"] = "|".join(_spf["warnings"])
 
@@ -453,6 +455,7 @@ def results_to_csv_rows(
         if "error" in _smtp_tls_reporting:
             row["smtp_tls_reporting_valid"] = False
             row["smtp_tls_reporting_error"] = _smtp_tls_reporting["error"]
+            row["smtp_tls_reporting_warnings"] = _smtp_tls_reporting.get("warnings", [])
         else:
             row["smtp_tls_reporting_valid"] = True
             row["smtp_tls_reporting_rua"] = "|".join(

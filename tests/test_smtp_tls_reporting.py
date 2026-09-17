@@ -475,6 +475,33 @@ class TestTxtCnameConflictWiring(unittest.TestCase):
         result = self._query([self.LOCAL])
         self.assertFalse(any("CNAME" in w for w in result["warnings"]))
 
+    def testConflictSurvivesAParseFailure(self):
+        """A conflict found by the record lookup is still in
+        check_smtp_tls_reporting()'s error result when the local record
+        then fails to parse"""
+        answers = {
+            (self.NAME, "TXT"): ["v=TLSRPTv1; rua=not-a-uri"],
+            (self.NAME, "CNAME"): [self.TARGET],
+            (self.TARGET, "TXT"): [self.REMOTE],
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with patch("checkdmarc.smtp_tls_reporting.query_dns", side_effect=fake):
+            result = cast(
+                dict[str, Any],
+                checkdmarc.smtp_tls_reporting.check_smtp_tls_reporting("example.com"),
+            )
+        self.assertFalse(result["valid"])
+        self.assertIn("not a valid SMTP TLS Reporting URI", result["error"])
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in result["warnings"])
+        )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -744,6 +744,37 @@ class TestTxtCnameConflictWiring(unittest.TestCase):
         result = self._query([self.LOCAL])
         self.assertFalse(any("CNAME" in w for w in result["warnings"]))
 
+    def testConflictSurvivesADownstreamFailure(self):
+        """A conflict found by the record lookup is still in check_mta_sts()'s
+        error result when the policy download then fails"""
+        answers = {
+            (self.NAME, "TXT"): [self.LOCAL],
+            (self.NAME, "CNAME"): [self.TARGET],
+            (self.TARGET, "TXT"): [self.REMOTE],
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with (
+            patch("checkdmarc.mta_sts.query_dns", side_effect=fake),
+            patch(
+                "checkdmarc.mta_sts.download_mta_sts_policy",
+                side_effect=checkdmarc.mta_sts.MTASTSError("download failed"),
+            ),
+        ):
+            result = cast(
+                dict[str, Any], checkdmarc.mta_sts.check_mta_sts("example.com")
+            )
+        self.assertFalse(result["valid"])
+        self.assertEqual(result["error"], "download failed")
+        self.assertTrue(
+            any("both a TXT record and a CNAME" in w for w in result["warnings"])
+        )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

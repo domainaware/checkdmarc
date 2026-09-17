@@ -234,6 +234,8 @@ class ParsedSMTPTLSReportingRecord(TypedDict):
 class SMTPTLSReportingFailure(TypedDict):
     valid: Literal[False]
     error: str
+    # Warnings gathered before the error, from the record lookup
+    warnings: list[str]
 
 
 class SMTPTLSReportingSuccess(TypedDict):
@@ -578,8 +580,10 @@ def check_smtp_tls_reporting(
 
                       - ``error`` - The error message
                       - ``valid`` - False
+                      - ``warnings`` - warning conditions found before the error
     """
     domain = normalize_domain(domain)
+    warnings: list[str] = []
     try:
         query_results = query_smtp_tls_reporting_record(
             domain,
@@ -600,7 +604,11 @@ def check_smtp_tls_reporting(
         smtp_tls_reporting_results["tags"] = tags
         smtp_tls_reporting_results["warnings"] = warnings
     except SMTPTLSReportingError as error:
-        failure: SMTPTLSReportingFailure = {"valid": False, "error": str(error)}
+        failure: SMTPTLSReportingFailure = {
+            "valid": False,
+            "error": str(error),
+            "warnings": warnings,
+        }
         return failure
 
     return smtp_tls_reporting_results

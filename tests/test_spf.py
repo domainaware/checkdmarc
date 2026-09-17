@@ -2073,6 +2073,64 @@ class TestTxtCnameConflictWiring(unittest.TestCase):
             any("_spf.vendor.example has both" in w for w in result["warnings"])
         )
 
+    def _check_over_the_lookup_limit(self, record, extra_answers):
+        """Runs check_spf() for example.com with a: lookups answered, so a
+        record can cross the RFC 7208 ten-lookup limit deterministically."""
+        answers = {
+            ("example.com", "TXT"): [record],
+            ("_spf.vendor.example", "TXT"): ["v=spf1 ip4:192.0.2.0/24 -all"],
+            ("_spf.vendor.example", "CNAME"): ["_spf.other.example"],
+            ("_spf.other.example", "TXT"): ["v=spf1 -all"],
+            **extra_answers,
+        }
+
+        def fake(target, rdtype, **kwargs):
+            answer = answers.get((target, rdtype), dns.resolver.NoAnswer())
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        with (
+            patch("checkdmarc.spf.query_dns", side_effect=fake),
+            patch("checkdmarc.spf.get_a_records", return_value=["192.0.2.1"]),
+        ):
+            return checkdmarc.spf.check_spf("example.com")
+
+    def testConflictKeptWhenAggregatingTheChildCrossesTheLimit(self):
+        """The child parses fine with ten lookups; adding them to the parent's
+        own include lookup crosses the limit in the parent's counter, after
+        the child's warnings exist but before they used to be merged"""
+        ten_lookups = " ".join(f"a:h{i}.example" for i in range(10))
+        result = self._check_over_the_lookup_limit(
+            "v=spf1 include:child.example -all",
+            {
+                ("child.example", "TXT"): [
+                    f"v=spf1 include:_spf.vendor.example {ten_lookups} -all"
+                ]
+            },
+        )
+        # child.example: 1 (its include) + 10 = 11, over the limit inside
+        # the child, which re-raises with its accumulated warnings
+        self.assertFalse(result["valid"])
+        self.assertIn("lookups", result["error"])
+        self.assertTrue(
+            any("_spf.vendor.example has both" in w for w in result["warnings"])
+        )
+
+    def testConflictKeptWhenTheParentCounterCrossesTheLimit(self):
+        """The child stays within the limit on its own; the parent's counter
+        crosses it when the child's lookups are added to the parent's"""
+        ten_lookups = " ".join(f"a:h{i}.example" for i in range(10))
+        result = self._check_over_the_lookup_limit(
+            "v=spf1 include:_spf.vendor.example -all",
+            {("_spf.vendor.example", "TXT"): [f"v=spf1 {ten_lookups} -all"]},
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("lookups", result["error"])
+        self.assertTrue(
+            any("_spf.vendor.example has both" in w for w in result["warnings"])
+        )
+
     def testInvalidRedirectRecordKeepsItsLookupWarnings(self):
         result = self._check_with_nested_conflict(
             "v=spf1 redirect=_spf.vendor.example", "v=spf1 ip4:not-an-ip -all"

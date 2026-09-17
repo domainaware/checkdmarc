@@ -218,6 +218,9 @@ class MTASTSCheckSuccess(TypedDict):
 class MTASTSCheckFailure(TypedDict):
     valid: Literal[False]
     error: str
+    # Warnings gathered before the error: from the record lookup, and from
+    # the record parse and policy download when those succeeded first
+    warnings: list[str]
 
 
 MTASTSCheckResult = MTASTSCheckSuccess | MTASTSCheckFailure
@@ -755,8 +758,10 @@ def check_mta_sts(
 
                       - ``error`` - The error message
                       - ``valid`` - False
+                      - ``warnings`` - warning conditions found before the error
     """
     domain = normalize_domain(domain)
+    warnings: list[str] = []
     try:
         query_results = query_mta_sts_record(
             domain,
@@ -787,6 +792,7 @@ def check_mta_sts(
         mta_sts_results_failure: MTASTSCheckFailure = {
             "valid": False,
             "error": str(error),
+            "warnings": warnings,
         }
         return mta_sts_results_failure
 
