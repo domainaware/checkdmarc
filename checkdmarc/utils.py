@@ -351,8 +351,7 @@ def _nameserver_key(nameserver: str | Nameserver) -> str:
     and address (for example ``Do53:1.1.1.1@53``), so the same configured
     entry gets the same key whether it is queried through
     ``dns.resolver.Resolver`` in ``query_dns()`` or directly in
-    ``checkdmarc.dnssec``. dnspython uses that same text form when it reports
-    which nameserver raised an error.
+    ``checkdmarc.dnssec``.
 
     Args:
         nameserver: A nameserver entry
@@ -416,57 +415,147 @@ def _order_nameservers(
     return healthy + failed
 
 
-def _note_resolution_failures(
-    nameservers: Sequence[str | Nameserver], error: Exception
-) -> None:
+class _FailureTrackingNameserver(Nameserver):
     """
-    Records the nameservers that raised a transport error during a
-    ``dns.resolver.Resolver.resolve()`` call that gave up.
+    Wraps a nameserver so that a ``dns.resolver.Resolver.resolve()`` call
+    reveals which servers raised a transport error along the way.
 
-    dnspython's ``LifetimeTimeout`` and ``NoNameservers`` carry the
-    per-attempt errors as ``(nameserver text, tcp, port, error, response)``
-    tuples. The error is an exception for a transport failure (a timeout, a
-    refused connection, a malformed reply) and a response code string such
-    as ``SERVFAIL`` or ``REFUSED`` when the server did answer; only the
-    former says the server itself is unusable.
+    dnspython tries nameservers in order and moves on when one fails, but a
+    successful answer does not say which servers it skipped past, or why. A
+    server that answered SERVFAIL for one name is not broken, so guessing
+    from position would demote it unfairly. Observing ``query()`` directly
+    records only actual transport failures — timeouts, refused connections,
+    malformed replies — for exactly the servers that raised them.
+
+    A truncated UDP reply is not a failure: dnspython retries it over TCP on
+    the same server, so ``dns.message.Truncated`` is passed through without
+    being recorded.
+    """
+
+    def __init__(self, nameserver: Nameserver, failed: list[Nameserver]):
+        super().__init__()
+        self.nameserver = nameserver
+        self._failed = failed
+
+    def __str__(self) -> str:
+        return str(self.nameserver)
+
+    def kind(self) -> str:
+        return self.nameserver.kind()
+
+    def is_always_max_size(self) -> bool:
+        return self.nameserver.is_always_max_size()
+
+    def answer_nameserver(self) -> str:
+        return self.nameserver.answer_nameserver()
+
+    def answer_port(self) -> int:
+        return self.nameserver.answer_port()
+
+    def query(
+        self,
+        request: dns.message.QueryMessage,
+        timeout: float,
+        source: str | None,
+        source_port: int,
+        max_size: bool,
+        one_rr_per_rrset: bool = False,
+        ignore_trailing: bool = False,
+    ) -> dns.message.Message:
+        try:
+            return self.nameserver.query(
+                request,
+                timeout,
+                source,
+                source_port,
+                max_size,
+                one_rr_per_rrset=one_rr_per_rrset,
+                ignore_trailing=ignore_trailing,
+            )
+        except dns.message.Truncated:
+            raise
+        except Exception:
+            # Not handled here — only observed. dnspython's resolve() loop
+            # catches every exception from query() and decides what to do
+            # with it; this just notes which server it came from.
+            self._failed.append(self.nameserver)
+            raise
+
+
+def _resolve_with_failover(
+    domain: str,
+    record_type: str,
+    *,
+    nameservers: Sequence[str | Nameserver] | None,
+    resolver: dns.resolver.Resolver | None,
+    timeout: float,
+    retries: int,
+) -> dns.resolver.Answer:
+    """
+    Resolves one name and record type, with the resolver setup, nameserver
+    ordering, failure bookkeeping, and retry behavior that every resolver
+    based lookup in this package shares.
+
+    When no resolver is supplied, one is built with the configured (or
+    system) nameservers ordered by ``_order_nameservers()`` and wrapped in
+    ``_FailureTrackingNameserver`` so that every server that raises a
+    transport error during the call is recorded with
+    ``_note_nameserver_failure()`` — whether the call then succeeds, fails
+    with a retryable error, or ends in NXDOMAIN. A retry rebuilds the
+    resolver so its nameserver order reflects the failures just recorded.
+    A caller-supplied resolver is used as-is and is not reordered.
 
     Args:
-        nameservers (list): The nameservers the resolver was configured with
-        error (Exception): The error ``resolve()`` raised
+        domain (str): The name to query
+        record_type (str): The record type to query for
+        nameservers (list): The configured nameservers, or ``None`` for the
+                            system resolvers
+        resolver (dns.resolver.Resolver): A caller-supplied resolver, or
+                                          ``None`` to build one
+        timeout (float): Lifetime budget in seconds per configured nameserver
+        retries (int): Number of times to retry after a retryable error
+
+    Returns:
+        dns.resolver.Answer: The answer
     """
-    errors = getattr(error, "kwargs", {}).get("errors", [])
-    failed_keys = {err[0] for err in errors if isinstance(err[3], Exception)}
-    for nameserver in nameservers:
-        if _nameserver_key(nameserver) in failed_keys:
-            _note_nameserver_failure(nameserver)
-
-
-def _note_nameservers_passed_over(
-    nameservers: Sequence[str | Nameserver], answer: dns.resolver.Answer
-) -> None:
-    """
-    Records the nameservers a successful ``resolve()`` call skipped past.
-
-    dnspython tries nameservers in order and only moves on when one fails to
-    answer, so every nameserver ahead of the one that produced the answer
-    failed at least once during the query. (If the whole list failed once
-    and the answer came on a second pass, only the nameservers ahead of the
-    answering one on that pass are recorded.) A server that answered
-    SERVFAIL for a name another server could resolve counts too,
-    deliberately: when one resolver cannot resolve names another can,
-    preferring the other for a while is what the caller wants.
-
-    Args:
-        nameservers (list): The nameservers the resolver was configured with
-        answer (dns.resolver.Answer): The answer, which names its source
-    """
-    sources = [
-        ns if isinstance(ns, str) else ns.answer_nameserver() for ns in nameservers
-    ]
-    if answer.nameserver not in sources:
-        return
-    for nameserver in nameservers[: sources.index(answer.nameserver)]:
-        _note_nameserver_failure(nameserver)
+    timeout = float(timeout)
+    attempt = 0
+    while True:
+        failed: list[Nameserver] = []
+        active = resolver
+        if active is None:
+            active = dns.resolver.Resolver()
+            configured = active.nameservers if nameservers is None else nameservers
+            # Try nameservers that recently failed to answer last; see
+            # _order_nameservers()
+            ordered = _order_nameservers(_nameservers_to_resolver_input(configured))
+            active.nameservers = [
+                _FailureTrackingNameserver(ns, failed)
+                if isinstance(ns, Nameserver)
+                else ns
+                for ns in ordered
+            ]
+            # Cap per-query UDP timeout at 1s so dnspython retries within the
+            # lifetime window on transient packet loss — otherwise with a
+            # single nameserver and timeout == lifetime, one dropped UDP
+            # datagram consumes the whole budget and raises LifetimeTimeout
+            # without a retry (dig's default +tries=3 masks this case). With
+            # multiple nameservers the same cap lets a slow/broken one fall
+            # through.
+            active.timeout = min(1.0, timeout)
+            if len(active.nameservers) > 1:
+                active.lifetime = timeout * len(active.nameservers)
+            else:
+                active.lifetime = timeout
+        try:
+            return active.resolve(domain, record_type, lifetime=active.lifetime)
+        except _RETRYABLE_DNS_ERRORS:
+            attempt += 1
+            if attempt > retries:
+                raise
+        finally:
+            for nameserver in failed:
+                _note_nameserver_failure(nameserver)
 
 
 def query_dns(
@@ -531,52 +620,16 @@ def query_dns(
         records = cache.get(cache_key)
         if isinstance(records, list):
             return records
-    own_resolver = resolver is None
-    ordered_nameservers: list[str | Nameserver] = []
-    if resolver is None:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        configured = resolver.nameservers if nameservers is None else nameservers
-        # Try nameservers that recently failed to answer last; see
-        # _order_nameservers()
-        ordered_nameservers = _order_nameservers(
-            _nameservers_to_resolver_input(configured)
-        )
-        resolver.nameservers = ordered_nameservers
-        # Cap per-query UDP timeout at 1s so dnspython retries within the
-        # lifetime window on transient packet loss — otherwise with a single
-        # nameserver and timeout == lifetime, one dropped UDP datagram
-        # consumes the whole budget and raises LifetimeTimeout without a
-        # retry (dig's default +tries=3 masks this case). With multiple
-        # nameservers the same cap lets a slow/broken one fall through.
-        resolver.timeout = min(1.0, timeout)
-        if len(resolver.nameservers) > 1:
-            resolver.lifetime = timeout * len(resolver.nameservers)
-        else:
-            resolver.lifetime = timeout
-    try:
-        answers = resolver.resolve(domain, record_type, lifetime=resolver.lifetime)
-    except _RETRYABLE_DNS_ERRORS as error:
-        if own_resolver:
-            _note_resolution_failures(ordered_nameservers, error)
-        _attempt += 1
-        if _attempt > retries:
-            raise
-        return query_dns(
-            domain,
-            record_type,
-            quoted_txt_segments=quoted_txt_segments,
-            nameservers=nameservers,
-            # A resolver built here is rebuilt on retry, so the retry's
-            # nameserver order reflects the failure just recorded
-            resolver=None if own_resolver else resolver,
-            timeout=timeout,
-            retries=retries,
-            _attempt=_attempt,
-            cache=cache,
-        )
-    if own_resolver:
-        _note_nameservers_passed_over(ordered_nameservers, answers)
+    answers = _resolve_with_failover(
+        domain,
+        record_type,
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        # _attempt counts attempts already made by an older caller that
+        # drove the retries itself
+        retries=max(retries - _attempt, 0),
+    )
     if record_type == "TXT":
         resource_records = [r.strings for r in answers]
         if quoted_txt_segments:
@@ -919,33 +972,22 @@ def _resolve_mx_rdatas(
     MX answers get their own query path instead of ``query_dns()`` because
     that function flattens answers to text and strips trailing dots, which
     turns the null MX ``"0 ."`` into the ambiguous ``"0 "``. Resolver
-    setup, caching, and retry behavior mirror ``query_dns()``.
+    setup, nameserver failover, and retries are shared with ``query_dns()``
+    through ``_resolve_with_failover()``; caching mirrors it.
     """
     domain = normalize_domain(domain)
     cache_key = f"{domain}_MX_parsed"
     cached = DNS_CACHE.get(cache_key)
     if isinstance(cached, list):
         return cached
-    if not resolver:
-        resolver = dns.resolver.Resolver()
-        timeout = float(timeout)
-        if nameservers is not None:
-            resolver.nameservers = _nameservers_to_resolver_input(nameservers)
-        # Same per-query UDP timeout cap and lifetime scaling as query_dns()
-        resolver.timeout = min(1.0, timeout)
-        if len(resolver.nameservers) > 1:
-            resolver.lifetime = timeout * len(resolver.nameservers)
-        else:
-            resolver.lifetime = timeout
-    attempts = 0
-    while True:
-        try:
-            answers = resolver.resolve(domain, "MX", lifetime=resolver.lifetime)
-            break
-        except _RETRYABLE_DNS_ERRORS:
-            attempts += 1
-            if attempts > retries:
-                raise
+    answers = _resolve_with_failover(
+        domain,
+        "MX",
+        nameservers=nameservers,
+        resolver=resolver,
+        timeout=timeout,
+        retries=retries,
+    )
     records = [(int(rdata.preference), rdata.exchange.to_text()) for rdata in answers]
     DNS_CACHE[cache_key] = records
     return records
