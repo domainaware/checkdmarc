@@ -1179,7 +1179,7 @@ class TestSPFQueryRecordEdges(unittest.TestCase):
 
         with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
             result = checkdmarc.spf.query_spf_record("example.com")
-        self.assertTrue(any("(>255)" in w for w in result["warnings"]))
+        self.assertTrue(any("at most 255 bytes" in w for w in result["warnings"]))
 
     def testLargeRecordWarning(self):
         """A record over 512 bytes produces a size warning"""
@@ -1192,7 +1192,95 @@ class TestSPFQueryRecordEdges(unittest.TestCase):
 
         with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
             result = checkdmarc.spf.query_spf_record("example.com")
-        self.assertTrue(any("> 512 bytes" in w for w in result["warnings"]))
+        self.assertTrue(any("over 512" in w for w in result["warnings"]))
+
+    # Six strings of ten ip4 mechanisms each: every string is well under
+    # 255 bytes, while the record as a whole is over 512
+    SPLIT_RECORD_SEGMENTS = (
+        ["v=spf1 "]
+        + [
+            " ".join(f"ip4:192.0.2.{block * 10 + i}" for i in range(10)) + " "
+            for block in range(6)
+        ]
+        + ["-all"]
+    )
+
+    @classmethod
+    def _split_record_answer(cls, quoted_txt_segments):
+        """The split record as query_dns() would return it
+
+        The caller of query_dns() decides whether the boundaries between a
+        TXT record's character-strings survive the lookup, so the fakes below
+        have to honor that argument for these tests to mean anything.
+        """
+        if quoted_txt_segments:
+            return "".join(f'"{segment}"' for segment in cls.SPLIT_RECORD_SEGMENTS)
+        return "".join(cls.SPLIT_RECORD_SEGMENTS)
+
+    def testSplitRecordIsNotCalledOneOversizedString(self):
+        """A record split into ≤255-byte strings gets no per-string warning
+
+        Regression test for issue #281. ``query_spf_record()`` used to ask
+        for the record with the boundaries between its character-strings
+        removed unless the caller opted in, so a properly split record
+        arrived as one long string and the size check called it oversized.
+        """
+
+        def fake_query_dns(domain, rdtype, quoted_txt_segments=False, **kwargs):
+            if rdtype != "TXT":
+                return []
+            return [self._split_record_answer(quoted_txt_segments)]
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            result = checkdmarc.spf.query_spf_record("example.com")
+        self.assertFalse(any("255 bytes" in w for w in result["warnings"]))
+        # The record really is over 512 bytes, so that warning stays
+        self.assertTrue(any("over 512" in w for w in result["warnings"]))
+
+    def testSplitTargetOfIncludeOrRedirectIsNotCalledOneOversizedString(self):
+        """A split record reached from another record gets no per-string warning
+
+        Issue #281 was reported against a ``redirect=`` target. Neither that
+        lookup nor the ``include:`` one asked to keep the boundaries between
+        the target record's character-strings, so both saw one long string.
+        """
+        target = "__spf.example.net"
+        # redirect= is only honored in a record with no all mechanism
+        # (RFC 7208 section 6.1), which is how issue #281's record is written
+        for record in (f"v=spf1 include:{target} -all", f"v=spf1 redirect={target}"):
+            with self.subTest(record=record):
+
+                def fake_query_dns(
+                    domain, rdtype, quoted_txt_segments=False, _record=record, **kwargs
+                ):
+                    if rdtype != "TXT":
+                        return []
+                    if domain == target:
+                        return [self._split_record_answer(quoted_txt_segments)]
+                    return [f'"{_record}"']
+
+                with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+                    result = checkdmarc.spf.check_spf("example.com")
+                self.assertTrue(result["valid"])
+                self.assertFalse(any("255 bytes" in w for w in result["warnings"]))
+                # The target record really is over 512 bytes, so that stays
+                self.assertTrue(any("over 512" in w for w in result["warnings"]))
+
+    def testQuotedTxtSegmentsArgumentIsDeprecated(self):
+        """Passing quoted_txt_segments warns and changes nothing"""
+
+        def fake_query_dns(domain, rdtype, **kwargs):
+            if rdtype == "SPF":
+                return []
+            return ['"v=spf1 -all"']
+
+        with patch("checkdmarc.spf.query_dns", side_effect=fake_query_dns):
+            for value in (True, False):
+                with self.assertWarns(DeprecationWarning):
+                    result = checkdmarc.spf.query_spf_record(
+                        "example.com", quoted_txt_segments=value
+                    )
+                self.assertEqual(result["record"], "v=spf1 -all")
 
     def testSizeCheckSkippedOnUndecodableRecord(self):
         """A record that can't be UTF-8 encoded skips the advisory size check"""

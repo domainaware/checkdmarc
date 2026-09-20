@@ -1,5 +1,26 @@
 # Changelog
 
+## 6.0.3
+
+### Fixed
+
+- SPF: a record split into several quoted strings was reported as one
+  oversized string ("appears to be a single N-byte string") whenever it was
+  reached through an `include:` or `redirect=`, or looked up with
+  `get_spf_record()`. Only `check_spf()` asked the resolver to keep the
+  boundaries between a TXT record's character-strings, so every other caller
+  measured the whole record as one string. The lookup now always keeps them
+  (#281)
+
+### Changed
+
+- SPF: the `quoted_txt_segments` argument of `query_spf_record()` is deprecated
+  and ignored; passing it raises a `DeprecationWarning`. It never changed the
+  returned record, which always has the quotes stripped
+- SPF: the record size warnings cite RFC 1035 section 3.3 for the 255-byte
+  limit on a single TXT character-string, which is where that limit is defined;
+  RFC 7208 section 3.3 only says the strings are joined together
+
 ## 6.0.2
 
 ### Added
