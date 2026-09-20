@@ -1072,11 +1072,12 @@ class TestTreeWalkOrganizationalDomainSelection(unittest.TestCase):
             result = checkdmarc.dmarc.query_dmarc_record("a.mail.example.com")
         self.assertEqual(result["location"], "com")
         self.assertEqual(result["record"], "v=DMARC1; p=reject; psd=y")
-        self.assertTrue(
-            any(
-                "Organizational Domain" in w and "example.com" in w
-                for w in result["warnings"]
-            )
+        self.assertIn(
+            "The Organizational Domain of a.mail.example.com is example.com "
+            "(the domain one label below the psd=y record at com), but no "
+            "DMARC record was found there, so the Public Suffix Domain "
+            "record at com applies.",
+            result["warnings"],
         )
 
     def testPsdYSelectsRecordOneLabelBelow(self):
