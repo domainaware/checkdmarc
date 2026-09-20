@@ -7,6 +7,7 @@ import logging
 import re
 from collections.abc import Sequence
 from typing import TypedDict
+from warnings import warn
 
 import dns
 import dns.exception
@@ -478,7 +479,7 @@ def query_spf_record(
     domain: str,
     *,
     nameservers: Sequence[str | Nameserver] | None = None,
-    quoted_txt_segments: bool = False,
+    quoted_txt_segments: bool | None = None,
     resolver: dns.resolver.Resolver | None = None,
     timeout: float = DEFAULT_DNS_TIMEOUT,
     retries: int = DEFAULT_DNS_MAX_RETRIES,
@@ -488,7 +489,11 @@ def query_spf_record(
 
     Args:
         domain (str): A domain name
-        quoted_txt_segments (bool): Retain quotes around TXT segments
+        quoted_txt_segments (bool): Deprecated and ignored. The returned
+                                    record never has quotes around its TXT
+                                    segments, and the lookup always asks for
+                                    the quoted form internally so it can
+                                    measure each segment separately.
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS requests
         timeout (float): number of seconds to wait for an answer from DNS
@@ -503,6 +508,15 @@ def query_spf_record(
         :exc:`checkdmarc.spf.SPFRecordNotFound`
         :exc:`checkdmarc.spf.MultipleSPFRTXTRecords`
     """
+    if quoted_txt_segments is not None:
+        warn(
+            "The quoted_txt_segments argument of query_spf_record() is "
+            "deprecated and ignored. The returned record never keeps the "
+            "quotes, and the lookup always asks for the quoted form so that "
+            "it can measure each TXT character-string separately.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     domain = normalize_domain(domain)
     logger.debug(f"Checking for an SPF record on {domain}")
     txt_prefix = "v=spf1"
@@ -522,7 +536,6 @@ def query_spf_record(
         spf_type_records += query_dns(
             domain,
             "SPF",
-            quoted_txt_segments=quoted_txt_segments,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
@@ -546,7 +559,12 @@ def query_spf_record(
         answers = query_dns(
             domain,
             "TXT",
-            quoted_txt_segments=quoted_txt_segments,
+            # Always keep the quotes around each TXT character-string. They
+            # are stripped from the record this function returns, but the
+            # RFC 7208 section 3.3 size check below can only tell a properly
+            # split record from one oversized string while the boundaries
+            # are still visible.
+            quoted_txt_segments=True,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
@@ -615,39 +633,40 @@ def query_spf_record(
     except dns.exception.DNSException as error:
         raise _not_found(error)
 
-    # Per RFC 7208 § 3.3: any single TXT "character-string" should be ≤255 bytes.
-    # Per RFC 7208 § 3.4: keep overall SPF record small enough for UDP (advise ~450B, warn at >512B).
+    # A TXT record can hold several character-strings, and RFC 7208 section
+    # 3.3 says a receiver joins them without adding spaces. Each one is
+    # length-prefixed by a single octet, so it holds at most 255 bytes
+    # (RFC 1035 section 3.3). RFC 7208 section 3.4 asks for the whole answer
+    # to stay small enough for UDP (aim for ~450 bytes, 512 at the most).
     try:
-        txt_strings = re.findall(r'"([^"]*)"', spf_record) if spf_record else []
-        if txt_strings:
-            for i, chunk in enumerate(txt_strings, 1):
-                blen = len(chunk.encode("utf-8"))
-                if blen > 255:
-                    warnings.append(
-                        f"SPF TXT string chunk #{i} for {domain} is {blen} bytes (>255). "
-                        "Each individual TXT character-string should be ≤ 255 bytes (RFC 7208 § 3.3)."
-                    )
-            joined = "".join(txt_strings)
-        else:
-            joined = spf_record or ""
-            blen = len(joined.encode("utf-8"))
+        # The lookup above keeps the quotes, so each character-string is
+        # still visible here. A record without quotes can only reach this
+        # point from a caller that replaced the lookup; measure it as the
+        # one string it looks like rather than guessing at boundaries.
+        txt_strings = re.findall(r'"([^"]*)"', spf_record) or [spf_record]
+        for i, chunk in enumerate(txt_strings, 1):
+            blen = len(chunk.encode("utf-8"))
             if blen > 255:
                 warnings.append(
-                    f"The SPF record for {domain} appears to be a single {blen}-byte string; "
-                    "a single TXT character-string should be ≤ 255 bytes (RFC 7208 § 3.3). "
-                    "Consider splitting it into multiple quoted strings."
+                    f"String {i} of {len(txt_strings)} in the SPF record for "
+                    f"{domain} is {blen} bytes. Each TXT character-string "
+                    "holds at most 255 bytes (RFC 1035 section 3.3). Split "
+                    "the record into more quoted strings."
                 )
 
-        total_bytes = len(joined.encode("utf-8"))
+        total_bytes = len("".join(txt_strings).encode("utf-8"))
         if total_bytes > 512:
             warnings.append(
-                f"The SPF record for {domain} is > 512 bytes ({total_bytes} bytes). "
-                "This likely exceeds the reliable UDP response size; some verifiers may ignore or fail it (RFC 7208 § 3.4)."
+                f"The SPF record for {domain} is {total_bytes} bytes, over "
+                "512. That is more than a DNS answer can reliably carry over "
+                "UDP, so some verifiers may ignore or fail it (RFC 7208 "
+                "section 3.4)."
             )
         elif total_bytes > 450:
             warnings.append(
                 f"The SPF record for {domain} is {total_bytes} bytes. "
-                "RFC 7208 § 3.4 recommends keeping answers under ~450 bytes so the whole DNS message fits in 512 bytes."
+                "RFC 7208 section 3.4 recommends keeping answers under about "
+                "450 bytes so the whole DNS message fits in 512 bytes."
             )
     except UnicodeError as size_check_error:
         # The size check is advisory only. A record with characters that
@@ -1824,7 +1843,6 @@ def check_spf(
     try:
         spf_query = query_spf_record(
             domain,
-            quoted_txt_segments=True,
             nameservers=nameservers,
             resolver=resolver,
             timeout=timeout,
