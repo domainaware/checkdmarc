@@ -189,7 +189,13 @@ class Test(unittest.TestCase):
         with self.assertLogs("checkdmarc.dnssec", level="WARNING") as logs:
             result = checkdmarc.dnssec.check_dnssec("dnssec-failed.org")
         self.assertFalse(result)
-        self.assertTrue(any("dnssec-failed.org" in line for line in logs.output))
+        self.assertTrue(
+            any(
+                "DNSSEC for dnssec-failed.org is broken:" in line
+                for line in logs.output
+            ),
+            logs.output,
+        )
 
     @network_test
     def testDNSSECNameChainDoesNotRaise(self):
