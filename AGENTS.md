@@ -88,11 +88,19 @@ Some tests require network access and are skipped when `GITHUB_ACTIONS` env var 
   reads it from there.
 - Releases are automated by `.github/workflows/release.yml`: pushing a tag
   matching the version (e.g. `5.17.5`, no `v` prefix) runs the full CI suite
-  (lint + type-check + test matrix, reused from `ci.yml` via `workflow_call`),
-  and only if it passes builds the package, publishes it to PyPI via Trusted
-  Publishing, creates the GitHub Release with the tag's `CHANGELOG.md` section
-  as its notes, and deploys the Sphinx docs to GitHub Pages. The build job
-  fails if the tag doesn't match `__version__`.
+  (lint + type-check + test matrix, reused from `ci.yml` via `workflow_call`)
+  alongside a `code-scanning` job, and only if both pass builds the package,
+  publishes it to PyPI via Trusted Publishing, creates the GitHub Release with
+  the tag's `CHANGELOG.md` section as its notes, and deploys the Sphinx docs to
+  GitHub Pages. The build job fails if the tag doesn't match `__version__`.
+- The `code-scanning` job blocks the release while any code scanning alert is
+  open. Because CodeQL analyzes `main` rather than tags, it first waits (up to
+  15 minutes) for CodeQL to finish analyzing the tagged commit in every
+  language it covers, so the alert list it then reads is about the code being
+  released rather than an earlier commit. An alert that is a false positive
+  should be dismissed in the Security tab — a dismissed alert has state
+  `dismissed`, not `open`, so it stops blocking — and a real one needs fixing
+  and the tag recutting.
 - Docs deployment lives in `.github/workflows/docs.yml`, which release.yml
   calls. For documentation-only updates between releases, the maintainer can
   run it on demand (Actions → Docs → Run workflow); it deploys straight to
@@ -109,14 +117,17 @@ These rules apply to anyone — human or agent — making changes to this repo. 
   - **Exception — branches you created in-session** When you have explicitly created a feature branch yourself (e.g. `git checkout -b feat/something`) in that session, commit and push to THAT branch freely without per-step permission. The entire branch is reviewed at PR-open, so the per-commit gate adds review noise without adding safety. The exception is scoped to branches Claude created in the current session; it does NOT extend to `main`, to other long-lived branches, or to branches the author created.
 - **Check for and resolve open security alerts and Dependabot PRs before creating a PR branch.** Before branching for a release or a substantive change, look at all three of the repository's open Dependabot / security alerts (`gh api repos/domainaware/checkdmarc/dependabot/alerts`), open code scanning alerts (`gh api repos/domainaware/checkdmarc/code-scanning/alerts --jq '.[] | select(.state=="open")'`), AND any open Dependabot pull requests (`gh pr list --repo domainaware/checkdmarc --author 'app/dependabot'`), and fold the fixes into the same branch rather than leaving them to pile up against `main`. A Dependabot PR that's already green can simply be merged into the release branch instead of hand-applied; the point is that nothing security-relevant ships a release with the fix still sitting unmerged. Pin the minimum dependency version *above* the first patched version named in the advisory, and verify the new floor actually co-installs with its peers (e.g. `cryptography` and `pyopenssl` constrain each other release-to-release) by doing a clean resolve and running the full test suite against the resolved versions. This is a library, so update the version ranges in `pyproject.toml` and `requirements.txt` — do not add a lock file. Record the fix as a "Security" CHANGELOG entry citing the advisory (e.g. its GHSA id).
   - **Code scanning alerts need asking for by name.** CodeQL runs as GitHub
-    default setup, on pull requests and weekly; it is not part of `ci.yml`, so
-    `release.yml` never sees it and a tag push is gated only on lint,
-    type-check, and tests. A pull request's own CodeQL check reports only what
-    that diff introduces, so alerts already open on `main` pass it silently.
-    Neither gate will tell you about them — the `code-scanning/alerts` query
-    above is the only thing that will. When reporting that this check is
-    clean, name which of the three sources you actually queried; "no
-    Dependabot alerts" is not the same statement as "no open alerts".
+    default setup, on pull requests and weekly, and is not part of `ci.yml`. A
+    pull request's own CodeQL check reports only what that diff introduces, so
+    alerts already open on `main` pass it silently — a green CodeQL check on a
+    PR is not a statement that the repository is clean. The
+    `code-scanning/alerts` query above is what tells you. When reporting that
+    this check is clean, name which of the three sources you actually queried;
+    "no Dependabot alerts" is not the same statement as "no open alerts".
+    `release.yml` has its own `code-scanning` job that blocks a tag push while
+    any alert is open, but that gate is the backstop, not a substitute for
+    looking before you branch: finding an alert there means the release is
+    already half-built and the tag has to be recut.
   - A code scanning alert in test code is still an alert. Fix the pattern
     rather than dismissing it: these usually flag an assertion that is too
     loose to mean what it claims (a bare `"example.com" in warning` also
