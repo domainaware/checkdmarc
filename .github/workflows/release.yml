@@ -25,7 +25,8 @@ jobs:
   # CodeQL runs as GitHub default setup (on pull requests and weekly), not
   # from ci.yml, so nothing in the release chain would otherwise look at it.
   # A pull request's own CodeQL check only reports what that diff introduces,
-  # which means alerts already open on main pass every check a release sees.
+  # which means alerts already open on the default branch pass every check a
+  # release sees.
   # This job is what stops a release shipping with one of those open.
   code-scanning:
     name: No open code scanning alerts
@@ -36,6 +37,10 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
+      # CodeQL analyzes the default branch, not tags. Passed through the
+      # environment rather than interpolated into the scripts below, so the
+      # shell never sees a ${{ }} expansion.
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       # An alert list is only worth reading if CodeQL has looked at the code
       # being released. The tag is usually pushed right after the commit
@@ -48,27 +53,27 @@ jobs:
           echo "Tag $GITHUB_REF_NAME is commit $sha"
 
           # Which languages CodeQL covers is repository configuration, so read
-          # it back from the analyses already published for main instead of
-          # hard-coding a list here that would silently drift out of date. A
-          # short window means a language removed from the configuration ages
-          # out of it within a few commits.
+          # it back from the analyses already published for the default branch
+          # instead of hard-coding a list here that would silently drift out of
+          # date. A short window means a language removed from the
+          # configuration ages out of it within a few commits.
           expected="$(
-            gh api "repos/$REPO/code-scanning/analyses?ref=refs/heads/main&per_page=20" \
+            gh api "repos/$REPO/code-scanning/analyses?ref=refs/heads/$DEFAULT_BRANCH&per_page=20" \
               --jq '[.[].category] | unique | .[]'
           )"
           if [ -z "$expected" ]; then
-            echo "::error::No CodeQL analyses found for main, so there is no way" \
-              "to tell whether this commit was scanned"
+            echo "::error::No CodeQL analyses found for $DEFAULT_BRANCH, so there" \
+              "is no way to tell whether this commit was scanned"
             exit 1
           fi
-          echo "CodeQL publishes these categories for main:"
+          echo "CodeQL publishes these categories for $DEFAULT_BRANCH:"
           echo "$expected" | sed 's/^/  /'
 
           deadline=$((SECONDS + 900))
           while :; do
             analyzed="$(
               SHA="$sha" gh api \
-                "repos/$REPO/code-scanning/analyses?ref=refs/heads/main&per_page=100" \
+                "repos/$REPO/code-scanning/analyses?ref=refs/heads/$DEFAULT_BRANCH&per_page=100" \
                 --jq '[.[] | select(.commit_sha == env.SHA) | .category] | unique | .[]'
             )"
             missing="$(comm -23 <(echo "$expected" | sort) <(echo "$analyzed" | sort) || true)"
@@ -94,7 +99,7 @@ jobs:
           set -euo pipefail
 
           alerts="$(
-            gh api "repos/$REPO/code-scanning/alerts?ref=refs/heads/main&state=open&per_page=100"
+            gh api "repos/$REPO/code-scanning/alerts?ref=refs/heads/$DEFAULT_BRANCH&state=open&per_page=100"
           )"
           count="$(echo "$alerts" | jq length)"
 
