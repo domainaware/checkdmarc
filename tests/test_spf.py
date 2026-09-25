@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import dns.exception
 import dns.resolver
+import dns.rrset
 
 import checkdmarc.spf
 from checkdmarc.spf import (
@@ -1298,6 +1299,137 @@ class TestSPFQueryRecordEdges(unittest.TestCase):
             result = checkdmarc.spf.query_spf_record("example.com")
         self.assertEqual(result["record"], record)
         self.assertFalse(any("bytes" in w for w in result["warnings"]))
+
+
+class TestSPFTxtStringBoundaries(unittest.TestCase):
+    """Exercise TXT decoding as well as SPF selection (issue #286)."""
+
+    SPLIT_RECORDS = (
+        '"v=spf1" " -all"',
+        '"v=sp" "f1 -all"',
+        '"v=spf1 " "-all"',
+    )
+
+    def setUp(self):
+        self.answers: dict[tuple[str, str], dns.rrset.RRset] = {}
+        # Keep every case independent without altering the shared DNS cache.
+        self.cache_patch = patch("checkdmarc.utils.DNS_CACHE", None)
+        self.cache_patch.start()
+        self.addCleanup(self.cache_patch.stop)
+
+        def resolve(domain, rdtype, **kwargs):
+            return self.answers.get((domain, rdtype), [])
+
+        self.resolver_patch = patch(
+            "checkdmarc.utils._resolve_with_failover", side_effect=resolve
+        )
+        self.resolver_patch.start()
+        self.addCleanup(self.resolver_patch.stop)
+
+    def setTxtRecords(self, domain, *records):
+        self.answers[(domain, "TXT")] = dns.rrset.from_text(
+            domain, 60, "IN", "TXT", *records
+        )
+
+    def testSplitVersionAtTopLevel(self):
+        """String boundaries do not change the record selected or parsed."""
+        for txt in self.SPLIT_RECORDS:
+            with self.subTest(txt=txt):
+                self.setTxtRecords("example.com", txt)
+                result = checkdmarc.spf.check_spf("example.com")
+                self.assertTrue(result["valid"], result)
+                self.assertEqual(result["record"], "v=spf1 -all")
+                self.assertEqual(result["parsed"]["all"], "fail")
+                self.assertEqual(result["warnings"], [])
+
+    def testSplitVersionInIncludeAndRedirectTargets(self):
+        """All six include/redirect cases from issue #286 remain valid."""
+        target = "_spf.example.net"
+        for txt in self.SPLIT_RECORDS:
+            for root in (f"v=spf1 include:{target} -all", f"v=spf1 redirect={target}"):
+                with self.subTest(txt=txt, root=root):
+                    self.setTxtRecords("example.com", f'"{root}"')
+                    self.setTxtRecords(target, txt)
+                    result = checkdmarc.spf.check_spf("example.com")
+                    self.assertTrue(result["valid"], result)
+                    if "include:" in root:
+                        nested = cast(
+                            SPFIncludeMechanism, result["parsed"]["mechanisms"][0]
+                        )
+                    else:
+                        nested = result["parsed"]["redirect"]
+                    assert nested is not None
+                    self.assertEqual(nested["record"], "v=spf1 -all")
+                    nested_parsed = nested["parsed"]
+                    assert nested_parsed is not None
+                    self.assertEqual(nested_parsed["all"], "fail")
+                    self.assertEqual(result["warnings"], [])
+
+    def testSplitVersionSelectionBoundaries(self):
+        """Concatenation preserves case, empty strings, and the end boundary."""
+        for txt, expected in (
+            ('"V=SP" "F1 -all"', "V=SPF1 -all"),
+            ('"v=sp" "f1"', "v=spf1"),
+            ('"" "v=sp" "" "f1 -all" ""', "v=spf1 -all"),
+        ):
+            with self.subTest(txt=txt):
+                self.setTxtRecords("example.com", txt)
+                result = checkdmarc.spf.query_spf_record("example.com")
+                self.assertEqual(result, {"record": expected, "warnings": []})
+
+    def testSplitInvalidVersionsAreDiscarded(self):
+        """Joining strings must not add a space or trim leading whitespace."""
+        for txt in (
+            '"v=spf1" "0 -all"',
+            '"v=sp" "f1foo -all"',
+            '" " "v=spf1 -all"',
+            r'"v=sp\"f1 -all"',
+        ):
+            with self.subTest(txt=txt):
+                self.setTxtRecords("example.com", txt)
+                with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
+                    checkdmarc.spf.query_spf_record("example.com")
+
+    def testSplitLookalikeWarnsAlongsideValidRecord(self):
+        """A split invalid version is warned about without hiding valid SPF."""
+        self.setTxtRecords("example.com", '"v=sp" "f10 -all"', '"v=spf1 -all"')
+        result = checkdmarc.spf.query_spf_record("example.com")
+        self.assertEqual(result["record"], "v=spf1 -all")
+        self.assertEqual(
+            result["warnings"],
+            [
+                (
+                    "A TXT record that resembles an SPF record was discarded "
+                    "because its version section is not exactly "
+                    'v=spf1 (RFC 7208 section 4.5): "v=sp""f10 -all"'
+                )
+            ],
+        )
+
+    def testSplitRecordsStillCountAsMultipleSpfRecords(self):
+        """Concatenate strings within one TXT record, never separate records."""
+        self.setTxtRecords("example.com", '"v=sp" "f1 -all"', '"v=spf1 ~all"')
+        with self.assertRaises(checkdmarc.spf.MultipleSPFRTXTRecords):
+            checkdmarc.spf.query_spf_record("example.com")
+
+    def testSplitVersionPreservesSizeWarnings(self):
+        """A split prefix does not lose the real per-string size boundaries."""
+        segments = ["v=sp", "f1 "] + ["ip4:192.0.2.1 " * 10] * 4 + ["-all"]
+        txt = " ".join(f'"{segment}"' for segment in segments)
+        self.setTxtRecords("example.com", txt)
+        result = checkdmarc.spf.query_spf_record("example.com")
+        self.assertEqual(result["record"], "".join(segments))
+        self.assertEqual(
+            result["warnings"],
+            [
+                (
+                    "The SPF record for example.com is 571 bytes, over "
+                    "512. That is more than a DNS answer can reliably carry over "
+                    "UDP, so some verifiers may ignore or fail it (RFC 7208 "
+                    "section 3.4)."
+                )
+            ],
+        )
 
 
 class TestSPFCheckSpfErrorData(unittest.TestCase):

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- SPF: concatenate TXT character-strings before selecting records, so a split
+  within or immediately after `v=spf1` is accepted in top-level, `include:`,
+  and `redirect=` lookups as required by RFC 7208 section 3.3 (#286)
+
 ## 6.0.3
 
 ### Fixed
