@@ -457,12 +457,26 @@ def _validate_spf_macros(
         i = close + 1
 
 
+def _split_txt_strings(record: str) -> list[str]:
+    """Decode the quoted character-strings returned by query_dns()."""
+    # query_dns() escapes only quotes and backslashes. Match the entire
+    # representation and undo those escapes once, preserving literal data.
+    # An unquoted record supplied by a caller is already decoded.
+    quoted_string = r'"((?:[^"\\]|\\["\\])*)"'
+    if re.fullmatch(rf"{quoted_string}(?:\s*{quoted_string})*", record) is None:
+        return [record]
+    return [
+        re.sub(r'\\(["\\])', r"\1", chunk)
+        for chunk in re.findall(quoted_string, record)
+    ]
+
+
 def _is_spf_record(record: str) -> bool:
     """
     Tells whether a TXT record is an SPF record: RFC 7208 section 4.5 keeps
     only records that begin with a version section of exactly ``v=spf1``,
-    terminated by a space or the end of the record. Surrounding quotes are
-    ignored; the version is matched case-insensitively (section 12 ABNF
+    terminated by a space or the end of the record. The record is already
+    decoded; the version is matched case-insensitively (section 12 ABNF
     terminals are case-insensitive).
 
     Args:
@@ -471,7 +485,7 @@ def _is_spf_record(record: str) -> bool:
     Returns:
         bool: Whether the record is an SPF record
     """
-    lowered = record.strip('"').lower()
+    lowered = record.lower()
     return lowered == "v=spf1" or lowered.startswith("v=spf1 ")
 
 
@@ -570,7 +584,6 @@ def query_spf_record(
             timeout=timeout,
             retries=retries,
         )
-        spf_record = None
         for record in answers:
             # https://datatracker.ietf.org/doc/html/rfc7208#section-4.5
             #
@@ -586,18 +599,18 @@ def query_spf_record(
                 warnings.append("A TXT record with undecodable characters was skipped.")
                 continue
 
-            # query_dns() puts adjacent quotes between TXT character-strings.
-            # Join those strings before selecting records (RFC 7208 section
-            # 3.3), so a split within or immediately after "v=spf1" still
-            # matches. Keep the original record for the size checks below.
-            # Strip the surrounding quotes, not whitespace. Per RFC 7208
+            # Decode and join TXT character-strings before selecting records
+            # (RFC 7208 section 3.3). Literal quotes are payload, not string
+            # boundaries; keep them and retain the chunks for size checks.
+            # Do not strip whitespace. Per RFC 7208
             # section 4.5, "discard records that do not begin with a version
             # section of exactly 'v=spf1'", and the ABNF (section 12) defines
             # "record = version terms *SP" — the record begins with the version
             # and only *trailing* spaces are allowed. So a record with leading
             # whitespace (e.g. " v=spf1 ...") does not begin with the version
             # section and is discarded rather than treated as valid SPF.
-            cleaned_record = record.replace('""', "").strip('"')
+            txt_strings = _split_txt_strings(record)
+            cleaned_record = "".join(txt_strings)
             cleaned_record_lower = cleaned_record.lower()
 
             if SENDER_ID_VERSION_TAG_REGEX.match(cleaned_record):
@@ -610,7 +623,7 @@ def query_spf_record(
                 continue
 
             if _is_spf_record(cleaned_record):
-                spf_txt_records.append(record)
+                spf_txt_records.append((cleaned_record, txt_strings))
             elif cleaned_record_lower.startswith(txt_prefix):
                 # RFC 7208 section 4.5: discard records that do not begin
                 # with a version section of exactly "v=spf1" (for example
@@ -622,10 +635,9 @@ def query_spf_record(
                 )
         if len(spf_txt_records) > 1:
             raise MultipleSPFRTXTRecords("The domain has multiple SPF TXT records")
-        elif len(spf_txt_records) == 1:
-            spf_record = spf_txt_records[0]
-        if spf_record is None:
+        if not spf_txt_records:
             raise SPFRecordNotFound("An SPF record does not exist.", domain)
+        spf_record, txt_strings = spf_txt_records[0]
     except dns.resolver.NoAnswer:
         raise _not_found("An SPF record does not exist.")
     except dns.resolver.NXDOMAIN:
@@ -643,11 +655,8 @@ def query_spf_record(
     # (RFC 1035 section 3.3). RFC 7208 section 3.4 asks for the whole answer
     # to stay small enough for UDP (aim for ~450 bytes, 512 at the most).
     try:
-        # The lookup above keeps the quotes, so each character-string is
-        # still visible here. A record without quotes can only reach this
-        # point from a caller that replaced the lookup; measure it as the
-        # one string it looks like rather than guessing at boundaries.
-        txt_strings = re.findall(r'"([^"]*)"', spf_record) or [spf_record]
+        # Measure the decoded chunks, not the escaped presentation: an
+        # escaped quote or backslash still occupies just one payload byte.
         for i, chunk in enumerate(txt_strings, 1):
             blen = len(chunk.encode("utf-8"))
             if blen > 255:
@@ -679,7 +688,6 @@ def query_spf_record(
         # here is unexpected and should surface rather than be swallowed.
         logger.debug(f"Skipped SPF size check for {domain}: {size_check_error}")
 
-    spf_record = spf_record.replace('"', "")
     # RFC 7208 section 4.5: a receiver that gets more than one SPF record
     # for the name returns permerror
     cname_warning = _txt_cname_conflict_warning(
@@ -762,9 +770,9 @@ def parse_spf_record(
         # counts every evaluated term) without re-querying DNS.
         _include_cache = {}
 
-    # Collapse RFC-style split TXT tokens only, then remove remaining quotes.
-    # (Safer than blanket replace('" ', '') which could drop valid whitespace.)
-    record = re.sub(r'"\s+"', " ", record).replace('"', "")
+    # Accept quoted TXT presentation input from direct callers too, but keep
+    # literal quotes in already decoded records from query_spf_record().
+    record = "".join(_split_txt_strings(record))
 
     warnings = []
     spf_syntax_checker = _SPFGrammar()

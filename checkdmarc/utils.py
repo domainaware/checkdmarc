@@ -740,7 +740,8 @@ def query_dns(
     Args:
         domain (str): The domain or subdomain to query about
         record_type (str): The record type to query for
-        quoted_txt_segments (bool): Preserve quotes in TXT records
+        quoted_txt_segments (bool): Quote each TXT character-string, escaping
+                                   literal quotes and backslashes
         nameservers (list): A list of one or more nameservers to use.
                             Defaults to the system-configured resolvers
                             (``/etc/resolv.conf`` on Linux/macOS, the OS
@@ -797,9 +798,14 @@ def query_dns(
     if record_type == "TXT":
         resource_records = [r.strings for r in answers]
         if quoted_txt_segments:
-            # Join each sequence of byte chunks, adding quotes around each
+            # Preserve character-string boundaries without confusing literal
+            # quote octets with the surrounding quotes (RFC 1035 section 5.1).
+            # Escape backslashes first so the added escapes stay distinct.
             joined_records = [
-                b"".join(b'"' + part + b'"' for part in record)
+                b"".join(
+                    b'"' + part.replace(b"\\", b"\\\\").replace(b'"', b'\\"') + b'"'
+                    for part in record
+                )
                 for record in resource_records
                 if record  # skip empty or None
             ]
@@ -934,7 +940,8 @@ def get_txt_records(
 
     Args:
         domain (str): A domain name
-        quoted_txt_segments (bool): Preserve quotes in TXT records
+        quoted_txt_segments (bool): Quote each TXT character-string, escaping
+                                   literal quotes and backslashes
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests

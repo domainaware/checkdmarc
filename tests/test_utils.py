@@ -129,6 +129,46 @@ class TestQueryDns(unittest.TestCase):
         )
         self.assertEqual(result, ['"v=spf1 ""-all"'])
 
+    def testQuotedTxtEscapesLiteralQuotesAndBackslashes(self):
+        """Literal quote octets must stay distinct from string boundaries."""
+        resolver = _fake_resolver()
+        resolver.resolve.return_value = dns.rrset.from_text(
+            "example.com",
+            60,
+            "IN",
+            "TXT",
+            r'"v=spf1\"\" -all"',
+            '"v=spf1" " -all"',
+            r'"path\\034\\\"" "end\\"',
+        )
+        cache = ExpiringDict(10, 60)
+        result = checkdmarc.utils.query_dns(
+            "example.com",
+            "TXT",
+            quoted_txt_segments=True,
+            resolver=resolver,
+            cache=cache,
+        )
+        self.assertEqual(
+            result,
+            [
+                r'"v=spf1\"\" -all"',
+                '"v=spf1"" -all"',
+                r'"path\\034\\\"""end\\"',
+            ],
+        )
+        self.assertEqual(cache["example.com_TXT_True"], result)
+        # Plain queries continue to return the literal concatenated payload.
+        self.assertEqual(
+            checkdmarc.utils.query_dns(
+                "example.com",
+                "TXT",
+                resolver=resolver,
+                cache=cache,
+            ),
+            ['v=spf1"" -all', "v=spf1 -all", 'path\\034\\"end\\'],
+        )
+
     def testTxtRecordUndecodable(self):
         """Bytes that don't decode as UTF-8 are reported as 'Undecodable characters'"""
         fake_resolver = _fake_resolver()

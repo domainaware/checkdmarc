@@ -1390,6 +1390,84 @@ class TestSPFTxtStringBoundaries(unittest.TestCase):
                 with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
                     checkdmarc.spf.query_spf_record("example.com")
 
+    def testLiteralQuotesDoNotBecomeVersionBoundaries(self):
+        """Reject literal quotes at the root and in recursive SPF targets."""
+        for txt in (
+            r'"v=spf1\"\" -all"',
+            r'"v=sp\"\"f1 -all"',
+            r'"\"v=spf1 -all\""',
+            r'"v=spf1\""',
+        ):
+            for root in (
+                None,
+                "v=spf1 include:_spf.example.net -all",
+                "v=spf1 redirect=_spf.example.net",
+            ):
+                with self.subTest(txt=txt, root=root):
+                    self.setTxtRecords("example.com", f'"{root}"' if root else txt)
+                    self.setTxtRecords("_spf.example.net", txt)
+                    result = checkdmarc.spf.check_spf("example.com")
+                    self.assertFalse(result["valid"], result)
+                    self.assertIn("An SPF record does not exist.", result["error"])
+
+    def testQueryPreservesEscapedPayload(self):
+        """Decoding removes presentation escapes once, never payload octets."""
+        for txt, expected in (
+            (r'"v=spf1 x=a\"\"b\\034 -all"', 'v=spf1 x=a""b\\034 -all'),
+            (r'"v=spf1 x=tail\\" " -all"', "v=spf1 x=tail\\ -all"),
+            (r'"v=spf1 x=\010\009\000\195\169 -all"', "v=spf1 x=\n\t\x00é -all"),
+        ):
+            with self.subTest(txt=txt):
+                self.setTxtRecords("example.com", txt)
+                result = checkdmarc.spf.query_spf_record("example.com")
+                self.assertEqual(result, {"record": expected, "warnings": []})
+
+    def testParserPreservesLiteralQuotesAndBackslashes(self):
+        """Plain payload and escaped presentation input parse identically."""
+        expected = 'v=spf1 x=a""b\\034 -all'
+        for record in (expected, r'"v=sp" "f1 x=a\"\"b\\034 -all"'):
+            with self.subTest(record=record):
+                result = checkdmarc.spf.parse_spf_record(record, "example.com")
+                self.assertEqual(result["record"], expected)
+                self.assertEqual(result["parsed"]["all"], "fail")
+
+    def testMalformedQuotedPresentationIsNotPartiallyDecoded(self):
+        """Do not discard unmatched data surrounding quoted TXT strings."""
+        for record in ('"v=spf1 -all" junk', '"v=spf1 -all'):
+            with (
+                self.subTest(record=record),
+                self.assertRaises(checkdmarc.spf.SPFSyntaxError),
+            ):
+                checkdmarc.spf.parse_spf_record(record, "example.com")
+
+    def testEscapedPayloadSizeUsesDecodedBytes(self):
+        """Presentation escaping cannot inflate the per-string byte counts."""
+        self.setTxtRecords(
+            "example.com",
+            '"v=spf1 x=" "'
+            + r"\"" * 200
+            + '" "'
+            + r"\\" * 200
+            + '" "'
+            + "z" * 200
+            + '" " -all"',
+        )
+        result = checkdmarc.spf.query_spf_record("example.com")
+        self.assertEqual(
+            result["record"], "v=spf1 x=" + '"' * 200 + "\\" * 200 + "z" * 200 + " -all"
+        )
+        self.assertEqual(
+            result["warnings"],
+            [
+                (
+                    "The SPF record for example.com is 614 bytes, over "
+                    "512. That is more than a DNS answer can reliably carry over "
+                    "UDP, so some verifiers may ignore or fail it (RFC 7208 "
+                    "section 3.4)."
+                )
+            ],
+        )
+
     def testSplitLookalikeWarnsAlongsideValidRecord(self):
         """A split invalid version is warned about without hiding valid SPF."""
         self.setTxtRecords("example.com", '"v=sp" "f10 -all"', '"v=spf1 -all"')

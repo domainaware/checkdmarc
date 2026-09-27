@@ -4,9 +4,12 @@
 
 ### Fixed
 
-- SPF: concatenate TXT character-strings before selecting records, so a split
-  within or immediately after `v=spf1` is accepted in top-level, `include:`,
-  and `redirect=` lookups as required by RFC 7208 section 3.3 (#286)
+- SPF: concatenate TXT character-strings without removing literal quotes or
+  backslashes before selecting records, so a split within or immediately after
+  `v=spf1` is accepted in top-level, `include:`, and `redirect=` lookups as
+  required by RFC 7208 section 3.3 (#286)
+- DNS: escape literal quotes and backslashes in quoted TXT output so payload
+  characters remain distinct from string boundaries (RFC 1035 section 5.1)
 
 ## 6.0.3
 
