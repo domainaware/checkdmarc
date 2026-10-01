@@ -457,18 +457,31 @@ def _validate_spf_macros(
         i = close + 1
 
 
-def _split_txt_strings(record: str) -> list[str]:
-    """Decode the quoted character-strings returned by query_dns()."""
-    # query_dns() escapes only quotes and backslashes. Match the entire
-    # representation and undo those escapes once, preserving literal data.
-    # An unquoted record supplied by a caller is already decoded.
-    quoted_string = r'"((?:[^"\\]|\\["\\])*)"'
+def _decode_txt_strings(record: str) -> tuple[str, list[bytes] | None]:
+    """Return the TXT payload and its original byte strings, when quoted."""
+    # Decode RFC 1035 section 5.1 presentation escapes exactly once. Match
+    # the whole input so malformed quoted data remains visible to parsing.
+    octet = r"(?:[01][0-9]{2}|2[0-4][0-9]|25[0-5])"
+    quoted_string = rf'"((?:[^"\\]|\\(?:["\\]|{octet}))*)"'
     if re.fullmatch(rf"{quoted_string}(?:\s*{quoted_string})*", record) is None:
-        return [record]
-    return [
-        re.sub(r'\\(["\\])', r"\1", chunk)
-        for chunk in re.findall(quoted_string, record)
-    ]
+        return record, None
+    try:
+        chunks = [
+            re.sub(
+                rb'\\(["\\]|[0-9]{3})',
+                lambda match: (
+                    bytes([int(match[1])]) if len(match[1]) == 3 else match[1]
+                ),
+                chunk.encode("utf-8"),
+            )
+            for chunk in re.findall(quoted_string, record)
+        ]
+        # A UTF-8 sequence may cross a TXT byte boundary: concatenate first
+        # (RFC 7208 section 3.3), retaining each chunk for byte-size checks.
+        return b"".join(chunks).decode("utf-8"), chunks
+    except UnicodeError:
+        # Leave malformed direct input intact for the caller's validation.
+        return record, None
 
 
 def _is_spf_record(record: str) -> bool:
@@ -609,8 +622,7 @@ def query_spf_record(
             # and only *trailing* spaces are allowed. So a record with leading
             # whitespace (e.g. " v=spf1 ...") does not begin with the version
             # section and is discarded rather than treated as valid SPF.
-            txt_strings = _split_txt_strings(record)
-            cleaned_record = "".join(txt_strings)
+            cleaned_record, txt_strings = _decode_txt_strings(record)
             cleaned_record_lower = cleaned_record.lower()
 
             if SENDER_ID_VERSION_TAG_REGEX.match(cleaned_record):
@@ -657,8 +669,10 @@ def query_spf_record(
     try:
         # Measure the decoded chunks, not the escaped presentation: an
         # escaped quote or backslash still occupies just one payload byte.
+        if txt_strings is None:
+            txt_strings = [spf_record.encode("utf-8")]
         for i, chunk in enumerate(txt_strings, 1):
-            blen = len(chunk.encode("utf-8"))
+            blen = len(chunk)
             if blen > 255:
                 warnings.append(
                     f"String {i} of {len(txt_strings)} in the SPF record for "
@@ -667,7 +681,7 @@ def query_spf_record(
                     "the record into more quoted strings."
                 )
 
-        total_bytes = len("".join(txt_strings).encode("utf-8"))
+        total_bytes = sum(len(chunk) for chunk in txt_strings)
         if total_bytes > 512:
             warnings.append(
                 f"The SPF record for {domain} is {total_bytes} bytes, over "
@@ -772,7 +786,7 @@ def parse_spf_record(
 
     # Accept quoted TXT presentation input from direct callers too, but keep
     # literal quotes in already decoded records from query_spf_record().
-    record = "".join(_split_txt_strings(record))
+    record, _ = _decode_txt_strings(record)
 
     warnings = []
     spf_syntax_checker = _SPFGrammar()

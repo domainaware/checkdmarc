@@ -1433,12 +1433,127 @@ class TestSPFTxtStringBoundaries(unittest.TestCase):
 
     def testMalformedQuotedPresentationIsNotPartiallyDecoded(self):
         """Do not discard unmatched data surrounding quoted TXT strings."""
-        for record in ('"v=spf1 -all" junk', '"v=spf1 -all'):
+        for record in (
+            '"v=spf1 -all" junk',
+            '"v=spf1 -all',
+            r'"v=spf1 x=\256 -all"',
+            r'"v=spf1 x=\19 -all"',
+            r'"v=spf1 x=\195 -all"',
+        ):
             with (
                 self.subTest(record=record),
                 self.assertRaises(checkdmarc.spf.SPFSyntaxError),
             ):
                 checkdmarc.spf.parse_spf_record(record, "example.com")
+
+    def testSplitUtf8PayloadReachesParser(self):
+        """A byte split cannot turn a syntax error into a missing SPF record."""
+        target = "_spf.example.net"
+        payload = "v=spf1 x=é -all"
+        for root in (
+            None,
+            f"v=spf1 include:{target} -all",
+            f"v=spf1 redirect={target}",
+        ):
+            with self.subTest(root=root):
+                domain = target if root else "example.com"
+                if root:
+                    self.setTxtRecords("example.com", f'"{root}"')
+                self.setTxtRecords(domain, r'"v=spf1 x=\195\169 -all"')
+                unsplit = checkdmarc.spf.check_spf("example.com")
+                self.setTxtRecords(domain, r'"v=spf1 x=\195" "" "\169 -all"')
+                self.assertEqual(
+                    checkdmarc.spf.query_spf_record(domain),
+                    {"record": payload, "warnings": []},
+                )
+                with self.assertRaises(checkdmarc.spf.SPFSyntaxError) as error:
+                    checkdmarc.spf.parse_spf_record(payload, domain)
+                self.assertIn(
+                    str(error.exception),
+                    [
+                        f"{domain}: Expected {expected} at position 9 "
+                        "(marked with ➞) in: v=spf1 x=➞é -all"
+                        for expected in (
+                            "mechanism or end_of_statement",
+                            "end_of_statement or mechanism",
+                        )
+                    ],
+                )
+                result = checkdmarc.spf.check_spf("example.com")
+                self.assertFalse(result["valid"], result)
+                self.assertEqual(result["error"], str(error.exception))
+                self.assertEqual(result["record"], root or payload)
+                self.assertEqual(result["warnings"], [])
+                self.assertEqual(result, unsplit)
+
+    def testSplitUtf8PreservesByteSizeWarnings(self):
+        """Size limits count original bytes, including split UTF-8 octets."""
+        prefix = b"v=spf1 x="
+        for first_size in (254, 255, 256):
+            with self.subTest(first_size=first_size):
+                chunks = (
+                    prefix + b"a" * (first_size - len(prefix) - 1) + b"\xc3",
+                    b"\xa9 -all",
+                )
+                txt = " ".join(
+                    '"' + "".join(f"\\{byte:03d}" for byte in chunk) + '"'
+                    for chunk in chunks
+                )
+                if first_size <= 255:
+                    self.setTxtRecords("example.com", txt)
+                    result = checkdmarc.spf.query_spf_record("example.com")
+                else:
+                    # A 256-byte character-string cannot be put on the wire.
+                    with patch(
+                        "checkdmarc.spf.query_dns",
+                        side_effect=lambda domain, rdtype, txt=txt, **kwargs: (
+                            [txt] if rdtype == "TXT" else []
+                        ),
+                    ):
+                        result = checkdmarc.spf.query_spf_record("example.com")
+                self.assertEqual(result["record"], b"".join(chunks).decode("utf-8"))
+                self.assertEqual(
+                    result["warnings"],
+                    []
+                    if first_size <= 255
+                    else [
+                        (
+                            "String 1 of 2 in the SPF record for example.com is 256 bytes. "
+                            "Each TXT character-string holds at most 255 bytes (RFC 1035 "
+                            "section 3.3). Split the record into more quoted strings."
+                        )
+                    ],
+                )
+        for total in (450, 451, 512, 513):
+            with self.subTest(total=total):
+                first = prefix + b"a" * (250 - len(prefix) - 1) + b"\xc3"
+                remaining = b"\xa9" + b"a" * (total - 250 - 6) + b" -all"
+                chunks = (first, remaining[:250], remaining[250:])
+                txt = " ".join(
+                    '"' + "".join(f"\\{byte:03d}" for byte in chunk) + '"'
+                    for chunk in chunks
+                )
+                self.setTxtRecords("example.com", txt)
+                result = checkdmarc.spf.query_spf_record("example.com")
+                self.assertEqual(result["record"], b"".join(chunks).decode("utf-8"))
+                warnings = []
+                if total > 512:
+                    warnings = [
+                        (
+                            f"The SPF record for example.com is {total} bytes, over 512. "
+                            "That is more than a DNS answer can reliably carry over UDP, "
+                            "so some verifiers may ignore or fail it (RFC 7208 section 3.4)."
+                        )
+                    ]
+                elif total > 450:
+                    warnings = [
+                        (
+                            f"The SPF record for example.com is {total} bytes. RFC 7208 "
+                            "section 3.4 recommends keeping answers under about 450 bytes "
+                            "so the whole DNS message fits in 512 bytes."
+                        )
+                    ]
+                self.assertEqual(result["warnings"], warnings)
 
     def testEscapedPayloadSizeUsesDecodedBytes(self):
         """Presentation escaping cannot inflate the per-string byte counts."""

@@ -10,6 +10,8 @@
   required by RFC 7208 section 3.3 (#286)
 - DNS: escape literal quotes and backslashes in quoted TXT output so payload
   characters remain distinct from string boundaries (RFC 1035 section 5.1)
+- DNS: preserve UTF-8 sequences split across TXT byte boundaries, retaining
+  the original string lengths for SPF size warnings (RFC 1035 section 3.3)
 
 ## 6.0.3
 

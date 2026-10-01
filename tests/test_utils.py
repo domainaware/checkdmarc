@@ -179,6 +179,118 @@ class TestQueryDns(unittest.TestCase):
         )
         self.assertEqual(result, ["Undecodable characters"])
 
+    def testQuotedTxtPreservesSplitUtf8Bytes(self):
+        """UTF-8 is decoded after joining; quoted output retains wire chunks."""
+        cases = []
+        for character, octets in (
+            ("é", (r"\195", r"\169")),
+            ("€", (r"\226", r"\130", r"\172")),
+            ("😀", (r"\240", r"\159", r"\152", r"\128")),
+        ):
+            for offset in range(1, len(octets)):
+                cases.append(
+                    (
+                        (
+                            '"v=spf1 x=' + "".join(octets[:offset]) + '"',
+                            '"' + "".join(octets[offset:]) + ' -all"',
+                        ),
+                        f"v=spf1 x={character} -all",
+                    )
+                )
+        cases.extend(
+            (
+                ((r'"v=spf1 x=\195\169 -all"',), "v=spf1 x=é -all"),
+                (
+                    (r'"v=spf1 x=\\195\"\\"', r'"\195"', '""', r'"\169 -all"'),
+                    'v=spf1 x=\\195"\\é -all',
+                ),
+            )
+        )
+        for chunks, payload in cases:
+            with self.subTest(chunks=chunks):
+                answer = dns.rrset.from_text(
+                    "example.com", 60, "IN", "TXT", " ".join(chunks)
+                )
+                resolver = _fake_resolver()
+                resolver.resolve.return_value = answer
+                cache = ExpiringDict(10, 60)
+                for quoted, expected in ((True, "".join(chunks)), (False, payload)):
+                    result = checkdmarc.utils.query_dns(
+                        "example.com",
+                        "TXT",
+                        quoted_txt_segments=quoted,
+                        resolver=resolver,
+                        cache=cache,
+                    )
+                    self.assertEqual(result, [expected])
+                    self.assertEqual(cache[f"example.com_TXT_{quoted}"], [expected])
+                    if quoted:
+                        self.assertEqual(
+                            dns.rdata.from_text("IN", "TXT", result[0]), answer[0]
+                        )
+                # Cached forms remain distinct even if DNS subsequently changes.
+                resolver.resolve.return_value = dns.rrset.from_text(
+                    "example.com", 60, "IN", "TXT", '"changed"'
+                )
+                for quoted, expected in ((True, "".join(chunks)), (False, payload)):
+                    self.assertEqual(
+                        checkdmarc.utils.query_dns(
+                            "example.com",
+                            "TXT",
+                            quoted_txt_segments=quoted,
+                            resolver=resolver,
+                            cache=cache,
+                        ),
+                        [expected],
+                    )
+
+    def testUndecodableTxtPayloadAcrossModes(self):
+        """Invalid UTF-8 stays invalid; separate TXT records are never joined."""
+        for records in (
+            (r'"\195"', r'"\169"'),
+            (r'"prefix" "\255"',),
+            (r'"\226" "\130"',),
+        ):
+            for quoted in (False, True):
+                with self.subTest(records=records, quoted=quoted):
+                    resolver = _fake_resolver()
+                    resolver.resolve.return_value = dns.rrset.from_text(
+                        "example.com", 60, "IN", "TXT", *records
+                    )
+                    self.assertEqual(
+                        checkdmarc.utils.query_dns(
+                            "example.com",
+                            "TXT",
+                            quoted_txt_segments=quoted,
+                            resolver=resolver,
+                            cache=ExpiringDict(10, 60),
+                        ),
+                        ["Undecodable characters"] * len(records),
+                    )
+
+    def testQuotedTxtPreservesAsciiControlPayload(self):
+        """Only non-ASCII bytes acquire decimal escapes in quoted output."""
+        resolver = _fake_resolver()
+        resolver.resolve.return_value = dns.rrset.from_text(
+            "example.com", 60, "IN", "TXT", r'"\000\009\010\127\195" "\169"'
+        )
+        cache = ExpiringDict(10, 60)
+        for quoted, expected in (
+            (True, '"\x00\t\n\x7f' + r'\195""\169"'),
+            (False, "\x00\t\n\x7fé"),
+        ):
+            with self.subTest(quoted=quoted):
+                self.assertEqual(
+                    checkdmarc.utils.query_dns(
+                        "example.com",
+                        "TXT",
+                        quoted_txt_segments=quoted,
+                        resolver=resolver,
+                        cache=cache,
+                    ),
+                    [expected],
+                )
+
     def testNonTxtRecord(self):
         """Non-TXT records return text via .to_text() with trailing dots stripped"""
         fake_resolver = _fake_resolver()
