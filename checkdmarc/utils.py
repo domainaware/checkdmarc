@@ -814,9 +814,9 @@ def query_dns(
     if record_type == "TXT":
         records = []
         for answer in answers:
+            # dnspython rejects a TXT rdata with no strings at construction
+            # time, so every answer here has at least one chunk.
             chunks = answer.strings
-            if not chunks:  # skip empty or None
-                continue
             try:
                 # TXT boundaries separate bytes, not Unicode characters
                 # (RFC 1035 section 3.3). Decode the complete payload before
