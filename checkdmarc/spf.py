@@ -462,13 +462,13 @@ def _decode_txt_strings(record: str) -> tuple[str, list[bytes] | None]:
     # Decode RFC 1035 section 5.1 presentation escapes exactly once. Match
     # the whole input so malformed quoted data remains visible to parsing.
     octet = r"(?:[01][0-9]{2}|2[0-4][0-9]|25[0-5])"
-    quoted_string = rf'"((?:[^"\\]|\\(?:["\\]|{octet}))*)"'
+    quoted_string = rf'"((?:[^"\\]|\\(?:[^0-9]|{octet}))*)"'
     if re.fullmatch(rf"{quoted_string}(?:\s*{quoted_string})*", record) is None:
         return record, None
     try:
         chunks = [
             re.sub(
-                rb'\\(["\\]|[0-9]{3})',
+                rb"\\([^0-9]|[0-9]{3})",
                 lambda match: (
                     bytes([int(match[1])]) if len(match[1]) == 3 else match[1]
                 ),
@@ -743,7 +743,8 @@ def parse_spf_record(
     Parses an SPF record, including resolving ``a``, ``mx``, and ``include`` mechanisms
 
     Args:
-        record (str): An SPF record
+        record (str): A decoded SPF record or quoted TXT character-strings
+                      with DNS presentation escapes
         domain (str): The domain that the SPF record came from
         parked (bool): Indicates if a domain has been parked
         ignore_too_many_lookups (bool): Do not raise an exception for too many lookups

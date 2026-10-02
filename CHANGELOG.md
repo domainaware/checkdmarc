@@ -12,6 +12,8 @@
   characters remain distinct from string boundaries (RFC 1035 section 5.1)
 - DNS: preserve UTF-8 sequences split across TXT byte boundaries, retaining
   the original string lengths for SPF size warnings (RFC 1035 section 3.3)
+- SPF: decode non-digit DNS escapes in quoted input to `parse_spf_record()`
+  so escaped mechanism names and values can be assessed (RFC 1035 section 5.1)
 
 ## 6.0.3
 

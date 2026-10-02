@@ -6,6 +6,8 @@ from typing import Any, cast
 from unittest.mock import patch
 
 import dns.exception
+import dns.rdata
+import dns.rdtypes.ANY.TXT
 import dns.resolver
 import dns.rrset
 
@@ -1431,6 +1433,55 @@ class TestSPFTxtStringBoundaries(unittest.TestCase):
                 self.assertEqual(result["record"], expected)
                 self.assertEqual(result["parsed"]["all"], "fail")
 
+    def testParserDecodesNonDigitDnsEscapes(self):
+        """Direct quoted input supports RFC 1035 non-digit escapes."""
+        self.answers[("mail-out.example.com", "A")] = dns.rrset.from_text(
+            "mail-out.example.com", 60, "IN", "A", "192.0.2.1"
+        )
+        for record, expected in (
+            (
+                r'"v=spf1 a:mail\-out.example.com -all"',
+                "v=spf1 a:mail-out.example.com -all",
+            ),
+            (
+                r'"\v\=spf1 ip4\:192\.0\.2\.1 \-all"',
+                "v=spf1 ip4:192.0.2.1 -all",
+            ),
+            (
+                r'"v=spf1\ ip4:192.0.2.1\ -all"',
+                "v=spf1 ip4:192.0.2.1 -all",
+            ),
+            (r'"v=spf1 x=foo\;bar -all"', "v=spf1 x=foo;bar -all"),
+        ):
+            with self.subTest(record=record):
+                # Verify the fixture independently of checkdmarc's encoder.
+                txt = cast(
+                    dns.rdtypes.ANY.TXT.TXT, dns.rdata.from_text("IN", "TXT", record)
+                )
+                self.assertEqual(b"".join(txt.strings).decode("utf-8"), expected)
+                result = checkdmarc.spf.parse_spf_record(record, "example.com")
+                self.assertEqual(result["record"], expected)
+                self.assertEqual(result["parsed"]["all"], "fail")
+                self.assertEqual(
+                    result, checkdmarc.spf.parse_spf_record(expected, "example.com")
+                )
+                if "a:mail-out.example.com" in expected:
+                    mechanism = cast(SPFAMechanism, result["parsed"]["mechanisms"][0])
+                    self.assertEqual(mechanism["addresses"], ["192.0.2.1"])
+
+    def testParserPreservesLiteralNonDigitEscapes(self):
+        """Escapes in decoded payloads and escaped backslashes remain data."""
+        expected = r"v=spf1 x=foo\;bar\046 -all"
+        for record in (expected, r'"v=spf1 x=foo\\;bar\\046 -all"'):
+            with self.subTest(record=record):
+                result = checkdmarc.spf.parse_spf_record(record, "example.com")
+                self.assertEqual(result["record"], expected)
+                self.assertEqual(result["parsed"]["all"], "fail")
+                self.assertEqual(
+                    result["warnings"],
+                    ["The unknown modifier x was ignored (RFC 7208 § 6)."],
+                )
+
     def testMalformedQuotedPresentationIsNotPartiallyDecoded(self):
         """Do not discard unmatched data surrounding quoted TXT strings."""
         for record in (
@@ -1439,6 +1490,7 @@ class TestSPFTxtStringBoundaries(unittest.TestCase):
             r'"v=spf1 x=\256 -all"',
             r'"v=spf1 x=\19 -all"',
             r'"v=spf1 x=\195 -all"',
+            r'"v=spf1 -all\"',
         ):
             with (
                 self.subTest(record=record),
