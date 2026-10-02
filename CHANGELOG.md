@@ -14,6 +14,9 @@
   the original string lengths for SPF size warnings (RFC 1035 section 3.3)
 - SPF: decode non-digit DNS escapes in quoted input to `parse_spf_record()`
   so escaped mechanism names and values can be assessed (RFC 1035 section 5.1)
+- SPF: accept surrounding spaces, tabs, and line endings in quoted parser
+  input without stripping payload whitespace or discarding Unicode and control
+  characters between quoted strings
 
 ## 6.0.3
 

@@ -1482,6 +1482,53 @@ class TestSPFTxtStringBoundaries(unittest.TestCase):
                     ["The unknown modifier x was ignored (RFC 7208 § 6)."],
                 )
 
+    def testParserAcceptsWhitespaceAroundQuotedInput(self):
+        """Presentation padding is not part of the SPF payload."""
+        expected = "v=spf1 ip4:192.0.2.1 -all"
+        for record in (
+            ' "v=spf1 ip4:192.0.2.1 -all"',
+            '"v=spf1 ip4:192.0.2.1 -all"\t ',
+            '\t"v=sp" "f1 ip4:192.0.2.1 -all" ',
+            '\r\n"v=spf1 ip4:192.0.2.1 -all"\r\n',
+            ' \t"\\v=spf1 ip4:192\\.0\\.2\\.1 -all"\n',
+        ):
+            with self.subTest(record=record):
+                result = checkdmarc.spf.parse_spf_record(record, "example.com")
+                self.assertEqual(result["record"], expected)
+                self.assertEqual(result["parsed"]["all"], "fail")
+                self.assertEqual(result["warnings"], [])
+                self.assertEqual(
+                    result, checkdmarc.spf.parse_spf_record(expected, "example.com")
+                )
+
+    def testParserPreservesPayloadWhitespace(self):
+        """Only padding around a fully quoted input is discarded."""
+        expected = " v=spf1 -all  "
+        for record in (expected, ' \t" v=spf1 -all  "\r\n'):
+            with self.subTest(record=record):
+                result = checkdmarc.spf.parse_spf_record(record, "example.com")
+                self.assertEqual(result["record"], expected)
+                self.assertEqual(result["parsed"]["all"], "fail")
+        # Unlike the direct parser's existing whitespace tolerance, DNS
+        # selection requires the version at the start of the payload.
+        self.setTxtRecords("example.com", '" v=spf1 -all  "')
+        with self.assertRaises(checkdmarc.spf.SPFRecordNotFound):
+            checkdmarc.spf.query_spf_record("example.com")
+
+    def testParserRejectsNonPresentationWhitespace(self):
+        """Unicode and control whitespace cannot complete an SPF version."""
+        for separator in ("\u00a0", "\u2003", "\v", "\f", "\x1c"):
+            record = f'"v=sp"{separator}"f1 -all"'
+            with self.subTest(separator=separator):
+                txt = cast(
+                    dns.rdtypes.ANY.TXT.TXT, dns.rdata.from_text("IN", "TXT", record)
+                )
+                self.assertEqual(
+                    b"".join(txt.strings).decode("utf-8"), f"v=sp{separator}f1 -all"
+                )
+                with self.assertRaises(checkdmarc.spf.SPFSyntaxError):
+                    checkdmarc.spf.parse_spf_record(record, "example.com")
+
     def testMalformedQuotedPresentationIsNotPartiallyDecoded(self):
         """Do not discard unmatched data surrounding quoted TXT strings."""
         for record in (
@@ -1491,6 +1538,8 @@ class TestSPFTxtStringBoundaries(unittest.TestCase):
             r'"v=spf1 x=\19 -all"',
             r'"v=spf1 x=\195 -all"',
             r'"v=spf1 -all\"',
+            ' "v=spf1 -all" junk ',
+            '\u00a0"v=spf1 -all"',
         ):
             with (
                 self.subTest(record=record),

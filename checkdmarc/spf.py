@@ -463,7 +463,13 @@ def _decode_txt_strings(record: str) -> tuple[str, list[bytes] | None]:
     # the whole input so malformed quoted data remains visible to parsing.
     octet = r"(?:[01][0-9]{2}|2[0-4][0-9]|25[0-5])"
     quoted_string = rf'"((?:[^"\\]|\\(?:[^0-9]|{octet}))*)"'
-    if re.fullmatch(rf"{quoted_string}(?:\s*{quoted_string})*", record) is None:
+    # Allow presentation padding and copied line endings outside the quotes,
+    # without changing whitespace inside the payload or in unquoted input.
+    quoted_record = record.strip(" \t\r\n")
+    if (
+        re.fullmatch(rf"{quoted_string}(?:[ \t\r\n]*{quoted_string})*", quoted_record)
+        is None
+    ):
         return record, None
     try:
         chunks = [
@@ -474,7 +480,7 @@ def _decode_txt_strings(record: str) -> tuple[str, list[bytes] | None]:
                 ),
                 chunk.encode("utf-8"),
             )
-            for chunk in re.findall(quoted_string, record)
+            for chunk in re.findall(quoted_string, quoted_record)
         ]
         # A UTF-8 sequence may cross a TXT byte boundary: concatenate first
         # (RFC 7208 section 3.3), retaining each chunk for byte-size checks.
@@ -744,7 +750,8 @@ def parse_spf_record(
 
     Args:
         record (str): A decoded SPF record or quoted TXT character-strings
-                      with DNS presentation escapes
+                      with DNS presentation escapes. Spaces, tabs, and line
+                      endings outside quoted strings are ignored.
         domain (str): The domain that the SPF record came from
         parked (bool): Indicates if a domain has been parked
         ignore_too_many_lookups (bool): Do not raise an exception for too many lookups
