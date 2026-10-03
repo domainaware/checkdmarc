@@ -269,26 +269,68 @@ class TestQueryDns(unittest.TestCase):
                     )
 
     def testQuotedTxtPreservesAsciiControlPayload(self):
-        """Only non-ASCII bytes acquire decimal escapes in quoted output."""
+        """Quoted controls round-trip through dnspython without changing bytes."""
         resolver = _fake_resolver()
-        resolver.resolve.return_value = dns.rrset.from_text(
-            "example.com", 60, "IN", "TXT", r'"\000\009\010\127\195" "\169"'
+        answer = dns.rrset.from_text(
+            "example.com", 60, "IN", "TXT", r'"\000\009\010\013\127\195" "\169"'
         )
+        resolver.resolve.return_value = answer
         cache = ExpiringDict(10, 60)
         for quoted, expected in (
-            (True, '"\x00\t\n\x7f' + r'\195""\169"'),
-            (False, "\x00\t\n\x7fé"),
+            (True, '"\x00\t' + r"\010" + "\r\x7f" + r'\195""\169"'),
+            (False, "\x00\t\n\r\x7fé"),
         ):
             with self.subTest(quoted=quoted):
+                result = checkdmarc.utils.query_dns(
+                    "example.com",
+                    "TXT",
+                    quoted_txt_segments=quoted,
+                    resolver=resolver,
+                    cache=cache,
+                )
+                if quoted:
+                    self.assertEqual(
+                        dns.rdata.from_text("IN", "TXT", result[0]), answer[0]
+                    )
+                self.assertEqual(result, [expected])
+
+    def testQuotedTxtLinefeedsRoundTrip(self):
+        """LF escapes preserve segment boundaries and literal escape-like data."""
+        for presentation, expected, payload in (
+            (r'"\010start"', r'"\010start"', "\nstart"),
+            (r'"mid\010dle"', r'"mid\010dle"', "mid\ndle"),
+            (r'"end\010"', r'"end\010"', "end\n"),
+            (
+                r'"left\010" "" "\010right\\010"',
+                r'"left\010""""\010right\\010"',
+                "left\n\nright\\010",
+            ),
+        ):
+            with self.subTest(presentation=presentation):
+                answer = dns.rrset.from_text(
+                    "example.com", 60, "IN", "TXT", presentation
+                )
+                resolver = _fake_resolver()
+                resolver.resolve.return_value = answer
+                cache = ExpiringDict(10, 60)
+                result = checkdmarc.utils.query_dns(
+                    "example.com",
+                    "TXT",
+                    quoted_txt_segments=True,
+                    resolver=resolver,
+                    cache=cache,
+                )
+                self.assertEqual(dns.rdata.from_text("IN", "TXT", result[0]), answer[0])
+                self.assertEqual(result, [expected])
+                self.assertEqual(cache["example.com_TXT_True"], [expected])
                 self.assertEqual(
                     checkdmarc.utils.query_dns(
                         "example.com",
                         "TXT",
-                        quoted_txt_segments=quoted,
                         resolver=resolver,
                         cache=cache,
                     ),
-                    [expected],
+                    [payload],
                 )
 
     def testNonTxtRecord(self):

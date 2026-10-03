@@ -728,9 +728,10 @@ def _quote_txt_string(value: bytes) -> str:
     for octet in value:
         if octet in (34, 92):
             escaped.append("\\" + chr(octet))
-        elif octet >= 128:
+        elif octet == 10 or octet >= 128:
             # RFC 1035 section 5.1: decimal escapes preserve individual
-            # octets, including parts of a split UTF-8 character.
+            # octets, including parts of a split UTF-8 character. Escape
+            # LF too: dnspython rejects literal newlines in quoted strings.
             escaped.append(f"\\{octet:03d}")
         else:
             escaped.append(chr(octet))
@@ -757,7 +758,7 @@ def query_dns(
         record_type (str): The record type to query for
         quoted_txt_segments (bool): Quote each TXT character-string, escaping
                                    literal quotes and backslashes and using
-                                   decimal escapes for non-ASCII bytes
+                                   decimal escapes for LF and non-ASCII bytes
         nameservers (list): A list of one or more nameservers to use.
                             Defaults to the system-configured resolvers
                             (``/etc/resolv.conf`` on Linux/macOS, the OS
@@ -947,7 +948,7 @@ def get_txt_records(
         domain (str): A domain name
         quoted_txt_segments (bool): Quote each TXT character-string, escaping
                                    literal quotes and backslashes and using
-                                   decimal escapes for non-ASCII bytes
+                                   decimal escapes for LF and non-ASCII bytes
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests

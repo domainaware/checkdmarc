@@ -12,6 +12,8 @@
   characters remain distinct from string boundaries (RFC 1035 section 5.1)
 - DNS: preserve UTF-8 sequences split across TXT byte boundaries, retaining
   the original string lengths for SPF size warnings (RFC 1035 section 3.3)
+- DNS: escape linefeeds in quoted TXT output so dnspython can parse it back
+  into the original byte strings
 - SPF: decode non-digit DNS escapes in quoted input to `parse_spf_record()`
   so escaped mechanism names and values can be assessed (RFC 1035 section 5.1)
 - SPF: accept surrounding spaces, tabs, and line endings in quoted parser
