@@ -722,6 +722,22 @@ def _txt_cname_conflict_warning(
     )
 
 
+def _quote_txt_string(value: bytes) -> str:
+    """Quote a TXT byte string without decoding across its boundaries."""
+    escaped = []
+    for octet in value:
+        if octet in (34, 92):
+            escaped.append("\\" + chr(octet))
+        elif octet == 10 or octet >= 128:
+            # RFC 1035 section 5.1: decimal escapes preserve individual
+            # octets, including parts of a split UTF-8 character. Escape
+            # LF too: dnspython rejects literal newlines in quoted strings.
+            escaped.append(f"\\{octet:03d}")
+        else:
+            escaped.append(chr(octet))
+    return '"' + "".join(escaped) + '"'
+
+
 def query_dns(
     domain: str,
     record_type: str,
@@ -740,7 +756,9 @@ def query_dns(
     Args:
         domain (str): The domain or subdomain to query about
         record_type (str): The record type to query for
-        quoted_txt_segments (bool): Preserve quotes in TXT records
+        quoted_txt_segments (bool): Quote each TXT character-string, escaping
+                                   literal quotes and backslashes and using
+                                   decimal escapes for LF and non-ASCII bytes
         nameservers (list): A list of one or more nameservers to use.
                             Defaults to the system-configured resolvers
                             (``/etc/resolv.conf`` on Linux/macOS, the OS
@@ -795,28 +813,22 @@ def query_dns(
         retries=max(retries - _attempt, 0),
     )
     if record_type == "TXT":
-        resource_records = [r.strings for r in answers]
-        if quoted_txt_segments:
-            # Join each sequence of byte chunks, adding quotes around each
-            joined_records = [
-                b"".join(b'"' + part + b'"' for part in record)
-                for record in resource_records
-                if record  # skip empty or None
-            ]
-        else:
-            # Join each sequence of byte chunks into a single bytes object
-            joined_records = [
-                b"".join(record)
-                for record in resource_records
-                if record  # skip empty or None
-            ]
         records = []
-        for r in joined_records:
+        for answer in answers:
+            # dnspython rejects a TXT rdata with no strings at construction
+            # time, so every answer here has at least one chunk.
+            chunks = answer.strings
             try:
-                r = r.decode()
+                # TXT boundaries separate bytes, not Unicode characters
+                # (RFC 1035 section 3.3). Decode the complete payload before
+                # adding presentation quotes that could split a character.
+                record = b"".join(chunks).decode("utf-8")
             except UnicodeDecodeError:
-                r = "Undecodable characters"
-            records.append(r)
+                record = "Undecodable characters"
+            else:
+                if quoted_txt_segments:
+                    record = "".join(_quote_txt_string(part) for part in chunks)
+            records.append(record)
     else:
         records = [r.to_text().rstrip(".") for r in answers]
     if type(cache) is ExpiringDict:
@@ -934,7 +946,9 @@ def get_txt_records(
 
     Args:
         domain (str): A domain name
-        quoted_txt_segments (bool): Preserve quotes in TXT records
+        quoted_txt_segments (bool): Quote each TXT character-string, escaping
+                                   literal quotes and backslashes and using
+                                   decimal escapes for LF and non-ASCII bytes
         nameservers (list): A list of nameservers to query
         resolver (dns.resolver.Resolver): A resolver object to use for DNS
                                           requests
