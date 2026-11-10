@@ -175,6 +175,8 @@ def _main():
             "--skip-tls is deprecated and has no effect; "
             "TLS testing is off unless --check-mx-tls is given"
         )
+    if args.format.lower() not in ("json", "csv"):
+        arg_parser.error("--format must be 'json' or 'csv'")
     results = check_domains(
         domains,
         check_mx_tls=args.check_mx_tls,
