@@ -224,6 +224,15 @@ class TestCLI(unittest.TestCase):
         finally:
             os.unlink(out_path)
 
+    def testInvalidFormatIsRejected(self):
+        """--format xml is rejected with exit code 2 and check_domains never runs"""
+        with patch("sys.argv", ["checkdmarc", "--format", "xml", "example.com"]):
+            with patch("checkdmarc._cli.check_domains") as mock_check:
+                with self.assertRaises(SystemExit) as cm:
+                    checkdmarc._cli._main()
+        self.assertEqual(cm.exception.code, 2)
+        mock_check.assert_not_called()
+
     def testOutputBadExtensionLogsError(self):
         """--output <path.txt> logs an error and writes nothing"""
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".txt") as out_file:
